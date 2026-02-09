@@ -14,8 +14,7 @@ export const Logo = (props: Props) => {
   const priority = priorityFromProps || 'low'
 
   return (
-    /* eslint-disable @next/next/no-img-element */
-    <h1 className="text-4xl">Rato Surya Online</h1>
+    <h1 className="text-4xl">Afno Events</h1>
     // <img
     //   alt="Payload Logo"
     //   width={193}

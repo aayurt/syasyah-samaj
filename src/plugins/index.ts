@@ -12,11 +12,19 @@ import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/
 import { Plugin } from 'payload'
 
 import { isAdmin } from '@/access/admin'
+import { betterAuthOptions } from '@/lib/auth/config'
+import { getBaseUrl } from '@/lib/auth/getBaseUrl'
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
+import {
+  betterAuthCollections,
+  createBetterAuthPlugin,
+  payloadAdapter,
+} from '@delmaredigital/payload-better-auth'
+import { betterAuth } from 'better-auth'
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
-  return doc?.title ? `${doc.title} | Rato Surya Online` : 'Rato Surya Online'
+  return doc?.title ? `${doc.title} | Afno Events` : 'Afno Events'
 }
 
 const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
@@ -24,6 +32,7 @@ const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
 
   return doc?.slug ? `${url}/${doc.slug}` : url
 }
+const baseUrl = getBaseUrl()
 
 export const plugins: Plugin[] = [
   redirectsPlugin({
@@ -51,6 +60,9 @@ export const plugins: Plugin[] = [
         update: isAdmin,
         delete: isAdmin,
       },
+      admin: {
+        hidden: true,
+      },
     },
   }),
   nestedDocsPlugin({
@@ -70,6 +82,9 @@ export const plugins: Plugin[] = [
         create: isAdmin,
         update: isAdmin,
         delete: isAdmin,
+      },
+      admin: {
+        hidden: true,
       },
       fields: ({ defaultFields }) => {
         return defaultFields.map((field) => {
@@ -92,6 +107,9 @@ export const plugins: Plugin[] = [
       },
     },
     formSubmissionOverrides: {
+      admin: {
+        hidden: true,
+      },
       access: {
         create: isAdmin,
         update: isAdmin,
@@ -111,7 +129,43 @@ export const plugins: Plugin[] = [
         update: isAdmin,
         delete: isAdmin,
       },
+      admin: {
+        hidden: true,
+      },
     },
   }),
   payloadCloudPlugin(),
+  betterAuthCollections({
+    betterAuthOptions,
+    skipCollections: ['user'], // We define Users ourselves
+  }),
+  // Initialize Better Auth with auto-injected endpoints and admin components
+  createBetterAuthPlugin({
+    createAuth: (payload) =>
+      betterAuth({
+        ...betterAuthOptions,
+        database: payloadAdapter({
+          payloadClient: payload,
+          // adapterConfig: { enableDebugLogs: true }, // Uncomment to enable debug logging
+        }),
+        // For Payload's default SERIAL IDs:
+        advanced: {
+          database: {
+            generateId: 'serial',
+          },
+        },
+        baseURL: getBaseUrl(),
+        secret: process.env.BETTER_AUTH_SECRET,
+        trustedOrigins: [baseUrl], // Or use withBetterAuthDefaults() below
+      }),
+    admin: {
+      disableLoginView: false,
+      // beforeLoginComponent: "@/components/BeforeLogin",
+      loginViewComponent: '@/components/auth/login-form',
+      login: {
+        requiredRole: 'admin',
+        afterLoginPath: '/admin',
+      },
+    },
+  }),
 ]

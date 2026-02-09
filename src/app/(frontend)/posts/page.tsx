@@ -58,6 +58,6 @@ export default async function Page() {
 
 export function generateMetadata(): Metadata {
   return {
-    title: `Rato Surya Online Posts`,
+    title: `Afno Events Posts`,
   }
 }
