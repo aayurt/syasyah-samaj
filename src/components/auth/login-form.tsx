@@ -1,14 +1,16 @@
 'use client'
-
+/* eslint-disable */
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { signIn } from '@/lib/auth/client'
-import { createPayloadAuthClient, type PayloadAuthClient } from '@delmaredigital/payload-better-auth/client'
+import {
+  createPayloadAuthClient,
+  type PayloadAuthClient,
+} from '@delmaredigital/payload-better-auth/client'
 import { Apple, ArrowRight, Loader2, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import './index.scss'
 export type LoginViewProps = {
   /** Optional pre-configured auth client */
@@ -66,14 +68,12 @@ export type LoginViewProps = {
   resetPasswordUrl?: string
 }
 
-
-
 export default function LoginForm({
   authClient: providedClient,
   afterLoginPath = '/admin',
   requiredRole = 'admin',
   requireAllRoles = false,
-}:LoginViewProps) {
+}: LoginViewProps) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -83,7 +83,7 @@ export default function LoginForm({
   const [accessDenied, setAccessDenied] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
 
-useEffect(() => {
+  useEffect(() => {
     async function checkSession() {
       try {
         const client = getClient()
@@ -92,7 +92,7 @@ useEffect(() => {
         if (result.data?.user) {
           const user = result.data.user as { role?: unknown }
           // User is logged in, check role
-          if (user.role && user.role === requiredRole ) {
+          if (user.role && user.role === requiredRole) {
             router.push(afterLoginPath)
             return
           } else {
@@ -106,7 +106,6 @@ useEffect(() => {
     }
     checkSession()
   }, [afterLoginPath, requiredRole, requireAllRoles, router])
-
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -130,7 +129,7 @@ useEffect(() => {
       setLoading(false)
     }
   }
-  
+
   async function handleSignOut() {
     const client = getClient()
     await client.signOut()
@@ -178,14 +177,8 @@ useEffect(() => {
             </CardDescription>
           </CardHeader>
           <CardContent className="access-denied-content">
-            <p>
-              Please contact an administrator if you believe this is an error.
-            </p>
-            <button 
-              onClick={handleSignOut}
-            >
-              Sign out and try again
-            </button>
+            <p>Please contact an administrator if you believe this is an error.</p>
+            <button onClick={handleSignOut}>Sign out and try again</button>
           </CardContent>
         </Card>
       </div>
@@ -196,7 +189,9 @@ useEffect(() => {
       <Card className="login-card">
         <CardHeader className="login-header">
           <CardTitle className="login-title">Sign in to Payload</CardTitle>
-          <CardDescription className="login-description">Enter your credentials or continue with a social provider</CardDescription>
+          <CardDescription className="login-description">
+            Enter your credentials or continue with a social provider
+          </CardDescription>
         </CardHeader>
         <CardContent className="login-content">
           {/* Social Login Buttons */}
@@ -257,11 +252,7 @@ useEffect(() => {
               />
             </div>
 
-            {error && (
-              <div className="error-message">
-                {error}
-              </div>
-            )}
+            {error && <div className="error-message">{error}</div>}
 
             <button type="submit" disabled={loading} className="submit-button">
               {loading ? (

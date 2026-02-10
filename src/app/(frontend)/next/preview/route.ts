@@ -1,4 +1,5 @@
 import type { CollectionSlug, PayloadRequest } from 'payload'
+import type { NextRequest } from 'next/server'
 import { getPayload } from 'payload'
 
 import { draftMode } from 'next/headers'
@@ -6,15 +7,7 @@ import { redirect } from 'next/navigation'
 
 import configPromise from '@payload-config'
 
-export async function GET(
-  req: {
-    cookies: {
-      get: (name: string) => {
-        value: string
-      }
-    }
-  } & Request,
-): Promise<Response> {
+export async function GET(req: NextRequest): Promise<Response | void> {
   const payload = await getPayload({ config: configPromise })
 
   const { searchParams } = new URL(req.url)
@@ -41,7 +34,7 @@ export async function GET(
   try {
     user = await payload.auth({
       req: req as unknown as PayloadRequest,
-      headers: req.headers,
+      headers: req.headers as unknown as Headers,
     })
   } catch (error) {
     payload.logger.error({ err: error }, 'Error verifying token for live preview')
