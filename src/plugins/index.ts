@@ -22,9 +22,12 @@ import {
   payloadAdapter,
 } from '@delmaredigital/payload-better-auth'
 import { betterAuth } from 'better-auth'
+import { resend } from '@/lib/email/resend'
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
-  return doc?.title ? `${doc.title} | Afno Events` : 'Afno Events'
+  return doc?.title
+    ? `${doc.title} | ${process.env.NEXT_PUBLIC_APP_NAME}`
+    : process.env.NEXT_PUBLIC_APP_NAME || 'Afno Event'
 }
 
 const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
@@ -60,9 +63,6 @@ export const plugins: Plugin[] = [
         update: isAdmin,
         delete: isAdmin,
       },
-      admin: {
-        hidden: true,
-      },
     },
   }),
   nestedDocsPlugin({
@@ -82,9 +82,6 @@ export const plugins: Plugin[] = [
         create: isAdmin,
         update: isAdmin,
         delete: isAdmin,
-      },
-      admin: {
-        hidden: true,
       },
       fields: ({ defaultFields }) => {
         return defaultFields.map((field) => {
@@ -107,9 +104,6 @@ export const plugins: Plugin[] = [
       },
     },
     formSubmissionOverrides: {
-      admin: {
-        hidden: true,
-      },
       access: {
         create: isAdmin,
         update: isAdmin,
@@ -129,9 +123,6 @@ export const plugins: Plugin[] = [
         update: isAdmin,
         delete: isAdmin,
       },
-      admin: {
-        hidden: true,
-      },
     },
   }),
   payloadCloudPlugin(),
@@ -148,6 +139,82 @@ export const plugins: Plugin[] = [
           payloadClient: payload,
           // adapterConfig: { enableDebugLogs: true }, // Uncomment to enable debug logging
         }),
+        emailVerification: {
+          sendVerificationEmail: async ({ user, url, token }, request) => {
+            await resend.emails.send({
+              from: `${process.env.NEXT_PUBLIC_APP_NAME} <onboarding@resend.dev>`,
+              to: user.email,
+              subject: 'Verify your email address',
+              html: `
+                <!DOCTYPE html>
+                <html>
+                  <head>
+                    <meta charset="utf-8">
+                    <title>Verify your email address</title>
+                    <style>
+                      body { font-family: sans-serif; line-height: 1.5; color: #333; }
+                      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                      .button { display: inline-block; padding: 10px 20px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 5px; }
+                      .footer { margin-top: 20px; font-size: 0.8em; color: #666; }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="container">
+                      <h2>Verify your email address</h2>
+                      <p>Hello ${user.name || 'there'},</p>
+                      <p>Please click the button below to verify your email address:</p>
+                      <p><a href="${url}" class="button">Verify Email</a></p>
+                      <p>Or copy and paste this link into your browser:</p>
+                      <p>${url}</p>
+                      <div class="footer">
+                        <p>If you didn't request this, you can safely ignore this email.</p>
+                      </div>
+                    </div>
+                  </body>
+                </html>
+              `,
+            })
+          },
+        },
+        emailAndPassword: {
+          enabled: true,
+          sendResetPassword: async ({ user, url, token }, request) => {
+            console.log({ user, url, token })
+            await resend.emails.send({
+              from: `${process.env.NEXT_PUBLIC_APP_NAME} <onboarding@resend.dev>`,
+              to: user.email,
+              subject: 'Reset your password',
+              html: `
+                <!DOCTYPE html>
+                <html>
+                  <head>
+                    <meta charset="utf-8">
+                    <title>Reset your password</title>
+                    <style>
+                      body { font-family: sans-serif; line-height: 1.5; color: #333; }
+                      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                      .button { display: inline-block; padding: 10px 20px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 5px; }
+                      .footer { margin-top: 20px; font-size: 0.8em; color: #666; }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="container">
+                      <h2>Reset your password</h2>
+                      <p>Hello ${user.name || 'there'},</p>
+                      <p>You requested to reset your password. Click the button below to proceed:</p>
+                      <p><a href="${url}" class="button">Reset Password</a></p>
+                      <p>Or copy and paste this link into your browser:</p>
+                      <p>${url}</p>
+                      <div class="footer">
+                        <p>If you didn't request this, you can safely ignore this email.</p>
+                      </div>
+                    </div>
+                  </body>
+                </html>
+              `,
+            })
+          },
+        },
         // For Payload's default SERIAL IDs:
         advanced: {
           database: {
@@ -165,6 +232,7 @@ export const plugins: Plugin[] = [
       login: {
         requiredRole: 'admin',
         afterLoginPath: '/admin',
+        enableForgotPassword: true,
       },
     },
   }),

@@ -1,6 +1,6 @@
 import { apiKeyWithDefaults } from '@delmaredigital/payload-better-auth'
 import type { BetterAuthOptions } from 'better-auth'
-import { admin, emailOTP } from 'better-auth/plugins'
+import { admin } from 'better-auth/plugins'
 
 export const betterAuthOptions: Partial<BetterAuthOptions> = {
   // Model names are SINGULAR - they get pluralized automatically
@@ -14,14 +14,29 @@ export const betterAuthOptions: Partial<BetterAuthOptions> = {
   session: {
     expiresIn: 60 * 60 * 24 * 30, // 30 days
   },
-  emailAndPassword: { enabled: true },
-  emailVerification: {
-     sendOnSignUp: true,
-     
-    //  afterEmailVerification: async (user) => {
-    //    await onUserEmailVerified(user);
-    //  },
-   },
+  // emailAndPassword: {
+  //   enabled: true,
+  //   resetPasswordTokenExpiresIn: 3600, // 1 hour
+  //   sendResetPassword: async ({ user, url }) => {
+  //     await resend.emails.send({
+  //       to: user.email,
+  //       subject: 'Reset your password',
+  //       html: `
+  //         <p>Hello ${user.name},</p>
+  //         <p>Click the link below to reset your password:</p>
+  //         <a href="${url}">${url}</a>
+  //         <p>If you did not request a password reset, please ignore this email.</p>
+  //       `,
+  //     })
+  //   },
+  // },
+  // emailVerification: {
+  //   sendOnSignUp: true,
+
+  //   //  afterEmailVerification: async (user) => {
+  //   //    await onUserEmailVerified(user);
+  //   //  },
+  // },
   socialProviders: {
     google: {
       enabled: true,
@@ -35,20 +50,7 @@ export const betterAuthOptions: Partial<BetterAuthOptions> = {
     },
   },
   plugins: [
-    
-      apiKeyWithDefaults(),  // Use this instead of apiKey() for better admin UI support
-
+    apiKeyWithDefaults(), // Use this instead of apiKey() for better admin UI support
     admin(),
-    emailOTP(
-        {otpLength: 6,
-       expiresIn: 300, // 5 minutes
-       sendVerificationOnSignUp: true,
-       overrideDefaultEmailVerification: true,
-       async sendVerificationOTP({ email, otp, type }) {
-        console.log(`Sending ${type} OTP`, otp, `to email:`, email)}
-}
-    ),
-    
-  ]
- 
+  ],
 }

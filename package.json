@@ -21,6 +21,7 @@
   "dependencies": {
     "@delmaredigital/payload-better-auth": "^0.3.12",
     "@payloadcms/db-postgres": "latest",
+    "@payloadcms/email-resend": "^3.76.0",
     "@payloadcms/live-preview-react": "latest",
     "@payloadcms/next": "latest",
     "@payloadcms/payload-cloud": "latest",
@@ -52,6 +53,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "7.45.4",
+    "resend": "^6.9.1",
     "sharp": "0.32.6",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7"

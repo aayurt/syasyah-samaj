@@ -14,4 +14,6 @@ export const {
   signOut,
   twoFactor,
   passkey,
+  resetPassword,
+  requestPasswordReset,
 } = authClient

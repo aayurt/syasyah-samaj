@@ -1,23 +1,25 @@
+// storage-adapter-import-placeholder
 import { postgresAdapter } from '@payloadcms/db-postgres'
 
+import sharp from 'sharp' // sharp-import
 import path from 'path'
 import { buildConfig, PayloadRequest } from 'payload'
-import sharp from 'sharp' // sharp-import
 import { fileURLToPath } from 'url'
 
-import { defaultLexical } from '@/fields/defaultLexical'
 import { Categories } from './collections/Categories'
-import { Events } from './collections/Events'
 import { Media } from './collections/Media'
-import { Orders } from './collections/Orders'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
-import { Tickets } from './collections/Ticksts'
 import { Users } from './collections/Users'
-import { plugins } from './plugins'
-import { getServerSideURL } from './utilities/getURL'
 import { Footer } from './Footer/config'
 import { Header } from './Header/config'
+import { plugins } from './plugins'
+import { defaultLexical } from '@/fields/defaultLexical'
+import { getServerSideURL } from './utilities/getURL'
+import { resendAdapter } from '@payloadcms/email-resend'
+import { Events } from './collections/Events'
+import { Orders } from './collections/Orders'
+import { Tickets } from './collections/Ticksts'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -65,6 +67,11 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },
+  }),
+  email: resendAdapter({
+    apiKey: process.env.RESEND_API_KEY || '',
+    defaultFromAddress: 'noreply@afno.app',
+    defaultFromName: 'Afno',
   }),
   collections: [Pages, Posts, Media, Categories, Users, Events, Orders, Tickets],
   cors: [getServerSideURL()].filter(Boolean),

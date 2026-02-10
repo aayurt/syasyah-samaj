@@ -1,8 +1,5 @@
 'use client'
-/* eslint-disable */
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+
 import { signIn } from '@/lib/auth/client'
 import {
   createPayloadAuthClient,
@@ -10,7 +7,12 @@ import {
 } from '@delmaredigital/payload-better-auth/client'
 import { Apple, ArrowRight, Loader2, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import './index.scss'
 export type LoginViewProps = {
   /** Optional pre-configured auth client */
@@ -73,6 +75,9 @@ export default function LoginForm({
   afterLoginPath = '/admin',
   requiredRole = 'admin',
   requireAllRoles = false,
+  enableForgotPassword = 'auto',
+  resetPasswordUrl,
+  enableSignUp = 'auto',
 }: LoginViewProps) {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -155,7 +160,7 @@ export default function LoginForm({
   if (checkingSession) {
     return (
       <div className="login-container">
-        <Card className="w-full max-w-md">
+        <Card className="auth-card">
           <CardContent className="loading-card">
             <Loader2 className="spinner" />
             <span className="text">Loading...</span>
@@ -169,7 +174,7 @@ export default function LoginForm({
   if (accessDenied) {
     return (
       <div className="login-container">
-        <Card className="access-denied-card w-full max-w-md">
+        <Card className="access-denied-card auth-card">
           <CardHeader className="access-denied-header">
             <CardTitle className="access-denied-title">Access Denied</CardTitle>
             <CardDescription className="access-denied-description">
@@ -240,7 +245,14 @@ export default function LoginForm({
             </div>
 
             <div className="form-group">
-              <Label htmlFor="password">Password</Label>
+              <div className="password-header">
+                <Label htmlFor="password">Password</Label>
+                {(enableForgotPassword === true || enableForgotPassword === 'auto') && (
+                  <Link href={resetPasswordUrl || '/admin/forgot'} className="forgot-password-link">
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -263,11 +275,20 @@ export default function LoginForm({
               ) : (
                 <>
                   Sign In
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="arrow-icon" />
                 </>
               )}
             </button>
           </form>
+
+          {(enableSignUp === true || enableSignUp === 'auto') && (
+            <div className="signup-container">
+              Don&apos;t have an account?{' '}
+              <Link href="/admin/signup" className="signup-link">
+                Sign up
+              </Link>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
