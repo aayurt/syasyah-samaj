@@ -19,7 +19,8 @@ import { getServerSideURL } from './utilities/getURL'
 import { resendAdapter } from '@payloadcms/email-resend'
 import { Events } from './collections/Events'
 import { Orders } from './collections/Orders'
-import { Tickets } from './collections/Ticksts'
+import { Tickets } from './collections/Tickets'
+import { Tenants } from './collections/Tenants'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -73,7 +74,7 @@ export default buildConfig({
     defaultFromAddress: 'noreply@afno.app',
     defaultFromName: 'Afno',
   }),
-  collections: [Pages, Posts, Media, Categories, Users, Events, Orders, Tickets],
+  collections: [Pages, Posts, Media, Categories, Users, Events, Orders, Tickets, Tenants],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],
   plugins: [

@@ -9,12 +9,12 @@ import { searchPlugin } from '@payloadcms/plugin-search'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
-import { Plugin } from 'payload'
+import { PayloadRequest, Plugin } from 'payload'
 
 import { isAdmin } from '@/access/admin'
 import { betterAuthOptions } from '@/lib/auth/config'
 import { getBaseUrl } from '@/lib/auth/getBaseUrl'
-import { Page, Post } from '@/payload-types'
+import { Config, Page, Post, User } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
 import {
   betterAuthCollections,
@@ -23,6 +23,9 @@ import {
 } from '@delmaredigital/payload-better-auth'
 import { betterAuth } from 'better-auth'
 import { resend } from '@/lib/email/resend'
+import { multiTenantPlugin } from '@payloadcms/plugin-multi-tenant'
+import { isSuperAdmin, isSuperAdminAccess } from '@/access/isSuperAdmin'
+import { getUserTenantIDs } from '@/utilities/getUserTenantIDs'
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
   return doc?.title
@@ -79,9 +82,9 @@ export const plugins: Plugin[] = [
     },
     formOverrides: {
       access: {
-        create: isAdmin,
-        update: isAdmin,
-        delete: isAdmin,
+        create: isSuperAdminAccess,
+        update: isSuperAdminAccess,
+        delete: isSuperAdminAccess,
       },
       fields: ({ defaultFields }) => {
         return defaultFields.map((field) => {
@@ -105,9 +108,9 @@ export const plugins: Plugin[] = [
     },
     formSubmissionOverrides: {
       access: {
-        create: isAdmin,
-        update: isAdmin,
-        delete: isAdmin,
+        create: isSuperAdminAccess,
+        update: isSuperAdminAccess,
+        delete: isSuperAdminAccess,
       },
     },
   }),
@@ -119,9 +122,9 @@ export const plugins: Plugin[] = [
         return [...defaultFields, ...searchFields]
       },
       access: {
-        create: isAdmin,
-        update: isAdmin,
-        delete: isAdmin,
+        create: isSuperAdminAccess,
+        update: isSuperAdminAccess,
+        delete: isSuperAdminAccess,
       },
     },
   }),
@@ -235,5 +238,29 @@ export const plugins: Plugin[] = [
         enableForgotPassword: true,
       },
     },
+  }),
+  multiTenantPlugin<Config>({
+    collections: {
+      posts: {},
+      users: {},
+      media: {},
+      events: {},
+    },
+    tenantField: {
+      label: 'Assigned Tenant',
+      access: {
+        read: () => true,
+        update: ({ req }: { req: PayloadRequest }) => {
+          if (isSuperAdmin(req.user)) {
+            return true
+          }
+          return getUserTenantIDs(req.user).length > 0
+        },
+      },
+    },
+    tenantsArrayField: {
+      includeDefaultField: false,
+    },
+    userHasAccessToAllTenants: (user: User) => isSuperAdmin(user),
   }),
 ]

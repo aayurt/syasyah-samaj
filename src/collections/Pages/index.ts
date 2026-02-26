@@ -20,14 +20,15 @@ import {
   OverviewField,
   PreviewField,
 } from '@payloadcms/plugin-seo/fields'
+import { isSuperAdmin, isSuperAdminAccess } from '@/access/isSuperAdmin'
 
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
   access: {
-    create: isAdmin,
-    delete: isAdmin,
-    read: authenticatedOrPublished,
-    update: isAdmin,
+    create: isSuperAdminAccess,
+    delete: isSuperAdminAccess,
+    read: ()=>true,
+    update: isSuperAdminAccess,
   },
   // This config controls what's populated by default when a page is referenced
   // https://payloadcms.com/docs/queries/select#defaultpopulate-collection-config-property
@@ -37,7 +38,7 @@ export const Pages: CollectionConfig<'pages'> = {
     slug: true,
   },
   admin: {
-    hidden: true,
+    hidden: false,
     defaultColumns: ['title', 'slug', 'updatedAt'],
     livePreview: {
       url: ({ data, req }) => {
@@ -130,9 +131,7 @@ export const Pages: CollectionConfig<'pages'> = {
   },
   versions: {
     drafts: {
-      autosave: {
-        interval: 100, // We set this interval for optimal live preview
-      },
+      autosave: false,
       schedulePublish: true,
     },
     maxPerDoc: 50,

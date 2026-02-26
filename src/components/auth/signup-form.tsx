@@ -25,11 +25,11 @@ export default function SignUpForm() {
     setLoading(true)
 
     try {
-      const result = await signUp.email({ 
-        email, 
-        password, 
+      const result = await signUp.email({
+        email,
+        password,
         name,
-        callbackURL: '/admin'
+        callbackURL: '/admin',
       })
 
       if ((result as any)?.error) {

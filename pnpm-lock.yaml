@@ -12,40 +12,43 @@ importers:
         specifier: ^0.3.12
         version: 0.3.12(42e6b72bafed4cbca1b09bebaf54b38c)
       '@payloadcms/db-postgres':
-        specifier: latest
+        specifier: 3.75.0
         version: 3.75.0(@opentelemetry/api@1.9.0)(kysely@0.28.11)(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))
       '@payloadcms/email-resend':
-        specifier: ^3.76.0
-        version: 3.76.0(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))
+        specifier: 3.75.0
+        version: 3.75.0(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))
       '@payloadcms/live-preview-react':
-        specifier: latest
+        specifier: 3.75.0
         version: 3.75.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@payloadcms/next':
-        specifier: latest
+        specifier: 3.75.0
         version: 3.75.0(@types/react@19.0.7)(graphql@16.12.0)(monaco-editor@0.55.1)(next@15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4))(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)
       '@payloadcms/payload-cloud':
-        specifier: latest
+        specifier: 3.75.0
         version: 3.75.0(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))
       '@payloadcms/plugin-form-builder':
-        specifier: latest
+        specifier: 3.75.0
         version: 3.75.0(@types/react@19.0.7)(monaco-editor@0.55.1)(next@15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4))(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)
+      '@payloadcms/plugin-multi-tenant':
+        specifier: 3.75.0
+        version: 3.75.0(@payloadcms/ui@3.75.0(@types/react@19.0.7)(monaco-editor@0.55.1)(next@15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4))(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3))(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))
       '@payloadcms/plugin-nested-docs':
-        specifier: latest
+        specifier: 3.75.0
         version: 3.75.0(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))
       '@payloadcms/plugin-redirects':
-        specifier: latest
+        specifier: 3.75.0
         version: 3.75.0(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))
       '@payloadcms/plugin-search':
-        specifier: latest
+        specifier: 3.75.0
         version: 3.75.0(@types/react@19.0.7)(graphql@16.12.0)(monaco-editor@0.55.1)(next@15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4))(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)
       '@payloadcms/plugin-seo':
-        specifier: latest
+        specifier: 3.75.0
         version: 3.75.0(@types/react@19.0.7)(monaco-editor@0.55.1)(next@15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4))(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)
       '@payloadcms/richtext-lexical':
-        specifier: latest
+        specifier: 3.75.0
         version: 3.75.0(@faceless-ui/modal@3.0.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@faceless-ui/scroll-info@2.0.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@payloadcms/next@3.75.0(@types/react@19.0.7)(graphql@16.12.0)(monaco-editor@0.55.1)(next@15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4))(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3))(@types/react@19.0.7)(monaco-editor@0.55.1)(next@15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4))(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)(yjs@13.6.29)
       '@payloadcms/ui':
-        specifier: latest
+        specifier: 3.75.0
         version: 3.75.0(@types/react@19.0.7)(monaco-editor@0.55.1)(next@15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4))(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)
       '@radix-ui/react-checkbox':
         specifier: ^1.0.4
@@ -1515,11 +1518,11 @@ packages:
     peerDependencies:
       payload: 3.75.0
 
-  '@payloadcms/email-resend@3.76.0':
-    resolution: {integrity: sha512-VdsMLsA92UYbhzm/8pgVyb7oGmoFR0f0s4JWy8DpPOXXpWuDniFK8MYg9Q9+lHDMyfU1LtZsltsdKtyoc0mJ5w==}
+  '@payloadcms/email-resend@3.75.0':
+    resolution: {integrity: sha512-+XjE73Dz57GWACgZDjKyRr9z8YoKv5rfh89UHc10VADWJBTUBkCcYy/eSPq9s94Ef7MkCi+DwX1bcvvyvvtmGg==}
     engines: {node: ^18.20.2 || >=20.9.0}
     peerDependencies:
-      payload: 3.76.0
+      payload: 3.75.0
 
   '@payloadcms/graphql@3.75.0':
     resolution: {integrity: sha512-FJ5BSuSIlRUWGZS58hrGKHeXBjBIWadLxlH6X7eOeTRkWZ8hfYNE/QXNhGByannvsfneke/WKUIobm50RApo7w==}
@@ -1556,6 +1559,12 @@ packages:
       payload: 3.75.0
       react: ^19.0.1 || ^19.1.2 || ^19.2.1
       react-dom: ^19.0.1 || ^19.1.2 || ^19.2.1
+
+  '@payloadcms/plugin-multi-tenant@3.75.0':
+    resolution: {integrity: sha512-MwobTlLiLLFE9EElczXvRwzmXPO6OeD30p/HdXMVZCnt8HN4+90ThDGHmcwwGMV293ON4eoQ8S0OLMsbpaIvZw==}
+    peerDependencies:
+      '@payloadcms/ui': 3.75.0
+      payload: 3.75.0
 
   '@payloadcms/plugin-nested-docs@3.75.0':
     resolution: {integrity: sha512-vPUU3ZHpON/EgqIMIWoEJTmVbzsWZAcPFaoKK1b2zyq7iNr24VM2X2Z4lCYpAqJ0bzhPGV+jm6/KnJr6nQUZtw==}
@@ -7309,7 +7318,7 @@ snapshots:
       nodemailer: 7.0.12
       payload: 3.75.0(graphql@16.12.0)(typescript@5.7.3)
 
-  '@payloadcms/email-resend@3.76.0(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))':
+  '@payloadcms/email-resend@3.75.0(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))':
     dependencies:
       payload: 3.75.0(graphql@16.12.0)(typescript@5.7.3)
 
@@ -7388,6 +7397,11 @@ snapshots:
       - next
       - supports-color
       - typescript
+
+  '@payloadcms/plugin-multi-tenant@3.75.0(@payloadcms/ui@3.75.0(@types/react@19.0.7)(monaco-editor@0.55.1)(next@15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4))(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3))(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))':
+    dependencies:
+      '@payloadcms/ui': 3.75.0(@types/react@19.0.7)(monaco-editor@0.55.1)(next@15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4))(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)
+      payload: 3.75.0(graphql@16.12.0)(typescript@5.7.3)
 
   '@payloadcms/plugin-nested-docs@3.75.0(payload@3.75.0(graphql@16.12.0)(typescript@5.7.3))':
     dependencies:
@@ -11776,7 +11790,7 @@ snapshots:
       https-proxy-agent: 5.0.1
       node-fetch: 2.7.0
       stream-events: 1.0.5
-      uuid: 9.0.0
+      uuid: 9.0.1
     transitivePeerDependencies:
       - encoding
       - supports-color

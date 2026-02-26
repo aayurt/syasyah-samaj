@@ -75,6 +75,7 @@ export interface Config {
     events: Event;
     orders: Order;
     tickets: Ticket;
+    tenants: Tenant;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -99,6 +100,7 @@ export interface Config {
     events: EventsSelect<false> | EventsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     tickets: TicketsSelect<false> | TicketsSelect<true>;
+    tenants: TenantsSelect<false> | TenantsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -228,6 +230,7 @@ export interface Page {
  */
 export interface Post {
   id: number;
+  tenant?: (number | null) | Tenant;
   title: string;
   heroImage?: (number | null) | Media;
   content: {
@@ -271,10 +274,41 @@ export interface Post {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tenants".
+ */
+export interface Tenant {
+  id: number;
+  name: string;
+  /**
+   * If checked, the tenant will be shown on the website. If not checked, the tenant will not be shown on the website.
+   */
+  enabled?: boolean | null;
+  contactInfo?: {
+    phone?: string | null;
+    email?: string | null;
+  };
+  /**
+   * Used for domain-based tenant handling
+   */
+  domain?: string | null;
+  /**
+   * Used for url paths, example: /tenant-slug/page-slug
+   */
+  slug: string;
+  /**
+   * If checked, logging in is not required to read. Useful for building public pages.
+   */
+  allowPublicRead?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
   id: number;
+  tenant?: (number | null) | Tenant;
   alt?: string | null;
   caption?: {
     root: {
@@ -388,11 +422,19 @@ export interface Category {
  */
 export interface User {
   id: number;
+  tenant?: (number | null) | Tenant;
   email: string;
   emailVerified?: boolean | null;
   name?: string | null;
   image?: string | null;
-  role?: ('user' | 'admin') | null;
+  role?: ('user' | 'admin' | 'super-admin') | null;
+  tenants?:
+    | {
+        tenant: number | Tenant;
+        roles: ('tenant-admin' | 'tenant-viewer')[];
+        id?: string | null;
+      }[]
+    | null;
   /**
    * Auto-added by Better Auth (banned)
    */
@@ -757,6 +799,7 @@ export interface Form {
  */
 export interface Event {
   id: number;
+  tenant?: (number | null) | Tenant;
   title: string;
   description?: string | null;
   coverImage?: (number | null) | Media;
@@ -1129,6 +1172,10 @@ export interface PayloadLockedDocument {
         value: number | Ticket;
       } | null)
     | ({
+        relationTo: 'tenants';
+        value: number | Tenant;
+      } | null)
+    | ({
         relationTo: 'redirects';
         value: number | Redirect;
       } | null)
@@ -1342,6 +1389,7 @@ export interface FormBlockSelect<T extends boolean = true> {
  * via the `definition` "posts_select".
  */
 export interface PostsSelect<T extends boolean = true> {
+  tenant?: T;
   title?: T;
   heroImage?: T;
   content?: T;
@@ -1373,6 +1421,7 @@ export interface PostsSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  tenant?: T;
   alt?: T;
   caption?: T;
   updatedAt?: T;
@@ -1486,11 +1535,19 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  tenant?: T;
   email?: T;
   emailVerified?: T;
   name?: T;
   image?: T;
   role?: T;
+  tenants?:
+    | T
+    | {
+        tenant?: T;
+        roles?: T;
+        id?: T;
+      };
   banned?: T;
   banReason?: T;
   banExpires?: T;
@@ -1502,6 +1559,7 @@ export interface UsersSelect<T extends boolean = true> {
  * via the `definition` "events_select".
  */
 export interface EventsSelect<T extends boolean = true> {
+  tenant?: T;
   title?: T;
   description?: T;
   coverImage?: T;
@@ -1550,6 +1608,25 @@ export interface TicketsSelect<T extends boolean = true> {
   checkedInAt?: T;
   attendeeName?: T;
   attendeeEmail?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tenants_select".
+ */
+export interface TenantsSelect<T extends boolean = true> {
+  name?: T;
+  enabled?: T;
+  contactInfo?:
+    | T
+    | {
+        phone?: T;
+        email?: T;
+      };
+  domain?: T;
+  slug?: T;
+  allowPublicRead?: T;
   updatedAt?: T;
   createdAt?: T;
 }
