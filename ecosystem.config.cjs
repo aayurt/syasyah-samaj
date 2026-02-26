@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'afno-events',
+      name: 'multi-tenant-portfolio',
       script: '.next/standalone/server.js',
       instances: 'max',
       exec_mode: 'cluster',
@@ -13,7 +13,7 @@ module.exports = {
       // 🟢 SAFETY 2: Tell Node/V8 to be aggressive with garbage collection
       // --max-old-space-size: Sets the limit where Node starts GC heavily.
       // --gc-interval: Frequency of the garbage collector.
-      node_args: '--max-old-space-size=1024',
+      node_args: '--max-old-space-size=300',
 
       env: {
         NODE_ENV: 'production',

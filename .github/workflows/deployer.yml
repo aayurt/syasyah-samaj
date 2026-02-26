@@ -18,7 +18,7 @@ jobs:
           key: ${{ secrets.DEPLOY_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            cd /var/www/vhosts/ratosuryaonline.com/httpdocs
+            cd /var/www/vhosts/afnoevents.co.uk/httpdocs
             git pull origin main
             pnpm install
             pnpm build
