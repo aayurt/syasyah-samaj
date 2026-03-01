@@ -84,7 +84,6 @@ export interface Config {
     accounts: Account;
     verifications: Verification;
     apikeys: Apikey;
-    jwks: Jwk;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -110,7 +109,6 @@ export interface Config {
     accounts: AccountsSelect<false> | AccountsSelect<true>;
     verifications: VerificationsSelect<false> | VerificationsSelect<true>;
     apikeys: ApikeysSelect<false> | ApikeysSelect<true>;
-    jwks: JwksSelect<false> | JwksSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -1026,20 +1024,6 @@ export interface Apikey {
   createdAt: string;
 }
 /**
- * Auto-generated from Better Auth schema (jwks)
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "jwks".
- */
-export interface Jwk {
-  id: number;
-  publicKey: string;
-  privateKey: string;
-  expiresAt?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -1222,10 +1206,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'apikeys';
         value: number | Apikey;
-      } | null)
-    | ({
-        relationTo: 'jwks';
-        value: number | Jwk;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1907,17 +1887,6 @@ export interface ApikeysSelect<T extends boolean = true> {
   expiresAt?: T;
   permissions?: T;
   metadata?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "jwks_select".
- */
-export interface JwksSelect<T extends boolean = true> {
-  publicKey?: T;
-  privateKey?: T;
-  expiresAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
