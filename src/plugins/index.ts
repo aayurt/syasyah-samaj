@@ -26,6 +26,7 @@ import { resend } from '@/lib/email/resend'
 import { multiTenantPlugin } from '@payloadcms/plugin-multi-tenant'
 import { isSuperAdmin, isSuperAdminAccess } from '@/access/isSuperAdmin'
 import { getUserTenantIDs } from '@/utilities/getUserTenantIDs'
+import { trustedOriginsValues } from '@/trustedOrigin'
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
   return doc?.title
@@ -226,7 +227,7 @@ export const plugins: Plugin[] = [
         },
         baseURL: getBaseUrl(),
         secret: process.env.BETTER_AUTH_SECRET,
-        trustedOrigins: [baseUrl], // Or use withBetterAuthDefaults() below
+        trustedOrigins: [baseUrl, ...trustedOriginsValues], // Or use withBetterAuthDefaults() below
       }),
     admin: {
       disableLoginView: false,

@@ -1,6 +1,7 @@
 import { apiKeyWithDefaults } from '@delmaredigital/payload-better-auth'
-import type { BetterAuthOptions } from 'better-auth'
 import { admin } from 'better-auth/plugins'
+import { jwt } from "better-auth/plugins"
+import type { BetterAuthOptions } from 'better-auth'
 
 export const betterAuthOptions: Partial<BetterAuthOptions> = {
   // Model names are SINGULAR - they get pluralized automatically
@@ -52,5 +53,6 @@ export const betterAuthOptions: Partial<BetterAuthOptions> = {
   plugins: [
     apiKeyWithDefaults(), // Use this instead of apiKey() for better admin UI support
     admin(),
+    jwt()
   ],
 }

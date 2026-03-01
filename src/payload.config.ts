@@ -21,6 +21,7 @@ import { Events } from './collections/Events'
 import { Orders } from './collections/Orders'
 import { Tickets } from './collections/Tickets'
 import { Tenants } from './collections/Tenants'
+import { trustedOriginsValues } from './trustedOrigin'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -75,7 +76,7 @@ export default buildConfig({
     defaultFromName: 'Afno',
   }),
   collections: [Pages, Posts, Media, Categories, Users, Events, Orders, Tickets, Tenants],
-  cors: [getServerSideURL()].filter(Boolean),
+  cors: [getServerSideURL(), ...trustedOriginsValues].filter(Boolean),
   globals: [Header, Footer],
   plugins: [
     ...plugins,
