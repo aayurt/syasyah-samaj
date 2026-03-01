@@ -46,7 +46,17 @@ export const Users: CollectionConfig = {
     { name: 'email', type: 'email', required: true, unique: true },
     { name: 'emailVerified', type: 'checkbox', defaultValue: false },
     { name: 'name', type: 'text' },
-    { name: 'image', type: 'text' },
+    {
+      name: 'image',
+      type: 'upload',
+      relationTo: 'media',
+      // required: true,
+    },
+    {
+      name: 'phoneNumber',
+      type: 'text',
+      // required: true,
+    },
     {
       name: 'role',
       type: 'select',
@@ -56,6 +66,17 @@ export const Users: CollectionConfig = {
         { label: 'Admin', value: 'admin' },
         { label: 'Super Admin', value: 'super-admin' },
       ],
+    },
+    {
+      name: 'gender',
+      type: 'select',
+      options: [
+        { label: 'Male', value: 'male' },
+        { label: 'Female', value: 'female' },
+        { label: 'Other', value: 'other' },
+        { label: 'Prefer Not to Say', value: 'prefer-not-to-say' },
+      ],
+      defaultValue: 'prefer-not-to-say',
     },
     {
       ...defaultTenantArrayField,

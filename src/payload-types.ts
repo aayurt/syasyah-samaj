@@ -426,8 +426,10 @@ export interface User {
   email: string;
   emailVerified?: boolean | null;
   name?: string | null;
-  image?: string | null;
+  image?: (number | null) | Media;
+  phoneNumber?: string | null;
   role?: ('user' | 'admin' | 'super-admin') | null;
+  gender?: ('male' | 'female' | 'other' | 'prefer-not-to-say') | null;
   tenants?:
     | {
         tenant: number | Tenant;
@@ -1540,7 +1542,9 @@ export interface UsersSelect<T extends boolean = true> {
   emailVerified?: T;
   name?: T;
   image?: T;
+  phoneNumber?: T;
   role?: T;
+  gender?: T;
   tenants?:
     | T
     | {
