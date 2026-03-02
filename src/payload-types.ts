@@ -77,6 +77,7 @@ export interface Config {
     tickets: Ticket;
     tenants: Tenant;
     notifications: Notification;
+    favorites: Favorite;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -103,6 +104,7 @@ export interface Config {
     tickets: TicketsSelect<false> | TicketsSelect<true>;
     tenants: TenantsSelect<false> | TenantsSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
+    favorites: FavoritesSelect<false> | FavoritesSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -930,6 +932,17 @@ export interface Notification {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "favorites".
+ */
+export interface Favorite {
+  id: number;
+  user: number | User;
+  event: number | Event;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1237,6 +1250,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'notifications';
         value: number | Notification;
+      } | null)
+    | ({
+        relationTo: 'favorites';
+        value: number | Favorite;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1724,6 +1741,16 @@ export interface NotificationsSelect<T extends boolean = true> {
   type?: T;
   read?: T;
   link?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "favorites_select".
+ */
+export interface FavoritesSelect<T extends boolean = true> {
+  user?: T;
+  event?: T;
   updatedAt?: T;
   createdAt?: T;
 }

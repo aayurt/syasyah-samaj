@@ -1,5 +1,6 @@
 import { isAdmin } from '@/access/admin'
 import { sendFCMTopicNotification } from '@/utilities/sendFCMNotification'
+import { getCachedEvents, invalidateEventsCache } from '@/utilities/cache'
 import type { CollectionConfig } from 'payload'
 
 export const Events: CollectionConfig = {
@@ -14,10 +15,28 @@ export const Events: CollectionConfig = {
     useAsTitle: 'title',
     group: 'Events',
   },
+  endpoints: [
+    {
+      path: '/cached',
+      method: 'get',
+      handler: async (req) => {
+        try {
+          const events = await getCachedEvents(req.payload)
+          return Response.json(events)
+        } catch (error) {
+          req.payload.logger.error(`Error in /events/cached: ${error}`)
+          return Response.json({ error: 'Internal Server Error' }, { status: 500 })
+        }
+      },
+    },
+  ],
   hooks: {
     afterChange: [
       async ({ doc, operation, req }) => {
         if ((operation === 'create' || operation === 'update') && req?.payload) {
+          // Invalidate cache
+          await invalidateEventsCache(doc.id)
+
           const users = await req.payload.find({
             collection: 'users',
             limit: 1000,
@@ -45,6 +64,11 @@ export const Events: CollectionConfig = {
           })
         }
         return doc
+      },
+    ],
+    afterDelete: [
+      async ({ id }) => {
+        await invalidateEventsCache(id)
       },
     ],
   },

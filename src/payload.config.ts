@@ -22,11 +22,18 @@ import { Orders } from './collections/Orders'
 import { Tickets } from './collections/Tickets'
 import { Tenants } from './collections/Tenants'
 import { Notifications } from './collections/Notifications'
+import { Favorites } from './collections/Favorites'
 import { trustedOriginsValues } from './trustedOrigin'
+import Redis from 'ioredis'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+export const redis = new Redis({
+  host: process.env.REDIS_HOST || 'localhost',
+  port: Number(process.env.REDIS_PORT) || 6379,
+  password: process.env.REDIS_PASSWORD,
+})
 export default buildConfig({
   admin: {
     // components: {
@@ -76,7 +83,19 @@ export default buildConfig({
     defaultFromAddress: 'noreply@afno.app',
     defaultFromName: 'Afno',
   }),
-  collections: [Pages, Posts, Media, Categories, Users, Events, Orders, Tickets, Tenants, Notifications],
+  collections: [
+    Pages,
+    Posts,
+    Media,
+    Categories,
+    Users,
+    Events,
+    Orders,
+    Tickets,
+    Tenants,
+    Notifications,
+    Favorites,
+  ],
   cors: [getServerSideURL(), ...trustedOriginsValues].filter(Boolean),
   globals: [Header, Footer],
   plugins: [
