@@ -837,11 +837,24 @@ export interface Event {
   };
   startDatetime?: string | null;
   endDatetime?: string | null;
+  /**
+   * Select one or more categories for this event
+   */
   tags?:
-    | {
-        tag: string;
-        id?: string | null;
-      }[]
+    | (
+        | 'music'
+        | 'gaming'
+        | 'theatre'
+        | 'arts'
+        | 'business'
+        | 'technology'
+        | 'sports'
+        | 'food-drink'
+        | 'exhibition'
+        | 'comedy'
+        | 'workshop'
+        | 'fitness'
+      )[]
     | null;
   pricing?: {
     type?: ('free' | 'paid') | null;
@@ -1610,12 +1623,7 @@ export interface EventsSelect<T extends boolean = true> {
       };
   startDatetime?: T;
   endDatetime?: T;
-  tags?:
-    | T
-    | {
-        tag?: T;
-        id?: T;
-      };
+  tags?: T;
   pricing?:
     | T
     | {
