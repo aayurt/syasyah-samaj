@@ -48,7 +48,11 @@ export const Posts: CollectionConfig<'posts'> = {
     },
   },
   admin: {
-    hidden: true,
+    hidden: ({ user }) => {
+      if (!user) return true
+      if (user.role === 'super-admin') return false
+      return true
+    },
     defaultColumns: ['title', 'slug', 'updatedAt'],
     livePreview: {
       url: ({ data, req }) => {

@@ -10,6 +10,13 @@ export const Header: GlobalConfig = {
     read: () => true,
     update: isSuperAdminAccess,
   },
+  admin: {
+    hidden: ({ user }) => {
+      if (!user) return true
+      if (user.role === 'super-admin') return false
+      return true
+    },
+  },
   fields: [
     {
       name: 'navItems',

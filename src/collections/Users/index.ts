@@ -43,6 +43,14 @@ export const Users: CollectionConfig = {
     update: updateAndDeleteAccess,
     // admin: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'super-admin',
   },
+  admin: {
+    group: 'Users',
+    hidden: ({ user }) => {
+      if (!user) return true
+      if (user.role === 'super-admin') return false
+      return true
+    },
+  },
   fields: [
     { name: 'email', type: 'email', required: true, unique: true },
     { name: 'emailVerified', type: 'checkbox', defaultValue: false },

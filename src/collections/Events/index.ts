@@ -18,10 +18,26 @@ export const Events: CollectionConfig = {
     afterChange: [
       async ({ doc, operation, req }) => {
         if ((operation === 'create' || operation === 'update') && req?.payload) {
+          const users = await req.payload.find({
+            collection: 'users',
+            limit: 1000,
+          })
+          users.docs.forEach((user) => {
+            req.payload.create({
+              collection: 'notifications',
+              data: {
+                user: user.id,
+                title: 'Check out for ' + doc.title + ' event.',
+                message: doc.description || 'Check out the ' + doc.title + ' event.',
+                type: 'event',
+                link: `/events/${doc.slug}`,
+              },
+            })
+          })
           await sendFCMTopicNotification({
             topic: 'afno-app-event',
             notification: {
-              title: doc.title,
+              title: 'Check out for ' + doc.title + ' event.',
               body: doc.description || 'Check out the ' + doc.title + ' event.',
               imageUrl: doc.coverImage?.url,
               id: doc.id,

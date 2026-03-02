@@ -67,6 +67,13 @@ export const plugins: Plugin[] = [
         update: isAdmin,
         delete: isAdmin,
       },
+      admin: {
+        hidden: ({ user }) => {
+          if (!user) return true
+          if (user.role === 'super-admin') return false
+          return true
+        },
+      }
     },
   }),
   nestedDocsPlugin({
@@ -106,6 +113,13 @@ export const plugins: Plugin[] = [
           return field
         })
       },
+      admin: {
+        hidden: ({ user }) => {
+          if (!user) return true
+          if (user.role === 'super-admin') return false
+          return true
+        },
+      }
     },
     formSubmissionOverrides: {
       access: {
@@ -113,6 +127,13 @@ export const plugins: Plugin[] = [
         update: isSuperAdminAccess,
         delete: isSuperAdminAccess,
       },
+      admin: {
+        hidden: ({ user }) => {
+          if (!user) return true
+          if (user.role === 'super-admin') return false
+          return true
+        },
+      }
     },
   }),
   searchPlugin({
@@ -127,12 +148,33 @@ export const plugins: Plugin[] = [
         update: isSuperAdminAccess,
         delete: isSuperAdminAccess,
       },
+      admin: {
+        hidden: ({ user }) => {
+          if (!user) return true
+          if (user.role === 'super-admin') return false
+          return true
+        },
+      }
     },
+
   }),
   payloadCloudPlugin(),
   betterAuthCollections({
     betterAuthOptions,
     skipCollections: ['user'], // We define Users ourselves
+    customizeCollection: (modelKey, collection) => {
+      return {
+        ...collection,
+        admin: {
+          ...collection.admin,
+          hidden: ({ user }) => {
+            if (!user) return true
+            if (user.role === 'super-admin') return false
+            return true
+          },
+        }
+      }
+    }
   }),
   // Initialize Better Auth with auto-injected endpoints and admin components
   createBetterAuthPlugin({

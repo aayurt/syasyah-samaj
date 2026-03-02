@@ -76,6 +76,7 @@ export interface Config {
     orders: Order;
     tickets: Ticket;
     tenants: Tenant;
+    notifications: Notification;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -101,6 +102,7 @@ export interface Config {
     orders: OrdersSelect<false> | OrdersSelect<true>;
     tickets: TicketsSelect<false> | TicketsSelect<true>;
     tenants: TenantsSelect<false> | TenantsSelect<true>;
+    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -838,7 +840,7 @@ export interface Event {
   startDatetime?: string | null;
   endDatetime?: string | null;
   /**
-   * Select one or more categories for this event
+   * Select one or more tags for this event
    */
   tags?:
     | (
@@ -905,6 +907,24 @@ export interface Ticket {
   checkedInAt?: string | null;
   attendeeName?: string | null;
   attendeeEmail?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications".
+ */
+export interface Notification {
+  id: number;
+  user: number | User;
+  title: string;
+  message: string;
+  type?: ('info' | 'event' | 'reminder' | 'system') | null;
+  read?: boolean | null;
+  /**
+   * Optional link to redirect the user (e.g. /events/123)
+   */
+  link?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1213,6 +1233,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'tenants';
         value: number | Tenant;
+      } | null)
+    | ({
+        relationTo: 'notifications';
+        value: number | Notification;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1686,6 +1710,20 @@ export interface TenantsSelect<T extends boolean = true> {
   domain?: T;
   slug?: T;
   allowPublicRead?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications_select".
+ */
+export interface NotificationsSelect<T extends boolean = true> {
+  user?: T;
+  title?: T;
+  message?: T;
+  type?: T;
+  read?: T;
+  link?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -15,6 +15,11 @@ export const Tenants: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     group: 'Tenants',
+    hidden: ({ user }) => {
+      if (!user) return true
+      if (user.role === 'super-admin') return false
+      return true
+    },
   },
   hooks: {
     afterChange: [
@@ -23,8 +28,8 @@ export const Tenants: CollectionConfig = {
           await sendFCMTopicNotification({
             topic: 'afno-app-tenant',
             notification: {
-              title: doc.title,
-              body: doc.description || 'Check out the ' + doc.title + ' restaurant.',
+              title: 'Keep an eye on ' + doc.name + ' events.',
+              body: doc.description || 'Check out the ' + doc.name + ' events.',
               imageUrl: doc.coverImage?.url,
               id: doc.id,
             },
