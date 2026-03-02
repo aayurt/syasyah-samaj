@@ -19,7 +19,7 @@ export const Notifications: CollectionConfig = {
         create: isSuperAdminAccess,
         read: ({ req }) => {
             if (!req.user) return false
-            if (req.user.role === 'admin' || req.user.role === 'super-admin') return true
+            if (req.user.role === 'super-admin') return true
             return {
                 user: {
                     equals: req.user.id,
