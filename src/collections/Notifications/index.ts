@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { isAdmin } from '@/access/admin'
 import { updateAndDeleteAccess } from '../Users/access/updateAndDelete'
+import { isSuperAdminAccess } from '@/access/isSuperAdmin'
 
 export const Notifications: CollectionConfig = {
     slug: 'notifications',
@@ -15,7 +16,7 @@ export const Notifications: CollectionConfig = {
         },
     },
     access: {
-        create: isAdmin,
+        create: isSuperAdminAccess,
         read: ({ req }) => {
             if (!req.user) return false
             if (req.user.role === 'admin' || req.user.role === 'super-admin') return true
@@ -26,7 +27,7 @@ export const Notifications: CollectionConfig = {
             }
         },
         update: updateAndDeleteAccess,
-        delete: isAdmin,
+        delete: isSuperAdminAccess,
     },
     fields: [
         {

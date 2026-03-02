@@ -10,7 +10,7 @@ export const authenticated: isAdminType = ({ req: { user } }) => {
 
 export const isAdmin: isAdminType = ({ req: { user } }) => {
   // Scenario #1 - Check if user has the 'admin' role
-  if (user && user.role === 'admin') {
+  if (user && (user.role === 'admin' || user.role === 'super-admin')) {
     return true
   }
 
