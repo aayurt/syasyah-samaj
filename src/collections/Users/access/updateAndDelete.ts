@@ -10,7 +10,6 @@ export const updateAndDeleteAccess: Access = ({ req, id }) => {
   if (!user) {
     return false
   }
-
   if (isSuperAdmin(user) || isAccessingSelf({ user, id })) {
     return true
   }

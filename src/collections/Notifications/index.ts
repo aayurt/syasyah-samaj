@@ -1,7 +1,6 @@
-import type { CollectionConfig } from 'payload'
-import { isAdmin } from '@/access/admin'
-import { updateAndDeleteAccess } from '../Users/access/updateAndDelete'
 import { isSuperAdminAccess } from '@/access/isSuperAdmin'
+import type { CollectionConfig } from 'payload'
+import { updateAndDeleteAccess } from '../Users/access/updateAndDelete'
 
 export const Notifications: CollectionConfig = {
     slug: 'notifications',
@@ -15,6 +14,45 @@ export const Notifications: CollectionConfig = {
             return true
         },
     },
+    endpoints: [
+        {
+            path: '/mark-all-read',
+            method: 'post',
+            handler: async (req) => {
+                if (!req.user) {
+                    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+                }
+
+                try {
+                    await req.payload.update({
+                        collection: 'notifications',
+                        where: {
+                            and: [
+                                {
+                                    user: {
+                                        equals: req.user.id,
+                                    },
+                                },
+                                {
+                                    read: {
+                                        equals: false,
+                                    },
+                                },
+                            ],
+                        },
+                        data: {
+                            read: true,
+                        },
+                    })
+
+                    return Response.json({ success: true })
+                } catch (error) {
+                    req.payload.logger.error(`Error marking all notifications as read: ${error}`)
+                    return Response.json({ error: 'Internal Server Error' }, { status: 500 })
+                }
+            },
+        },
+    ],
     access: {
         create: isSuperAdminAccess,
         read: ({ req }) => {
@@ -26,7 +64,15 @@ export const Notifications: CollectionConfig = {
                 },
             }
         },
-        update: updateAndDeleteAccess,
+        update: ({ req }) => {
+            if (!req.user) return false
+            if (req.user.role === 'super-admin') return true
+            return {
+                user: {
+                    equals: req.user.id,
+                },
+            }
+        },
         delete: isSuperAdminAccess,
     },
     fields: [
