@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Apple, ArrowRight, MessageSquare, PlayCircle, ShieldCheck, TrendingUp, Users, Zap } from 'lucide-react'
-import EventDiscovery from './components/eventDiscovery'
 
 export default async function HomePage() {
     return (
@@ -21,7 +20,7 @@ export default async function HomePage() {
                 </video>
 
                 {/* Hero Content */}
-                <div className="container relative z-10 text-center text-white space-y-8">
+                <div className="container relative z-10 text-center text-white space-y-8 pt-[14rem] md:pt-[7rem] lg:[0rem]">
                     <div className="space-y-4">
                         <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
                             Elevate Your Events. <br />
