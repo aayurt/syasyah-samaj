@@ -29,6 +29,7 @@ export const Users: CollectionConfig = {
   auth: {
     disableLocalStrategy: true,
     strategies: [betterAuthStrategy()],
+    useAPIKey: true,
   },
   access: {
     // read: ({ req }) => {

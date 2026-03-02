@@ -17,21 +17,23 @@ export const readAccess: Access<User> = ({ req, id }) => {
   }
 
   const superAdmin = isSuperAdmin(req.user)
-
   const selectedTenant = getTenantFromCookie(
     req.headers,
     getCollectionIDType({ payload: req.payload, collectionSlug: 'tenants' }),
   )
 
   const adminTenantAccessIDs = getUserTenantIDs(req.user, 'tenant-admin')
+  
+  // Use cookie first, fallback to X-Tenant header
+  const finalSelectedTenant = selectedTenant || req.headers.get('x-tenant')
 
-  if (selectedTenant) {
-    // If it's a super admin, or they have access to the tenant ID set in cookie
-    const hasTenantAccess = adminTenantAccessIDs.some((id) => id === selectedTenant)
+  if (finalSelectedTenant) {
+    // If it's a super admin, or they have access to the tenant ID
+    const hasTenantAccess = adminTenantAccessIDs.some((id) => id === finalSelectedTenant)
     if (superAdmin || hasTenantAccess) {
       return {
         'tenants.tenant': {
-          equals: selectedTenant,
+          equals: finalSelectedTenant,
         },
       }
     }
