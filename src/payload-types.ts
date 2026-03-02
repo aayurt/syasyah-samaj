@@ -837,6 +837,27 @@ export interface Event {
   };
   startDatetime?: string | null;
   endDatetime?: string | null;
+  tags?:
+    | {
+        tag: string;
+        id?: string | null;
+      }[]
+    | null;
+  pricing?: {
+    type?: ('free' | 'paid') | null;
+    /**
+     * Display price (e.g., "Rs. 500 - Rs. 1500" or "Free")
+     */
+    priceRange?: string | null;
+    ticketTypes?:
+      | {
+          name: string;
+          price: number;
+          description?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
   /**
    * Enable or disable this event
    */
@@ -1589,6 +1610,26 @@ export interface EventsSelect<T extends boolean = true> {
       };
   startDatetime?: T;
   endDatetime?: T;
+  tags?:
+    | T
+    | {
+        tag?: T;
+        id?: T;
+      };
+  pricing?:
+    | T
+    | {
+        type?: T;
+        priceRange?: T;
+        ticketTypes?:
+          | T
+          | {
+              name?: T;
+              price?: T;
+              description?: T;
+              id?: T;
+            };
+      };
   enabled?: T;
   updatedAt?: T;
   createdAt?: T;

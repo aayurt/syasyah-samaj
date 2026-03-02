@@ -128,6 +128,69 @@ export const Events: CollectionConfig = {
       },
     },
     {
+      name: 'tags',
+      type: 'array',
+      fields: [
+        {
+          name: 'tag',
+          type: 'text',
+          required: true,
+        },
+      ],
+    },
+    {
+      name: 'pricing',
+      type: 'group',
+      fields: [
+        {
+          name: 'type',
+          type: 'select',
+          defaultValue: 'free',
+          options: [
+            { label: 'Free', value: 'free' },
+            { label: 'Paid', value: 'paid' },
+          ],
+        },
+        {
+          name: 'priceRange',
+          type: 'text',
+          defaultValue: 'Free',
+          admin: {
+            description: 'Display price (e.g., "Rs. 500 - Rs. 1500" or "Free")',
+          },
+        },
+        {
+          name: 'ticketTypes',
+          type: 'array',
+          fields: [
+            {
+              name: 'name',
+              type: 'text',
+              required: true,
+              admin: {
+                placeholder: 'e.g. VIP, General, Early Bird',
+              },
+            },
+            {
+              name: 'price',
+              type: 'number',
+              required: true,
+              admin: {
+                placeholder: 'e.g. 500',
+              },
+            },
+            {
+              name: 'description',
+              type: 'textarea',
+            },
+          ],
+          admin: {
+            condition: (data) => data?.pricing?.type === 'paid',
+          },
+        },
+      ],
+    },
+    {
       name: 'enabled',
       type: 'checkbox',
       required: true,
