@@ -7,7 +7,7 @@ export default async function HomePage() {
     return (
         <div className="flex flex-col min-h-screen -mt-[6.76rem]">
             {/* Hero Section */}
-            <section className="relative  h-[100vh] flex items-center justify-center overflow-hidden">
+            <section className="relative  min-h-[100vh] flex items-center justify-center overflow-hidden">
                 {/* Video Background */}
                 <video
                     autoPlay
