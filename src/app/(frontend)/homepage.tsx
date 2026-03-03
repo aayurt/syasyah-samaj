@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Apple, ArrowRight, MessageSquare, PlayCircle, ShieldCheck, TrendingUp, Users, Zap } from 'lucide-react'
+import { ArrowRight, MessageSquare, ShieldCheck, TrendingUp, Users, Zap } from 'lucide-react'
+import Link from 'next/link'
 
 export default async function HomePage() {
     return (
@@ -25,41 +26,52 @@ export default async function HomePage() {
                         <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
                             Elevate Your Events. <br />
                             <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-400">
-                                Discover Unforgettable Moments.
+                                Create Unforgettable Moments.
                             </span>
                         </h1>
-                        <p className="text-xl md:text-2xl max-w-3xl mx-auto text-gray-300">
-                            The most intuitive ticketing platform for Nepal’s creators and experience-seekers.
-                            Launch your vision in minutes or find your next adventure today.
-                        </p>
+                        <div className="text-xl md:text-2xl max-w-3xl mx-auto text-gray-300 space-y-6">
+                            <p>Hi, we’re Afno Events.</p>
+
+                            <p>
+                                We help Nepalese event organisers across the UK promote their events,
+                                reach wider audiences, and connect with the community more effectively.
+                                By bringing Nepalese events into one dedicated platform, we make it
+                                easier for people to discover what’s happening — helping organisers grow
+                                attendance and build stronger community connections.
+                            </p>
+                        </div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                        <Button size="lg" className="text-lg px-8 py-7 rounded-full shadow-lg hover:shadow-primary/20 transition-all">
+                        {/* <Button size="lg" className="text-lg px-8 py-7 rounded-full shadow-lg hover:shadow-primary/20 transition-all">
                             Find Events
-                        </Button>
-                        <Button size="lg" variant="secondary" className="text-lg px-8 py-7 rounded-full bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md text-white transition-all">
-                            Create Event
-                        </Button>
+                        </Button> */}
+                        <Link href="/contact-us">
+                            <Button size="lg" variant="secondary" className="text-lg px-8 py-7 rounded-full bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md text-white transition-all uppercase">
+                                Sign Up My Event
+                            </Button>
+                        </Link>
                     </div>
 
                     {/* App Store Buttons in Hero */}
-                    <div className="flex flex-wrap items-center justify-center gap-6 pt-12 opacity-80 hover:opacity-100 transition-opacity">
+                    <div className="mb-8 flex flex-wrap items-center justify-center gap-6 pt-12 opacity-80 hover:opacity-100 transition-opacity">
                         <p className="w-full text-sm font-medium uppercase tracking-widest text-gray-400 mb-2">Download the Mobile App</p>
                         <Button variant="outline" className="bg-black/40 border-white/10 text-white rounded-xl py-6 px-6 flex items-center gap-3 hover:bg-black/60 transition-all">
-                            <Apple size={28} />
+                            <svg fill="hsl(var(--primary))" width="20px" height="20px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09997 22C7.78997 22.05 6.79997 20.68 5.95997 19.47C4.24997 17 2.93997 12.45 4.69997 9.39C5.56997 7.87 7.12997 6.91 8.81997 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z" />
+                            </svg>
                             <div className="text-left">
                                 <p className="text-[10px] uppercase leading-none opacity-60">Download on the</p>
                                 <p className="text-lg font-semibold leading-none">App Store</p>
                             </div>
                         </Button>
-                        <Button variant="outline" className="bg-black/40 border-white/10 text-white rounded-xl py-6 px-6 flex items-center gap-3 hover:bg-black/60 transition-all">
+                        {/* <Button variant="outline" className="bg-black/40 border-white/10 text-white rounded-xl py-6 px-6 flex items-center gap-3 hover:bg-black/60 transition-all">
                             <PlayCircle size={28} />
                             <div className="text-left">
                                 <p className="text-[10px] uppercase leading-none opacity-60">Get it on</p>
                                 <p className="text-lg font-semibold leading-none">Google Play</p>
                             </div>
-                        </Button>
+                        </Button> */}
                     </div>
                 </div>
             </section>
@@ -82,7 +94,7 @@ export default async function HomePage() {
                             { icon: Zap, title: "Low Fees", desc: "Maximize your profits with the lowest commission rates in the market. No hidden costs." },
                             { icon: Users, title: "Instant Payouts", desc: "Forget the wait. Access your earnings as tickets sell to keep your event momentum going." },
                             { icon: TrendingUp, title: "Powerful Analytics", desc: "Deep dive into attendee data and sales trends with our real-time, data-rich dashboard." },
-                            { icon: ShieldCheck, title: "Global Reach", desc: "International payment support and local marketing tools built specifically for Nepal." }
+                            { icon: ShieldCheck, title: "App Touch", desc: "Manage your E-ticket through the application for smooth journey till end." }
                         ].map((feature, i) => (feature &&
                             <div key={i} className="bg-card p-10 rounded-[2.5rem] border border-border space-y-6 hover:shadow-xl transition-all group">
                                 <div className="w-16 h-16 bg-primary/5 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-500">
@@ -108,16 +120,14 @@ export default async function HomePage() {
                         </div>
                         <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight">Become an <br />Afno Partner.</h2>
                         <p className="text-xl text-muted-foreground leading-relaxed">
-                            Are you a large-scale venue, a frequent event organizer, or a vendor looking to reach thousands of attendees?
-                            Let's discuss custom solutions and priority placements for your brand.
+                            Are you Nepalese UK event organiser looking to reach thousands of attendees? Let’s discuss custom solutions and priority placements for your upcoming events.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                            <Button size="lg" className="rounded-2xl h-16 px-8 text-lg font-bold flex items-center gap-2">
-                                Vendor Sign Up <ArrowRight size={20} />
-                            </Button>
-                            <Button size="lg" variant="outline" className="rounded-2xl h-16 px-8 text-lg font-bold">
-                                Talk to Sales
-                            </Button>
+                            <Link href="/contact-us">
+                                <Button size="lg" variant="secondary" className="rounded-2xl h-16 px-8 text-lg font-bold flex items-center gap-2">
+                                    Create Event <ArrowRight size={20} />
+                                </Button>
+                            </Link>
                         </div>
                     </div>
                     <div className="relative">
@@ -139,7 +149,7 @@ export default async function HomePage() {
             </section>
 
             {/* CTA Section / App Showcase */}
-            <section className="py-28 bg-primary text-primary-foreground relative overflow-hidden">
+            <section className="py-28 bg-primary text-primary-foreground relative overflow-hidden rounded-md">
                 <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[50rem] h-[50rem] bg-white/10 rounded-full blur-[120px]" />
                 <div className="container text-center space-y-12 relative z-10">
                     <div className="space-y-6">
@@ -150,27 +160,31 @@ export default async function HomePage() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-6">
-                        <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90 rounded-2xl h-20 px-10 flex items-center gap-4 transition-all hover:scale-105">
-                            <Apple size={32} />
+                        <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90 rounded-2xl h-16 px-10 flex items-center gap-4 transition-all hover:scale-105">
+                            <svg fill="#000000" width="28px" height="28px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09997 22C7.78997 22.05 6.79997 20.68 5.95997 19.47C4.24997 17 2.93997 12.45 4.69997 9.39C5.56997 7.87 7.12997 6.91 8.81997 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z" />
+                            </svg>
                             <div className="text-left">
                                 <p className="text-xs uppercase font-bold opacity-60">Soon on the</p>
                                 <p className="text-xl font-extrabold">App Store</p>
                             </div>
                         </Button>
-                        <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90 rounded-2xl h-20 px-10 flex items-center gap-4 transition-all hover:scale-105">
+                        {/* <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90 rounded-2xl h-20 px-10 flex items-center gap-4 transition-all hover:scale-105">
                             <PlayCircle size={32} />
                             <div className="text-left">
                                 <p className="text-xs uppercase font-bold opacity-60">Soon on</p>
                                 <p className="text-xl font-extrabold">Google Play</p>
                             </div>
-                        </Button>
+                        </Button> */}
                     </div>
 
                     <div className="pt-12">
                         <p className="text-primary-foreground/60 text-lg mb-8">Ready to host your next big thing?</p>
-                        <Button size="lg" variant="secondary" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-primary px-12 py-8 text-xl rounded-full font-bold transition-all">
-                            Get Started for Free
-                        </Button>
+                        <Link href="/contact-us">
+                            <Button size="lg" variant="secondary" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-primary px-12 py-8 text-xl rounded-full font-bold transition-all">
+                                SIGN UP YOUR EVENT
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </section>
