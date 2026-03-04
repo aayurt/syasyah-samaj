@@ -80,7 +80,7 @@ export default buildConfig({
   }),
   email: resendAdapter({
     apiKey: process.env.RESEND_API_KEY || '',
-    defaultFromAddress: 'noreply@afno.app',
+    defaultFromAddress: 'noreply@afnoevents.co.uk',
     defaultFromName: 'Afno',
   }),
   collections: [

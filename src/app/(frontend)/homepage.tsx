@@ -2,8 +2,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArrowRight, MessageSquare, ShieldCheck, TrendingUp, Users, Zap } from 'lucide-react'
 import Link from 'next/link'
+import { getPayload } from 'payload'
+import configPromise from '@payload-config'
+import { FormBlock } from '@/blocks/Form/Component'
 
 export default async function HomePage() {
+    const payload = await getPayload({ config: configPromise })
+    const form = await payload.findByID({
+        collection: 'forms',
+        id: 1,
+    })
+
     return (
         <div className="flex flex-col min-h-screen -mt-[6.76rem]">
             {/* Hero Section */}
@@ -132,14 +141,14 @@ export default async function HomePage() {
                     </div>
                     <div className="relative">
                         <div className="aspect-square bg-gradient-to-tr from-primary/20 to-blue-500/10 rounded-[3rem] absolute -inset-4 -rotate-3 blur-2xl -z-10" />
-                        <div className="bg-card border border-border p-12 rounded-[3.5rem] shadow-2xl space-y-8">
-                            <h3 className="text-3xl font-bold">Quick Inquiry</h3>
-                            <div className="space-y-5">
-                                <Input placeholder="Full Name" className="h-14 rounded-xl px-6" />
-                                <Input placeholder="Organization Name" className="h-14 rounded-xl px-6" />
-                                <Input placeholder="Email Address" type="email" className="h-14 rounded-xl px-6" />
-                                <Button className="w-full h-16 rounded-xl text-lg font-bold shadow-lg shadow-primary/20">Send Message</Button>
-                            </div>
+                        <div className="bg-card border border-border p-8 rounded-[3.5rem] shadow-2xl space-y-8">
+                            <h3 className="text-3xl font-bold text-center">Quick Inquiry</h3>
+                            {form && (
+                                <FormBlock
+                                    enableIntro={false}
+                                    form={form as any}
+                                />
+                            )}
                             <p className="text-center text-sm text-muted-foreground">
                                 Our team typically responds within 24 hours.
                             </p>
