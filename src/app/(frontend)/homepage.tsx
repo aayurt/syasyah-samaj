@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ArrowRight, MessageSquare, ShieldCheck, TrendingUp, Users, Zap } from 'lucide-react'
+import { ArrowRight, BarChart3, Heart, MessageSquare, Ticket, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
@@ -100,13 +100,13 @@ export default async function HomePage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {[
-                            { icon: Zap, title: "Low Fees", desc: "Maximize your profits with the lowest commission rates in the market. No hidden costs." },
-                            { icon: Users, title: "Instant Payouts", desc: "Forget the wait. Access your earnings as tickets sell to keep your event momentum going." },
-                            { icon: TrendingUp, title: "Powerful Analytics", desc: "Deep dive into attendee data and sales trends with our real-time, data-rich dashboard." },
-                            { icon: ShieldCheck, title: "App Touch", desc: "Manage your E-ticket through the application for smooth journey till end." }
+                            { icon: UserPlus, title: "Sign Up Free", desc: "Signing up costs nothing. Join the go-to platform for UK Nepalese promoters and start sharing today." },
+                            { icon: Ticket, title: "Hosting Events", desc: "Host one event or a hundred. Our infrastructure handles everything from small workshops to large-scale concerts." },
+                            { icon: BarChart3, title: "Pro Analytics", desc: "Real-time data on ticket sales, attendee demographics, and revenue. Make smarter decisions with deep-dive insights." },
+                            { icon: Heart, title: "Community First", desc: "Bridge the gap between your event and the community. We are the direct link to the UK's vibrant Nepalese audience." }
                         ].map((feature, i) => (feature &&
                             <div key={i} className="bg-card p-10 rounded-[2.5rem] border border-border space-y-6 hover:shadow-xl transition-all group">
-                                <div className="w-16 h-16 bg-primary/5 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-500">
+                                <div className="w-16 h-16 bg-primary/5 rounded-2xl flex items-center justify-center text-primary transition-colors duration-500">
                                     <feature.icon size={32} />
                                 </div>
                                 <h3 className="text-2xl font-bold">{feature.title}</h3>
