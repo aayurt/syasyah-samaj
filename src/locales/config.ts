@@ -1,31 +1,16 @@
+export const locales = ['en', 'ne', 'new'] as const
+export type Locale = (typeof locales)[number]
+
 const LOCALES = {
-  EN_US: 'en',
-  NE_NE: 'ne',
-};
-export const LOCALES_DAYJS = {
-  ['EN_US']: 'en',
-  ['NE_NE']: 'ne',
-};
+  EN_US: 'en' as const,
+  NE_NE: 'ne' as const,
+  NE_NEW: 'new' as const,
+}
 
-export const locales = Object.values(LOCALES);
+export const defaultLocale = 'en'
 
-export const defaultLocale = 'en';
-
-export const localesPathMap = locales.reduce((acc, locale) => {
-  const generated = import(`../../locales/translations/gen/${locale}.json`);
-  const custom = import(`../../locales/translations/custom/${locale}.json`);
-  return {
-    ...acc,
-    [locale]: async () => {
-      const generatedTranslations = await generated;
-      const customTranslations = await custom;
-
-      return {
-        default: {
-          ...generatedTranslations.default,
-          ...customTranslations.default,
-        },
-      };
-    },
-  };
-}, {});
+export const localesPathMap = {
+  en: () => import('../../locales/translations/gen/en.json'),
+  ne: () => import('../../locales/translations/gen/ne.json'),
+  new: () => import('../../locales/translations/gen/new.json'),
+}

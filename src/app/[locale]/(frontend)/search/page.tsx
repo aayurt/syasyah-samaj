@@ -9,11 +9,15 @@ import PageClient from './page.client'
 import { CardPostData } from '@/components/Card'
 
 type Args = {
+  params: Promise<{
+    locale: string
+  }>
   searchParams: Promise<{
     q: string
   }>
 }
-export default async function Page({ searchParams: searchParamsPromise }: Args) {
+export default async function Page({ params: paramsPromise, searchParams: searchParamsPromise }: Args) {
+  const { locale } = await paramsPromise
   const { q: query } = await searchParamsPromise
   const payload = await getPayload({ config: configPromise })
 
@@ -21,6 +25,7 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
     collection: 'search',
     depth: 1,
     limit: 12,
+    locale: locale as 'en' | 'ne',
     select: {
       title: true,
       slug: true,

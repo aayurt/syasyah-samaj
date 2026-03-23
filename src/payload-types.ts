@@ -78,6 +78,7 @@ export interface Config {
     tenants: Tenant;
     notifications: Notification;
     favorites: Favorite;
+    members: Member;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -105,6 +106,7 @@ export interface Config {
     tenants: TenantsSelect<false> | TenantsSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     favorites: FavoritesSelect<false> | FavoritesSelect<true>;
+    members: MembersSelect<false> | MembersSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -122,7 +124,7 @@ export interface Config {
   db: {
     defaultIDType: number;
   };
-  fallbackLocale: null;
+  fallbackLocale: ('false' | 'none' | 'null') | false | null | ('en' | 'ne' | 'new') | ('en' | 'ne' | 'new')[];
   globals: {
     header: Header;
     footer: Footer;
@@ -131,7 +133,7 @@ export interface Config {
     header: HeaderSelect<false> | HeaderSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
   };
-  locale: null;
+  locale: 'en' | 'ne' | 'new';
   user: User;
   jobs: {
     tasks: {
@@ -295,6 +297,12 @@ export interface Tenant {
    * Used for domain-based tenant handling
    */
   domain?: string | null;
+  gallery?:
+    | {
+        image?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
   /**
    * Used for url paths, example: /tenant-slug/page-slug
    */
@@ -349,14 +357,6 @@ export interface Media {
       filesize?: number | null;
       filename?: string | null;
     };
-    square?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
     small?: {
       url?: string | null;
       width?: number | null;
@@ -365,31 +365,7 @@ export interface Media {
       filesize?: number | null;
       filename?: string | null;
     };
-    medium?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
     large?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    xlarge?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    og?: {
       url?: string | null;
       width?: number | null;
       height?: number | null;
@@ -943,6 +919,32 @@ export interface Favorite {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "members".
+ */
+export interface Member {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  fullName: string;
+  email: string;
+  profileImage?: (number | null) | Media;
+  /**
+   * Short professional biography
+   */
+  bio?: string | null;
+  role?: ('admin' | 'moderator' | 'member' | 'vip') | null;
+  socialLinks?: {
+    twitter?: string | null;
+    linkedin?: string | null;
+    website?: string | null;
+  };
+  status?: ('active' | 'inactive' | 'suspended') | null;
+  joinedDate?: string | null;
+  phoneNumber: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1256,6 +1258,10 @@ export interface PayloadLockedDocument {
         value: number | Favorite;
       } | null)
     | ({
+        relationTo: 'members';
+        value: number | Member;
+      } | null)
+    | ({
         relationTo: 'redirects';
         value: number | Redirect;
       } | null)
@@ -1528,16 +1534,6 @@ export interface MediaSelect<T extends boolean = true> {
               filesize?: T;
               filename?: T;
             };
-        square?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
         small?:
           | T
           | {
@@ -1548,37 +1544,7 @@ export interface MediaSelect<T extends boolean = true> {
               filesize?: T;
               filename?: T;
             };
-        medium?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
         large?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-        xlarge?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-        og?:
           | T
           | {
               url?: T;
@@ -1725,6 +1691,12 @@ export interface TenantsSelect<T extends boolean = true> {
         email?: T;
       };
   domain?: T;
+  gallery?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
   slug?: T;
   allowPublicRead?: T;
   updatedAt?: T;
@@ -1751,6 +1723,30 @@ export interface NotificationsSelect<T extends boolean = true> {
 export interface FavoritesSelect<T extends boolean = true> {
   user?: T;
   event?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "members_select".
+ */
+export interface MembersSelect<T extends boolean = true> {
+  tenant?: T;
+  fullName?: T;
+  email?: T;
+  profileImage?: T;
+  bio?: T;
+  role?: T;
+  socialLinks?:
+    | T
+    | {
+        twitter?: T;
+        linkedin?: T;
+        website?: T;
+      };
+  status?: T;
+  joinedDate?: T;
+  phoneNumber?: T;
   updatedAt?: T;
   createdAt?: T;
 }

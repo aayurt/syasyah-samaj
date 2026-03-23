@@ -23,7 +23,7 @@ export const readAccess: Access<User> = ({ req, id }) => {
   )
 
   const adminTenantAccessIDs = getUserTenantIDs(req.user, 'tenant-admin')
-  
+
   // Use cookie first, fallback to X-Tenant header
   const finalSelectedTenant = selectedTenant || req.headers.get('x-tenant')
 

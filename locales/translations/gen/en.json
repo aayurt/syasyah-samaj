@@ -1,3 +1,33 @@
 {
-  "homepageTitle": "Welcome to the Afno Events"
+  "home": {
+    "aboutSubtitle": "A community organization dedicated to preserving Newari traditions, festivals, and cultural identity.",
+    "aboutTitle": "About Our Samaj",
+    "committeeMembers": "Committee Members",
+    "committeeMembers#zero": "Committee Members",
+    "committeeMembers#one": "Committee Member",
+    "committeeMembers#other": "Committee Members",
+    "community": "Community",
+    "communityActivities": "Community Activities",
+    "communityActivities#zero": "Community Activities",
+    "communityActivities#one": "Community Activity",
+    "communityActivities#other": "Community Activities",
+    "communityDescription": "We bring together families and individuals from the Newar community to support each other and celebrate our heritage.",
+    "culture": "Culture",
+    "cultureDescription": "We actively preserve Newari festivals, rituals, and cultural traditions for future generations.",
+    "programs": "Programs",
+    "programsDescription": "We organize gatherings, charity work, youth engagement programs, and cultural events.",
+    "becomeMember": "Become a Member",
+    "nextEvent": "Next Event",
+    "upcomingEvents": "Upcoming Events",
+    "upcomingEventsSubtitle": "Join our community gatherings and cultural celebrations.",
+    "contactAddress": "Kathmandu, Nepal",
+    "contactDescription": "Interested in joining our community or attending our events? Reach out to us anytime.",
+    "contactTitle": "Get in Touch",
+    "homepageWelcome": "Welcome to Syasyah Samaj",
+    "homepageWelcomeDescription": "Preserving Newar culture, traditions, and community."
+  },
+  "homepageDescription": "Welcome to the Syasyah Samaj, a community of people who believe in the power of synergy and collaboration to achieve greater results.",
+  "homepageTitle": "Syasyah Samaj",
+  "meta:title": "Syasyah Samaj",
+  "meta:description": "Welcome to the Syasyah Samaj, a community of people who believe in the power of synergy and collaboration to achieve greater results."
 }

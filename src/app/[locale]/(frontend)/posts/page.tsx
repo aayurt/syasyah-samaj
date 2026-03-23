@@ -11,7 +11,8 @@ import PageClient from './page.client'
 export const dynamic = 'force-static'
 export const revalidate = 600
 
-export default async function Page() {
+export default async function Page({ params: paramsPromise }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await paramsPromise
   const payload = await getPayload({ config: configPromise })
 
   const posts = await payload.find({
@@ -19,6 +20,7 @@ export default async function Page() {
     depth: 1,
     limit: 12,
     overrideAccess: false,
+    locale: locale as 'en' | 'ne',
     select: {
       title: true,
       slug: true,

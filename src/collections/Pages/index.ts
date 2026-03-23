@@ -27,7 +27,7 @@ export const Pages: CollectionConfig<'pages'> = {
   access: {
     create: isSuperAdminAccess,
     delete: isSuperAdminAccess,
-    read: ()=>true,
+    read: () => true,
     update: isSuperAdminAccess,
   },
   // This config controls what's populated by default when a page is referenced

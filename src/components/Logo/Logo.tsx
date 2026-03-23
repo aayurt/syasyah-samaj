@@ -15,13 +15,20 @@ export const Logo = (props: Props) => {
 
   return (
     // <h1 className="text-4xl">Afno Events</h1>
-    <img
-      alt="Afno Events Logo"
-      loading={loading}
-      fetchPriority={priority}
-      decoding="async"
-      className={clsx('max-w-[9.375rem] w-full h-[100px]', className)}
-      src="/logo.png"
-    />
+    <>
+      <img
+        alt="Syasyah Samaj Logo"
+        loading={loading}
+        fetchPriority={priority}
+        decoding="async"
+        className={clsx('max-w-[9.375rem] w-full h-[100px]', className)}
+        src="/logo.png"
+      />
+      <img
+        src="/syasyah_text.svg"
+        alt="Syasha Samaj"
+        className={clsx('max-w-[9.375rem] w-full mt-2 ', className)}
+      />
+    </>
   )
 }

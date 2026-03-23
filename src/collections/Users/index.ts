@@ -89,7 +89,7 @@ export const Users: CollectionConfig = {
     },
     {
       ...defaultTenantArrayField,
-      label: 'Tenants',
+      label: 'Ilakas',
       admin: {
         ...(defaultTenantArrayField?.admin || {}),
         position: 'sidebar',
@@ -140,15 +140,15 @@ export const Users: CollectionConfig = {
     afterChange: [
       async ({ doc, operation, req }) => {
         if (operation === 'create') {
-          await req.payload.create({
-            collection: 'notifications',
-            data: {
-              user: doc.id,
-              title: 'Welcome to Afno Event!',
-              message: `Hello ${doc.name || 'there'}! We're excited to have you here. Start exploring events now!`,
-              type: 'info',
-            },
-          })
+          // await req.payload.create({
+          //   collection: 'notifications',
+          //   data: {
+          //     user: doc.id,
+          //     title: 'Welcome to Afno Event!',
+          //     message: `Hello ${doc.name || 'there'}! We're excited to have you here. Start exploring events now!`,
+          //     type: 'info',
+          //   },
+          // })
         }
       },
     ],

@@ -1,4 +1,3 @@
-
 import { getPayload } from 'payload'
 import config from './src/payload.config'
 
@@ -8,7 +7,7 @@ async function checkTenants() {
     collection: 'tenants',
   })
   console.log('Tenants found:', tenants.docs.length)
-  tenants.docs.forEach(t => console.log(`- ${t.slug} (${t.name})`))
+  tenants.docs.forEach((t) => console.log(`- ${t.slug} (${t.name})`))
   process.exit(0)
 }
 

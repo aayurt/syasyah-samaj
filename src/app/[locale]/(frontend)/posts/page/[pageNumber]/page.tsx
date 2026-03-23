@@ -11,14 +11,17 @@ import { notFound } from 'next/navigation'
 
 export const revalidate = 600
 
+import { locales } from '@/locales/config'
+
 type Args = {
   params: Promise<{
     pageNumber: string
+    locale: string
   }>
 }
 
 export default async function Page({ params: paramsPromise }: Args) {
-  const { pageNumber } = await paramsPromise
+  const { pageNumber, locale } = await paramsPromise
   const payload = await getPayload({ config: configPromise })
 
   const sanitizedPageNumber = Number(pageNumber)
@@ -31,6 +34,7 @@ export default async function Page({ params: paramsPromise }: Args) {
     limit: 12,
     page: sanitizedPageNumber,
     overrideAccess: false,
+    locale: locale as 'en' | 'ne',
   })
 
   return (
@@ -78,10 +82,12 @@ export async function generateStaticParams() {
 
   const totalPages = Math.ceil(totalDocs / 10)
 
-  const pages: { pageNumber: string }[] = []
+  const pages: { pageNumber: string; locale: string }[] = []
 
   for (let i = 1; i <= totalPages; i++) {
-    pages.push({ pageNumber: String(i) })
+    for (const locale of locales) {
+      pages.push({ pageNumber: String(i), locale })
+    }
   }
 
   return pages

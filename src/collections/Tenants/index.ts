@@ -12,9 +12,13 @@ export const Tenants: CollectionConfig = {
     read: () => true,
     update: updateAndDeleteAccess,
   },
+  labels: {
+    singular: 'Ilaka', // shows when editing a single tenant
+    plural: 'Ilakas', // shows in the sidebar and collection list
+  },
   admin: {
     useAsTitle: 'name',
-    group: 'Tenants',
+    group: 'Ilakas',
     hidden: ({ user }) => {
       if (!user) return true
       if (user.role === 'super-admin') return false
@@ -80,7 +84,17 @@ export const Tenants: CollectionConfig = {
         description: 'Used for domain-based tenant handling',
       },
     },
-
+    {
+      name: 'gallery',
+      type: 'array',
+      fields: [
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media',
+        },
+      ],
+    },
     {
       name: 'slug',
       type: 'text',

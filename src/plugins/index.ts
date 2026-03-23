@@ -73,7 +73,7 @@ export const plugins: Plugin[] = [
           if (user.role === 'super-admin') return false
           return true
         },
-      }
+      },
     },
   }),
   nestedDocsPlugin({
@@ -119,7 +119,7 @@ export const plugins: Plugin[] = [
           if (user.role === 'super-admin') return false
           return true
         },
-      }
+      },
     },
     formSubmissionOverrides: {
       access: {
@@ -133,7 +133,7 @@ export const plugins: Plugin[] = [
           if (user.role === 'super-admin') return false
           return true
         },
-      }
+      },
     },
   }),
   searchPlugin({
@@ -154,9 +154,8 @@ export const plugins: Plugin[] = [
           if (user.role === 'super-admin') return false
           return true
         },
-      }
+      },
     },
-
   }),
   payloadCloudPlugin(),
   betterAuthCollections({
@@ -172,9 +171,9 @@ export const plugins: Plugin[] = [
             if (user.role === 'super-admin') return false
             return true
           },
-        }
+        },
       }
-    }
+    },
   }),
   // Initialize Better Auth with auto-injected endpoints and admin components
   createBetterAuthPlugin({
@@ -288,6 +287,7 @@ export const plugins: Plugin[] = [
       users: {},
       media: {},
       events: {},
+      members: {},
     },
     tenantField: {
       label: 'Assigned Tenant',

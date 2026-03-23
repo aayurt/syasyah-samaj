@@ -25,6 +25,7 @@ import { Notifications } from './collections/Notifications'
 import { Favorites } from './collections/Favorites'
 import { trustedOriginsValues } from './trustedOrigin'
 import Redis from 'ioredis'
+import { Members } from './collections/Members'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -78,11 +79,11 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI || '',
     },
   }),
-  email: resendAdapter({
-    apiKey: process.env.RESEND_API_KEY || '',
-    defaultFromAddress: 'noreply@afnoevents.co.uk',
-    defaultFromName: 'Afno',
-  }),
+  // email: resendAdapter({
+  //   apiKey: process.env.RESEND_API_KEY || '',
+  //   defaultFromAddress: 'noreply@afnoevents.co.uk',
+  //   defaultFromName: 'Afno',
+  // }),
   collections: [
     Pages,
     Posts,
@@ -95,6 +96,7 @@ export default buildConfig({
     Tenants,
     Notifications,
     Favorites,
+    Members,
   ],
   cors: [getServerSideURL(), ...trustedOriginsValues].filter(Boolean),
   globals: [Header, Footer],
@@ -121,5 +123,23 @@ export default buildConfig({
       },
     },
     tasks: [],
+  },
+  localization: {
+    locales: [
+      {
+        label: 'English',
+        code: 'en',
+      },
+      {
+        label: 'Nepali',
+        code: 'ne',
+      },
+      {
+        label: 'Newari',
+        code: 'new',
+      },
+    ],
+    defaultLocale: 'en', // required
+    fallback: true, // defaults to true
   },
 })
