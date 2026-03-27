@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @layer base {
+
   h1,
   h2,
   h3,
@@ -113,4 +114,38 @@ html {
 html[data-theme='dark'],
 html[data-theme='light'] {
   opacity: initial;
+}
+
+@keyframes spin-border {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.rotating-border-container {
+  position: relative;
+  overflow: hidden;
+  padding: 2px;
+  border-radius: 1rem;
+}
+
+.rotating-border-gradient {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300%;
+  height: 300%;
+  background: conic-gradient(from 0deg, #fff7cc, #facc15, #eab308, #f59e0b, #d7dba0, #fff7cc);
+  animation: spin-border 3s linear infinite;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.rotating-border-container:hover .rotating-border-gradient {
+  opacity: 1;
 }
