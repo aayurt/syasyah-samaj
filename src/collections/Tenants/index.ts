@@ -21,7 +21,7 @@ export const Tenants: CollectionConfig = {
     group: 'Ilakas',
     hidden: ({ user }) => {
       if (!user) return true
-      if (user.role === 'super-admin') return false
+      if (user.role === 'super-admin' || user.role === 'admin') return false
       return true
     },
   },

@@ -2,7 +2,18 @@ import { isAdmin } from '@/access/admin'
 import { sendFCMTopicNotification } from '@/utilities/sendFCMNotification'
 import { getCachedEvents, invalidateEventsCache } from '@/utilities/cache'
 import type { CollectionConfig } from 'payload'
-
+import { slugField } from '@/fields/slug'
+import {
+  BlocksFeature,
+  FixedToolbarFeature,
+  HeadingFeature,
+  HorizontalRuleFeature,
+  InlineToolbarFeature,
+  lexicalEditor,
+} from '@payloadcms/richtext-lexical'
+import { Banner } from '../../blocks/Banner/config'
+import { Code } from '../../blocks/Code/config'
+import { MediaBlock } from '../../blocks/MediaBlock/config'
 export const Events: CollectionConfig = {
   slug: 'events',
   access: {
@@ -10,6 +21,14 @@ export const Events: CollectionConfig = {
     delete: isAdmin,
     read: () => true,
     update: isAdmin,
+  },
+  defaultPopulate: {
+    title: true,
+    slug: true,
+    meta: {
+      image: true,
+      description: true,
+    },
   },
   admin: {
     useAsTitle: 'title',
@@ -82,6 +101,24 @@ export const Events: CollectionConfig = {
       name: 'description',
       required: false,
       type: 'textarea',
+    },
+    {
+      name: 'content',
+      type: 'richText',
+      editor: lexicalEditor({
+        features: ({ rootFeatures }) => {
+          return [
+            ...rootFeatures,
+            HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
+            BlocksFeature({ blocks: [Banner, Code, MediaBlock] }),
+            FixedToolbarFeature(),
+            InlineToolbarFeature(),
+            HorizontalRuleFeature(),
+          ]
+        },
+      }),
+      label: false,
+      required: true,
     },
     {
       name: 'coverImage',
@@ -167,6 +204,24 @@ export const Events: CollectionConfig = {
         },
       },
     },
+
+    {
+      name: 'relatedEvents',
+      type: 'relationship',
+      admin: {
+        position: 'sidebar',
+      },
+      filterOptions: ({ id }) => {
+        return {
+          id: {
+            not_in: [id],
+          },
+        }
+      },
+      hasMany: true,
+      relationTo: 'events',
+    },
+
     {
       name: 'tags',
       type: 'select',
@@ -191,58 +246,6 @@ export const Events: CollectionConfig = {
       },
     },
     {
-      name: 'pricing',
-      type: 'group',
-      fields: [
-        {
-          name: 'type',
-          type: 'select',
-          defaultValue: 'free',
-          options: [
-            { label: 'Free', value: 'free' },
-            { label: 'Paid', value: 'paid' },
-          ],
-        },
-        {
-          name: 'priceRange',
-          type: 'text',
-          defaultValue: 'Free',
-          admin: {
-            description: 'Display price (e.g., "Rs. 500 - Rs. 1500" or "Free")',
-          },
-        },
-        {
-          name: 'ticketTypes',
-          type: 'array',
-          fields: [
-            {
-              name: 'name',
-              type: 'text',
-              required: true,
-              admin: {
-                placeholder: 'e.g. VIP, General, Early Bird',
-              },
-            },
-            {
-              name: 'price',
-              type: 'number',
-              required: true,
-              admin: {
-                placeholder: 'e.g. 500',
-              },
-            },
-            {
-              name: 'description',
-              type: 'textarea',
-            },
-          ],
-          admin: {
-            condition: (data) => data?.pricing?.type === 'paid',
-          },
-        },
-      ],
-    },
-    {
       name: 'enabled',
       type: 'checkbox',
       required: true,
@@ -252,5 +255,7 @@ export const Events: CollectionConfig = {
         position: 'sidebar',
       },
     },
+    ...slugField(),
+
   ],
 }

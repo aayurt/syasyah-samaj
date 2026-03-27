@@ -8,6 +8,6 @@ import { getCurrentLocale } from '@/locales/server'
 export async function Header() {
   const locale = await getCurrentLocale()
   const headerData: Header = await getCachedGlobal('header', 1, locale as 'en' | 'ne')()
-
+  console.log("HeaderData", headerData)
   return <HeaderClient data={headerData} />
 }

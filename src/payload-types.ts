@@ -787,6 +787,21 @@ export interface Event {
   tenant?: (number | null) | Tenant;
   title: string;
   description?: string | null;
+  content: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
   coverImage?: (number | null) | Media;
   gallery?:
     | {
@@ -817,6 +832,7 @@ export interface Event {
   };
   startDatetime?: string | null;
   endDatetime?: string | null;
+  relatedEvents?: (number | Event)[] | null;
   /**
    * Select one or more tags for this event
    */
@@ -836,25 +852,12 @@ export interface Event {
         | 'fitness'
       )[]
     | null;
-  pricing?: {
-    type?: ('free' | 'paid') | null;
-    /**
-     * Display price (e.g., "Rs. 500 - Rs. 1500" or "Free")
-     */
-    priceRange?: string | null;
-    ticketTypes?:
-      | {
-          name: string;
-          price: number;
-          description?: string | null;
-          id?: string | null;
-        }[]
-      | null;
-  };
   /**
    * Enable or disable this event
    */
   enabled: boolean;
+  slug?: string | null;
+  slugLock?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1613,6 +1616,7 @@ export interface EventsSelect<T extends boolean = true> {
   tenant?: T;
   title?: T;
   description?: T;
+  content?: T;
   coverImage?: T;
   gallery?:
     | T
@@ -1630,22 +1634,11 @@ export interface EventsSelect<T extends boolean = true> {
       };
   startDatetime?: T;
   endDatetime?: T;
+  relatedEvents?: T;
   tags?: T;
-  pricing?:
-    | T
-    | {
-        type?: T;
-        priceRange?: T;
-        ticketTypes?:
-          | T
-          | {
-              name?: T;
-              price?: T;
-              description?: T;
-              id?: T;
-            };
-      };
   enabled?: T;
+  slug?: T;
+  slugLock?: T;
   updatedAt?: T;
   createdAt?: T;
 }

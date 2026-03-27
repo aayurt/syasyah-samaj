@@ -13,11 +13,11 @@ export const Gallery = ({
   description,
 }: {
   gallery?:
-    | {
-        image?: (number | null) | MediaPayload
-        id?: string | null
-      }[]
-    | null
+  | {
+    image?: (number | null) | MediaPayload
+    id?: string | null
+  }[]
+  | null
   title?: string
   description?: string
 }) => {
@@ -42,12 +42,12 @@ export const Gallery = ({
   }
 
   return (
-    <section id="gallery" className="py-24 bg-gray-50">
+    <section id="gallery" className="py-24 bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-slate-900">{title}</h2>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50">{title}</h2>
             {description && <p className="text-slate-500 mt-2">{description}</p>}
           </div>
 
@@ -69,11 +69,10 @@ export const Gallery = ({
                   <button
                     key={pageNum}
                     onClick={() => goToPage(pageNum)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-full text-sm transition-colors ${
-                      currentPage === pageNum
+                    className={`w-8 h-8 flex items-center justify-center rounded-full text-sm transition-colors ${currentPage === pageNum
                         ? 'bg-indigo-600 text-white'
                         : 'text-slate-500 hover:bg-slate-200'
-                    }`}
+                      }`}
                   >
                     {pageNum}
                   </button>
@@ -96,9 +95,8 @@ export const Gallery = ({
           {itemsToShow.map((galleryItem, i) => (
             <div
               key={galleryItem.id || i}
-              className={`relative overflow-hidden rounded-3xl group ${
-                i === 0 ? 'md:col-span-2 md:row-span-2' : 'col-span-1 row-span-1'
-              }`}
+              className={`relative overflow-hidden rounded-3xl group ${i === 0 ? 'md:col-span-2 md:row-span-2' : 'col-span-1 row-span-1'
+                }`}
             >
               <Media
                 fill

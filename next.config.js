@@ -18,6 +18,12 @@ const nextConfig = {
           protocol: url.protocol.replace(':', ''),
         }
       }),
+      ...[1, 2, 3, 4, 5, 6, 7, 8].map((ilaka) => {
+        return {
+          hostname: `ilaka${ilaka}.localhost`,
+          protocol: 'http',
+        }
+      }),
     ],
   },
   reactStrictMode: true,
@@ -26,6 +32,21 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/((?!admin|api))tenant-domains/:path*',
+        destination: '/tenant-domains/:tenant/:path*',
+        has: [
+          {
+            type: 'host',
+            value: '(?<tenant>.*)',
+          },
+        ],
+      },
+    ]
+  },
+
 }
 
 export default withPayload(nextConfig)

@@ -8,10 +8,11 @@ import { CMSLink } from '@/components/Link'
 import Link from 'next/link'
 import { SearchIcon } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { ThemeSelector } from '@/providers/Theme/ThemeSelector'
 
 export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
   const navItems = data?.navItems || []
-
+  console.log("NavItems", navItems)
   return (
     <nav className="flex gap-3 items-center">
       {navItems.map(({ link }, i) => {
@@ -21,6 +22,7 @@ export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
         <span className="sr-only">Search</span>
         <SearchIcon className="w-5 text-primary" />
       </Link>
+      <ThemeSelector />
       <LanguageSwitcher />
     </nav>
   )

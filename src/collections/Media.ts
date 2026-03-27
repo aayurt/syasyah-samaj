@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url'
 
 import { anyone } from '../access/anyone'
 import { authenticated } from '../access/authenticated'
+import sharp from 'sharp'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -45,6 +46,7 @@ export const Media: CollectionConfig = {
       return true
     },
   },
+
   upload: {
     // Upload to the public/media directory in Next.js making them publicly accessible even outside of Payload
     staticDir: path.resolve(dirname, '../../public/media'),
@@ -65,4 +67,42 @@ export const Media: CollectionConfig = {
       },
     ],
   },
+  hooks: {
+    beforeChange: [
+      async ({ req, data }) => {
+        const file = req.file;
+
+        if (!file) return data;
+
+        if (!file.mimetype.startsWith('image/')) return data;
+
+        let buffer = file.data;
+
+        // Skip if already under 1MB
+        if (buffer.length <= 1024 * 1024) {
+          return data;
+        }
+
+        let quality = 80;
+
+        while (buffer.length > 1024 * 1024 && quality > 10) {
+          buffer = await sharp(buffer)
+            .jpeg({ quality })
+            .toBuffer();
+
+          quality -= 10;
+        }
+
+        // ✅ Assign back correctly
+        file.data = buffer;
+        file.mimetype = 'image/jpeg';
+        file.name = file.name.replace(/\.\w+$/, '.jpg');
+        file.size = buffer.length;
+
+        return data;
+      },
+    ],
+  },
+
+
 }
