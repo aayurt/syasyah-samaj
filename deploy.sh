@@ -3,7 +3,7 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-echo "🚀 Starting Deployment for aayushshrestha.com..."
+echo "🚀 Starting Deployment for syasyahsamaj.com..."
 
 # 1. Pull the latest changes from GitHub
 echo "📥 Pulling latest code from Git..."
