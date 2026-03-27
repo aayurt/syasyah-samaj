@@ -9,11 +9,12 @@ import { generateMeta } from '@/utilities/generateMeta'
 import { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
+  const t = await getI18n()
   return generateMeta({
     doc: {
       meta: {
-        title: 'Ilakas - Syasyah Samaj',
-        description: 'Explore the different Ilakas committed to preserving Newar culture and traditions.',
+        title: t('ilaka.metaTitle'),
+        description: t('ilaka.metaDescription'),
       },
     },
   })
@@ -31,6 +32,9 @@ export default async function IlakasPage() {
     where: {
       enabled: {
         equals: true
+      },
+      domain: {
+        not_equals: null
       }
     }
   })
@@ -67,13 +71,13 @@ export default async function IlakasPage() {
                   }
                   return (
                     <div className="w-full h-full flex items-center justify-center text-red-900/20">
-                      <span className="text-4xl font-bold">SYASYAH</span>
+                      <span className="text-4xl font-bold">{t('brand')}</span>
                     </div>
                   )
                 })()}
                 <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-red-900 dark:text-red-400 flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
-                  Ilaka
+                  {t('ilaka.badge')}
                 </div>
               </div>
               <div className="p-8 flex flex-col flex-grow">
@@ -84,7 +88,7 @@ export default async function IlakasPage() {
                   {ilaka.description}
                 </p>
                 <div className="flex items-center text-red-900 dark:text-red-400 font-semibold group-hover:translate-x-1 transition-transform">
-                  View Details <ArrowRight className="w-4 h-4 ml-2" />
+                  {t('ilaka.viewDetails')} <ArrowRight className="w-4 h-4 ml-2" />
                 </div>
               </div>
             </Link>
@@ -93,7 +97,7 @@ export default async function IlakasPage() {
 
         {ilakas.length === 0 && (
           <div className="text-center py-24 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-dashed border-border">
-            <p className="text-gray-500">No Ilakas found at the moment.</p>
+            <p className="text-gray-500">{t('ilaka.noIlakasFound')}</p>
           </div>
         )}
       </div>

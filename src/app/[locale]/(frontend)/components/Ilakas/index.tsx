@@ -36,12 +36,7 @@ export default async function Ilakas({ locale: propLocale }: { locale?: 'en' | '
 
 
                 <div className="max-w-5xl mx-auto mt-12 w-full">
-                    <IlakaTabs ilakas={ilakas.map(ilaka => ({
-                        id: ilaka.id,
-                        name: ilaka.name,
-                        slug: ilaka.slug,
-                        description: ilaka.description || `Explore more about ${ilaka.name} and its contribution to the community.`
-                    }))} />
+                    <IlakaTabs ilakas={ilakas} />
                 </div>
 
                 <div className="mt-16 text-center">
@@ -49,7 +44,7 @@ export default async function Ilakas({ locale: propLocale }: { locale?: 'en' | '
                         href="/ilakas"
                         className="inline-flex items-center gap-2 px-8 py-3 bg-red-900 text-white rounded-full font-bold hover:bg-red-800 transition-colors"
                     >
-                        View All Ilakas
+                        {t('ilaka.viewAllIlakas')}
                         <ArrowRight className="w-5 h-5" />
                     </Link>
                 </div>

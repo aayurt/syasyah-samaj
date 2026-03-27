@@ -286,6 +286,7 @@ export interface Tenant {
   id: number;
   name: string;
   description?: string | null;
+  coverImage?: (number | null) | Media;
   /**
    * If checked, the tenant will be shown on the website. If not checked, the tenant will not be shown on the website.
    */
@@ -1699,6 +1700,7 @@ export interface TicketsSelect<T extends boolean = true> {
 export interface TenantsSelect<T extends boolean = true> {
   name?: T;
   description?: T;
+  coverImage?: T;
   enabled?: T;
   contactInfo?:
     | T

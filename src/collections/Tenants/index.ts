@@ -56,6 +56,11 @@ export const Tenants: CollectionConfig = {
       localized: true
     },
     {
+      name: 'coverImage',
+      type: 'upload',
+      relationTo: 'media',
+    },
+    {
       name: 'enabled',
       type: 'checkbox',
       defaultValue: true,

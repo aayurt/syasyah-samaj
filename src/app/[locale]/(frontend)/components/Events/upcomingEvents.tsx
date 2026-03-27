@@ -38,8 +38,8 @@ export default async function UpcomingEvents({
                 )}
                 {!title && !description && (
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold text-red-900 dark:text-slate-50 mb-4">{t('home.UpcomingEvents' as any, { count: 0 })}</h2>
-                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">{t('home.UpcomingEventsDescription' as any, { count: 0 })}</p>
+                        <h2 className="text-3xl md:text-4xl font-bold text-red-900 dark:text-slate-50 mb-4">{t('home.UpcomingEvents')}</h2>
+                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">{t('home.UpcomingEventsDescription')}</p>
                     </div>
                 )}
 
@@ -59,7 +59,7 @@ export default async function UpcomingEvents({
                                         />
                                     )}
                                     <div className="absolute top-4 right-4 bg-red-900/90 dark:bg-red-600/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-white">
-                                        {t('home.UpcomingEvents' as any, { count: 0 })}
+                                        {t('home.UpcomingEvents')}
                                     </div>
                                 </div>
                                 <div className="p-6 flex flex-col flex-grow">
@@ -71,14 +71,14 @@ export default async function UpcomingEvents({
                                             year: 'numeric'
                                         })}
                                     </div>
-                                    <h3 className="text-xl font-bold mb-3 group-hover:text-red-900 dark:group-hover:text-red-400 transition-colors">
+                                    <h3 className="text-xl font-bold mb-3 text-red-900 dark:text-slate-50 group-hover:text-red-900 dark:group-hover:text-red-400 transition-colors">
                                         {event.title}
                                     </h3>
                                     <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4 flex-grow">
                                         {event.description}
                                     </p>
                                     <div className="flex items-center text-red-900 dark:text-red-400 font-semibold text-sm group-hover:translate-x-1 transition-transform">
-                                        {t('home.learnMore' as any, { count: 0 })} <ArrowRight className="w-4 h-4 ml-1" />
+                                        {t('home.learnMore')} <ArrowRight className="w-4 h-4 ml-1" />
                                     </div>
                                 </div>
                             </Link>
@@ -86,7 +86,7 @@ export default async function UpcomingEvents({
                     </div>
                 ) : (
                     <div className="text-center py-12 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-dashed border-border">
-                        <p className="text-gray-500">{t('home.noUpcomingEvents' as any, { count: 0 })} </p>
+                        <p className="text-gray-500">{t('home.noUpcomingEvents')} </p>
                     </div>
                 )}
             </div>

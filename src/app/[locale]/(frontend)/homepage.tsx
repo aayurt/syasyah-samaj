@@ -10,6 +10,7 @@ import Ilakas from './components/Ilakas'
 import HomepageHero from './components/homepageHero'
 import Hero from './components/Hero'
 import { headers } from 'next/headers'
+import Notification from './components/Notification'
 
 export default async function HomePage({ locale: propLocale }: { locale?: 'en' | 'ne' | 'new' }) {
   const payload = await getPayload({ config: configPromise })
@@ -35,6 +36,7 @@ export default async function HomePage({ locale: propLocale }: { locale?: 'en' |
 
   return (
     <div className="font-sans bg-white text-gray-900">
+      <Notification />
       <HomepageHero />
       <Hero />
       <Ilakas locale={locale as 'en' | 'ne' | 'new'} />

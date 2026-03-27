@@ -35,8 +35,8 @@ export default async function Members({ locale: propLocale }: { locale?: 'en' | 
                                     className="w-full h-full object-cover"
                                 />
                             </div>
-                            <h4 className="font-semibold">{member.fullName}</h4>
-                            <p className="text-sm text-gray-500">{member.bio}</p>
+                            <h4 className="font-semibold text-red-900 dark:text-slate-50">{member.fullName}</h4>
+                            <p className="text-sm text-gray-800 dark:text-gray-500">{member.bio}</p>
                         </div>
                     ))}
                 </div>

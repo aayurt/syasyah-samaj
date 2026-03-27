@@ -71,7 +71,7 @@ export default async function PastEvents({
                                             year: 'numeric'
                                         })}
                                     </div>
-                                    <h3 className="text-xl font-bold mb-3 group-hover:text-red-900 dark:group-hover:text-red-400 transition-colors">
+                                    <h3 className="text-xl font-bold mb-3 text-red-900 dark:text-slate-50 group-hover:text-red-900 dark:group-hover:text-red-400 transition-colors">
                                         {event.title}
                                     </h3>
                                     <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4 flex-grow">

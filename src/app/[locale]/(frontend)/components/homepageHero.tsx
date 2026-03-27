@@ -32,7 +32,7 @@ export default async function HomepageHero() {
             {t('home.homepageWelcomeDescription')}
           </p>
           <button className="bg-yellow-500 text-black px-6 py-3 rounded-xl font-semibold hover:bg-yellow-400">
-            Join Community
+            {t('home.joinCommunity')}
           </button>
         </div>
       </div>

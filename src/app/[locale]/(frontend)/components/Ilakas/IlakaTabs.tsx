@@ -1,27 +1,24 @@
 'use client'
 
+import { Media } from '@/components/Media'
 import { useI18n } from '@/locales/client'
+import { Tenant } from '@/payload-types'
 import Link from 'next/link'
 import { useState } from 'react'
 
-export interface IlakaInfo {
-    id: number
-    name: string
-    slug: string
-    description: string
-}
 
-export function IlakaTabs({ ilakas }: { ilakas: IlakaInfo[] }) {
-    const [activeTab, setActiveTab] = useState(ilakas[0]?.id)
-    const activeIlaka = ilakas.find(i => i.id === activeTab) || ilakas[0]
+
+export function IlakaTabs({ ilakas }: { ilakas: Tenant[] }) {
     const t = useI18n()
+    const [activeTab, setActiveTab] = useState(ilakas.find(i => i.id === 3)?.id)
+    const activeIlaka = ilakas.find(i => i.id === activeTab) || ilakas[0]
 
     if (ilakas.length === 0) return null
 
     return (
         <div className="md:flex md:space-x-4">
             <ul className="flex flex-col space-y-2 text-sm font-medium text-gray-500 dark:text-gray-400 mb-4 md:mb-0 w-full md:w-64 shrink-0">
-                {ilakas.map((ilaka) => {
+                {ilakas.filter(i => (i.id !== 2)).map((ilaka) => {
                     const isActive = activeTab === ilaka.id
                     return (
                         <li key={ilaka.id}>
@@ -43,7 +40,18 @@ export function IlakaTabs({ ilakas }: { ilakas: IlakaInfo[] }) {
                 {activeIlaka && (
                     <>
                         <div>
-                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{activeIlaka.name} Details</h3>
+                            {(
+                                activeIlaka.coverImage ? <Media
+                                    resource={activeIlaka.coverImage}
+                                    className="w-full h-60 object-cover rounded-lg mb-4"
+                                />
+                                    : <img
+                                        src={'https://images.unsplash.com/photo-1611516491426-03025e6043c8?q=80&w=2233&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'}
+                                        alt={activeIlaka.name}
+                                        className="w-full h-60 object-cover rounded-lg mb-4"
+                                    />
+                            )}
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{activeIlaka.name}</h3>
                             <p className="mb-4 text-lg">{activeIlaka.description}</p>
                         </div>
                         <div className='flex justify-end'>

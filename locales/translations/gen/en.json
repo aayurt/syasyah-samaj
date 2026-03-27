@@ -34,13 +34,34 @@
     "learnMore": "Learn More",
     "noPastEvents": "No past events found.",
     "noUpcomingEvents": "No upcoming events found.",
-    "noEvents": "No events found."
+    "noEvents": "No events found.",
+    "joinCommunity": "Join Our Community"
   },
   "homepageDescription": "Welcome to the Syasyah Samaj, a community of people who believe in the power of synergy and collaboration to achieve greater results.",
   "homepageTitle": "Syasyah Samaj",
   "meta:title": "Syasyah Samaj",
   "meta:description": "Welcome to the Syasyah Samaj, a community of people who believe in the power of synergy and collaboration to achieve greater results.",
   "ilaka": {
-    "viewFullDetails": "View Full Details"
-  }
+    "viewFullDetails": "View Full Details",
+    "viewDetails": "View Details",
+    "backToAll": "Back to all Ilakas",
+    "noIlakasFound": "No Ilakas found at the moment.",
+    "metaTitle": "Ilakas - Syasyah Samaj",
+    "metaDescription": "Explore the different Ilakas committed to preserving Newar culture and traditions.",
+    "badge": "Ilaka",
+    "gallery": "Gallery",
+    "location": "Location",
+    "locationProvided": "Location coordinates provided.",
+    "openInMaps": "Open in Maps",
+    "viewAllIlakas": "View All Ilakas"
+  },
+  "events": {
+    "metaTitle": "Events - Syasyah Samaj",
+    "metaDescription": "Stay updated with upcoming and past events of Syasyah Samaj.",
+    "pageDescription": "Explore all our events, from future community gatherings to our historical celebrations."
+  },
+  "brand": "SYASYAH",
+  "notification": "Welcome to the official website of Syasyah Samaj. This site was launched on the occasion of Syasyah Samaj Establishment Day 2082. It is currently in the development phase, so some content may be incomplete or subject to updates. Thank you for your patience and support. 🙏",
+  "contact": "Contact",
+  "copyright": "Copyright © 2026 Syasha Samaj. All rights reserved."
 }

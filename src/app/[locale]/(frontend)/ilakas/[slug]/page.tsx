@@ -10,6 +10,7 @@ import { cache } from 'react'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 import { generateMeta } from '@/utilities/generateMeta'
 import { locales } from '@/locales/config'
+import { getI18n } from '@/locales/server'
 import { Media } from '@/components/Media'
 import { ArrowLeft, Mail, MapPin, Phone } from 'lucide-react'
 import Link from 'next/link'
@@ -44,6 +45,7 @@ type Args = {
 
 export default async function IlakaPage({ params: paramsPromise }: Args) {
   const { isEnabled: draft } = await draftMode()
+  const t = await getI18n()
   const { slug = '', locale } = await paramsPromise
   const url = '/ilakas/' + slug
   const ilaka = await queryIlakaBySlug({ slug, locale })
@@ -61,7 +63,7 @@ export default async function IlakaPage({ params: paramsPromise }: Args) {
         <div className="mb-8">
           <Link href="/ilakas" className="inline-flex items-center gap-2 text-red-900 dark:text-red-400 font-semibold hover:underline">
             <ArrowLeft className="w-4 h-4" />
-            Back to all Ilakas
+            {t('ilaka.backToAll')}
           </Link>
         </div>
 
@@ -74,7 +76,7 @@ export default async function IlakaPage({ params: paramsPromise }: Args) {
               }
               return (
                 <div className="w-full h-full flex items-center justify-center text-red-900/20">
-                  <span className="text-6xl font-bold">SYASYAH</span>
+                  <span className="text-6xl font-bold">{t('brand')}</span>
                 </div>
               )
             })()}
@@ -107,7 +109,7 @@ export default async function IlakaPage({ params: paramsPromise }: Args) {
 
         {ilaka.gallery && ilaka.gallery.length > 1 && (
           <div className="mb-12">
-            <h2 className="text-2xl font-bold text-red-900 dark:text-slate-50 mb-6">Gallery</h2>
+            <h2 className="text-2xl font-bold text-red-900 dark:text-slate-50 mb-6">{t('ilaka.gallery')}</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {ilaka.gallery.slice(1).map((item, index) => (
                 <div key={item.id || index} className="relative aspect-square rounded-xl overflow-hidden border border-border hover:shadow-md transition-all group">
@@ -131,7 +133,7 @@ export default async function IlakaPage({ params: paramsPromise }: Args) {
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-red-900 dark:text-slate-50 mb-6 flex items-center gap-2">
               <MapPin className="w-6 h-6" />
-              Location
+              {t('ilaka.location')}
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* <div className="lg:col-span-1 space-y-6">
@@ -171,10 +173,10 @@ export default async function IlakaPage({ params: paramsPromise }: Args) {
                     <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center">
                       <MapPin className="w-12 h-12 text-red-900/40 mb-4" />
                       <p className="text-gray-500">
-                        {ilaka.location.address || "Location coordinates provided."}
+                        {ilaka.location.address || t('ilaka.locationProvided')}
                       </p>
                       <p className="text-sm text-gray-400 mt-2">
-                        Click "Open in Google Maps" for full navigation.
+                        {t('ilaka.openInMaps')}
                       </p>
                     </div>
                   )}

@@ -17,6 +17,7 @@ import './globals.css'
 import { I18nProviderClient } from '@/locales/client'
 
 import { locales } from '@/locales/config'
+import { LanguageLoading } from './components/LanguageLoading'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
@@ -39,7 +40,7 @@ export default async function RootLayout({
         {/* <link href="/favicon.svg" rel="icon" type="image/svg+xml" /> */}
       </head>
       <body>
-        <I18nProviderClient locale={locale}>
+        <I18nProviderClient locale={locale} fallback={<LanguageLoading />}>
           <Providers>
             {/* <AdminBar
             adminBarProps={{
