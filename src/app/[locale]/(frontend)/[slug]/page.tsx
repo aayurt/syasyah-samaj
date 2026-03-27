@@ -14,6 +14,7 @@ import HomePage from '../homepage'
 import PageClient from './page.client'
 
 import { locales } from '@/locales/config'
+import { setStaticParamsLocale } from '@/locales/server'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -51,6 +52,7 @@ type Args = {
 export default async function Page({ params: paramsPromise }: Args) {
   const { isEnabled: draft } = await draftMode()
   const { slug = 'home', locale } = await paramsPromise
+  setStaticParamsLocale(locale)
   const url = '/' + slug
 
   let page: RequiredDataFromCollectionSlug<'pages'> | null
@@ -87,6 +89,7 @@ export default async function Page({ params: paramsPromise }: Args) {
 
 export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
   const { slug = 'home', locale } = await paramsPromise
+  setStaticParamsLocale(locale)
   const page = await queryPageBySlug({
     slug,
     locale,

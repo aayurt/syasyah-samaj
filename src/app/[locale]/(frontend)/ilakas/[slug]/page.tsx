@@ -10,7 +10,7 @@ import { cache } from 'react'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 import { generateMeta } from '@/utilities/generateMeta'
 import { locales } from '@/locales/config'
-import { getI18n } from '@/locales/server'
+import { getI18n, setStaticParamsLocale } from '@/locales/server'
 import { Media } from '@/components/Media'
 import { ArrowLeft, Mail, MapPin, Phone } from 'lucide-react'
 import Link from 'next/link'
@@ -45,8 +45,9 @@ type Args = {
 
 export default async function IlakaPage({ params: paramsPromise }: Args) {
   const { isEnabled: draft } = await draftMode()
-  const t = await getI18n()
   const { slug = '', locale } = await paramsPromise
+  setStaticParamsLocale(locale)
+  const t = await getI18n()
   const url = '/ilakas/' + slug
   const ilaka = await queryIlakaBySlug({ slug, locale })
 
@@ -192,6 +193,7 @@ export default async function IlakaPage({ params: paramsPromise }: Args) {
 
 export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
   const { slug = '', locale } = await paramsPromise
+  setStaticParamsLocale(locale)
   const ilaka = await queryIlakaBySlug({ slug, locale })
 
   if (!ilaka) return {}

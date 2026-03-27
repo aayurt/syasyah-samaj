@@ -9,10 +9,10 @@ import { CMSLink } from '@/components/Link'
 import { Logo } from '@/components/Logo/Logo'
 import { getCurrentLocale, getI18n } from '@/locales/server'
 
-export async function Footer() {
-  const locale = await getCurrentLocale()
+export async function Footer({ locale }: { locale?: string }) {
+  const currentLocale = locale || await getCurrentLocale()
   const t = await getI18n()
-  const footerData: Footer = await getCachedGlobal('footer', 1, locale as 'en' | 'ne')()
+  const footerData: Footer = await getCachedGlobal('footer', 1, currentLocale as 'en' | 'ne')()
 
   const navItems = footerData?.navItems || []
 

@@ -7,6 +7,11 @@ import { Media } from '@/components/Media'
 import { ArrowRight, MapPin } from 'lucide-react'
 import { generateMeta } from '@/utilities/generateMeta'
 import { Metadata } from 'next'
+import { getStaticParams, setStaticParamsLocale } from '@/locales/server'
+
+export function generateStaticParams() {
+  return getStaticParams()
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getI18n()
@@ -20,9 +25,11 @@ export async function generateMetadata(): Promise<Metadata> {
   })
 }
 
-export default async function IlakasPage() {
+export default async function IlakasPage({ params: paramsPromise }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await paramsPromise
+  setStaticParamsLocale(localeParam)
   const payload = await getPayload({ config: configPromise })
-  const locale = await getCurrentLocale()
+  const locale = localeParam || await getCurrentLocale()
   const t = await getI18n()
 
   const { docs: ilakas } = await payload.find({

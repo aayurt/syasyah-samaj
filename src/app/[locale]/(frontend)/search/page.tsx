@@ -7,6 +7,11 @@ import React from 'react'
 import { Search } from '@/search/Component'
 import PageClient from './page.client'
 import { CardPostData } from '@/components/Card'
+import { getStaticParams, setStaticParamsLocale } from '@/locales/server'
+
+export function generateStaticParams() {
+  return getStaticParams()
+}
 
 type Args = {
   params: Promise<{
@@ -18,6 +23,7 @@ type Args = {
 }
 export default async function Page({ params: paramsPromise, searchParams: searchParamsPromise }: Args) {
   const { locale } = await paramsPromise
+  setStaticParamsLocale(locale)
   const { q: query } = await searchParamsPromise
   const payload = await getPayload({ config: configPromise })
 
@@ -36,31 +42,31 @@ export default async function Page({ params: paramsPromise, searchParams: search
     pagination: false,
     ...(query
       ? {
-          where: {
-            or: [
-              {
-                title: {
-                  like: query,
-                },
+        where: {
+          or: [
+            {
+              title: {
+                like: query,
               },
-              {
-                'meta.description': {
-                  like: query,
-                },
+            },
+            {
+              'meta.description': {
+                like: query,
               },
-              {
-                'meta.title': {
-                  like: query,
-                },
+            },
+            {
+              'meta.title': {
+                like: query,
               },
-              {
-                slug: {
-                  like: query,
-                },
+            },
+            {
+              slug: {
+                like: query,
               },
-            ],
-          },
-        }
+            },
+          ],
+        },
+      }
       : {}),
   })
 

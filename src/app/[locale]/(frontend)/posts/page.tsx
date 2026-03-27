@@ -7,12 +7,18 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
+import { getStaticParams, setStaticParamsLocale } from '@/locales/server'
+
+export function generateStaticParams() {
+  return getStaticParams()
+}
 
 export const dynamic = 'force-static'
 export const revalidate = 600
 
 export default async function Page({ params: paramsPromise }: { params: Promise<{ locale: string }> }) {
   const { locale } = await paramsPromise
+  setStaticParamsLocale(locale)
   const payload = await getPayload({ config: configPromise })
 
   const posts = await payload.find({

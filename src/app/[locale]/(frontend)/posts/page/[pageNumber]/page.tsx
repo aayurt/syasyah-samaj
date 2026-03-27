@@ -12,6 +12,7 @@ import { notFound } from 'next/navigation'
 export const revalidate = 600
 
 import { locales } from '@/locales/config'
+import { setStaticParamsLocale } from '@/locales/server'
 
 type Args = {
   params: Promise<{
@@ -22,6 +23,7 @@ type Args = {
 
 export default async function Page({ params: paramsPromise }: Args) {
   const { pageNumber, locale } = await paramsPromise
+  setStaticParamsLocale(locale)
   const payload = await getPayload({ config: configPromise })
 
   const sanitizedPageNumber = Number(pageNumber)
@@ -67,7 +69,8 @@ export default async function Page({ params: paramsPromise }: Args) {
 }
 
 export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
-  const { pageNumber } = await paramsPromise
+  const { pageNumber, locale } = await paramsPromise
+  setStaticParamsLocale(locale)
   return {
     title: `Afno Events Posts Page ${pageNumber || ''}`,
   }

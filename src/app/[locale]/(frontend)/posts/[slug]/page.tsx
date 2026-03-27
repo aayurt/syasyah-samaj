@@ -16,6 +16,7 @@ import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 
 import { locales } from '@/locales/config'
+import { setStaticParamsLocale } from '@/locales/server'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -49,6 +50,7 @@ type Args = {
 export default async function Post({ params: paramsPromise }: Args) {
   const { isEnabled: draft } = await draftMode()
   const { slug = '', locale } = await paramsPromise
+  setStaticParamsLocale(locale)
   const url = '/posts/' + slug
   const post = await queryPostBySlug({ slug, locale })
 
@@ -82,6 +84,7 @@ export default async function Post({ params: paramsPromise }: Args) {
 
 export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
   const { slug = '', locale } = await paramsPromise
+  setStaticParamsLocale(locale)
   const post = await queryPostBySlug({ slug, locale })
 
   return generateMeta({ doc: post })

@@ -4,8 +4,15 @@ import UpcomingEvents from '../components/Events/upcomingEvents'
 import PastEvents from '../components/Events/pastEvents'
 import { generateMeta } from '@/utilities/generateMeta'
 import { Metadata } from 'next'
+import { getStaticParams, setStaticParamsLocale } from '@/locales/server'
 
-export async function generateMetadata(): Promise<Metadata> {
+export function generateStaticParams() {
+    return getStaticParams()
+}
+
+export async function generateMetadata({ params: paramsPromise }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+    const { locale } = await paramsPromise
+    setStaticParamsLocale(locale)
     const t = await getI18n()
     return generateMeta({
         doc: {
@@ -17,7 +24,9 @@ export async function generateMetadata(): Promise<Metadata> {
     })
 }
 
-export default async function EventsPage() {
+export default async function EventsPage({ params: paramsPromise }: { params: Promise<{ locale: string }> }) {
+    const { locale } = await paramsPromise
+    setStaticParamsLocale(locale)
     const t = await getI18n()
 
     return (
