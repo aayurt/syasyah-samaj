@@ -33,7 +33,7 @@ fi
 # 5. Reload the app with PM2
 # Using 'reload' instead of 'restart' ensures zero-downtime if you use cluster mode
 echo "🔄 Reloading PM2 process..."
-if pm2 list | grep -q "afno-app"; then
+if pm2 list | grep -q "syasha-samaj"; then
     pm2 reload ecosystem.config.cjs --update-env
 else
     pm2 start ecosystem.config.cjs

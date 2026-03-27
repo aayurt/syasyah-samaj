@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'multi-tenant-portfolio',
+      name: 'syasha-samaj',
       script: '.next/standalone/server.js',
       instances: 'max',
       exec_mode: 'cluster',
@@ -17,7 +17,7 @@ module.exports = {
 
       env: {
         NODE_ENV: 'production',
-        PORT: 8080,
+        PORT: 8085,
       },
     },
   ],
