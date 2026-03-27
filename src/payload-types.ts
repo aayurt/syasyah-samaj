@@ -285,6 +285,7 @@ export interface Post {
 export interface Tenant {
   id: number;
   name: string;
+  description?: string | null;
   /**
    * If checked, the tenant will be shown on the website. If not checked, the tenant will not be shown on the website.
    */
@@ -311,6 +312,27 @@ export interface Tenant {
    * If checked, logging in is not required to read. Useful for building public pages.
    */
   allowPublicRead?: boolean | null;
+  /**
+   * Ilaka location details
+   */
+  location?: {
+    /**
+     * Physical address of the Ilaka
+     */
+    address?: string | null;
+    /**
+     * Google Maps Embed URL or Link
+     */
+    mapUrl?: string | null;
+    /**
+     * Latitude coordinate
+     */
+    latitude?: number | null;
+    /**
+     * Longitude coordinate
+     */
+    longitude?: number | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -1676,6 +1698,7 @@ export interface TicketsSelect<T extends boolean = true> {
  */
 export interface TenantsSelect<T extends boolean = true> {
   name?: T;
+  description?: T;
   enabled?: T;
   contactInfo?:
     | T
@@ -1692,6 +1715,14 @@ export interface TenantsSelect<T extends boolean = true> {
       };
   slug?: T;
   allowPublicRead?: T;
+  location?:
+    | T
+    | {
+        address?: T;
+        mapUrl?: T;
+        latitude?: T;
+        longitude?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

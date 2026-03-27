@@ -30,10 +30,17 @@
     "pastEvents": "Past Events",
     "pastEventsDescription": "Past events organized by the Samaj.",
     "UpcomingEvents": "Upcoming Events",
-    "UpcomingEventsDescription": "Upcoming events organized by the Samaj."
+    "UpcomingEventsDescription": "Upcoming events organized by the Samaj.",
+    "learnMore": "Learn More",
+    "noPastEvents": "No past events found.",
+    "noUpcomingEvents": "No upcoming events found.",
+    "noEvents": "No events found."
   },
   "homepageDescription": "Welcome to the Syasyah Samaj, a community of people who believe in the power of synergy and collaboration to achieve greater results.",
   "homepageTitle": "Syasyah Samaj",
   "meta:title": "Syasyah Samaj",
-  "meta:description": "Welcome to the Syasyah Samaj, a community of people who believe in the power of synergy and collaboration to achieve greater results."
+  "meta:description": "Welcome to the Syasyah Samaj, a community of people who believe in the power of synergy and collaboration to achieve greater results.",
+  "ilaka": {
+    "viewFullDetails": "View Full Details"
+  }
 }

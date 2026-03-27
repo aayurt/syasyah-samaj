@@ -96,15 +96,18 @@ export const Events: CollectionConfig = {
       name: 'title',
       type: 'text',
       required: true,
+      localized: true
     },
     {
       name: 'description',
       required: false,
       type: 'textarea',
+      localized: true
     },
     {
       name: 'content',
       type: 'richText',
+      localized: true,
       editor: lexicalEditor({
         features: ({ rootFeatures }) => {
           return [

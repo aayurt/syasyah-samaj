@@ -224,7 +224,6 @@ export const plugins: Plugin[] = [
         emailAndPassword: {
           enabled: true,
           sendResetPassword: async ({ user, url, token }, request) => {
-            console.log({ user, url, token })
             await resend.emails.send({
               from: `${process.env.NEXT_PUBLIC_APP_NAME} <onboarding@resend.dev>`,
               to: user.email,

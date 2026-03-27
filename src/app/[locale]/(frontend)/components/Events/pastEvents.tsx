@@ -59,7 +59,7 @@ export default async function PastEvents({
                                         />
                                     )}
                                     <div className="absolute top-4 right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-red-900 dark:text-red-400">
-                                        {t('home.pastEvents' as any, { count: 0 })}
+                                        {t('home.pastEvents')}
                                     </div>
                                 </div>
                                 <div className="p-6 flex flex-col flex-grow">
@@ -78,7 +78,7 @@ export default async function PastEvents({
                                         {event.description}
                                     </p>
                                     <div className="flex items-center text-red-900 dark:text-red-400 font-semibold text-sm group-hover:translate-x-1 transition-transform">
-                                        {t('home.learnMore' as any, { count: 0 })} <ArrowRight className="w-4 h-4 ml-1" />
+                                        {t('home.learnMore')} <ArrowRight className="w-4 h-4 ml-1" />
                                     </div>
                                 </div>
                             </Link>
@@ -86,7 +86,7 @@ export default async function PastEvents({
                     </div>
                 ) : (
                     <div className="text-center py-12 bg-white dark:bg-card rounded-3xl border border-dashed border-border">
-                        <p className="text-gray-500">{t('home.noPastEvents' as any, { count: 0 })}</p>
+                        <p className="text-gray-500">{t('home.noPastEvents')}</p>
                     </div>
                 )}
             </div>

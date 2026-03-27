@@ -48,6 +48,12 @@ export const Tenants: CollectionConfig = {
       name: 'name',
       type: 'text',
       required: true,
+      localized: true
+    },
+    {
+      name: 'description',
+      type: 'text',
+      localized: true
     },
     {
       name: 'enabled',
@@ -115,6 +121,49 @@ export const Tenants: CollectionConfig = {
       },
       defaultValue: false,
       index: true,
+    },
+    {
+      name: 'location',
+      type: 'group',
+      fields: [
+        {
+          name: 'address',
+          type: 'text',
+          required: false,
+          admin: {
+            description: 'Physical address of the Ilaka',
+          },
+        },
+        {
+          name: 'mapUrl',
+          type: 'text',
+          required: false,
+          admin: {
+            description: 'Google Maps Embed URL or Link',
+          },
+        },
+        {
+          name: 'latitude',
+          type: 'number',
+          required: false,
+          admin: {
+            description: 'Latitude coordinate',
+            step: 0.000001,
+          },
+        },
+        {
+          name: 'longitude',
+          type: 'number',
+          required: false,
+          admin: {
+            description: 'Longitude coordinate',
+            step: 0.000001,
+          },
+        },
+      ],
+      admin: {
+        description: 'Ilaka location details',
+      },
     },
   ],
   // endpoints: [

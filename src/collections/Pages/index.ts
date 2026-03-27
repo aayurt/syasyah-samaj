@@ -21,6 +21,7 @@ import {
   PreviewField,
 } from '@payloadcms/plugin-seo/fields'
 import { isSuperAdmin, isSuperAdminAccess } from '@/access/isSuperAdmin'
+import { tree } from 'next/dist/build/templates/app-page'
 
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
@@ -68,6 +69,7 @@ export const Pages: CollectionConfig<'pages'> = {
       name: 'title',
       type: 'text',
       required: true,
+      localized: true
     },
     {
       type: 'tabs',
@@ -81,6 +83,7 @@ export const Pages: CollectionConfig<'pages'> = {
             {
               name: 'layout',
               type: 'blocks',
+              localized: true,
               blocks: [CallToAction, Content, MediaBlock, Archive, FormBlock],
               required: true,
               admin: {
@@ -93,6 +96,7 @@ export const Pages: CollectionConfig<'pages'> = {
         {
           name: 'meta',
           label: 'SEO',
+          localized: true,
           fields: [
             OverviewField({
               titlePath: 'meta.title',

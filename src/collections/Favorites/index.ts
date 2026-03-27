@@ -84,7 +84,6 @@ export const Favorites: CollectionConfig = {
               }),
             ),
           )
-          console.log({ req: req.user.id })
           const updated = await req.payload.find({
             collection: 'favorites',
             where: {
