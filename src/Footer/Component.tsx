@@ -32,8 +32,8 @@ export async function Footer() {
           </nav>
         </div>
       </div>
-      <div className="container border-t border-border/10 py-6">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
+      <div className="container border-t border-gray-200 dark:border-gray-800 mt-6 py-2">
+        <div className="flex flex-col md:flex-row justify-center items-center gap-4 text-sm text-gray-500">
           <p>{t('copyright')}</p>
         </div>
       </div>
