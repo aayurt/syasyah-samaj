@@ -24,6 +24,12 @@ const nextConfig = {
           protocol: 'http',
         }
       }),
+      ...[1, 2, 3, 4, 5, 6, 7, 8].map((ilaka) => {
+        return {
+          hostname: `ilaka${ilaka}.syasyahsamaj.com`,
+          protocol: 'https',
+        }
+      }),
     ],
   },
   reactStrictMode: true,
@@ -46,7 +52,6 @@ const nextConfig = {
       },
     ]
   },
-
 }
 
 export default withPayload(nextConfig)
