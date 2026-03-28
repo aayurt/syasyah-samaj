@@ -27,7 +27,7 @@ echo "📦 Installing dependencies..."
 pnpm install
 
 echo "🏗️ Building project..."
-pnpm run build
+NODE_OPTIONS="--max_old_space_size=3072" pnpm run build
 
 echo "📂 Preparing standalone build..."
 mkdir -p .next/standalone/.next
