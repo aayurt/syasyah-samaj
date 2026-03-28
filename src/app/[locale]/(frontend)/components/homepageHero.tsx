@@ -14,7 +14,7 @@ export default async function HomepageHero() {
     collection: 'tenants',
     where: {
       domain: {
-        equals: domain === 'localhost:3000' || domain === 'syasyahsamaj.com' ? null : domain,
+        equals: domain === 'localhost:3000' || domain === 'syasyahsamaj' ? null : domain,
       },
     },
     limit: 1,
