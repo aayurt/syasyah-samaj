@@ -44,7 +44,7 @@ export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
         <div className="hidden md:block w-px h-6 bg-gray-200 dark:bg-gray-800" />
 
         {/* Theme & Language Controls */}
-        <div className="flex items-center gap-1">
+        <div className="hidden md:flex items-center gap-1">
           <ThemeSelector />
           <LanguageSwitcher />
         </div>
@@ -76,6 +76,10 @@ export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
             </button>
           </div>
           <div className="flex flex-col gap-6">
+            <div className='flex justify-between items-center'>
+              <ThemeSelector />
+              <LanguageSwitcher />
+            </div>
             {navItems.map(({ link }, i) => (
               <div key={i} onClick={() => setIsMobileMenuOpen(false)}>
                 <CMSLink

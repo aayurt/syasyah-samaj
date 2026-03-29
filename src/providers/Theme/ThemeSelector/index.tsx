@@ -29,11 +29,10 @@ export const ThemeSelector: React.FC = () => {
       <div className="relative z-0 inline-grid grid-cols-3 gap-0.5 rounded-full bg-gray-950/5 p-0.75 text-gray-950 dark:bg-white/10 dark:text-white">
         {/* System Theme */}
         <div
-          className={`relative rounded-full p-1.5 *:size-7 cursor-pointer transition-colors sm:p-0 ${
-            value === 'auto'
+          className={`relative rounded-full p-1.5 *:size-7 cursor-pointer transition-colors sm:p-0 ${value === 'auto'
               ? 'bg-white ring ring-gray-950/10 inset-ring inset-ring-white/10 dark:bg-gray-600 dark:text-white dark:ring-transparent'
               : ''
-          }`}
+            }`}
           onClick={() => onThemeChange('auto')}
         >
           <input
@@ -63,11 +62,10 @@ export const ThemeSelector: React.FC = () => {
 
         {/* Light Theme */}
         <div
-          className={`relative rounded-full p-1.5 *:size-7 cursor-pointer transition-colors sm:p-0 ${
-            value === 'light'
+          className={`relative rounded-full p-1.5 *:size-7 cursor-pointer transition-colors sm:p-0 ${value === 'light'
               ? 'bg-white ring ring-gray-950/10 inset-ring inset-ring-white/10 dark:bg-gray-600 dark:text-white dark:ring-transparent'
               : ''
-          }`}
+            }`}
           onClick={() => onThemeChange('light')}
         >
           <input
@@ -93,11 +91,10 @@ export const ThemeSelector: React.FC = () => {
 
         {/* Dark Theme */}
         <div
-          className={`relative rounded-full p-1.5 *:size-7 cursor-pointer transition-colors sm:p-0 ${
-            value === 'dark'
+          className={`relative rounded-full p-1.5 *:size-7 cursor-pointer transition-colors sm:p-0 ${value === 'dark'
               ? 'bg-white ring ring-gray-950/10 inset-ring inset-ring-white/10 dark:bg-gray-600 dark:text-white dark:ring-transparent'
               : ''
-          }`}
+            }`}
           onClick={() => onThemeChange('dark')}
         >
           <input
