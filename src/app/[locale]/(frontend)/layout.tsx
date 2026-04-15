@@ -18,6 +18,7 @@ import { I18nProviderClient } from '@/locales/client'
 
 import { locales } from '@/locales/config'
 import { LanguageLoading } from './components/LanguageLoading'
+import { TenantProvider } from '@/context/TenantContext'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
@@ -33,7 +34,11 @@ export default async function RootLayout({
   const { locale } = await params
 
   return (
-    <html className={cn(GeistSans.variable, GeistMono.variable)} lang={locale} suppressHydrationWarning>
+    <html
+      className={cn(GeistSans.variable, GeistMono.variable)}
+      lang={locale}
+      suppressHydrationWarning
+    >
       <head>
         <InitTheme />
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
@@ -41,17 +46,19 @@ export default async function RootLayout({
       </head>
       <body>
         <I18nProviderClient locale={locale} fallback={<LanguageLoading />}>
-          <Providers>
-            {/* <AdminBar
+          <TenantProvider>
+            <Providers>
+              {/* <AdminBar
             adminBarProps={{
               preview: false,
             }}
           /> */}
 
-            <Header locale={locale} />
-            {children}
-            <Footer locale={locale} />
-          </Providers>
+              <Header locale={locale} />
+              {children}
+              <Footer locale={locale} />
+            </Providers>
+          </TenantProvider>
         </I18nProviderClient>
       </body>
     </html>
