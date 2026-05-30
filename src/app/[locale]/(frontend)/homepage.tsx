@@ -11,6 +11,7 @@ import HomepageHero from './components/homepageHero'
 import Hero from './components/Hero'
 import { headers } from 'next/headers'
 import Notification from './components/Notification'
+import { FindIlaka } from '@/components/FindIlaka'
 
 export default async function HomePage({ locale: propLocale }: { locale?: 'en' | 'ne' | 'new' }) {
   const payload = await getPayload({ config: configPromise })
@@ -34,10 +35,25 @@ export default async function HomePage({ locale: propLocale }: { locale?: 'en' |
 
   if (!tenant) return null
 
+  const { docs: allIlakas } = await payload.find({
+    collection: 'tenants',
+    limit: 100,
+  })
+
   return (
     <div className="font-sans bg-white text-gray-900">
       <Notification />
       <HomepageHero />
+
+      <div className="-mt-10 mb-20 relative z-50">
+        <FindIlaka initialIlakas={allIlakas.map(i => ({
+            id: i.id as string,
+            name: i.name,
+            slug: i.slug,
+            location: i.location ? { address: i.location.address || undefined } : undefined
+        }))} />
+      </div>
+
       <Hero />
       <Ilakas locale={locale as 'en' | 'ne' | 'new'} />
 

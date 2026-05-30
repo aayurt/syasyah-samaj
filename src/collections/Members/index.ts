@@ -1,5 +1,6 @@
 import { isAdmin } from '@/access/admin'
 import type { CollectionConfig } from 'payload'
+import { syncMembersFromGoogleSheet } from '@/utilities/syncSheets'
 
 export const Members: CollectionConfig = {
   slug: 'members',
@@ -13,7 +14,28 @@ export const Members: CollectionConfig = {
     useAsTitle: 'fullName',
     group: 'User Management',
     defaultColumns: ['fullName', 'email', 'role', 'status'],
+    components: {
+      beforeListTable: ['@/components/Admin/SyncSheets/index#SyncSheets'],
+    },
   },
+  endpoints: [
+    {
+      path: '/sync-sheets',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user || !isAdmin({ req })) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        try {
+          const { sheetUrl } = (await req.json!()) as { sheetUrl: string }
+          const result = await syncMembersFromGoogleSheet(req.payload, sheetUrl)
+          return Response.json(result)
+        } catch (error: any) {
+          return Response.json({ error: error.message }, { status: 500 })
+        }
+      },
+    },
+  ],
   fields: [
     {
       name: 'fullName',
@@ -89,6 +111,44 @@ export const Members: CollectionConfig = {
       name: 'phoneNumber',
       type: 'text',
       required: true,
+    },
+    {
+      name: 'memberId',
+      type: 'text',
+      admin: {
+        description: 'Unique Member ID from community records',
+        position: 'sidebar',
+      },
+      index: true,
+    },
+    {
+      name: 'user',
+      type: 'relationship',
+      relationTo: 'users',
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'expiryDate',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'idCardDetails',
+      type: 'group',
+      fields: [
+        {
+          name: 'bloodGroup',
+          type: 'text',
+        },
+        {
+          name: 'emergencyContact',
+          type: 'text',
+        },
+      ],
     },
   ],
 }

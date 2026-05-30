@@ -79,6 +79,9 @@ export interface Config {
     notifications: Notification;
     favorites: Favorite;
     members: Member;
+    archives: Archive;
+    messages: Message;
+    'chat-rooms': ChatRoom;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -107,6 +110,9 @@ export interface Config {
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     favorites: FavoritesSelect<false> | FavoritesSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
+    archives: ArchivesSelect<false> | ArchivesSelect<true>;
+    messages: MessagesSelect<false> | MessagesSelect<true>;
+    'chat-rooms': ChatRoomsSelect<false> | ChatRoomsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -437,6 +443,13 @@ export interface User {
     | {
         tenant: number | Tenant;
         roles: ('tenant-admin' | 'tenant-viewer')[];
+        id?: string | null;
+      }[]
+    | null;
+  fcmTokens?:
+    | {
+        token: string;
+        device?: string | null;
         id?: string | null;
       }[]
     | null;
@@ -966,6 +979,77 @@ export interface Member {
   status?: ('active' | 'inactive' | 'suspended') | null;
   joinedDate?: string | null;
   phoneNumber: string;
+  /**
+   * Unique Member ID from community records
+   */
+  memberId?: string | null;
+  user?: (number | null) | User;
+  expiryDate?: string | null;
+  idCardDetails?: {
+    bloodGroup?: string | null;
+    emergencyContact?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "archives".
+ */
+export interface Archive {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  title: string;
+  /**
+   * Historical era or period (e.g., 18th Century, Malla Era)
+   */
+  era?: string | null;
+  year?: number | null;
+  content: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  heroImage?: (number | null) | Media;
+  slug?: string | null;
+  slugLock?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "messages".
+ */
+export interface Message {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  chatRoom: number | ChatRoom;
+  sender: number | User;
+  content: string;
+  readBy?: (number | User)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chat-rooms".
+ */
+export interface ChatRoom {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  name: string;
+  type: 'direct' | 'group';
+  members: (number | User)[];
   updatedAt: string;
   createdAt: string;
 }
@@ -1286,6 +1370,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'members';
         value: number | Member;
+      } | null)
+    | ({
+        relationTo: 'archives';
+        value: number | Archive;
+      } | null)
+    | ({
+        relationTo: 'messages';
+        value: number | Message;
+      } | null)
+    | ({
+        relationTo: 'chat-rooms';
+        value: number | ChatRoom;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1622,6 +1718,13 @@ export interface UsersSelect<T extends boolean = true> {
         roles?: T;
         id?: T;
       };
+  fcmTokens?:
+    | T
+    | {
+        token?: T;
+        device?: T;
+        id?: T;
+      };
   banned?: T;
   banReason?: T;
   banExpires?: T;
@@ -1773,6 +1876,56 @@ export interface MembersSelect<T extends boolean = true> {
   status?: T;
   joinedDate?: T;
   phoneNumber?: T;
+  memberId?: T;
+  user?: T;
+  expiryDate?: T;
+  idCardDetails?:
+    | T
+    | {
+        bloodGroup?: T;
+        emergencyContact?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "archives_select".
+ */
+export interface ArchivesSelect<T extends boolean = true> {
+  tenant?: T;
+  title?: T;
+  era?: T;
+  year?: T;
+  content?: T;
+  heroImage?: T;
+  slug?: T;
+  slugLock?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "messages_select".
+ */
+export interface MessagesSelect<T extends boolean = true> {
+  tenant?: T;
+  chatRoom?: T;
+  sender?: T;
+  content?: T;
+  readBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chat-rooms_select".
+ */
+export interface ChatRoomsSelect<T extends boolean = true> {
+  tenant?: T;
+  name?: T;
+  type?: T;
+  members?: T;
   updatedAt?: T;
   createdAt?: T;
 }
