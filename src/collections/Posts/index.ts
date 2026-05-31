@@ -17,6 +17,7 @@ import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { populateAuthors } from './hooks/populateAuthors'
 import { revalidateDelete, revalidatePost } from './hooks/revalidatePost'
+import { sendFCMTopicNotification } from '@/utilities/sendFCMNotification'
 
 import {
   MetaDescriptionField,
@@ -228,7 +229,23 @@ export const Posts: CollectionConfig<'posts'> = {
     ...slugField(),
   ],
   hooks: {
-    afterChange: [revalidatePost],
+    afterChange: [
+        revalidatePost,
+        async ({ doc, operation, req }) => {
+            if (operation === 'create' && req?.payload) {
+                await sendFCMTopicNotification({
+                    topic: 'syasyah-samaj-posts',
+                    notification: {
+                        title: 'New Post: ' + doc.title,
+                        body: 'Check out the latest update: ' + doc.title,
+                        imageUrl: doc.heroImage?.url,
+                        id: doc.id,
+                        link: `/posts/${doc.slug}`,
+                    },
+                })
+            }
+        }
+    ],
     afterRead: [populateAuthors],
     afterDelete: [revalidateDelete],
   },

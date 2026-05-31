@@ -26,6 +26,9 @@ import { Favorites } from './collections/Favorites'
 import { trustedOriginsValues } from './trustedOrigin'
 import Redis from 'ioredis'
 import { Members } from './collections/Members'
+import { Archives } from './collections/Archives'
+import { Messages } from './collections/Messages'
+import { ChatRooms } from './collections/ChatRooms'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -97,6 +100,9 @@ export default buildConfig({
     Notifications,
     Favorites,
     Members,
+    Archives,
+    Messages,
+    ChatRooms,
   ],
   cors: [getServerSideURL(), ...trustedOriginsValues].filter(Boolean),
   globals: [Header, Footer],
