@@ -287,6 +287,9 @@ export const plugins: Plugin[] = [
       media: {},
       events: {},
       members: {},
+      archives: {},
+      messages: {},
+      'chat-rooms': {},
     },
     tenantField: {
       label: 'Assigned Tenant',

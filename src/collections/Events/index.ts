@@ -73,12 +73,13 @@ export const Events: CollectionConfig = {
             })
           })
           await sendFCMTopicNotification({
-            topic: 'afno-app-event',
+            topic: 'syasyah-samaj-events',
             notification: {
               title: 'Check out for ' + doc.title + ' event.',
               body: doc.description || 'Check out the ' + doc.title + ' event.',
               imageUrl: doc.coverImage?.url,
               id: doc.id,
+              link: `/events/${doc.slug}`,
             },
           })
         }

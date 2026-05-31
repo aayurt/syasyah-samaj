@@ -30,12 +30,13 @@ export const Tenants: CollectionConfig = {
       async ({ doc, operation, req }) => {
         if ((operation === 'create' || operation === 'update') && req?.payload) {
           await sendFCMTopicNotification({
-            topic: 'afno-app-tenant',
+            topic: 'syasyah-samaj-ilaka',
             notification: {
               title: 'Keep an eye on ' + doc.name + ' events.',
               body: doc.description || 'Check out the ' + doc.name + ' events.',
               imageUrl: doc.coverImage?.url,
               id: doc.id,
+              link: `/ilaka/${doc.slug}`,
             },
           })
         }

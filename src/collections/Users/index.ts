@@ -95,6 +95,24 @@ export const Users: CollectionConfig = {
         position: 'sidebar',
       },
     },
+    {
+      name: 'fcmTokens',
+      type: 'array',
+      fields: [
+        {
+          name: 'token',
+          type: 'text',
+          required: true,
+        },
+        {
+          name: 'device',
+          type: 'text',
+        },
+      ],
+      admin: {
+        position: 'sidebar',
+      },
+    },
   ],
   hooks: {
     beforeChange: [

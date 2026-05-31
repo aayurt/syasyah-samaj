@@ -1,6 +1,6 @@
 import { getMessaging } from 'firebase-admin/messaging'
 import { cert, initializeApp, getApps, ServiceAccount } from 'firebase-admin/app'
-import serviceAccountKey from '../../serviceAccountKey.json'
+// import serviceAccountKey from '../../serviceAccountKey.json'
 
 type NotificationData = {
   id?: string
@@ -16,10 +16,15 @@ type SendFCMNotificationParams = {
 }
 
 // Initialize Firebase Admin if not already initialized
-if (!getApps().length) {
-  initializeApp({
-    credential: cert(serviceAccountKey as ServiceAccount),
-  })
+if (!getApps().length && process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+      initializeApp({
+        credential: cert(serviceAccount as ServiceAccount),
+      })
+  } catch (e) {
+      console.error("Failed to initialize Firebase Admin:", e)
+  }
 }
 
 export const sendFCMNotification = async ({
