@@ -4,7 +4,7 @@ export const Favorites: CollectionConfig = {
   slug: 'favorites',
   admin: {
     useAsTitle: 'id',
-    group: 'Users',
+    group: 'User Management',
     hidden: ({ user }) => {
       if (!user) return true
       if (user.role === 'super-admin') return false

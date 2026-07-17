@@ -49,12 +49,18 @@ export const Posts: CollectionConfig<'posts'> = {
     },
   },
   admin: {
+    group: 'Content',
     hidden: ({ user }) => {
       if (!user) return true
-      if (user.role === 'super-admin') return false
+      if (user.role === 'super-admin' || user.role === 'admin') return false
       return true
     },
-    defaultColumns: ['title', 'slug', 'updatedAt'],
+    components: {
+      edit: {
+        beforeDocumentControls: ['@/components/admin/IlakaSelector/index#IlakaSelector'],
+      },
+    },
+    defaultColumns: ['title', '_status', 'categories', 'updatedAt'],
     livePreview: {
       url: ({ data, req }) => {
         const path = generatePreviewPath({

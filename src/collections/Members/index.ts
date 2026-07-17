@@ -13,9 +13,9 @@ export const Members: CollectionConfig = {
   admin: {
     useAsTitle: 'fullName',
     group: 'User Management',
-    defaultColumns: ['fullName', 'email', 'role', 'status'],
+    defaultColumns: ['fullName', 'email', 'role', 'status', 'user'],
     components: {
-      beforeListTable: ['@/components/Admin/SyncSheets/index#SyncSheets'],
+      beforeListTable: ['@/components/admin/SyncSheets/index#SyncSheets'],
     },
   },
   endpoints: [
@@ -27,8 +27,13 @@ export const Members: CollectionConfig = {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         try {
-          const { sheetUrl } = (await req.json!()) as { sheetUrl: string }
-          const result = await syncMembersFromGoogleSheet(req.payload, sheetUrl)
+          const { sheetUrl, tenantId, selectedIndices, removeIndices } = (await req.json!()) as {
+            sheetUrl: string
+            tenantId?: number | string
+            selectedIndices?: number[]
+            removeIndices?: number[]
+          }
+          const result = await syncMembersFromGoogleSheet(req.payload, sheetUrl, { tenantId, selectedIndices, removeIndices })
           return Response.json(result)
         } catch (error: any) {
           return Response.json({ error: error.message }, { status: 500 })
@@ -41,7 +46,6 @@ export const Members: CollectionConfig = {
       name: 'fullName',
       type: 'text',
       required: true,
-      localized: true,
     },
     {
       name: 'email',
@@ -60,7 +64,6 @@ export const Members: CollectionConfig = {
       admin: {
         description: 'Short professional biography',
       },
-      localized: true,
     },
     {
       name: 'role',
@@ -104,13 +107,11 @@ export const Members: CollectionConfig = {
       defaultValue: () => new Date(),
       admin: {
         position: 'sidebar',
-        readOnly: true,
       },
     },
     {
       name: 'phoneNumber',
       type: 'text',
-      required: true,
     },
     {
       name: 'memberId',

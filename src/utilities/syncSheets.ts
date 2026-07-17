@@ -1,82 +1,174 @@
-import { parse } from 'csv-parse/sync'
 import type { Payload } from 'payload'
+import { parseCSV } from './csv'
 
-export const syncMembersFromGoogleSheet = async (payload: Payload, sheetUrl: string) => {
+const COLUMN_MAP: Record<string, string> = {
+  'full name': 'fullName',
+  'fullname': 'fullName',
+  'name': 'fullName',
+  'email': 'email',
+  'member id': 'memberId',
+  'id': 'memberId',
+  'memberid': 'memberId',
+  'phone': 'phoneNumber',
+  'phone number': 'phoneNumber',
+  'phonenumber': 'phoneNumber',
+  'role': 'role',
+  'status': 'status',
+  'bio': 'bio',
+  'twitter': 'socialLinks.twitter',
+  'linkedin': 'socialLinks.linkedin',
+  'website': 'socialLinks.website',
+  'expiry date': 'expiryDate',
+  'expiry': 'expiryDate',
+  'expirydate': 'expiryDate',
+  'joined date': 'joinedDate',
+  'joined': 'joinedDate',
+  'joineddate': 'joinedDate',
+  'blood group': 'idCardDetails.bloodGroup',
+  'blood': 'idCardDetails.bloodGroup',
+  'bloodgroup': 'idCardDetails.bloodGroup',
+  'emergency contact': 'idCardDetails.emergencyContact',
+  'emergency': 'idCardDetails.emergencyContact',
+  'emergencycontact': 'idCardDetails.emergencyContact',
+}
+
+function pickValue(record: Record<string, string>, key: string): string | undefined {
+  const match = Object.entries(COLUMN_MAP).find(
+    ([header]) => header === key.toLowerCase().trim(),
+  )
+  if (match) {
+    const mapKey = match[0]
+    const actualKey = Object.keys(record).find((k) => k.toLowerCase() === mapKey.toLowerCase())
+    return actualKey ? record[actualKey] : record[key]
+  }
+  const fallbackKey = Object.keys(record).find((k) => k.toLowerCase() === key.toLowerCase())
+  return fallbackKey ? record[fallbackKey] : record[key]
+}
+
+interface SyncResult {
+  created: number
+  updated: number
+  skipped: number
+  removed: number
+  errors: string[]
+}
+
+export const syncMembersFromGoogleSheet = async (
+  payload: Payload,
+  sheetUrl: string,
+  options?: {
+    tenantId?: number | string
+    selectedIndices?: number[]
+    removeIndices?: number[]
+  },
+): Promise<SyncResult> => {
+  const result: SyncResult = { created: 0, updated: 0, skipped: 0, removed: 0, errors: [] }
+  const tenantId = options?.tenantId
+  const selectedSet = options?.selectedIndices ? new Set(options.selectedIndices) : null
+  const removeSet = options?.removeIndices ? new Set(options.removeIndices) : null
+
   try {
-    // Convert regular Google Sheet URL to CSV export URL
     const csvUrl = sheetUrl.replace(/\/edit.*$/, '/export?format=csv')
-
     const response = await fetch(csvUrl)
     const csvText = await response.text()
-    const records = parse(csvText, {
-      columns: true,
-      skip_empty_lines: true,
-    })
 
+    const records: Record<string, string>[] = parseCSV(csvText)
     payload.logger.info(`Fetched ${records.length} records from Google Sheet`)
 
-    for (const record of records as any[]) {
-      const email = record['Email'] || record['email']
-      const fullName = record['Full Name'] || record['Name'] || record['fullName']
-      const memberId = record['Member ID'] || record['ID'] || record['memberId']
-      const phoneNumber = record['Phone'] || record['Phone Number'] || record['phoneNumber']
+    for (let idx = 0; idx < records.length; idx++) {
+      const record = records[idx]!
 
-      if (!email) continue
-
-      // Find or create user
-      let user = await payload.find({
-        collection: 'users',
-        where: { email: { equals: email } },
-        limit: 1,
-      }).then(res => res.docs[0])
-
-      if (!user) {
-        user = await payload.create({
-          collection: 'users',
-          data: {
-            email,
-            name: fullName,
-            role: 'user',
-            password: process.env.SYNC_DEFAULT_PASSWORD || 'TemporaryPassword123!',
-          } as any,
-        })
+      if (selectedSet && !selectedSet.has(idx)) {
+        result.skipped++
+        continue
       }
 
-      // Find or create member
-      const existingMember = await payload.find({
-        collection: 'members',
-        where: { email: { equals: email } },
-        limit: 1,
-      }).then(res => res.docs[0])
+      try {
+        const email = pickValue(record, 'email')
+        if (!email) {
+          result.skipped++
+          continue
+        }
 
-      if (existingMember) {
-        await payload.update({
-          collection: 'members',
-          id: existingMember.id,
-          data: {
-            fullName,
-            memberId,
-            phoneNumber: phoneNumber || existingMember.phoneNumber,
-            user: user.id,
-          },
-        })
-      } else {
-        await payload.create({
-          collection: 'members',
-          data: {
-            fullName,
-            email,
-            memberId,
-            phoneNumber: phoneNumber || 'N/A',
-            user: user.id,
-          },
-        })
+        const memberId = pickValue(record, 'memberId') || ''
+
+        let existingMember = null as any
+        if (memberId) {
+          existingMember = await payload.find({
+            collection: 'members',
+            where: { memberId: { equals: memberId } },
+            limit: 1,
+          }).then((res) => res.docs[0] as any)
+        }
+        if (!existingMember) {
+          existingMember = await payload.find({
+            collection: 'members',
+            where: { email: { equals: email } },
+            limit: 1,
+          }).then((res) => res.docs[0] as any)
+        }
+
+        if (removeSet?.has(idx)) {
+          if (existingMember) {
+            await payload.delete({ collection: 'members', id: existingMember.id })
+            result.removed++
+          } else {
+            result.skipped++
+          }
+          continue
+        }
+
+        const fullName = pickValue(record, 'fullName') || ''
+        const phoneNumber = pickValue(record, 'phoneNumber') || ''
+        const status = pickValue(record, 'status') || 'active'
+        const bio = pickValue(record, 'bio') || ''
+        const expiryDate = pickValue(record, 'expiryDate') || undefined
+        const joinedDate = pickValue(record, 'joinedDate') || undefined
+
+        const twitter = pickValue(record, 'twitter') || ''
+        const linkedin = pickValue(record, 'linkedin') || ''
+        const website = pickValue(record, 'website') || ''
+
+        const bloodGroup = pickValue(record, 'bloodGroup') || ''
+        const emergencyContact = pickValue(record, 'emergencyContact') || ''
+
+        const memberData: Record<string, unknown> = {
+          fullName,
+          email,
+          memberId,
+          phoneNumber,
+          status,
+          bio,
+          socialLinks: { twitter, linkedin, website },
+          idCardDetails: { bloodGroup, emergencyContact },
+        }
+
+        if (expiryDate) memberData.expiryDate = expiryDate
+        if (joinedDate) memberData.joinedDate = joinedDate
+        if (tenantId) memberData.tenant = tenantId
+
+        if (existingMember) {
+          await payload.update({
+            collection: 'members',
+            id: existingMember.id,
+            data: memberData as any,
+          })
+          result.updated++
+        } else {
+          await payload.create({
+            collection: 'members',
+            data: memberData as any,
+          } as any)
+          result.created++
+        }
+      } catch (err: any) {
+        result.errors.push(`${record['Email'] || record['email'] || 'unknown'}: ${err.message}`)
       }
     }
-
-    return { success: true, count: records.length }
-  } catch (error: any) {
-    payload.logger.error({ msg: 'Error syncing from Google Sheet:', error })
-    throw error
+  } catch (err: any) {
+    payload.logger.error({ msg: 'Error syncing from Google Sheet:', err })
+    throw err
   }
+
+  return result
 }

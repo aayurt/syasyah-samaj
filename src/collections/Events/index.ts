@@ -33,6 +33,12 @@ export const Events: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     group: 'Events',
+    defaultColumns: ['title', 'startDatetime', 'enabled'],
+    components: {
+      edit: {
+        beforeDocumentControls: ['@/components/admin/IlakaSelector/index#IlakaSelector'],
+      },
+    },
   },
   endpoints: [
     {

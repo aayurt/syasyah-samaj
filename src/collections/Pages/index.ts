@@ -39,6 +39,7 @@ export const Pages: CollectionConfig<'pages'> = {
     slug: true,
   },
   admin: {
+    group: 'Content',
     hidden: ({ user }) => {
       if (!user) return true
       if (user.role === 'super-admin') return false

@@ -7,7 +7,7 @@ export const Notifications: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'user', 'type', 'read', 'createdAt'],
-    group: 'Users',
+    group: 'User Management',
     hidden: ({ user }) => {
       if (!user) return true
       if (user.role === 'super-admin') return false

@@ -344,6 +344,8 @@ export interface Tenant {
   createdAt: string;
 }
 /**
+ * Upload and manage images and files
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
@@ -978,7 +980,7 @@ export interface Member {
   };
   status?: ('active' | 'inactive' | 'suspended') | null;
   joinedDate?: string | null;
-  phoneNumber: string;
+  phoneNumber?: string | null;
   /**
    * Unique Member ID from community records
    */
@@ -1106,10 +1108,23 @@ export interface Search {
   id: number;
   title?: string | null;
   priority?: number | null;
-  doc: {
-    relationTo: 'posts';
-    value: number | Post;
-  };
+  doc:
+    | {
+        relationTo: 'posts';
+        value: number | Post;
+      }
+    | {
+        relationTo: 'pages';
+        value: number | Page;
+      }
+    | {
+        relationTo: 'events';
+        value: number | Event;
+      }
+    | {
+        relationTo: 'archives';
+        value: number | Archive;
+      };
   slug?: string | null;
   meta?: {
     title?: string | null;
@@ -1123,6 +1138,9 @@ export interface Search {
         title?: string | null;
       }[]
     | null;
+  eventDate?: string | null;
+  location?: string | null;
+  era?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2117,6 +2135,9 @@ export interface SearchSelect<T extends boolean = true> {
         id?: T;
         title?: T;
       };
+  eventDate?: T;
+  location?: T;
+  era?: T;
   updatedAt?: T;
   createdAt?: T;
 }

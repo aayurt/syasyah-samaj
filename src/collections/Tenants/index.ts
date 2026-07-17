@@ -18,6 +18,7 @@ export const Tenants: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'name',
+    defaultColumns: ['name', 'slug', 'domain'],
     group: 'Ilakas',
     hidden: ({ user }) => {
       if (!user) return true

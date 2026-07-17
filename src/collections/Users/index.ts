@@ -44,7 +44,9 @@ export const Users: CollectionConfig = {
     // admin: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'super-admin',
   },
   admin: {
-    group: 'Users',
+    group: 'User Management',
+    useAsTitle: 'email',
+    defaultColumns: ['email', 'name', 'role'],
     hidden: ({ user }) => {
       if (!user) return true
       if (user.role === 'super-admin') return false
@@ -157,16 +159,20 @@ export const Users: CollectionConfig = {
     ],
     afterChange: [
       async ({ doc, operation, req }) => {
-        if (operation === 'create') {
-          // await req.payload.create({
-          //   collection: 'notifications',
-          //   data: {
-          //     user: doc.id,
-          //     title: 'Welcome to Afno Event!',
-          //     message: `Hello ${doc.name || 'there'}! We're excited to have you here. Start exploring events now!`,
-          //     type: 'info',
-          //   },
-          // })
+        if (operation === 'create' && doc?.email) {
+          const existingMember = await req.payload.find({
+            collection: 'members',
+            where: { email: { equals: doc.email } },
+            limit: 1,
+          })
+          const member = existingMember.docs[0]
+          if (member) {
+            await req.payload.update({
+              collection: 'members',
+              id: member.id,
+              data: { user: doc.id },
+            })
+          }
         }
       },
     ],

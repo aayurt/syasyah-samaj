@@ -12,6 +12,12 @@ export const Orders: CollectionConfig = {
   admin: {
     useAsTitle: 'id',
     group: 'Events',
+    defaultColumns: ['id', 'event', 'buyer', 'totalAmount', 'status'],
+    hidden: ({ user }) => {
+      if (!user) return true
+      if (user.role === 'super-admin') return false
+      return true
+    },
   },
   fields: [
     {

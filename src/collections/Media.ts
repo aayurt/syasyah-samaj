@@ -40,9 +40,13 @@ export const Media: CollectionConfig = {
     },
   ],
   admin: {
+    group: 'Content',
+    useAsTitle: 'alt',
+    defaultColumns: ['alt', 'filename', 'mimeType', 'filesize'],
+    description: 'Upload and manage images and files',
     hidden: ({ user }) => {
       if (!user) return true
-      if (user.role === 'super-admin') return false
+      if (user.role === 'super-admin' || user.role === 'admin') return false
       return true
     },
   },

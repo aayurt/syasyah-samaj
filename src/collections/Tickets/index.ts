@@ -7,6 +7,12 @@ export const Tickets: CollectionConfig = {
   admin: {
     useAsTitle: 'code',
     group: 'Events',
+    defaultColumns: ['code', 'event', 'status', 'checkedInAt'],
+    hidden: ({ user }) => {
+      if (!user) return true
+      if (user.role === 'super-admin') return false
+      return true
+    },
   },
 
   hooks: {
