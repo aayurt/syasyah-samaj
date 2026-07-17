@@ -76,6 +76,7 @@
     "@tailwindcss/typography": "^0.5.13",
     "@types/escape-html": "^1.0.2",
     "@types/jest": "^30.0.0",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "22.5.4",
     "@types/react": "19.0.7",
     "@types/react-dom": "19.0.3",

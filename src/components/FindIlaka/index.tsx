@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { Search, MapPin, ArrowRight } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 
 interface Ilaka {
@@ -43,14 +42,9 @@ export const FindIlaka: React.FC<{ initialIlakas: Ilaka[] }> = ({ initialIlakas 
         />
       </div>
 
-      <AnimatePresence>
-        {results.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="absolute top-full mt-2 w-full bg-background border rounded-2xl shadow-2xl overflow-hidden"
-          >
+      {results.length > 0 && (
+        <div className="absolute top-full mt-2 w-full bg-background border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+        >
             {results.map((ilaka) => (
               <Link
                 key={ilaka.id}
@@ -69,9 +63,8 @@ export const FindIlaka: React.FC<{ initialIlakas: Ilaka[] }> = ({ initialIlakas 
                 <ArrowRight className="w-4 h-4 text-muted-foreground" />
               </Link>
             ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   )
 }

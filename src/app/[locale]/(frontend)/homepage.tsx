@@ -47,7 +47,7 @@ export default async function HomePage({ locale: propLocale }: { locale?: 'en' |
 
       <div className="-mt-10 mb-20 relative z-50">
         <FindIlaka initialIlakas={allIlakas.map(i => ({
-            id: i.id as string,
+            id: String(i.id),
             name: i.name,
             slug: i.slug,
             location: i.location ? { address: i.location.address || undefined } : undefined

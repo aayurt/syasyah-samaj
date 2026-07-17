@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { parse } from 'csv-parse/sync'
 import type { Payload } from 'payload'
 
@@ -7,8 +6,9 @@ export const syncMembersFromGoogleSheet = async (payload: Payload, sheetUrl: str
     // Convert regular Google Sheet URL to CSV export URL
     const csvUrl = sheetUrl.replace(/\/edit.*$/, '/export?format=csv')
 
-    const response = await axios.get(csvUrl)
-    const records = parse(response.data, {
+    const response = await fetch(csvUrl)
+    const csvText = await response.text()
+    const records = parse(csvText, {
       columns: true,
       skip_empty_lines: true,
     })
@@ -38,7 +38,7 @@ export const syncMembersFromGoogleSheet = async (payload: Payload, sheetUrl: str
             name: fullName,
             role: 'user',
             password: process.env.SYNC_DEFAULT_PASSWORD || 'TemporaryPassword123!',
-          },
+          } as any,
         })
       }
 
