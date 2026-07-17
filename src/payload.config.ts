@@ -82,11 +82,11 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI || '',
     },
   }),
-  // email: resendAdapter({
-  //   apiKey: process.env.RESEND_API_KEY || '',
-  //   defaultFromAddress: 'noreply@afnoevents.co.uk',
-  //   defaultFromName: 'Afno',
-  // }),
+  email: resendAdapter({
+    apiKey: process.env.RESEND_API_KEY || '',
+    defaultFromAddress: 'noreply@afnoevents.co.uk',
+    defaultFromName: 'Afno',
+  }),
   collections: [
     Pages,
     Posts,

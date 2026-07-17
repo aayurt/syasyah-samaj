@@ -47,7 +47,7 @@ export default async function Page({ params: paramsPromise, searchParams: search
     depth: 1,
     limit: 12,
     page,
-    locale: locale as 'en' | 'ne',
+    locale: locale as 'en' | 'ne' | 'new',
     select: {
       title: true,
       slug: true,

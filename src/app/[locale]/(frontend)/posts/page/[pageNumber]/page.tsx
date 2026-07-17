@@ -36,7 +36,7 @@ export default async function Page({ params: paramsPromise }: Args) {
     limit: 12,
     page: sanitizedPageNumber,
     overrideAccess: false,
-    locale: locale as 'en' | 'ne',
+    locale: locale as 'en' | 'ne' | 'new',
   })
 
   return (

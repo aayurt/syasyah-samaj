@@ -26,7 +26,7 @@ export default async function Page({ params: paramsPromise }: { params: Promise<
     depth: 1,
     limit: 12,
     overrideAccess: false,
-    locale: locale as 'en' | 'ne',
+    locale: locale as 'en' | 'ne' | 'new',
     select: {
       title: true,
       slug: true,

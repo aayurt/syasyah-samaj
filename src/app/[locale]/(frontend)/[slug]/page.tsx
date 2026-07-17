@@ -108,7 +108,7 @@ const queryPageBySlug = cache(async ({ slug, locale }: { slug: string; locale: s
     draft,
     limit: 1,
     pagination: false,
-    locale: locale as 'en' | 'ne',
+    locale: locale as 'en' | 'ne' | 'new',
     where: {
       slug: {
         equals: slug,

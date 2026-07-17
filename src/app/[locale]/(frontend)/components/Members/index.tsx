@@ -11,7 +11,7 @@ export default async function Members({ locale: propLocale }: { locale?: 'en' | 
 
     const { docs: members } = await payload.find({
         collection: 'members',
-        locale: locale as 'en' | 'ne',
+        locale: locale as 'en' | 'ne' | 'new',
     })
 
     return (

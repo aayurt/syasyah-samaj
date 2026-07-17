@@ -37,7 +37,7 @@ export const syncMembersFromGoogleSheet = async (payload: Payload, sheetUrl: str
             email,
             name: fullName,
             role: 'user',
-            password: 'TemporaryPassword123!', // Users should reset this
+            password: process.env.SYNC_DEFAULT_PASSWORD || 'TemporaryPassword123!',
           },
         })
       }

@@ -28,7 +28,7 @@ export default async function HomePage({ locale: propLocale }: { locale?: 'en' |
       },
     },
     limit: 1,
-    locale: locale as 'en' | 'ne',
+    locale: locale as 'en' | 'ne' | 'new',
   })
 
   const tenant = tenants[0]

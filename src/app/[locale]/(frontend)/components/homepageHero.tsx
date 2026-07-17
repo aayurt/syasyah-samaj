@@ -18,7 +18,7 @@ export default async function HomepageHero() {
       },
     },
     limit: 1,
-    locale: locale as 'en' | 'ne',
+    locale: locale as 'en' | 'ne' | 'new',
   })
   const tenant = tenants[0]
   if (!tenant) return <></>

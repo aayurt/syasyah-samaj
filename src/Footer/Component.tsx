@@ -12,7 +12,7 @@ import { getCurrentLocale, getI18n } from '@/locales/server'
 export async function Footer({ locale }: { locale?: string }) {
   const currentLocale = locale || await getCurrentLocale()
   const t = await getI18n()
-  const footerData: Footer = await getCachedGlobal('footer', 1, currentLocale as 'en' | 'ne')()
+  const footerData: Footer = await getCachedGlobal('footer', 1, currentLocale as 'en' | 'ne' | 'new')()
 
   const navItems = footerData?.navItems || []
 
