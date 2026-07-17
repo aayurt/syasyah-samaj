@@ -1,5 +1,6 @@
 'use client'
 import React, { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface Tenant {
   id: string
@@ -10,6 +11,9 @@ interface Tenant {
 interface PreviewRow {
   email: string
   fullName: string
+  memberId: string
+  phone: string
+  status: string
   action: 'new' | 'update' | 'skip'
   selected: boolean
   remove: boolean
@@ -78,7 +82,9 @@ export const SyncSheets: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
   const [preview, setPreview] = useState<PreviewRow[] | null>(null)
+  const [confirmSync, setConfirmSync] = useState(false)
   const [error, setError] = useState('')
+  const router = useRouter()
 
   useEffect(() => {
     fetch('/api/tenants?limit=100&depth=0')
@@ -129,6 +135,9 @@ export const SyncSheets: React.FC = () => {
         return {
           email,
           fullName,
+          memberId,
+          phone: r['Phone'] || r['phone'] || r['Phone Number'] || r['phone number'] || '',
+          status: r['Status'] || r['status'] || '',
           action,
           selected: action !== 'skip',
           remove: false,
@@ -175,6 +184,7 @@ export const SyncSheets: React.FC = () => {
   }, [])
 
   const handleSync = useCallback(async () => {
+    setConfirmSync(false)
     setLoading(true)
     setStatus('Syncing...')
     setError('')
@@ -202,6 +212,8 @@ export const SyncSheets: React.FC = () => {
       if (data.created !== undefined) {
         setStatus(`✅ ${data.created} created, ${data.updated} updated, ${data.skipped} skipped, ${data.removed ?? 0} removed`)
         if (data.errors?.length) setError(data.errors.slice(0, 3).join('\n'))
+        setPreview(null)
+        router.refresh()
       } else {
         setError(data.error || 'Unknown error')
         setStatus('')
@@ -215,11 +227,22 @@ export const SyncSheets: React.FC = () => {
 
   const handleExport = useCallback(async () => {
     try {
-      const res = await fetch('/api/members?limit=10000&depth=0')
+      setError('')
+      const res = await fetch('/api/members?limit=10000&depth=1')
+      if (!res.ok) {
+        setError(`Export failed: ${res.status} ${res.statusText}`)
+        setStatus('')
+        return
+      }
       const data = await res.json()
+      const docs: any[] = data.docs || []
+      if (docs.length === 0) {
+        setStatus('No members to export')
+        return
+      }
       const { generateCSV } = await import('@/utilities/csv')
 
-      const records = (data.docs || []).map((m: any) => ({
+      const records = docs.map((m: any) => ({
         'Full Name': m.fullName || '',
         'Email': m.email || '',
         'Member ID': m.memberId || '',
@@ -236,16 +259,19 @@ export const SyncSheets: React.FC = () => {
       }))
 
       const csv = generateCSV(records)
-      const blob = new Blob([csv], { type: 'text/csv' })
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `members-export-${new Date().toISOString().slice(0, 10)}.csv`
-      a.click()
-      URL.revokeObjectURL(url)
+      const link = document.createElement('a')
+      link.setAttribute('href', url)
+      link.setAttribute('download', `members-export-${new Date().toISOString().slice(0, 10)}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
       setStatus(`Exported ${records.length} members`)
     } catch (err: any) {
       setError(err.message)
+      setStatus('')
     }
   }, [])
 
@@ -329,6 +355,9 @@ export const SyncSheets: React.FC = () => {
                 <th style={{ ...thStyle, width: 36, textAlign: 'center' }}></th>
                 <th style={thStyle}>Name</th>
                 <th style={thStyle}>Email</th>
+                <th style={thStyle}>Member ID</th>
+                <th style={thStyle}>Phone</th>
+                <th style={thStyle}>Status</th>
                 <th style={{ ...thStyle, width: 100 }}>Action</th>
               </tr>
             </thead>
@@ -348,6 +377,9 @@ export const SyncSheets: React.FC = () => {
                   </td>
                   <td style={tdStyle}>{row.fullName}</td>
                   <td style={tdStyle}>{row.email}</td>
+                  <td style={tdStyle}>{row.memberId}</td>
+                  <td style={tdStyle}>{row.phone}</td>
+                  <td style={tdStyle}>{row.status}</td>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
                       {row.remove ? (
@@ -434,20 +466,22 @@ export const SyncSheets: React.FC = () => {
         >
           Preview
         </button>
-        <button
-          type="button"
-          onClick={handleSync}
-          disabled={loading || !sheetUrl}
-          style={{
-            ...btnBase,
-            background: 'var(--theme-elevation-800)',
-            color: 'var(--theme-elevation-0)',
-            borderColor: 'var(--theme-elevation-800)',
-            opacity: loading || !sheetUrl ? 0.5 : 1,
-          }}
-        >
-          {loading ? 'Syncing...' : 'Sync'}
-        </button>
+        {preview && (
+          <button
+            type="button"
+            onClick={() => setConfirmSync(true)}
+            disabled={loading}
+            style={{
+              ...btnBase,
+              background: 'var(--theme-elevation-800)',
+              color: 'var(--theme-elevation-0)',
+              borderColor: 'var(--theme-elevation-800)',
+              opacity: loading ? 0.5 : 1,
+            }}
+          >
+            {loading ? 'Syncing...' : 'Sync'}
+          </button>
+        )}
         <button
           type="button"
           onClick={handleExport}
@@ -456,9 +490,55 @@ export const SyncSheets: React.FC = () => {
             background: 'var(--theme-input-bg)',
           }}
         >
-          Export CSV
+          Export Saved Members
         </button>
       </div>
+
+      {confirmSync && (
+        <div style={{
+          marginTop: '0.75rem',
+          padding: '0.75rem 1rem',
+          background: 'var(--theme-warning-100)',
+          border: '1px solid var(--theme-warning-300)',
+          borderRadius: '4px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: '0.875rem', color: 'var(--theme-warning-900)', fontWeight: 500 }}>
+            Sync {preview?.filter((r) => r.selected && !r.remove).length || 0} members?
+          </span>
+          <button
+            type="button"
+            onClick={handleSync}
+            disabled={loading}
+            style={{
+              ...btnBase,
+              background: 'var(--theme-error-500)',
+              color: '#fff',
+              borderColor: 'var(--theme-error-500)',
+              fontSize: '0.8125rem',
+              padding: '0.375rem 0.75rem',
+            }}
+          >
+            Confirm Sync
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmSync(false)}
+            disabled={loading}
+            style={{
+              ...btnBase,
+              background: 'var(--theme-input-bg)',
+              fontSize: '0.8125rem',
+              padding: '0.375rem 0.75rem',
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   )
 }

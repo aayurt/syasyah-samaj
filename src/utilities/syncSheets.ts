@@ -33,15 +33,16 @@ const COLUMN_MAP: Record<string, string> = {
 }
 
 function pickValue(record: Record<string, string>, key: string): string | undefined {
+  const normalize = (s: string) => s.replace(/\s+/g, '').toLowerCase()
   const match = Object.entries(COLUMN_MAP).find(
-    ([header]) => header === key.toLowerCase().trim(),
+    ([header]) => normalize(header) === normalize(key),
   )
   if (match) {
     const mapKey = match[0]
-    const actualKey = Object.keys(record).find((k) => k.toLowerCase() === mapKey.toLowerCase())
+    const actualKey = Object.keys(record).find((k) => normalize(k) === normalize(mapKey))
     return actualKey ? record[actualKey] : record[key]
   }
-  const fallbackKey = Object.keys(record).find((k) => k.toLowerCase() === key.toLowerCase())
+  const fallbackKey = Object.keys(record).find((k) => normalize(k) === normalize(key))
   return fallbackKey ? record[fallbackKey] : record[key]
 }
 
@@ -63,11 +64,22 @@ export const syncMembersFromGoogleSheet = async (
   },
 ): Promise<SyncResult> => {
   const result: SyncResult = { created: 0, updated: 0, skipped: 0, removed: 0, errors: [] }
-  const tenantId = options?.tenantId
+  let tenantId = options?.tenantId
   const selectedSet = options?.selectedIndices ? new Set(options.selectedIndices) : null
   const removeSet = options?.removeIndices ? new Set(options.removeIndices) : null
 
   try {
+    if (!tenantId) {
+      const firstTenant = await payload.find({
+        collection: 'tenants',
+        limit: 1,
+        depth: 0,
+      })
+      if (firstTenant.docs.length > 0) {
+        tenantId = firstTenant.docs[0]!.id as number | string
+        payload.logger.info(`No tenant selected, defaulting to tenant ID: ${tenantId}`)
+      }
+    }
     const csvUrl = sheetUrl.replace(/\/edit.*$/, '/export?format=csv')
     const response = await fetch(csvUrl)
     const csvText = await response.text()
@@ -108,6 +120,18 @@ export const syncMembersFromGoogleSheet = async (
           }).then((res) => res.docs[0] as any)
         }
 
+        // Auto-link to user if a user exists with the same email
+        let linkedUserId: number | string | undefined
+        const matchingUser = await payload.find({
+          collection: 'users',
+          where: { email: { equals: email } },
+          limit: 1,
+          depth: 0,
+        }).then((res) => res.docs[0] as any)
+        if (matchingUser) {
+          linkedUserId = matchingUser.id as number | string
+        }
+
         if (removeSet?.has(idx)) {
           if (existingMember) {
             await payload.delete({ collection: 'members', id: existingMember.id })
@@ -146,6 +170,7 @@ export const syncMembersFromGoogleSheet = async (
         if (expiryDate) memberData.expiryDate = expiryDate
         if (joinedDate) memberData.joinedDate = joinedDate
         if (tenantId) memberData.tenant = tenantId
+        if (linkedUserId) memberData.user = linkedUserId
 
         if (existingMember) {
           await payload.update({
