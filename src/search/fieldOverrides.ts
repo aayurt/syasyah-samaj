@@ -58,4 +58,25 @@ export const searchFields: Field[] = [
       },
     ],
   },
+  {
+    name: 'eventDate',
+    type: 'date',
+    admin: {
+      readOnly: true,
+    },
+  },
+  {
+    name: 'location',
+    type: 'text',
+    admin: {
+      readOnly: true,
+    },
+  },
+  {
+    name: 'era',
+    type: 'text',
+    admin: {
+      readOnly: true,
+    },
+  },
 ]

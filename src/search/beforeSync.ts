@@ -20,23 +20,27 @@ export const beforeSyncWithSearch: BeforeSync = async ({ originalDoc, searchDoc 
   }
 
   if (categories && Array.isArray(categories) && categories.length > 0) {
-    // get full categories and keep a flattened copy of their most important properties
     try {
-      const mappedCategories = categories.map((category) => {
+      modifiedDoc.categories = categories.map((category) => {
         const { id, title } = category
-
-        return {
-          relationTo: 'categories',
-          id,
-          title,
-        }
+        return { relationTo: 'categories', id, title }
       })
-
-      modifiedDoc.categories = mappedCategories
     } catch (_err) {
       console.error(
         `Failed. Category not found when syncing collection '${collection}' with id: '${id}' to search.`,
       )
+    }
+  }
+
+  if (collection === 'events') {
+    modifiedDoc.eventDate = originalDoc.eventDate || null
+    modifiedDoc.location = originalDoc.location?.locality || null
+  }
+
+  if (collection === 'archives') {
+    modifiedDoc.era = originalDoc.era || null
+    if (originalDoc.year) {
+      modifiedDoc.eventDate = new Date(originalDoc.year, 0, 1).toISOString()
     }
   }
 

@@ -19,6 +19,7 @@ import { I18nProviderClient } from '@/locales/client'
 import { locales } from '@/locales/config'
 import { LanguageLoading } from './components/LanguageLoading'
 import { TenantProvider } from '@/context/TenantContext'
+import { UserProvider } from '@/context/UserContext'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
@@ -47,6 +48,7 @@ export default async function RootLayout({
       <body>
         <I18nProviderClient locale={locale} fallback={<LanguageLoading />}>
           <TenantProvider>
+            <UserProvider>
             <Providers>
               {/* <AdminBar
             adminBarProps={{
@@ -58,6 +60,7 @@ export default async function RootLayout({
               {children}
               <Footer locale={locale} />
             </Providers>
+            </UserProvider>
           </TenantProvider>
         </I18nProviderClient>
       </body>
