@@ -1,0 +1,17 @@
+{
+  "name": "@afno/billing-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "node build.mjs",
+    "build:web": "pnpm --dir ../billing build",
+    "build:mac": "node build.mjs --mac",
+    "build:win": "node build.mjs --win",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4"
+  }
+}

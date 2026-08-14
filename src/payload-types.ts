@@ -75,6 +75,14 @@ export interface Config {
     events: Event;
     orders: Order;
     tickets: Ticket;
+    'account-groups': AccountGroup;
+    'gl-accounts': GlAccount;
+    'journal-entries': JournalEntry;
+    parties: Party;
+    documents: Document;
+    'doc-sequences': DocSequence;
+    items: Item;
+    'stock-movements': StockMovement;
     tenants: Tenant;
     notifications: Notification;
     favorites: Favorite;
@@ -106,6 +114,14 @@ export interface Config {
     events: EventsSelect<false> | EventsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     tickets: TicketsSelect<false> | TicketsSelect<true>;
+    'account-groups': AccountGroupsSelect<false> | AccountGroupsSelect<true>;
+    'gl-accounts': GlAccountsSelect<false> | GlAccountsSelect<true>;
+    'journal-entries': JournalEntriesSelect<false> | JournalEntriesSelect<true>;
+    parties: PartiesSelect<false> | PartiesSelect<true>;
+    documents: DocumentsSelect<false> | DocumentsSelect<true>;
+    'doc-sequences': DocSequencesSelect<false> | DocSequencesSelect<true>;
+    items: ItemsSelect<false> | ItemsSelect<true>;
+    'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
     tenants: TenantsSelect<false> | TenantsSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     favorites: FavoritesSelect<false> | FavoritesSelect<true>;
@@ -134,10 +150,12 @@ export interface Config {
   globals: {
     header: Header;
     footer: Footer;
+    'billing-settings': BillingSetting;
   };
   globalsSelect: {
     header: HeaderSelect<false> | HeaderSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
+    'billing-settings': BillingSettingsSelect<false> | BillingSettingsSelect<true>;
   };
   locale: 'en' | 'ne' | 'new';
   user: User;
@@ -931,6 +949,261 @@ export interface Ticket {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "account-groups".
+ */
+export interface AccountGroup {
+  id: number;
+  code?: string | null;
+  name: string;
+  type: 'asset' | 'liability' | 'equity' | 'income' | 'expense';
+  parent?: (number | null) | AccountGroup;
+  tenant?: (number | null) | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gl-accounts".
+ */
+export interface GlAccount {
+  id: number;
+  code?: string | null;
+  name: string;
+  group?: (number | null) | AccountGroup;
+  type: 'asset' | 'liability' | 'equity' | 'income' | 'expense';
+  /**
+   * Cash/bank accounts drive the cash & bank book and reconciliation.
+   */
+  class?: ('cash' | 'bank' | 'other') | null;
+  /**
+   * Opening balance at the start of the books (debit positive).
+   */
+  openingBalance?: number | null;
+  active?: boolean | null;
+  allowManualPosting?: boolean | null;
+  tenant?: (number | null) | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "journal-entries".
+ */
+export interface JournalEntry {
+  id: number;
+  date: string;
+  /**
+   * Description of the entry (e.g. "Rent for March", "Member donation").
+   */
+  narration?: string | null;
+  status: 'draft' | 'posted' | 'void';
+  postedAt?: string | null;
+  lines: {
+    account: number | GlAccount;
+    /**
+     * Amount on the debit side (leave empty if this is a credit line).
+     */
+    debit?: number | null;
+    /**
+     * Amount on the credit side (leave empty if this is a debit line).
+     */
+    credit?: number | null;
+    memo?: string | null;
+    id?: string | null;
+  }[];
+  createdBy?: (number | null) | User;
+  tenant?: (number | null) | Tenant;
+  referenceDoc?: (number | null) | Document;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "documents".
+ */
+export interface Document {
+  id: number;
+  docType:
+    | 'sales-invoice'
+    | 'purchase-invoice'
+    | 'payment-voucher'
+    | 'receipt-voucher'
+    | 'credit-note'
+    | 'debit-note'
+    | 'petty-cash-voucher'
+    | 'grn'
+    | 'delivery-challan'
+    | 'journal-voucher';
+  /**
+   * Assigned automatically when the document is posted.
+   */
+  number?: string | null;
+  date: string;
+  /**
+   * Customer / vendor. Not used for journal vouchers.
+   */
+  party?: (number | null) | Party;
+  /**
+   * Description of the transaction.
+   */
+  narration?: string | null;
+  status: 'draft' | 'posted' | 'void';
+  postedAt?: string | null;
+  /**
+   * Journal entry created when this document was posted.
+   */
+  journalEntry?: (number | null) | JournalEntry;
+  /**
+   * Original document this note/challan refers to.
+   */
+  referenceTo?: (number | null) | Document;
+  paymentMethod?: ('cash' | 'bank') | null;
+  /**
+   * Override the default bank account for this voucher.
+   */
+  bankAccount?: (number | null) | GlAccount;
+  lines?:
+    | {
+        /**
+         * Inventory item (optional). When set, posting creates stock movements; GRN receives, sales invoices & challans issue at weighted-average cost.
+         */
+        item?: (number | null) | Item;
+        description: string;
+        qty?: number | null;
+        rate?: number | null;
+        /**
+         * Line total. Computed as qty × rate if left empty.
+         */
+        amount?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  journalLines?:
+    | {
+        account: number | GlAccount;
+        debit?: number | null;
+        credit?: number | null;
+        memo?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Tax rate in percent applied to the net total.
+   */
+  taxRate?: number | null;
+  netTotal?: number | null;
+  taxTotal?: number | null;
+  grossTotal?: number | null;
+  createdBy?: (number | null) | User;
+  tenant?: (number | null) | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "parties".
+ */
+export interface Party {
+  id: number;
+  type: 'customer' | 'vendor' | 'both';
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  /**
+   * Tax registration / PAN number.
+   */
+  taxId?: string | null;
+  address?: string | null;
+  /**
+   * Outstanding balance at the start of the books (positive = they owe you).
+   */
+  openingBalance?: number | null;
+  tenant?: (number | null) | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "items".
+ */
+export interface Item {
+  id: number;
+  /**
+   * SKU / item code.
+   */
+  code?: string | null;
+  name: string;
+  /**
+   * Unit of measure (pc, kg, box, litre…).
+   */
+  unit?: string | null;
+  /**
+   * AVCO is implemented; FIFO is planned.
+   */
+  valuationMethod: 'avco' | 'fifo';
+  /**
+   * Alert when on-hand stock drops below this.
+   */
+  reorderLevel?: number | null;
+  /**
+   * Starting quantity. Valued at the purchase price.
+   */
+  openingStock?: number | null;
+  /**
+   * Default selling price.
+   */
+  salePrice?: number | null;
+  /**
+   * Default purchase cost — also values the opening stock.
+   */
+  purchasePrice?: number | null;
+  active?: boolean | null;
+  tenant?: (number | null) | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doc-sequences".
+ */
+export interface DocSequence {
+  id: number;
+  key: string;
+  lastNumber: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-movements".
+ */
+export interface StockMovement {
+  id: number;
+  item: number | Item;
+  /**
+   * The voucher that caused this movement.
+   */
+  doc?: (number | null) | Document;
+  date: string;
+  /**
+   * Quantity received into stock.
+   */
+  qtyIn?: number | null;
+  /**
+   * Quantity issued out of stock.
+   */
+  qtyOut?: number | null;
+  /**
+   * Unit cost at the time of the movement (AVCO).
+   */
+  unitCost?: number | null;
+  location?: string | null;
+  tenant?: (number | null) | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "notifications".
  */
 export interface Notification {
@@ -1374,6 +1647,38 @@ export interface PayloadLockedDocument {
         value: number | Ticket;
       } | null)
     | ({
+        relationTo: 'account-groups';
+        value: number | AccountGroup;
+      } | null)
+    | ({
+        relationTo: 'gl-accounts';
+        value: number | GlAccount;
+      } | null)
+    | ({
+        relationTo: 'journal-entries';
+        value: number | JournalEntry;
+      } | null)
+    | ({
+        relationTo: 'parties';
+        value: number | Party;
+      } | null)
+    | ({
+        relationTo: 'documents';
+        value: number | Document;
+      } | null)
+    | ({
+        relationTo: 'doc-sequences';
+        value: number | DocSequence;
+      } | null)
+    | ({
+        relationTo: 'items';
+        value: number | Item;
+      } | null)
+    | ({
+        relationTo: 'stock-movements';
+        value: number | StockMovement;
+      } | null)
+    | ({
         relationTo: 'tenants';
         value: number | Tenant;
       } | null)
@@ -1811,6 +2116,164 @@ export interface TicketsSelect<T extends boolean = true> {
   checkedInAt?: T;
   attendeeName?: T;
   attendeeEmail?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "account-groups_select".
+ */
+export interface AccountGroupsSelect<T extends boolean = true> {
+  code?: T;
+  name?: T;
+  type?: T;
+  parent?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gl-accounts_select".
+ */
+export interface GlAccountsSelect<T extends boolean = true> {
+  code?: T;
+  name?: T;
+  group?: T;
+  type?: T;
+  class?: T;
+  openingBalance?: T;
+  active?: T;
+  allowManualPosting?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "journal-entries_select".
+ */
+export interface JournalEntriesSelect<T extends boolean = true> {
+  date?: T;
+  narration?: T;
+  status?: T;
+  postedAt?: T;
+  lines?:
+    | T
+    | {
+        account?: T;
+        debit?: T;
+        credit?: T;
+        memo?: T;
+        id?: T;
+      };
+  createdBy?: T;
+  tenant?: T;
+  referenceDoc?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "parties_select".
+ */
+export interface PartiesSelect<T extends boolean = true> {
+  type?: T;
+  name?: T;
+  email?: T;
+  phone?: T;
+  taxId?: T;
+  address?: T;
+  openingBalance?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "documents_select".
+ */
+export interface DocumentsSelect<T extends boolean = true> {
+  docType?: T;
+  number?: T;
+  date?: T;
+  party?: T;
+  narration?: T;
+  status?: T;
+  postedAt?: T;
+  journalEntry?: T;
+  referenceTo?: T;
+  paymentMethod?: T;
+  bankAccount?: T;
+  lines?:
+    | T
+    | {
+        item?: T;
+        description?: T;
+        qty?: T;
+        rate?: T;
+        amount?: T;
+        id?: T;
+      };
+  journalLines?:
+    | T
+    | {
+        account?: T;
+        debit?: T;
+        credit?: T;
+        memo?: T;
+        id?: T;
+      };
+  taxRate?: T;
+  netTotal?: T;
+  taxTotal?: T;
+  grossTotal?: T;
+  createdBy?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doc-sequences_select".
+ */
+export interface DocSequencesSelect<T extends boolean = true> {
+  key?: T;
+  lastNumber?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "items_select".
+ */
+export interface ItemsSelect<T extends boolean = true> {
+  code?: T;
+  name?: T;
+  unit?: T;
+  valuationMethod?: T;
+  reorderLevel?: T;
+  openingStock?: T;
+  salePrice?: T;
+  purchasePrice?: T;
+  active?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-movements_select".
+ */
+export interface StockMovementsSelect<T extends boolean = true> {
+  item?: T;
+  doc?: T;
+  date?: T;
+  qtyIn?: T;
+  qtyOut?: T;
+  unitCost?: T;
+  location?: T;
+  tenant?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2340,6 +2803,73 @@ export interface Footer {
   createdAt?: string | null;
 }
 /**
+ * Default accounts used when posting vouchers. Missing accounts block posting until configured.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billing-settings".
+ */
+export interface BillingSetting {
+  id: number;
+  /**
+   * Month and day the fiscal year begins (e.g. 2026-07-16). Unset = calendar year.
+   */
+  fiscalYearStart?: string | null;
+  /**
+   * No entries may be posted with a date before this date (period close). Unset = no freeze.
+   */
+  freezeDate?: string | null;
+  /**
+   * Accounts Receivable (sales invoices, receipts).
+   */
+  receivableAccount?: (number | null) | GlAccount;
+  /**
+   * Accounts Payable (purchase invoices, payments).
+   */
+  payableAccount?: (number | null) | GlAccount;
+  /**
+   * Sales / service revenue.
+   */
+  revenueAccount?: (number | null) | GlAccount;
+  /**
+   * Purchases / operating expenses.
+   */
+  expenseAccount?: (number | null) | GlAccount;
+  /**
+   * Output (sales) / input (purchase) VAT.
+   */
+  taxAccount?: (number | null) | GlAccount;
+  /**
+   * Cash on hand (payment/receipt vouchers, petty cash).
+   */
+  cashAccount?: (number | null) | GlAccount;
+  /**
+   * Default bank account (payment/receipt vouchers).
+   */
+  bankAccount?: (number | null) | GlAccount;
+  /**
+   * Petty cash float (petty cash vouchers).
+   */
+  pettyCashAccount?: (number | null) | GlAccount;
+  /**
+   * Stock on hand (GRN, delivery challans).
+   */
+  inventoryAccount?: (number | null) | GlAccount;
+  /**
+   * Cost of goods sold (delivery challans).
+   */
+  cogsAccount?: (number | null) | GlAccount;
+  /**
+   * Sales returns / purchase returns (credit & debit notes).
+   */
+  returnsAccount?: (number | null) | GlAccount;
+  /**
+   * Accrued / unbilled purchases (GRN).
+   */
+  accruedPayableAccount?: (number | null) | GlAccount;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header_select".
  */
@@ -2381,6 +2911,29 @@ export interface FooterSelect<T extends boolean = true> {
             };
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billing-settings_select".
+ */
+export interface BillingSettingsSelect<T extends boolean = true> {
+  fiscalYearStart?: T;
+  freezeDate?: T;
+  receivableAccount?: T;
+  payableAccount?: T;
+  revenueAccount?: T;
+  expenseAccount?: T;
+  taxAccount?: T;
+  cashAccount?: T;
+  bankAccount?: T;
+  pettyCashAccount?: T;
+  inventoryAccount?: T;
+  cogsAccount?: T;
+  returnsAccount?: T;
+  accruedPayableAccount?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

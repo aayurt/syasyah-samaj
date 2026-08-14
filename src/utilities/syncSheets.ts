@@ -90,6 +90,42 @@ export const syncMembersFromGoogleSheet = async (
     for (let idx = 0; idx < records.length; idx++) {
       const record = records[idx]!
 
+      // Process removals first: a row flagged for removal must be deleted even
+      // when it was not selected for sync (the client excludes removed rows
+      // from selectedIndices), and even when it has no email on the row.
+      if (removeSet?.has(idx)) {
+        try {
+          const memberId = pickValue(record, 'memberId') || ''
+          let existingMember = null as any
+          if (memberId) {
+            existingMember = await payload.find({
+              collection: 'members',
+              where: { memberId: { equals: memberId } },
+              limit: 1,
+            }).then((res) => res.docs[0] as any)
+          }
+          if (!existingMember) {
+            const email = pickValue(record, 'email')
+            if (email) {
+              existingMember = await payload.find({
+                collection: 'members',
+                where: { email: { equals: email } },
+                limit: 1,
+              }).then((res) => res.docs[0] as any)
+            }
+          }
+          if (existingMember) {
+            await payload.delete({ collection: 'members', id: existingMember.id })
+            result.removed++
+          } else {
+            result.skipped++
+          }
+        } catch (err: any) {
+          result.errors.push(`${record['Email'] || record['email'] || 'unknown'}: ${err.message}`)
+        }
+        continue
+      }
+
       if (selectedSet && !selectedSet.has(idx)) {
         result.skipped++
         continue
@@ -130,16 +166,6 @@ export const syncMembersFromGoogleSheet = async (
         }).then((res) => res.docs[0] as any)
         if (matchingUser) {
           linkedUserId = matchingUser.id as number | string
-        }
-
-        if (removeSet?.has(idx)) {
-          if (existingMember) {
-            await payload.delete({ collection: 'members', id: existingMember.id })
-            result.removed++
-          } else {
-            result.skipped++
-          }
-          continue
         }
 
         const fullName = pickValue(record, 'fullName') || ''

@@ -1,0 +1,122 @@
+import { isAdmin } from '@/access/admin'
+import type { GlobalConfig } from 'payload'
+
+/**
+ * Singleton settings for the billing module.
+ *
+ * The posting engine resolves every leg of a voucher's posting rule through
+ * these default accounts. If a needed account is missing the engine refuses
+ * to post with a clear message (no silent wrong postings).
+ */
+export const BillingSettings: GlobalConfig = {
+  slug: 'billing-settings',
+  label: 'Billing Settings',
+  admin: {
+    group: 'Billing',
+    description:
+      'Default accounts used when posting vouchers. Missing accounts block posting until configured.',
+  },
+  access: {
+    read: isAdmin,
+    update: isAdmin,
+  },
+  fields: [
+    {
+      name: 'fiscalYearStart',
+      type: 'date',
+      admin: {
+        description:
+          'Month and day the fiscal year begins (e.g. 2026-07-16). Unset = calendar year.',
+      },
+    },
+    {
+      name: 'freezeDate',
+      type: 'date',
+      admin: {
+        description:
+          'No entries may be posted with a date before this date (period close). Unset = no freeze.',
+      },
+    },
+    {
+      type: 'collapsible',
+      label: 'Default accounts',
+      admin: {
+        initCollapsed: false,
+      },
+      fields: [
+        {
+          name: 'receivableAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Accounts Receivable (sales invoices, receipts).' },
+        },
+        {
+          name: 'payableAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Accounts Payable (purchase invoices, payments).' },
+        },
+        {
+          name: 'revenueAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Sales / service revenue.' },
+        },
+        {
+          name: 'expenseAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Purchases / operating expenses.' },
+        },
+        {
+          name: 'taxAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Output (sales) / input (purchase) VAT.' },
+        },
+        {
+          name: 'cashAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Cash on hand (payment/receipt vouchers, petty cash).' },
+        },
+        {
+          name: 'bankAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Default bank account (payment/receipt vouchers).' },
+        },
+        {
+          name: 'pettyCashAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Petty cash float (petty cash vouchers).' },
+        },
+        {
+          name: 'inventoryAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Stock on hand (GRN, delivery challans).' },
+        },
+        {
+          name: 'cogsAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Cost of goods sold (delivery challans).' },
+        },
+        {
+          name: 'returnsAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Sales returns / purchase returns (credit & debit notes).' },
+        },
+        {
+          name: 'accruedPayableAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Accrued / unbilled purchases (GRN).' },
+        },
+      ],
+    },
+  ],
+}

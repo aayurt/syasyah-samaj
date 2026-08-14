@@ -28,7 +28,16 @@ import Redis from 'ioredis'
 import { Members } from './collections/Members'
 import { Archives } from './collections/Archives'
 import { Messages } from './collections/Messages'
+import { Parties } from './collections/Parties'
+import { Documents } from './collections/Documents'
+import { DocSequences } from './collections/DocSequences'
+import { BillingSettings } from './globals/BillingSettings'
 import { ChatRooms } from './collections/ChatRooms'
+import { AccountGroups } from './collections/AccountGroups'
+import { Accounts } from './collections/Accounts'
+import { JournalEntries } from './collections/JournalEntries'
+import { Items } from './collections/Items'
+import { StockMovements } from './collections/StockMovements'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -91,6 +100,14 @@ export default buildConfig({
     Events,
     Orders,
     Tickets,
+    AccountGroups,
+    Accounts,
+    JournalEntries,
+    Parties,
+    Documents,
+    DocSequences,
+    Items,
+    StockMovements,
     Tenants,
     Notifications,
     Favorites,
@@ -100,7 +117,7 @@ export default buildConfig({
     ChatRooms,
   ],
   cors: [getServerSideURL(), ...trustedOriginsValues].filter(Boolean),
-  globals: [Header, Footer],
+  globals: [Header, Footer, BillingSettings],
   plugins: [
     ...plugins,
     // storage-adapter-placeholder

@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ── Ledger theme ────────────────────────────────────────────────
+     Brand: deep crimson (#BE1A1A). Neutrals are warm stone, remapped
+     onto the `slate-*` classes so every existing slate-* utility in
+     the codebase renders warm without a 500-class rename. */
+  --color-slate-50: #fafaf9;
+  --color-slate-100: #f5f5f4;
+  --color-slate-200: #e7e5e4;
+  --color-slate-300: #d6d3d1;
+  --color-slate-400: #a8a29e;
+  --color-slate-500: #78716c;
+  --color-slate-600: #57534e;
+  --color-slate-700: #44403c;
+  --color-slate-800: #292524;
+  --color-slate-900: #1c1917;
+  --color-slate-950: #0c0a09;
+
+  /* Crimson brand scale */
+  --color-crimson-50: #fdf3f3;
+  --color-crimson-100: #fbe5e5;
+  --color-crimson-200: #f6cccc;
+  --color-crimson-300: #efa0a0;
+  --color-crimson-400: #de6b6b;
+  --color-crimson-500: #d13a3a;
+  --color-crimson-600: #be1a1a;
+  --color-crimson-700: #9c1414;
+  --color-crimson-800: #7d1010;
+  --color-crimson-900: #5e0c0c;
+}

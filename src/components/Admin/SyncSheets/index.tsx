@@ -259,7 +259,8 @@ export const SyncSheets: React.FC = () => {
       }))
 
       const csv = generateCSV(records)
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      // Prepend a UTF-8 BOM so Excel opens the file (incl. Nepali names) as UTF-8, not ANSI.
+      const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.setAttribute('href', url)
