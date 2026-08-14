@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { api, list, useSyncState } from '../lib/api'
+import { useSortSearch } from '../lib/useSortSearch'
+import ActionMenu from '../components/ActionMenu'
+import SearchBox from '../components/SearchBox'
+import SortableTh from '../components/SortableTh'
 import type { Account, AccountGroup, AccountType } from '../lib/types'
 
 const TYPES: AccountType[] = ['asset', 'liability', 'equity', 'income', 'expense']
@@ -88,6 +92,25 @@ export default function Accounts() {
     const g = a.group && typeof a.group === 'object' ? a.group : groups.find((x) => x.id === a.group)
     return g ? `${g.name}${g.code ? ` (${g.code})` : ''}` : '—'
   }
+
+  const { query, setQuery, sort, toggleSort, visible } = useSortSearch(accounts, {
+    searchable: (a) =>
+      [a.name, a.code || '', groupName(a), a.class || ''].join(' '),
+    valueOf: (a, key) => {
+      switch (key) {
+        case 'group':
+          return groupName(a)
+        case 'opening':
+          return Number(a.openingBalance) || 0
+        default:
+          return (a as unknown as Record<string, unknown>)[key] as
+            | string
+            | number
+            | undefined
+      }
+    },
+    defaultSort: { key: 'name', dir: 'asc' },
+  })
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -206,8 +229,19 @@ export default function Accounts() {
         </form>
       )}
 
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <span className="text-xs text-slate-400">
+          {visible.length} of {accounts.length}
+        </span>
+        <SearchBox
+          value={query}
+          onChange={setQuery}
+          placeholder="Search name, code, group…"
+        />
+      </div>
+
       {TYPES.map((type) => {
-        const rows = accounts.filter((a) => a.type === type)
+        const rows = visible.filter((a) => a.type === type)
         if (rows.length === 0) return null
         return (
           <div
@@ -223,11 +257,11 @@ export default function Accounts() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-2">Code</th>
-                  <th className="px-4 py-2">Name</th>
-                  <th className="px-4 py-2">Group</th>
-                  <th className="px-4 py-2">Class</th>
-                  <th className="px-4 py-2 text-right">Opening</th>
+                  <SortableTh label="Code" sortKey="code" sort={sort} onSort={toggleSort} />
+                  <SortableTh label="Name" sortKey="name" sort={sort} onSort={toggleSort} />
+                  <SortableTh label="Group" sortKey="group" sort={sort} onSort={toggleSort} />
+                  <SortableTh label="Class" sortKey="class" sort={sort} onSort={toggleSort} />
+                  <SortableTh label="Opening" sortKey="opening" sort={sort} onSort={toggleSort} align="right" />
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -248,12 +282,16 @@ export default function Accounts() {
                       })}
                     </td>
                     <td className="px-4 py-2 text-right">
-                      <button
-                        onClick={() => remove(a.id)}
-                        className="text-xs text-slate-400 hover:text-red-600"
-                      >
-                        delete
-                      </button>
+                      <ActionMenu
+                        items={[
+                          {
+                            label: 'Delete',
+                            icon: <Trash2 size={13} />,
+                            danger: true,
+                            onClick: () => remove(a.id),
+                          },
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}

@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Plus, TriangleAlert } from 'lucide-react'
+import { Plus, Trash2, TriangleAlert } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
+import { useSortSearch } from '../lib/useSortSearch'
+import ActionMenu from '../components/ActionMenu'
+import SearchBox from '../components/SearchBox'
+import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import type { Item, StockLedgerRow, StockLevel } from '../lib/types'
 
@@ -50,6 +54,32 @@ export default function Items() {
 
   const levelFor = (itemId: number) =>
     levels.find((l) => l.item.id === itemId)
+
+  const { query, setQuery, sort, toggleSort, visible } = useSortSearch(items, {
+    searchable: (it) => `${it.name} ${it.code || ''} ${it.unit || ''}`,
+    valueOf: (it, key) => {
+      switch (key) {
+        case 'name':
+          return it.name
+        case 'unit':
+          return it.unit || ''
+        case 'onHand':
+          return levelFor(it.id)?.onHand ?? -1
+        case 'avgCost':
+          return levelFor(it.id)?.avgCost ?? -1
+        case 'value':
+          return levelFor(it.id)?.value ?? -1
+        case 'salePrice':
+          return Number(it.salePrice) || 0
+        default:
+          return (it as unknown as Record<string, unknown>)[key] as
+            | string
+            | number
+            | undefined
+      }
+    },
+    defaultSort: { key: 'name', dir: 'asc' },
+  })
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -244,27 +274,37 @@ export default function Items() {
       ) : (
         <>
       <div className="mt-6 rounded-lg border border-slate-200 bg-white">
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2">
+          <span className="text-xs text-slate-400">
+            {visible.length} of {items.length}
+          </span>
+          <SearchBox
+            value={query}
+            onChange={setQuery}
+            placeholder="Search item, code, unit…"
+          />
+        </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-4 py-2">Item</th>
-              <th className="px-4 py-2">Unit</th>
-              <th className="px-4 py-2 text-right">On hand</th>
-              <th className="px-4 py-2 text-right">Avg cost</th>
-              <th className="px-4 py-2 text-right">Value</th>
-              <th className="px-4 py-2 text-right">Sale price</th>
+              <SortableTh label="Item" sortKey="name" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Unit" sortKey="unit" sort={sort} onSort={toggleSort} />
+              <SortableTh label="On hand" sortKey="onHand" sort={sort} onSort={toggleSort} align="right" />
+              <SortableTh label="Avg cost" sortKey="avgCost" sort={sort} onSort={toggleSort} align="right" />
+              <SortableTh label="Value" sortKey="value" sort={sort} onSort={toggleSort} align="right" />
+              <SortableTh label="Sale price" sortKey="salePrice" sort={sort} onSort={toggleSort} align="right" />
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
           <tbody>
-            {items.length === 0 && (
+            {visible.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
                   No items yet — add your first inventory item.
                 </td>
               </tr>
             )}
-            {items.map((it) => {
+            {visible.map((it) => {
               const lv = levelFor(it.id)
               return (
                 <tr key={it.id} className="border-b border-slate-50">
@@ -305,12 +345,16 @@ export default function Items() {
                     {it.salePrice ? fmt(Number(it.salePrice)) : '—'}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    <button
-                      onClick={() => remove(it.id)}
-                      className="text-xs text-slate-400 hover:text-red-600"
-                    >
-                      delete
-                    </button>
+                    <ActionMenu
+                      items={[
+                        {
+                          label: 'Delete',
+                          icon: <Trash2 size={13} />,
+                          danger: true,
+                          onClick: () => remove(it.id),
+                        },
+                      ]}
+                    />
                   </td>
                 </tr>
               )

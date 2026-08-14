@@ -34,6 +34,7 @@ import Settings from './pages/Settings'
 import SyncBanner from './components/SyncBanner'
 import SyncStatus from './components/SyncStatus'
 import Tour from './components/Tour'
+import UpdatePrompt from './components/UpdatePrompt'
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 
@@ -237,6 +238,7 @@ function Shell({ email }: { email: string }) {
         </main>
       </div>
       {tourOpen && <Tour open={tourOpen} onClose={closeTour} />}
+      <UpdatePrompt />
     </div>
   )
 }

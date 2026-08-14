@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
+import { useSortSearch } from '../lib/useSortSearch'
+import ActionMenu from '../components/ActionMenu'
+import SearchBox from '../components/SearchBox'
+import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import type { Account, JournalEntry } from '../lib/types'
 import { StatusPill } from './Dashboard'
@@ -125,9 +129,30 @@ export default function Journal() {
     }
   }
 
-  const visible = entries.filter(
+  const filtered = entries.filter(
     (e) => !filter || e.status === filter,
   )
+
+  const entryLines = (e: JournalEntry) =>
+    Array.isArray(e.lines) ? e.lines : []
+
+  const { query, setQuery, sort, toggleSort, visible } = useSortSearch(filtered, {
+    searchable: (e) => `${e.narration || ''} ${e.status}`,
+    valueOf: (e, key) => {
+      switch (key) {
+        case 'debit':
+          return entryLines(e).reduce((s, l) => s + (Number(l.debit) || 0), 0)
+        case 'credit':
+          return entryLines(e).reduce((s, l) => s + (Number(l.credit) || 0), 0)
+        default:
+          return (e as unknown as Record<string, unknown>)[key] as
+            | string
+            | number
+            | undefined
+      }
+    },
+    defaultSort: { key: 'date', dir: 'desc' },
+  })
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -337,34 +362,41 @@ export default function Journal() {
         <TableSkeleton />
       ) : (
         <>
-      <div className="mt-6 flex items-center gap-2">
-        <span className="text-xs uppercase tracking-wide text-slate-500">
-          Filter
-        </span>
-        {['', 'draft', 'posted', 'void'].map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={`rounded px-2.5 py-1 text-xs font-medium ${
-              filter === s
-                ? 'bg-crimson-600 text-white'
-                : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            {s || 'all'}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs uppercase tracking-wide text-slate-500">
+            Filter
+          </span>
+          {['', 'draft', 'posted', 'void'].map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilter(s)}
+              className={`rounded px-2.5 py-1 text-xs font-medium ${
+                filter === s
+                  ? 'bg-crimson-600 text-white'
+                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {s || 'all'}
           </button>
-        ))}
+          ))}
+        </div>
+        <SearchBox
+          value={query}
+          onChange={setQuery}
+          placeholder="Search narration…"
+        />
       </div>
 
       <div className="mt-3 rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Narration</th>
-              <th className="px-4 py-2">Debit</th>
-              <th className="px-4 py-2">Credit</th>
-              <th className="px-4 py-2">Status</th>
+              <SortableTh label="Date" sortKey="date" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Narration" sortKey="narration" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Debit" sortKey="debit" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Credit" sortKey="credit" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Status" sortKey="status" sort={sort} onSort={toggleSort} />
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
@@ -377,11 +409,15 @@ export default function Journal() {
               </tr>
             )}
             {visible.map((e) => {
-              const debit = e.lines.reduce(
+              // Guard against stale cached rows that lack the `lines` array
+              // (e.g. ledger rows cached before the read-cache was scoped to
+              // plain collection lists) — render zeros instead of crashing.
+              const lines = Array.isArray(e.lines) ? e.lines : []
+              const debit = lines.reduce(
                 (s, l) => s + (Number(l.debit) || 0),
                 0,
               )
-              const credit = e.lines.reduce(
+              const credit = lines.reduce(
                 (s, l) => s + (Number(l.credit) || 0),
                 0,
               )
@@ -404,12 +440,15 @@ export default function Journal() {
                   </td>
                   <td className="px-4 py-2 text-right">
                     {e.status === 'posted' && (
-                      <button
-                        onClick={() => voidEntry(e.id)}
-                        className="text-xs text-slate-400 hover:text-red-600"
-                      >
-                        void
-                      </button>
+                      <ActionMenu
+                        items={[
+                          {
+                            label: 'Void',
+                            danger: true,
+                            onClick: () => voidEntry(e.id),
+                          },
+                        ]}
+                      />
                     )}
                   </td>
                 </tr>

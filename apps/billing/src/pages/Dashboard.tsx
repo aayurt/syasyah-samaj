@@ -60,7 +60,8 @@ export default function Dashboard() {
   ]
 
   const entryTotals = (e: JournalEntry) =>
-    e.lines.reduce(
+    // Guard against stale cached rows missing the `lines` array.
+    (Array.isArray(e.lines) ? e.lines : []).reduce(
       (acc, l) => ({
         debit: acc.debit + (Number(l.debit) || 0),
         credit: acc.credit + (Number(l.credit) || 0),

@@ -45,5 +45,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|static|.*\\..*|_next|admin).*)'],
+  // `app` (the billing SPA) is excluded: its routes are client-side and must
+  // not be locale-redirected.
+  matcher: ['/((?!api|static|.*\\..*|_next|admin|app).*)'],
 }

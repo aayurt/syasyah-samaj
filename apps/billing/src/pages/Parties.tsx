@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { api, list, useSyncState } from '../lib/api'
+import { useSortSearch } from '../lib/useSortSearch'
+import ActionMenu from '../components/ActionMenu'
+import SearchBox from '../components/SearchBox'
+import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import type { Party } from '../lib/types'
 
@@ -82,9 +86,26 @@ export default function Parties() {
     }
   }
 
-  const visible = parties.filter(
+  const filtered = parties.filter(
     (p) => !filter || p.type === filter || (filter === 'both' && p.type === 'both'),
   )
+
+  const { query, setQuery, sort, toggleSort, visible } = useSortSearch(filtered, {
+    searchable: (p) =>
+      [p.name, p.email || '', p.phone || '', p.taxId || '', p.type].join(' '),
+    valueOf: (p, key) => {
+      switch (key) {
+        case 'opening':
+          return Number(p.openingBalance) || 0
+        default:
+          return (p as unknown as Record<string, unknown>)[key] as
+            | string
+            | number
+            | undefined
+      }
+    },
+    defaultSort: { key: 'name', dir: 'asc' },
+  })
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -206,35 +227,42 @@ export default function Parties() {
         <TableSkeleton />
       ) : (
         <>
-      <div className="mt-6 flex items-center gap-2">
-        <span className="text-xs uppercase tracking-wide text-slate-500">
-          Filter
-        </span>
-        {['', ...TYPES].map((t) => (
-          <button
-            key={t}
-            onClick={() => setFilter(t)}
-            className={`rounded px-2.5 py-1 text-xs font-medium ${
-              filter === t
-                ? 'bg-crimson-600 text-white'
-                : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            {t || 'all'}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs uppercase tracking-wide text-slate-500">
+            Filter
+          </span>
+          {['', ...TYPES].map((t) => (
+            <button
+              key={t}
+              onClick={() => setFilter(t)}
+              className={`rounded px-2.5 py-1 text-xs font-medium ${
+                filter === t
+                  ? 'bg-crimson-600 text-white'
+                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {t || 'all'}
           </button>
-        ))}
+          ))}
+        </div>
+        <SearchBox
+          value={query}
+          onChange={setQuery}
+          placeholder="Search name, email, phone…"
+        />
       </div>
 
       <div className="mt-3 rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-4 py-2">Name</th>
-              <th className="px-4 py-2">Type</th>
-              <th className="px-4 py-2">Email</th>
-              <th className="px-4 py-2">Phone</th>
-              <th className="px-4 py-2">Tax ID</th>
-              <th className="px-4 py-2 text-right">Opening</th>
+              <SortableTh label="Name" sortKey="name" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Type" sortKey="type" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Email" sortKey="email" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Phone" sortKey="phone" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Tax ID" sortKey="taxId" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Opening" sortKey="opening" sort={sort} onSort={toggleSort} align="right" />
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
@@ -265,12 +293,16 @@ export default function Parties() {
                   })}
                 </td>
                 <td className="px-4 py-2 text-right">
-                  <button
-                    onClick={() => remove(p.id)}
-                    className="text-xs text-slate-400 hover:text-red-600"
-                  >
-                    delete
-                  </button>
+                  <ActionMenu
+                    items={[
+                      {
+                        label: 'Delete',
+                        icon: <Trash2 size={13} />,
+                        danger: true,
+                        onClick: () => remove(p.id),
+                      },
+                    ]}
+                  />
                 </td>
               </tr>
             ))}

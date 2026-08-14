@@ -1,5 +1,14 @@
 @import 'tailwindcss';
 
+/* Tailwind v4 preflight sets buttons to cursor: default — restore the
+   expected pointer affordance for every button (including icon-only
+   buttons), except disabled ones. */
+@layer base {
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 @theme {
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 

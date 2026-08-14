@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
+import { useSortSearch } from '../lib/useSortSearch'
 import type {
   Account,
   DocType,
@@ -22,6 +23,8 @@ import type {
   Party,
 } from '../lib/types'
 import { StatusPill } from './Dashboard'
+import SearchBox from '../components/SearchBox'
+import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import { exportInvoicePdf } from '../lib/pdf'
 
@@ -370,7 +373,7 @@ export default function Vouchers() {
     }
   }
 
-  const visible = docs.filter(
+  const filtered = docs.filter(
     (d) =>
       (!typeFilter || d.docType === typeFilter) &&
       (!statusFilter || d.status === statusFilter),
@@ -378,6 +381,32 @@ export default function Vouchers() {
 
   const partyName = (d: Document) =>
     d.party && typeof d.party === 'object' ? d.party.name : '—'
+
+  const { query, setQuery, sort, toggleSort, visible } = useSortSearch(filtered, {
+    searchable: (d) =>
+      [
+        d.number || '',
+        d.narration || '',
+        DOC_TYPE_LABELS[d.docType] || '',
+        partyName(d),
+      ].join(' '),
+    valueOf: (d, key) => {
+      switch (key) {
+        case 'party':
+          return partyName(d)
+        case 'type':
+          return DOC_TYPE_LABELS[d.docType] || d.docType
+        case 'amount':
+          return Number(d.grossTotal) || 0
+        default:
+          return (d as unknown as Record<string, unknown>)[key] as
+            | string
+            | number
+            | undefined
+      }
+    },
+    defaultSort: { key: 'date', dir: 'desc' },
+  })
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -965,6 +994,16 @@ export default function Vouchers() {
             </button>
           ))}
         </div>
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <span className="text-xs text-slate-400">
+            {visible.length} of {filtered.length}
+          </span>
+          <SearchBox
+            value={query}
+            onChange={setQuery}
+            placeholder="Search number, party, narration…"
+          />
+        </div>
       </div>
 
       {/* List */}
@@ -972,12 +1011,12 @@ export default function Vouchers() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Number</th>
-              <th className="px-4 py-2">Type</th>
-              <th className="px-4 py-2">Party</th>
-              <th className="px-4 py-2 text-right">Amount</th>
-              <th className="px-4 py-2">Status</th>
+              <SortableTh label="Date" sortKey="date" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Number" sortKey="number" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Type" sortKey="type" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Party" sortKey="party" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Amount" sortKey="amount" sort={sort} onSort={toggleSort} align="right" />
+              <SortableTh label="Status" sortKey="status" sort={sort} onSort={toggleSort} />
               <th className="px-4 py-2 text-right">Actions</th>
             </tr>
           </thead>
