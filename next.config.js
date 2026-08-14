@@ -33,7 +33,8 @@ const nextConfig = {
     ],
   },
   reactStrictMode: true,
-  output: 'standalone',
+  // The server runs the locally-shipped build via `next start`
+  // (see LocalSyncDeployer.sh) — no standalone output needed.
   eslint: {
     ignoreDuringBuilds: true,
   },

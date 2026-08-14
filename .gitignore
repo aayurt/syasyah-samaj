@@ -1,6 +1,9 @@
 build
 dist/
 node_modules
+
+# Freebuff app-local state (desktop db + WAL/SHM)
+.freebuff/
 .DS_Store
 .env
 .env.production
