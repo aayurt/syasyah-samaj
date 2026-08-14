@@ -28,7 +28,7 @@ export default async function MemberPage({ params: paramsPromise }: { params: Pr
           fullName: member.fullName,
           memberId: member.memberId || undefined,
           email: member.email,
-          phoneNumber: member.phoneNumber,
+          phoneNumber: member.phoneNumber || undefined,
           profileImage: member.profileImage,
           idCardDetails: member.idCardDetails ? {
             bloodGroup: member.idCardDetails.bloodGroup || undefined,

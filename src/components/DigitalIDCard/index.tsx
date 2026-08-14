@@ -9,7 +9,7 @@ interface DigitalIDCardProps {
     fullName: string
     memberId?: string
     email: string
-    phoneNumber: string
+    phoneNumber?: string
     profileImage?: any
     idCardDetails?: {
       bloodGroup?: string

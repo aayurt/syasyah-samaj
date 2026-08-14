@@ -24,11 +24,11 @@ function candidates(): string[] {
   return out
 }
 
-let cached: string | null = null
+let cached: string | undefined
 
 export function distRoot(): string {
   if (cached) return cached
   const found = candidates().find((p) => existsSync(p))
-  cached = found ?? candidates()[0]
+  cached = found ?? candidates()[0] ?? ''
   return cached
 }
