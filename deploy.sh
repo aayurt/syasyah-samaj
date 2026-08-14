@@ -5,9 +5,12 @@ set -e
 
 echo "🚀 Starting Deployment for syasyahsamaj.com..."
 
+git checkout Billings
+
 # 1. Pull the latest changes from GitHub
+
 echo "📥 Pulling latest code from Git..."
-git pull origin main
+git pull origin Billings
 
 # 2. Install dependencies (Clean install is safer for production)
 echo "📦 Installing dependencies..."

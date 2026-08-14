@@ -20,6 +20,7 @@ import { locales } from '@/locales/config'
 import { LanguageLoading } from './components/LanguageLoading'
 import { TenantProvider } from '@/context/TenantContext'
 import { UserProvider } from '@/context/UserContext'
+import { setStaticParamsLocale } from '@/locales/server'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
@@ -33,6 +34,9 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
+  // Header/Footer call i18n server functions during static generation, so the
+  // locale must be set for every prerendered page under this segment.
+  setStaticParamsLocale(locale)
 
   return (
     <html

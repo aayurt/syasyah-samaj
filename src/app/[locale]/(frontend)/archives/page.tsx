@@ -2,8 +2,15 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { Media } from '@/components/Media'
+import { getStaticParams, setStaticParamsLocale } from '@/locales/server'
 
-export default async function ArchivesPage() {
+export function generateStaticParams() {
+  return getStaticParams()
+}
+
+export default async function ArchivesPage({ params: paramsPromise }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await paramsPromise
+  setStaticParamsLocale(locale)
   const payload = await getPayload({ config })
 
   const archives = await payload.find({
