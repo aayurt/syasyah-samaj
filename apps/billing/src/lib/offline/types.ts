@@ -6,11 +6,18 @@ export interface OutboxEntry {
   queuedAt: string
   /** Local id assigned to a queued create, mapped to the server id on flush. */
   localId?: string
+  /** Set when the server rejected the write (validation, 4xx, stale copy). The
+   * entry is KEPT in the outbox marked as conflicted instead of dropped, so
+   * the user can review the reason and retry, edit, or discard it. */
+  conflict?: { message: string; at: string }
 }
 
 export interface SyncState {
   online: boolean
+  /** Non-conflicted queued writes waiting to sync. */
   pending: number
+  /** Queued writes the server rejected — kept for review, not auto-retried. */
+  conflicts: number
   lastSyncAt: string | null
   banners: { message: string; at: string }[]
   /** Bumped whenever the read cache gains or changes documents, so views
@@ -31,6 +38,8 @@ export interface OfflineDb {
   pending(): Promise<OutboxEntry[]>
   pendingCount(): Promise<number>
   remove(seq: number): Promise<void>
+  markConflict(seq: number, message: string): Promise<void>
+  unmarkConflict(seq: number): Promise<void>
   cacheUpsert(collection: string, doc: Record<string, unknown>): Promise<void>
   cacheList(collection: string): Promise<Record<string, unknown>[]>
   cacheGet(collection: string, id: string | number): Promise<Record<string, unknown> | null>

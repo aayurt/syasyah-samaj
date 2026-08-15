@@ -116,6 +116,32 @@ export class IndexedDb implements OfflineDb {
     await done
   }
 
+  async markConflict(seq: number, message: string): Promise<void> {
+    const { store, done } = await this.store('outbox', 'readwrite')
+    const row = await reqResult(
+      store.get(seq) as IDBRequest<OutboxEntry | undefined>,
+    )
+    if (row) {
+      store.put({
+        ...row,
+        conflict: { message, at: new Date().toISOString() },
+      })
+    }
+    await done
+  }
+
+  async unmarkConflict(seq: number): Promise<void> {
+    const { store, done } = await this.store('outbox', 'readwrite')
+    const row = await reqResult(
+      store.get(seq) as IDBRequest<OutboxEntry | undefined>,
+    )
+    if (row && row.conflict) {
+      const { conflict: _conflict, ...rest } = row
+      store.put(rest)
+    }
+    await done
+  }
+
   async cacheUpsert(collection: string, doc: Record<string, unknown>): Promise<void> {
     const { store, done } = await this.store('cache', 'readwrite')
     store.put({ collection, id: String((doc as { id: unknown }).id), json: JSON.stringify(doc) })

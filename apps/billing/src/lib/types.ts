@@ -15,6 +15,19 @@ export type DocType =
   | 'delivery-challan'
   | 'journal-voucher'
 
+export const DOC_TYPE_LABELS: Record<string, string> = {
+  'sales-invoice': 'Sales Invoice',
+  'purchase-invoice': 'Purchase Invoice',
+  'payment-voucher': 'Payment Voucher',
+  'receipt-voucher': 'Receipt Voucher',
+  'credit-note': 'Credit Note',
+  'debit-note': 'Debit Note',
+  'petty-cash-voucher': 'Petty Cash Voucher',
+  grn: 'Goods Received Note',
+  'delivery-challan': 'Delivery Challan',
+  'journal-voucher': 'Journal Voucher',
+}
+
 export interface AccountGroup {
   id: number
   code?: string

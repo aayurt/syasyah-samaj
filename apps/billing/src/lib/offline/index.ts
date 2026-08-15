@@ -60,6 +60,12 @@ class LazyDb implements OfflineDb {
   async remove(seq: number): Promise<void> {
     return (await this.resolve()).remove(seq)
   }
+  async markConflict(seq: number, message: string): Promise<void> {
+    return (await this.resolve()).markConflict(seq, message)
+  }
+  async unmarkConflict(seq: number): Promise<void> {
+    return (await this.resolve()).unmarkConflict(seq)
+  }
   async cacheUpsert(collection: string, doc: Record<string, unknown>): Promise<void> {
     return (await this.resolve()).cacheUpsert(collection, doc)
   }
@@ -80,6 +86,7 @@ export function useSyncState(): SyncState {
   const [state, setState] = useState<SyncState>(() => e.getState())
 
   useEffect(() => {
+    void e.init()
     return e.subscribe(setState)
   }, [e])
 

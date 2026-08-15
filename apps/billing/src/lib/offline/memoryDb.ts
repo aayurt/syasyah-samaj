@@ -42,6 +42,24 @@ export class MemoryDb implements OfflineDb {
     this.outbox.delete(seq)
   }
 
+  async markConflict(seq: number, message: string): Promise<void> {
+    const entry = this.outbox.get(seq)
+    if (entry) {
+      this.outbox.set(seq, {
+        ...entry,
+        conflict: { message, at: new Date().toISOString() },
+      })
+    }
+  }
+
+  async unmarkConflict(seq: number): Promise<void> {
+    const entry = this.outbox.get(seq)
+    if (entry && entry.conflict) {
+      const { conflict: _conflict, ...rest } = entry
+      this.outbox.set(seq, rest)
+    }
+  }
+
   async cacheUpsert(collection: string, doc: Record<string, unknown>): Promise<void> {
     const id = String((doc as { id: unknown }).id)
     this.cache.set(`${collection}:${id}`, doc)

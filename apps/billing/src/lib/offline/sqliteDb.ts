@@ -28,9 +28,16 @@ export class SqliteDb implements OfflineDb {
         path TEXT NOT NULL,
         body TEXT,
         queued_at TEXT NOT NULL,
-        local_id TEXT
+        local_id TEXT,
+        conflict TEXT
       )`,
     )
+    // Existing databases predate the conflict column — add it if missing.
+    try {
+      await this.db.execute(`ALTER TABLE outbox ADD COLUMN conflict TEXT`)
+    } catch {
+      // column already exists
+    }
     await this.db.execute(
       `CREATE TABLE IF NOT EXISTS cache (
         collection TEXT NOT NULL,
@@ -91,8 +98,9 @@ export class SqliteDb implements OfflineDb {
       body: string | null
       queued_at: string
       local_id: string | null
+      conflict: string | null
     }>(
-      'SELECT seq, method, path, body, queued_at, local_id FROM outbox ORDER BY seq',
+      'SELECT seq, method, path, body, queued_at, local_id, conflict FROM outbox ORDER BY seq',
     )
     return rows.map((r) => ({
       seq: r.seq,
@@ -101,6 +109,7 @@ export class SqliteDb implements OfflineDb {
       body: r.body ? JSON.parse(r.body) : undefined,
       queuedAt: r.queued_at,
       localId: r.local_id ?? undefined,
+      conflict: r.conflict ? JSON.parse(r.conflict) : undefined,
     }))
   }
 
@@ -115,6 +124,19 @@ export class SqliteDb implements OfflineDb {
   async remove(seq: number): Promise<void> {
     const db = await this.getDb()
     await db.execute('DELETE FROM outbox WHERE seq = $1', [seq])
+  }
+
+  async markConflict(seq: number, message: string): Promise<void> {
+    const db = await this.getDb()
+    await db.execute(
+      'UPDATE outbox SET conflict = $2 WHERE seq = $1',
+      [seq, JSON.stringify({ message, at: new Date().toISOString() })],
+    )
+  }
+
+  async unmarkConflict(seq: number): Promise<void> {
+    const db = await this.getDb()
+    await db.execute('UPDATE outbox SET conflict = NULL WHERE seq = $1', [seq])
   }
 
   async cacheUpsert(collection: string, doc: Record<string, unknown>): Promise<void> {

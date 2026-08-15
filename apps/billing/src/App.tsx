@@ -33,6 +33,7 @@ import Daybooks from './pages/Daybooks'
 import Settings from './pages/Settings'
 import SyncBanner from './components/SyncBanner'
 import SyncStatus from './components/SyncStatus'
+import Toaster from './components/Toaster'
 import Tour from './components/Tour'
 import UpdatePrompt from './components/UpdatePrompt'
 
@@ -247,6 +248,7 @@ function Shell({ email }: { email: string }) {
       <div className="print:hidden">
         <UpdatePrompt />
       </div>
+      <Toaster />
     </div>
   )
 }

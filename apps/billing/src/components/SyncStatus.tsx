@@ -3,8 +3,9 @@ import { Cloud, CloudOff, RefreshCw } from 'lucide-react'
 import { getEngine, useSyncState } from '../lib/api'
 
 /**
- * Compact sync status shown in the header: Synced / n to sync / Offline.
- * Clicking while pending or offline retries the outbox flush.
+ * Compact sync status shown in the header: Synced / n to sync / Offline,
+ * plus a manual "sync now" button that flushes queued writes, pulls fresh
+ * data, and warms the reports on demand.
  */
 export default function SyncStatus() {
   const state = useSyncState()
@@ -13,21 +14,24 @@ export default function SyncStatus() {
   const syncNow = async () => {
     setSyncing(true)
     try {
-      await getEngine().flush()
+      await getEngine().syncAll()
     } finally {
       setSyncing(false)
     }
   }
 
-  if (!state.online) {
-    const reportAge =
-      state.reportsStale && state.lastReportSyncAt
-        ? ` · reports ${new Date(state.lastReportSyncAt).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}`
-        : ''
-    return (
+  const offline = !state.online
+  const reportAge =
+    state.reportsStale && state.lastReportSyncAt
+      ? ` · reports ${new Date(state.lastReportSyncAt).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        })}`
+      : ''
+
+  let pill: React.ReactNode
+  if (offline) {
+    pill = (
       <button
         onClick={() => void syncNow()}
         disabled={syncing}
@@ -39,10 +43,8 @@ export default function SyncStatus() {
         {reportAge}
       </button>
     )
-  }
-
-  if (syncing || state.pending > 0) {
-    return (
+  } else if (syncing || state.pending > 0) {
+    pill = (
       <button
         onClick={() => void syncNow()}
         disabled={syncing}
@@ -53,15 +55,30 @@ export default function SyncStatus() {
         {syncing ? 'Syncing…' : `${state.pending} to sync`}
       </button>
     )
+  } else {
+    pill = (
+      <span
+        className="flex items-center gap-1.5 rounded border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+        title="All changes synced"
+      >
+        <Cloud size={13} />
+        Synced
+      </span>
+    )
   }
 
   return (
-    <span
-      className="flex items-center gap-1.5 rounded border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
-      title="All changes synced"
-    >
-      <Cloud size={13} />
-      Synced
+    <span className="flex items-center gap-1.5">
+      {pill}
+      <button
+        onClick={() => void syncNow()}
+        disabled={syncing}
+        title="Sync now — push queued changes and refresh data"
+        aria-label="Sync now"
+        className="rounded border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50"
+      >
+        <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
+      </button>
     </span>
   )
 }

@@ -1,5 +1,16 @@
 import { API_BASE } from '../base'
+import { pushToast } from '../toast'
 import type { OfflineDb, OutboxEntry, SyncState } from './types'
+
+/** Collections the background sync loop refreshes after a flush. */
+export const SYNC_COLLECTIONS = [
+  'gl-accounts',
+  'account-groups',
+  'journal-entries',
+  'documents',
+  'parties',
+  'items',
+]
 
 export const LOCAL_PREFIX = 'local-'
 
@@ -89,6 +100,7 @@ export class SyncEngine {
   private banners: SyncState['banners'] = []
   private lastSyncAt: string | null = null
   private pendingHint = 0
+  private conflictsHint = 0
   private cacheVersion = 0
   /** Per-collection timestamp of the last background refresh (throttle). */
   private lastRefresh: Record<string, number> = {}
@@ -103,6 +115,7 @@ export class SyncEngine {
     return {
       online: this.online,
       pending: this.pendingHint,
+      conflicts: this.conflictsHint,
       lastSyncAt: this.lastSyncAt,
       banners: [...this.banners],
       cacheVersion: this.cacheVersion,
@@ -127,8 +140,18 @@ export class SyncEngine {
     for (const fn of this.listeners) fn(state)
   }
 
-  private async refreshPending(): Promise<number> {
-    return this.db.pendingCount()
+  /** Recomputes the pending/conflict counts from the outbox (cheap: it's a
+   * small local table). Called after any queue mutation so the pill stays
+   * honest even when conflicted entries are kept around. */
+  private async refreshCounts(): Promise<void> {
+    try {
+      const entries = await this.db.pending()
+      this.pendingHint = entries.filter((e) => !e.conflict).length
+      this.conflictsHint = entries.filter((e) => e.conflict).length
+      this.emit()
+    } catch {
+      // store unavailable — keep previous hints
+    }
   }
 
   setOnline(online: boolean) {
@@ -164,6 +187,12 @@ export class SyncEngine {
     this.pendingHint = Math.max(0, this.pendingHint + delta)
   }
 
+  /** Refreshes counts on mount so the pill shows queued writes from a
+   * previous session. */
+  async init() {
+    await this.refreshCounts()
+  }
+
   // --- queuing -------------------------------------------------------------
 
   newLocalId(): string {
@@ -186,7 +215,8 @@ export class SyncEngine {
   ): Promise<unknown> {
     const { id } = parsePath(path)
     const queuedAt = new Date().toISOString()
-    if (method === 'POST' && !id) {
+    const queued = method === 'POST' && !id
+    if (queued) {
       const localId = this.newLocalId()
       await this.db.enqueue({
         method,
@@ -195,13 +225,21 @@ export class SyncEngine {
         queuedAt,
         localId,
       })
-      this.bumpPending(1)
-      this.emit()
+      await this.refreshCounts()
+      pushToast(
+        'info',
+        'Saved offline',
+        'Your change is queued locally and will sync automatically when you reconnect.',
+      )
       return { doc: { id: localId }, queued: true }
     }
     await this.db.enqueue({ method, path, body, queuedAt })
-    this.bumpPending(1)
-    this.emit()
+    await this.refreshCounts()
+    pushToast(
+      'info',
+      'Saved offline',
+      'Your change is queued locally and will sync automatically when you reconnect.',
+    )
     return { queued: true }
   }
 
@@ -244,12 +282,12 @@ export class SyncEngine {
     return data?.doc ?? data ?? null
   }
 
-  /** Applies one queued entry. Returns 'pushed' or 'conflict'. */
+  /** Applies one queued entry. Returns 'pushed' or a conflict reason. */
   private async apply(
     entry: OutboxEntry,
     idMap: Map<string, string>,
     freshIds: Set<string>,
-  ): Promise<'pushed' | 'conflict'> {
+  ): Promise<{ status: 'pushed' } | { status: 'conflict'; message: string }> {
     const { slug, id } = parsePath(entry.path)
     const path = this.rewrite(entry.path, idMap)
     const body = this.rewriteBody(entry.body, idMap)
@@ -260,22 +298,22 @@ export class SyncEngine {
       const server = await this.fetchServerDoc(slug, targetId)
       if (server === null) {
         if (entry.method !== 'DELETE') {
-          this.addBanner(
-            `Dropped queued change — the document no longer exists on the server.`,
-          )
-          return 'conflict'
+          return {
+            status: 'conflict',
+            message: `The document no longer exists on the server — this queued change can't be applied.`,
+          }
         }
-        return 'pushed'
+        return { status: 'pushed' }
       }
       if (
         server.updatedAt &&
         new Date(server.updatedAt).getTime() >
           new Date(entry.queuedAt).getTime()
       ) {
-        this.addBanner(
-          `Conflict: the server copy of ${slug} ${targetId} is newer — kept the server version and dropped the queued change.`,
-        )
-        return 'conflict'
+        return {
+          status: 'conflict',
+          message: `The server copy of this ${slug} is newer than your queued change. Discard this change to keep the server version.`,
+        }
       }
     }
 
@@ -287,21 +325,27 @@ export class SyncEngine {
     })
     if (!res.ok) {
       if (res.status === 409) {
-        this.addBanner(
-          `Conflict while syncing ${entry.method} ${path} — skipped (server rejected it).`,
-        )
-        return 'conflict'
+        return {
+          status: 'conflict',
+          message: `The server rejected this change (conflict). Review and retry, or discard it.`,
+        }
       }
       if (res.status === 401 || res.status === 403) {
-        this.addBanner(
-          `Could not sync — you are not authenticated. Sign in again and retry.`,
-        )
-        return 'conflict'
+        return {
+          status: 'conflict',
+          message: `Sign-in expired — sign in again, then retry this change.`,
+        }
       }
       const data = await res.json().catch(() => ({}))
-      throw new Error(
-        data?.message || data?.error || `HTTP ${res.status} syncing ${path}`,
-      )
+      const msg =
+        data?.errors?.[0]?.message ||
+        data?.message ||
+        data?.error ||
+        `HTTP ${res.status}`
+      return {
+        status: 'conflict',
+        message: `The server rejected this change: ${msg}`,
+      }
     }
 
     // Capture local → server id mapping for queued creates.
@@ -315,7 +359,7 @@ export class SyncEngine {
         await this.saveIdMap(idMap)
       }
     }
-    return 'pushed'
+    return { status: 'pushed' }
   }
 
   private rewriteBody(body: unknown, map: Map<string, string>): unknown {
@@ -342,7 +386,9 @@ export class SyncEngine {
 
   /**
    * Flushes the outbox in order. Stops on network failure (still offline) and
-   * keeps the remaining queue. Conflicts drop the losing change with a banner.
+   * keeps the remaining queue. Server rejections mark the entry CONFLICTED
+   * and keep it in the outbox (nothing is dropped) — the user reviews it in
+   * the sync banner and can retry, edit, or discard it.
    */
   async flush(): Promise<{ pushed: number; conflicts: number }> {
     const pending = await this.db.pending()
@@ -357,24 +403,94 @@ export class SyncEngine {
     let conflicts = 0
     let processed = 0
     for (const entry of pending) {
+      // Already-conflicted entries are blocked — never auto-retry them.
+      if (entry.conflict) continue
       try {
         const outcome = await this.apply(entry, idMap, freshIds)
-        if (outcome === 'pushed') pushed++
-        else conflicts++
-        processed++
-        await this.db.remove(entry.seq)
+        if (outcome.status === 'pushed') {
+          pushed++
+          processed++
+          await this.db.remove(entry.seq)
+        } else {
+          conflicts++
+          processed++
+          await this.db.markConflict(entry.seq, outcome.message)
+        }
       } catch (err) {
         if (isNetworkError(err)) break // still offline — retry later
         processed++
         conflicts++
-        this.addBanner(`Could not sync "${entry.method} ${entry.path}": ${msg(err)}`)
-        await this.db.remove(entry.seq)
+        await this.db
+          .markConflict(
+            entry.seq,
+            `Could not sync this change: ${msg(err)}`,
+          )
+          .catch(() => {})
       }
     }
-    this.bumpPending(-processed)
+    await this.refreshCounts()
     this.lastSyncAt = new Date().toISOString()
     this.emit()
+    if (pushed > 0) {
+      pushToast(
+        'success',
+        `${pushed} change${pushed === 1 ? '' : 's'} synced`,
+        'Your queued changes were pushed to the server.',
+      )
+    }
+    if (conflicts > 0) {
+      pushToast(
+        'warning',
+        `${conflicts} change${conflicts === 1 ? '' : 's'} could not sync`,
+        'The server rejected them — review them in the banner above to retry, edit, or discard.',
+      )
+    }
     return { pushed, conflicts }
+  }
+
+  /** Removes a conflicted (or any) queued entry — the user chose to drop it. */
+  async discard(seq: number): Promise<void> {
+    await this.db.remove(seq)
+    await this.refreshCounts()
+    pushToast('info', 'Queued change discarded')
+  }
+
+  /** Clears the conflict flag so the entry is attempted on the next flush. */
+  async retry(
+    seq: number,
+  ): Promise<{ pushed: number; conflicts: number }> {
+    await this.db.unmarkConflict(seq)
+    await this.refreshCounts()
+    return this.flush()
+  }
+
+  async getEntry(seq: number): Promise<OutboxEntry | null> {
+    const entries = await this.db.pending()
+    return entries.find((e) => e.seq === seq) ?? null
+  }
+
+  /** Queued entries the server rejected — surfaced in the sync banner. */
+  async listConflicts(): Promise<OutboxEntry[]> {
+    const entries = await this.db.pending()
+    return entries.filter((e) => e.conflict)
+  }
+
+  /** Full manual/background sync: flush queued writes, pull collections,
+   * warm the core reports. Shared by the header button and the banner. */
+  async syncAll(): Promise<void> {
+    await this.flush()
+    for (const slug of SYNC_COLLECTIONS) {
+      try {
+        await this.pull(slug)
+      } catch {
+        // collection may not exist in this deployment
+      }
+    }
+    try {
+      await this.warmReports()
+    } catch {
+      // best-effort — reports still fall back to the cache offline
+    }
   }
 
   /**

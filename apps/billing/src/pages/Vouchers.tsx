@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -12,15 +12,17 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { api, fmt, list, useSyncState } from '../lib/api'
+import { api, fmt, getEngine, list, useSyncState } from '../lib/api'
 import { useSortSearch } from '../lib/useSortSearch'
-import type {
-  Account,
-  DocType,
-  Document,
-  DocumentLine,
-  Item,
-  Party,
+import type { OutboxEntry } from '../lib/offline/types'
+import {
+  DOC_TYPE_LABELS,
+  type Account,
+  type DocType,
+  type Document,
+  type DocumentLine,
+  type Item,
+  type Party,
 } from '../lib/types'
 import { StatusPill } from './Dashboard'
 import SearchBox from '../components/SearchBox'
@@ -50,9 +52,6 @@ const DOC_TYPES: DocTypeMeta[] = [
   { value: 'journal-voucher', label: 'Journal Voucher', direction: 'internal', needsParty: false, cashMode: false, lineMode: 'journal' },
 ]
 
-const DOC_TYPE_LABELS: Record<string, string> = Object.fromEntries(
-  DOC_TYPES.map((t) => [t.value, t.label]),
-)
 
 const DIRECTION_ICON: Record<string, typeof ArrowUpRight> = {
   outbound: ArrowUpRight,
@@ -139,6 +138,8 @@ export default function Vouchers() {
   const [menuFor, setMenuFor] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [viewDoc, setViewDoc] = useState<Document | null>(null)
+  /** Outbox seq of a conflicted create being resumed into this form. */
+  const resumedSeqRef = useRef<number | null>(null)
 
   const load = async () => {
     try {
@@ -162,6 +163,74 @@ export default function Vouchers() {
   useEffect(() => {
     load()
   }, [cacheVersion])
+
+  // Resume a conflicted queued create into the entry form (dispatched by the
+  // sync banner's "Edit" action). The queued entry is kept until the user
+  // actually saves, so nothing is lost if they cancel.
+  useEffect(() => {
+    const onResume = (e: Event) => {
+      const seq = (e as CustomEvent<{ seq?: number }>).detail?.seq
+      if (seq == null) return
+      void (async () => {
+        const entry = await getEngine().getEntry(seq)
+        if (!entry || !entry.body) return
+        const b = entry.body as Record<string, unknown>
+        const isJ = b.docType === 'journal-voucher'
+        const idOf = (v: unknown): string =>
+          v && typeof v === 'object'
+            ? String((v as { id: unknown }).id)
+            : String(v ?? '')
+        resumedSeqRef.current = seq
+        setViewDoc(null)
+        setMenuFor(null)
+        setError('')
+        setEditingId(null)
+        setShowPicker(false)
+        setForm({
+          docType: ((b.docType as string) || '') as DocType,
+          date:
+            (b.date as string | undefined)?.slice(0, 10) ||
+            new Date().toISOString().slice(0, 10),
+          narration: (b.narration as string) || '',
+          party: idOf(b.party),
+          taxRate: String(b.taxRate ?? 0),
+          paymentMethod: (b.paymentMethod as string) || 'bank',
+          bankAccount: idOf(b.bankAccount),
+          lines: isJ
+            ? [emptyItemLine()]
+            : ((b.lines as Record<string, unknown>[]) || []).map((l) => ({
+                key: crypto.randomUUID(),
+                id: undefined,
+                item: idOf(l.item),
+                description: (l.description as string) || '',
+                qty: l.qty !== undefined ? String(l.qty) : '',
+                rate: l.rate !== undefined ? String(l.rate) : '',
+                amount: l.amount !== undefined ? String(l.amount) : '',
+              })),
+          journalLines: isJ
+            ? ((b.journalLines as Record<string, unknown>[]) || []).map(
+                (l) => ({
+                  key: crypto.randomUUID(),
+                  id: undefined,
+                  account: idOf(l.account),
+                  debit: l.debit !== undefined ? String(l.debit) : '',
+                  credit: l.credit !== undefined ? String(l.credit) : '',
+                  memo: (l.memo as string) || '',
+                }),
+              )
+            : [emptyJLine(), emptyJLine()],
+        })
+        // Scroll the form into view.
+        requestAnimationFrame(() => {
+          document
+            .querySelector('#voucher-form')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        })
+      })()
+    }
+    window.addEventListener('afno:resume-queued', onResume)
+    return () => window.removeEventListener('afno:resume-queued', onResume)
+  }, [])
 
   // Preview the next voucher number for the selected type + date.
   useEffect(() => {
@@ -285,6 +354,13 @@ export default function Vouchers() {
         }
       }
       const date = form.date
+      // A resumed conflicted create was saved successfully — drop the queued
+      // copy so the outbox doesn't push a duplicate.
+      if (resumedSeqRef.current !== null) {
+        const seq = resumedSeqRef.current
+        resumedSeqRef.current = null
+        await getEngine().discard(seq)
+      }
       setForm(emptyForm())
       setForm((f) => ({ ...f, date }))
       setEditingId(null)
@@ -469,6 +545,7 @@ export default function Vouchers() {
       {/* Entry form */}
       {form.docType && meta && (
         <form
+          id="voucher-form"
           onSubmit={(e) => {
             e.preventDefault()
             submit(false)

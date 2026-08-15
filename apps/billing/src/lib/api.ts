@@ -6,6 +6,48 @@ import {
   parsePath,
   reportCacheKey,
 } from './offline/syncEngine'
+import { pushToast } from './toast'
+
+/** Human noun per collection, used in CRUD toasts. */
+const NOUNS: Record<string, string> = {
+  documents: 'voucher',
+  'gl-accounts': 'account',
+  'account-groups': 'account group',
+  'journal-entries': 'journal entry',
+  parties: 'party',
+  items: 'item',
+  'stock-movements': 'stock movement',
+  users: 'user',
+  tenants: 'tenant',
+  settings: 'setting',
+  globals: 'settings',
+}
+
+function crudToast(method: string, path: string, error?: string): void {
+  const { slug } = parsePath(path)
+  const noun = NOUNS[slug] ?? slug.replace(/-/g, ' ')
+  // Globals (Settings) use POST to update an existing singleton — "Saved",
+  // not "Created".
+  const action = path === '/globals/billing-settings'
+    ? 'Saved'
+    : path.endsWith('/post')
+      ? 'Posted'
+      : path.endsWith('/void')
+        ? 'Voided'
+        : method === 'POST'
+          ? 'Created'
+          : method === 'PATCH'
+            ? 'Updated'
+            : method === 'DELETE'
+              ? 'Deleted'
+              : 'Saved'
+  const nounCap = noun.charAt(0).toUpperCase() + noun.slice(1)
+  if (error) {
+    pushToast('error', `${action} ${noun} failed`, error)
+  } else {
+    pushToast('success', `${nounCap} ${action.toLowerCase()}`)
+  }
+}
 
 interface ApiOptions extends Omit<RequestInit, 'body'> {
   query?: Record<string, string | number | undefined>
@@ -27,12 +69,10 @@ async function doFetch<T>(path: string, options: ApiOptions): Promise<T> {
   }
   if (body !== undefined) {
     init.body = typeof body === 'string' ? body : JSON.stringify(body)
-  }
-
-  // A hang (half-open connection, captive portal, killed server mid-
-  // handshake) never rejects with a clean TypeError — without a timeout the
-  // offline path never engages and the user sees a raw error. Time out and
-  // throw a TypeError so the caller queues the write instead.
+  }    // A hang (half-open connection, captive portal, killed server mid-
+    // handshake) never rejects with a clean TypeError — without a timeout the
+    // offline path never engages and the user sees a raw error. Time out and
+    // throw a TypeError so the caller queues the write instead.
   const timeout = new AbortController()
   const timer = setTimeout(() => timeout.abort(), 15_000)
   try {
@@ -141,6 +181,7 @@ export async function api<T = unknown>(
         // best-effort
       }
     }
+    if (method !== 'GET') crudToast(method, path)
     // Warm the read cache only for plain collection lists — never for
     // computed endpoints (trial-balance, daybook…) whose `docs` array has a
     // different shape than the collection's documents.
@@ -167,6 +208,13 @@ export async function api<T = unknown>(
       engine.setOnline(false)
       // fall through to offline handling
     } else {
+      if (method !== 'GET') {
+        crudToast(
+          method,
+          path,
+          err instanceof Error ? err.message : String(err),
+        )
+      }
       throw err
     }
   }
