@@ -37,6 +37,10 @@ function versionPlugin(): Plugin {
       outDir = cfg.build.outDir ?? 'dist'
     },
     closeBundle() {
+      // The out dir can be missing here on some platforms (e.g. Windows CI
+      // runners) — ensure it exists before writing either artifact.
+      mkdirSync(outDir, { recursive: true })
+
       // version.json — the server-side source of truth clients poll.
       writeFileSync(
         join(outDir, 'version.json'),
@@ -47,7 +51,6 @@ function versionPlugin(): Plugin {
       // differ, which is what makes the browser notice the SW update.
       const template = join(here, 'sw.template.js')
       if (existsSync(template)) {
-        mkdirSync(outDir, { recursive: true })
         writeFileSync(
           join(outDir, 'sw.js'),
           readFileSync(template, 'utf8').replaceAll('__VERSION__', VERSION),
