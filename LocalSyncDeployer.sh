@@ -31,7 +31,7 @@ set -euo pipefail
 # -- Config --------------------------------------------------------------
 SERVER="${SYASYA_SERVER:-PersonalVPS}"          # ssh alias from ~/.ssh/config
 REMOTE_PATH="${SYASYA_REMOTE_PATH:-/var/www/syasyah-samaj}"
-BRANCH="${SYASYA_BRANCH:-Billings}"
+BRANCH="${SYASYA_BRANCH:-main}"
 LOCAL_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PM2_APP="${SYASYA_PM2_APP:-syasha-samaj}"
 PUBLIC_URL="${SYASYA_PUBLIC_URL:-https://syasyahsamaj.com/}"
@@ -93,8 +93,8 @@ if [ "$RSYNC_MODE" -eq 1 ]; then
 else
   info "Git mode: committing + pushing branch '$BRANCH'..."
   if [ -z "$MESSAGE" ]; then MESSAGE="deploy: $(date '+%Y-%m-%d %H:%M')"; fi
-  if [ -n "$(git -C "$LOCAL_PATH" status --porcelain -- ':!/.freebuff')" ]; then
-    run_local git -C "$LOCAL_PATH" add -A -- ':!/.freebuff'
+  if [ -n "$(git -C "$LOCAL_PATH" status --porcelain)" ]; then
+    run_local git -C "$LOCAL_PATH" add -A
     run_local git -C "$LOCAL_PATH" commit -m "$MESSAGE"
   else
     ok "No local changes to commit."
