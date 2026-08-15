@@ -2,12 +2,25 @@ name: Build Desktop Apps
 
 on:
   workflow_dispatch:
+    inputs:
+      remote_url:
+        description: >-
+          Hosted web build the desktop window loads (Path A). Empty =
+          bundle the local web dist instead. Defaults to the prod env.
+        required: false
+        type: string
   push:
     branches:
       - main
+      - Billings
     paths:
       - 'apps/billing/**'
       - 'apps/desktop/**'
+
+env:
+  # Prod hosted web build — the desktop window points here so UI updates
+  # ship via web deploy. Override per-run via the workflow_dispatch input.
+  REMOTE_URL: https://syasyahsamaj.com/app/
 
 jobs:
   build:
@@ -65,7 +78,19 @@ jobs:
 
       - name: Build web app + desktop bundle
         working-directory: apps/desktop
-        run: pnpm build ${{ matrix.bundle_args }}
+        run: |
+          ARGS="${{ matrix.bundle_args }}"
+          URL="${{ env.REMOTE_URL }}"
+          # A workflow_dispatch input overrides the default prod URL;
+          # an empty input means bundle the local dist (no --remote).
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.remote_url }}" ]; then
+            URL="${{ inputs.remote_url }}"
+          fi
+          if [ -n "$URL" ]; then
+            ARGS="$ARGS --remote $URL"
+          fi
+          echo ">> pnpm build $ARGS"
+          pnpm build $ARGS
 
       - name: Upload macOS app
         if: runner.os == 'macOS'
