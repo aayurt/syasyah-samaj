@@ -45,6 +45,25 @@ export const REPORT_SLUG = 'journal-entries'
 export const LAST_REPORT_SYNC_KEY = 'report:lastSyncedAt'
 
 /**
+ * The actual computed report endpoints (path without query). Only these are
+ * treated as cacheable reports — anything else at /slug/:action (e.g.
+ * /documents/number/next) is a plain API call, so it must not be routed
+ * through the report cache or mislabeled as a report when offline.
+ */
+export const REPORT_PATHS = new Set([
+  `/${REPORT_SLUG}/trial-balance`,
+  `/${REPORT_SLUG}/ledger`,
+  `/${REPORT_SLUG}/profit-loss`,
+  `/${REPORT_SLUG}/balance-sheet`,
+  `/${REPORT_SLUG}/daybook`,
+  '/documents/aging',
+])
+
+export function isReportPath(path: string): boolean {
+  return REPORT_PATHS.has(path.split('?')[0].replace(/\/+$/, ''))
+}
+
+/**
  * Deterministic cache key for a report payload: path + normalized query.
  * The same key is derived by api.ts (on read) and warmReports (on write),
  * so they always agree regardless of key order in the query object.

@@ -2,6 +2,7 @@ import { API_BASE } from './base'
 import { getEngine, useSyncState } from './offline'
 import {
   isNetworkError,
+  isReportPath,
   parsePath,
   reportCacheKey,
 } from './offline/syncEngine'
@@ -28,18 +29,35 @@ async function doFetch<T>(path: string, options: ApiOptions): Promise<T> {
     init.body = typeof body === 'string' ? body : JSON.stringify(body)
   }
 
-  const res = await fetch(url, init)
-  if (!res.ok) {
-    let msg = `${res.status} ${res.statusText}`
-    try {
-      const b = await res.json()
-      msg = b?.errors?.[0]?.message || b?.message || b?.error || msg
-    } catch {
-      // non-JSON error body
+  // A hang (half-open connection, captive portal, killed server mid-
+  // handshake) never rejects with a clean TypeError — without a timeout the
+  // offline path never engages and the user sees a raw error. Time out and
+  // throw a TypeError so the caller queues the write instead.
+  const timeout = new AbortController()
+  const timer = setTimeout(() => timeout.abort(), 15_000)
+  try {
+    const res = await fetch(url, { ...init, signal: timeout.signal })
+    if (!res.ok) {
+      let msg = `${res.status} ${res.statusText}`
+      try {
+        const b = await res.json()
+        msg = b?.errors?.[0]?.message || b?.message || b?.error || msg
+      } catch {
+        // non-JSON error body
+      }
+      throw new Error(msg)
     }
-    throw new Error(msg)
+    return res.json() as Promise<T>
+  } catch (err) {
+    // AbortError is a DOMException, not a TypeError — normalize it so
+    // isNetworkError() (instanceof TypeError) treats it as offline.
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new TypeError('network timeout')
+    }
+    throw err
+  } finally {
+    clearTimeout(timer)
   }
-  return res.json() as Promise<T>
 }
 
 /** True for plain collection reads: `GET /slug` (list) or `GET /slug/:id`. */
@@ -90,9 +108,9 @@ export async function api<T = unknown>(
   const segments = pathSegments(path)
   const plainList = method === 'GET' && segments.length === 1 && !!slug
   const plainDoc = method === 'GET' && segments.length === 2 && !!id
-  // Computed endpoints (trial-balance, ledger, daybook…) live at
-  // /slug/:action with no id segment — the second part is an action name.
-  const report = method === 'GET' && segments.length === 2 && !!slug && !id
+  // Only known computed endpoints (trial-balance, ledger, daybook, aging)
+  // are reports — NOT every /slug/:action (e.g. /documents/number/next).
+  const report = method === 'GET' && isReportPath(path)
   const reportKey = report ? reportCacheKey(path, options.query) : null
 
   // Cache-first: a warm collection list renders immediately; the background
