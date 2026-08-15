@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Download } from 'lucide-react'
+import { Download, FileText, Printer } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
+import { exportReportPdf } from '../lib/pdf'
 import { ReportSkeleton } from '../components/Skeleton'
 import type { Account, LedgerRow, TrialBalanceRow } from '../lib/types'
 
@@ -71,29 +72,68 @@ export default function TrialBalance() {
     rows: rows.filter((r) => r.account.type === type),
   })).filter((g) => g.rows.length > 0)
 
+  const pdf = () =>
+    exportReportPdf({
+      filename: 'trial-balance.pdf',
+      title: 'Trial Balance',
+      subtitle: balanced
+        ? 'Debits and credits are in balance'
+        : 'Out of balance — verify your postings',
+      meta: [['Generated', new Date().toLocaleString()]],
+      tables: grouped.map((g) => ({
+        title: TYPE_LABELS[g.type],
+        columns: ['Account', 'Debit', 'Credit', 'Balance'],
+        rows: g.rows.map((r) => [
+          r.account.code ? `${r.account.code} · ${r.account.name}` : r.account.name,
+          r.debit || '',
+          r.credit || '',
+          r.balance,
+        ]),
+        totals: ['Totals', totals.debit, totals.credit, ''],
+      })),
+    })
+
   return (
     <div className="mx-auto max-w-5xl">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">Trial Balance</h1>
-        <button
-          onClick={() =>
-            downloadCsv(
-              'trial-balance.csv',
-              ['Type', 'Account', 'Debit', 'Credit', 'Balance'],
-              rows.map((r) => [
-                TYPE_LABELS[r.account.type] || r.account.type,
-                r.account.name,
-                r.debit,
-                r.credit,
-                r.balance,
-              ]),
-            )
-          }
-          className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-        >
-          <Download size={14} />
-          CSV
-        </button>
+        <div className="print:hidden flex items-center gap-2">
+          <button
+            onClick={() =>
+              downloadCsv(
+                'trial-balance.csv',
+                ['Type', 'Account', 'Debit', 'Credit', 'Balance'],
+                rows.map((r) => [
+                  TYPE_LABELS[r.account.type] || r.account.type,
+                  r.account.name,
+                  r.debit,
+                  r.credit,
+                  r.balance,
+                ]),
+              )
+            }
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            <Download size={14} />
+            CSV
+          </button>
+          <button
+            onClick={pdf}
+            disabled={rows.length === 0}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <FileText size={14} />
+            PDF
+          </button>
+          <button
+            onClick={() => window.print()}
+            disabled={rows.length === 0}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <Printer size={14} />
+            Print
+          </button>
+        </div>
       </div>
 
       {error && (

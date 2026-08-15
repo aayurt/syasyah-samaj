@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { FileText, Printer } from 'lucide-react'
 import { api } from '../lib/api'
+import { exportReportPdf } from '../lib/pdf'
 import type { AgingResponse, AgingRow } from '../lib/types'
 
 const BUCKETS = ['0-30', '31-60', '61-90', '90+'] as const
@@ -32,26 +34,73 @@ export default function Aging() {
     (r) => r.party.id === selected,
   ) ?? []
 
+  const pdf = () => {
+    if (!data) return
+    exportReportPdf({
+      filename: `aging-${side}.pdf`,
+      title: `Aging — ${sideLabel}`,
+      meta: [
+        ['As of', data.asOf?.slice(0, 10) || '—'],
+        ['Generated', new Date().toLocaleString()],
+      ],
+      tables: [
+        {
+          columns: ['Party', ...BUCKETS, 'Total'],
+          rows: data.parties.map((p) => [
+            p.party.name,
+            ...BUCKETS.map((b) => p.buckets[b] ?? ''),
+            p.total,
+          ]),
+          totals: [
+            'Totals',
+            ...BUCKETS.map((b) => data.totals.buckets[b] ?? ''),
+            data.totals.total,
+          ],
+        },
+      ],
+    })
+  }
+
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">
           Aging — {sideLabel}
         </h1>
-        <div className="flex gap-2">
-          {(['ar', 'ap'] as const).map((s) => (
+        <div className="flex items-center gap-2">
+          <div className="flex gap-2">
+            {(['ar', 'ap'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setSide(s)}
+                className={`rounded px-3 py-1.5 text-sm font-medium ${
+                  side === s
+                    ? 'bg-crimson-600 text-white'
+                    : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {s === 'ar' ? 'Receivables' : 'Payables'}
+              </button>
+            ))}
+          </div>
+          <div className="print:hidden flex items-center gap-2">
             <button
-              key={s}
-              onClick={() => setSide(s)}
-              className={`rounded px-3 py-1.5 text-sm font-medium ${
-                side === s
-                  ? 'bg-crimson-600 text-white'
-                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
-              }`}
+              onClick={pdf}
+              disabled={!data}
+              className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
             >
-              {s === 'ar' ? 'Receivables' : 'Payables'}
+              <FileText size={14} />
+              PDF
             </button>
-          ))}
+            <button
+              onClick={() => window.print()}
+              disabled={!data}
+              className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+            >
+              <Printer size={14} />
+              Print
+            </button>
+          </div>
         </div>
       </div>
 

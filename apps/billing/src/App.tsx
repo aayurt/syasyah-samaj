@@ -133,7 +133,7 @@ function Shell({ email }: { email: string }) {
   return (
     <div className="flex h-screen bg-slate-100">
       <aside
-        className={`flex flex-col bg-slate-900 text-slate-300 transition-[width] duration-200 ${
+        className={`print:hidden flex flex-col bg-slate-900 text-slate-300 transition-[width] duration-200 ${
           collapsed ? 'w-16' : 'w-56'
         }`}
       >
@@ -192,8 +192,10 @@ function Shell({ email }: { email: string }) {
         </nav>
       </aside>
       <div className="flex flex-1 flex-col overflow-hidden">
-        <SyncBanner />
-        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+        <div className="print:hidden">
+          <SyncBanner />
+        </div>
+        <header className="print:hidden flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
           <div className="text-sm text-slate-500">{email}</div>
           <div className="flex items-center gap-3">
             <span data-tour="sync">
@@ -220,7 +222,7 @@ function Shell({ email }: { email: string }) {
           </button>
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-6 print:overflow-visible">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/accounts" element={<Accounts />} />
@@ -237,8 +239,14 @@ function Shell({ email }: { email: string }) {
           </Routes>
         </main>
       </div>
-      {tourOpen && <Tour open={tourOpen} onClose={closeTour} />}
-      <UpdatePrompt />
+      {tourOpen && (
+        <div className="print:hidden">
+          <Tour open={tourOpen} onClose={closeTour} />
+        </div>
+      )}
+      <div className="print:hidden">
+        <UpdatePrompt />
+      </div>
     </div>
   )
 }

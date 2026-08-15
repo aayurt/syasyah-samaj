@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Download } from 'lucide-react'
+import { Download, FileText, Printer } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
+import { exportReportPdf } from '../lib/pdf'
 import type {
   BalanceSheetResponse,
   BsRow,
@@ -70,6 +71,72 @@ export default function Reports() {
       ],
     )
 
+  const period = (): [string, string][] => [
+    ['From', from || 'Earliest'],
+    ['To', to || 'Latest'],
+  ]
+
+  const accName = (r: SectionRow) =>
+    r.account.code ? `${r.account.code} · ${r.account.name}` : r.account.name
+
+  const pdf = () => {
+    if (tab === 'pnl' && pnl) {
+      exportReportPdf({
+        filename: 'profit-and-loss.pdf',
+        title: 'Profit & Loss',
+        subtitle: 'For the selected period',
+        meta: [...period(), ['Generated', new Date().toLocaleString()]],
+        tables: [
+          {
+            title: 'Income',
+            columns: ['Account', 'Amount'],
+            rows: pnl.income.map((r) => [accName(r), r.amount ?? 0]),
+            totals: ['Total income', pnl.totals.income],
+          },
+          {
+            title: 'Expenses',
+            columns: ['Account', 'Amount'],
+            rows: pnl.expense.map((r) => [accName(r), r.amount ?? 0]),
+            totals: ['Total expenses', pnl.totals.expense],
+          },
+        ],
+        foot: [{ label: 'Net profit', value: pnl.totals.netProfit }],
+      })
+    } else if (bs) {
+      exportReportPdf({
+        filename: 'balance-sheet.pdf',
+        title: 'Balance Sheet',
+        subtitle: bs.balanced
+          ? 'Assets = Liabilities + Equity'
+          : 'Out of balance — verify your postings',
+        meta: [...period(), ['Generated', new Date().toLocaleString()]],
+        tables: [
+          {
+            title: 'Assets',
+            columns: ['Account', 'Balance'],
+            rows: bs.assets.map((r) => [accName(r), r.balance ?? 0]),
+            totals: ['Total assets', bs.totals.assets],
+          },
+          {
+            title: 'Liabilities',
+            columns: ['Account', 'Balance'],
+            rows: bs.liabilities.map((r) => [accName(r), r.balance ?? 0]),
+            totals: ['Total liabilities', bs.totals.liabilities],
+          },
+          {
+            title: 'Equity',
+            columns: ['Account', 'Balance'],
+            rows: bs.equity.map((r) => [accName(r), r.balance ?? 0]),
+            totals: ['Total equity', bs.totals.equity],
+          },
+        ],
+        foot: [
+          { label: 'Total liabilities & equity', value: bs.totals.liabilitiesEquity },
+        ],
+      })
+    }
+  }
+
   return (
     <div className="mx-auto max-w-5xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -102,6 +169,22 @@ export default function Reports() {
           >
             <Download size={14} />
             CSV
+          </button>
+          <button
+            onClick={pdf}
+            disabled={tab === 'pnl' ? !pnl : !bs}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <FileText size={14} />
+            PDF
+          </button>
+          <button
+            onClick={() => window.print()}
+            disabled={tab === 'pnl' ? !pnl : !bs}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <Printer size={14} />
+            Print
           </button>
         </div>
       </div>

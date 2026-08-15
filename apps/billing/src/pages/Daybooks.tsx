@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Download } from 'lucide-react'
+import { Download, FileText, Printer } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
+import { exportReportPdf } from '../lib/pdf'
 import type { DaybookResponse, DaybookType } from '../lib/types'
 
 const TYPES: { value: DaybookType; label: string }[] = [
@@ -56,18 +57,77 @@ export default function Daybooks() {
     )
   }
 
+  const label =
+    TYPES.find((t) => t.value === type)?.label ?? type
+
+  const pdf = () => {
+    if (!data) return
+    const columns = isCash
+      ? ['Date', 'Narration', 'Account', 'Debit', 'Credit', 'Running']
+      : ['Date', 'Narration', 'Account', 'Debit', 'Credit']
+    exportReportPdf({
+      filename: `daybook-${type}.pdf`,
+      title: label,
+      meta: [
+        ['From', from || 'Earliest'],
+        ['To', to || 'Latest'],
+        ['Generated', new Date().toLocaleString()],
+      ],
+      tables: [
+        {
+          columns,
+          rows: data.rows.map((r) => [
+            r.date?.slice(0, 10),
+            r.narration,
+            r.accountName,
+            r.debit,
+            r.credit,
+            r.runningBalance ?? '',
+          ]),
+          totals: [
+            'Totals',
+            '',
+            '',
+            data.totals.debit,
+            data.totals.credit,
+            isCash ? data.closingBalance : '',
+          ],
+        },
+      ],
+      foot: isCash ? [{ label: 'Closing balance', value: data.closingBalance }] : undefined,
+    })
+  }
+
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-slate-900">Daybooks</h1>
-        <button
-          onClick={csv}
-          disabled={!data}
-          className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-        >
-          <Download size={14} />
-          CSV
-        </button>
+        <div className="print:hidden flex items-center gap-2">
+          <button
+            onClick={csv}
+            disabled={!data}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <Download size={14} />
+            CSV
+          </button>
+          <button
+            onClick={pdf}
+            disabled={!data}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <FileText size={14} />
+            PDF
+          </button>
+          <button
+            onClick={() => window.print()}
+            disabled={!data}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <Printer size={14} />
+            Print
+          </button>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">

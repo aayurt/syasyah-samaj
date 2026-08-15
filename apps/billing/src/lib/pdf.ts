@@ -138,3 +138,154 @@ export function exportInvoicePdf(doc: Document, party?: Party) {
 
   pdf.save(`${doc.number || `invoice-${doc.id}`}.pdf`)
 }
+
+// --- Generic report export (trial balance, P&L, balance sheet, daybooks) --
+
+/** One tabular section of a report. Amount cells should be numbers; text
+ * cells strings. The last column and any numeric cell are right-aligned. */
+export interface PdfReportTable {
+  title?: string
+  columns: string[]
+  rows: (string | number | null | undefined)[][]
+  /** Bold summary row shown under the table with a rule above it. */
+  totals?: (string | number | null | undefined)[]
+}
+
+export interface ReportPdfOptions {
+  filename: string
+  title: string
+  subtitle?: string
+  meta?: [string, string][]
+  tables: PdfReportTable[]
+  /** Bold closing lines rendered under all tables (e.g. net profit). */
+  foot?: { label: string; value: number }[]
+}
+
+/** Renders a report to an A4 PDF: header, meta, tables with page breaks and
+ * repeated column headers, and optional closing foot lines. */
+export function exportReportPdf(opts: ReportPdfOptions) {
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4' })
+  const ROW_H = 14
+  const MAX_Y = PAGE_H - 56
+  let y = 0
+
+  const nextPage = () => {
+    pdf.addPage()
+    y = 52
+  }
+
+  const cell = (v: unknown, x: number, right: boolean) =>
+    pdf.text(
+      v == null || v === '' ? '' : typeof v === 'number' ? fmt(v) : String(v),
+      x,
+      y,
+      { align: right ? 'right' : 'left' },
+    )
+
+  // Header block
+  y = 52
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(16)
+  pdf.setTextColor(20)
+  pdf.text(ORG, M, y)
+  y += 24
+  pdf.setFontSize(13)
+  pdf.text(opts.title, M, y)
+  y += 16
+  if (opts.subtitle) {
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(10)
+    pdf.setTextColor(80)
+    pdf.text(opts.subtitle, M, y)
+    y += 14
+  }
+  if (opts.meta && opts.meta.length > 0) {
+    pdf.setFontSize(9)
+    pdf.setTextColor(110)
+    for (const [k, v] of opts.meta) {
+      pdf.text(`${k}: ${v}`, M, y)
+      y += 11
+    }
+    y += 4
+  }
+  pdf.setDrawColor(200)
+  pdf.setLineWidth(0.8)
+  pdf.line(M, y, PAGE_W - M, y)
+  y += 12
+
+  for (const table of opts.tables) {
+    const n = table.columns.length
+    const w = (PAGE_W - M * 2) / n
+    if (table.title) {
+      if (y + 18 > MAX_Y) nextPage()
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(11)
+      pdf.setTextColor(20)
+      pdf.text(table.title, M, y)
+      y += 14
+    }
+    const headers = () => {
+      if (y + 22 > MAX_Y) nextPage()
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(8)
+      pdf.setTextColor(90)
+      table.columns.forEach((c, i) => {
+        const right = i === n - 1
+        pdf.text(c, M + i * w + (right ? w : 0), y, {
+          align: right ? 'right' : 'left',
+        })
+      })
+      y += 6
+      pdf.setDrawColor(220)
+      pdf.setLineWidth(0.5)
+      pdf.line(M, y, PAGE_W - M, y)
+      y += 8
+    }
+    headers()
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.setTextColor(40)
+    for (const cells of table.rows) {
+      if (y + ROW_H > MAX_Y) {
+        nextPage()
+        headers()
+      }
+      cells.forEach((v, i) => {
+        const right = typeof v === 'number' || i === n - 1
+        cell(v, M + i * w + (right ? w : 0), right)
+      })
+      y += ROW_H
+    }
+    if (table.totals) {
+      if (y + ROW_H > MAX_Y) {
+        nextPage()
+        headers()
+      }
+      pdf.setDrawColor(200)
+      pdf.setLineWidth(0.6)
+      pdf.line(M, y - 4, PAGE_W - M, y - 4)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(20)
+      table.totals.forEach((v, i) => {
+        const right = typeof v === 'number' || i === n - 1
+        cell(v, M + i * w + (right ? w : 0), right)
+      })
+      y += ROW_H + 10
+    }
+  }
+
+  if (opts.foot) {
+    for (const line of opts.foot) {
+      if (y + 20 > MAX_Y) nextPage()
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(11)
+      pdf.setTextColor(20)
+      pdf.text(line.label, M, y)
+      pdf.text(fmt(line.value), PAGE_W - M, y, { align: 'right' })
+      y += 20
+    }
+  }
+
+  pdf.save(opts.filename)
+}
+
