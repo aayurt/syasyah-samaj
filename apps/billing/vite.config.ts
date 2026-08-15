@@ -70,6 +70,16 @@ export default defineConfig(({ command }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(VERSION),
   },
+  // Tailwind v4 is handled entirely by @tailwindcss/vite — no PostCSS
+  // config is needed. Pin an explicit (empty) config so Vite does NOT walk
+  // up the tree and pick up the Payload app's postcss.config.js (which
+  // references tailwindcss v3 and breaks CI builds where root deps aren't
+  // installed).
+  css: {
+    postcss: {
+      plugins: [],
+    },
+  },
   server: {
     port: 5173,
   },
