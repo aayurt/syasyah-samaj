@@ -34,6 +34,7 @@ REMOTE_PATH="${SYASYA_REMOTE_PATH:-/var/www/syasyah-samaj}"
 BRANCH="${SYASYA_BRANCH:-Billings}"
 LOCAL_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PM2_APP="${SYASYA_PM2_APP:-syasha-samaj}"
+PUBLIC_URL="${SYASYA_PUBLIC_URL:-https://syasyahsamaj.com/}"
 NODE_OPTIONS_BUILD="${NODE_OPTIONS_BUILD:---max_old_space_size=3072}"
 
 # -- Flags ---------------------------------------------------------------
@@ -146,11 +147,16 @@ echo "DONE Server deploy complete."
 EOF
 )
 
-# Optional: push local .env to the server (explicit opt-in - it's prod config,
-# and the LOCAL env points at the Syasha DB while the server may not)
+# Optional: push local .env to the server (explicit opt-in - it's prod
+# config). The local .env carries dev URLs (localhost) that would break
+# prod auth and the hosted client, so after the copy we force the server's
+# public URLs back to the prod values.
 if [ "$SYNC_ENV" -eq 1 ]; then
   warn "Copying LOCAL .env to the server (overwrites server .env!)"
   run_local rsync -az "$LOCAL_PATH/.env" "$SERVER:$REMOTE_PATH/.env"
+  info "Restoring prod public URLs on the server..."
+  run_remote "cd $REMOTE_PATH && sed -i -e 's|^BETTER_AUTH_URL=.*|BETTER_AUTH_URL=$PUBLIC_URL|' -e 's|^NEXT_PUBLIC_SERVER_URL=.*|NEXT_PUBLIC_SERVER_URL=$PUBLIC_URL|' .env"
+  warn "Preserved prod URLs (BETTER_AUTH_URL, NEXT_PUBLIC_SERVER_URL=$PUBLIC_URL)"
 fi
 
 if [ "$DRY_RUN" -eq 1 ]; then
