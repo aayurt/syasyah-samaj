@@ -20,15 +20,23 @@ export default function SyncStatus() {
   }
 
   if (!state.online) {
+    const reportAge =
+      state.reportsStale && state.lastReportSyncAt
+        ? ` · reports ${new Date(state.lastReportSyncAt).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}`
+        : ''
     return (
       <button
         onClick={() => void syncNow()}
         disabled={syncing}
-        title="Offline — new changes are queued locally. Click to retry."
+        title="Offline — new changes are queued locally and reports show the last synced snapshot. Click to retry."
         className="flex items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50"
       >
         <CloudOff size={13} />
         Offline{state.pending > 0 ? ` · ${state.pending} queued` : ''}
+        {reportAge}
       </button>
     )
   }

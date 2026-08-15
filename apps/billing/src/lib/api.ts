@@ -1,6 +1,10 @@
 import { API_BASE } from './base'
 import { getEngine, useSyncState } from './offline'
-import { isNetworkError, parsePath } from './offline/syncEngine'
+import {
+  isNetworkError,
+  parsePath,
+  reportCacheKey,
+} from './offline/syncEngine'
 
 interface ApiOptions extends Omit<RequestInit, 'body'> {
   query?: Record<string, string | number | undefined>
@@ -86,6 +90,10 @@ export async function api<T = unknown>(
   const segments = pathSegments(path)
   const plainList = method === 'GET' && segments.length === 1 && !!slug
   const plainDoc = method === 'GET' && segments.length === 2 && !!id
+  // Computed endpoints (trial-balance, ledger, daybook…) live at
+  // /slug/:action with no id segment — the second part is an action name.
+  const report = method === 'GET' && segments.length === 2 && !!slug && !id
+  const reportKey = report ? reportCacheKey(path, options.query) : null
 
   // Cache-first: a warm collection list renders immediately; the background
   // refresh updates the cache (and subscribed views) when fresh data lands.
@@ -125,6 +133,16 @@ export async function api<T = unknown>(
         // cache writes are best-effort
       }
     }
+    // Reports stay network-first for freshness, but snapshot the payload
+    // for offline use and record when it was last truly synced.
+    if (report && reportKey) {
+      try {
+        await engine.writeReport(reportKey, res)
+        engine.markReportsSynced()
+      } catch {
+        // cache writes are best-effort
+      }
+    }
     return res
   } catch (err) {
     if (isNetworkError(err)) {
@@ -137,6 +155,14 @@ export async function api<T = unknown>(
 
   // --- offline path ---
   if (method === 'GET') {
+    if (report && reportKey) {
+      const hit = await engine.readReport(reportKey)
+      if (hit) {
+        engine.markReportsStale()
+        return hit.payload as T
+      }
+      throw new Error('Offline — this report has not been synced yet.')
+    }
     if (plainDoc) {
       const doc = await engine.readDoc(slug, id)
       if (doc) return doc as unknown as T

@@ -27,6 +27,13 @@ export default function SyncBanner() {
           // collection may not exist in this deployment
         }
       }
+      // Keep the core reports warm (throttled inside the engine) so they
+      // are usable offline and never more than a few minutes stale.
+      try {
+        await getEngine().warmReports()
+      } catch {
+        // best-effort — reports still fall back to the cache offline
+      }
     } finally {
       setSyncing(false)
     }

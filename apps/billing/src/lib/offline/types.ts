@@ -16,6 +16,10 @@ export interface SyncState {
   /** Bumped whenever the read cache gains or changes documents, so views
    * subscribed to it can re-read locally instead of hitting the network. */
   cacheVersion: number
+  /** True when a report was served from the local cache (offline). */
+  reportsStale: boolean
+  /** Epoch ms of the last report successfully fetched from the server. */
+  lastReportSyncAt: number | null
 }
 
 export interface OfflineDb {

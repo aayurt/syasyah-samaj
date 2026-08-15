@@ -29,6 +29,42 @@ export function parsePath(path: string): { slug: string; id: string | null } {
   return { slug, id }
 }
 
+/** The report endpoints the app warms ahead of time (network-first, then
+ * cached). Party-scoped reports like /ledger are cached on read instead. */
+export const CORE_REPORTS = [
+  'trial-balance',
+  'profit-loss',
+  'balance-sheet',
+  'daybook',
+]
+
+export const REPORT_SLUG = 'journal-entries'
+
+/** kv key holding the last time a report was fetched from the server, so
+ * the staleness marker survives page reloads (the in-memory state resets). */
+export const LAST_REPORT_SYNC_KEY = 'report:lastSyncedAt'
+
+/**
+ * Deterministic cache key for a report payload: path + normalized query.
+ * The same key is derived by api.ts (on read) and warmReports (on write),
+ * so they always agree regardless of key order in the query object.
+ */
+export function reportCacheKey(
+  path: string,
+  query?: Record<string, string | number | undefined>,
+): string {
+  const entries = Object.entries(query ?? {})
+    .filter(([, v]) => v !== undefined && v !== '')
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+  const q = JSON.stringify(entries)
+  let h = 5381
+  const s = `${path.split('?')[0]}\u0000${q}`
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) + h + s.charCodeAt(i)) >>> 0
+  }
+  return `report:${h.toString(36)}`
+}
+
 export class SyncEngine {
   private online = true
   private banners: SyncState['banners'] = []
@@ -38,6 +74,9 @@ export class SyncEngine {
   /** Per-collection timestamp of the last background refresh (throttle). */
   private lastRefresh: Record<string, number> = {}
   private listeners = new Set<(s: SyncState) => void>()
+  private reportsStale = false
+  private lastReportSyncAt: number | null = null
+  private lastReportWarm = 0
 
   constructor(private db: OfflineDb) {}
 
@@ -48,6 +87,8 @@ export class SyncEngine {
       lastSyncAt: this.lastSyncAt,
       banners: [...this.banners],
       cacheVersion: this.cacheVersion,
+      reportsStale: this.reportsStale,
+      lastReportSyncAt: this.lastReportSyncAt,
     }
   }
 
@@ -415,6 +456,83 @@ export class SyncEngine {
     await this.db.clearCache(collection)
     await this.db.deleteKey(`cursor:${collection}`)
     await this.db.deleteKey(`pulled:${collection}`)
+  }
+
+  // --- report cache --------------------------------------------------------
+
+  /** Returns the cached report payload and when it was fetched, or null. */
+  async readReport(
+    key: string,
+  ): Promise<{ payload: unknown; syncedAt: number } | null> {
+    const raw = await this.db.getKey(key)
+    if (!raw) return null
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+
+  async writeReport(key: string, payload: unknown): Promise<void> {
+    await this.db.setKey(
+      key,
+      JSON.stringify({ payload, syncedAt: Date.now() }),
+    )
+  }
+
+  /** A report was fetched fresh from the server — staleness clears. */
+  markReportsSynced() {
+    this.lastReportSyncAt = Date.now()
+    void this.db
+      .setKey(LAST_REPORT_SYNC_KEY, String(this.lastReportSyncAt))
+      .catch(() => {})
+    if (this.reportsStale) {
+      this.reportsStale = false
+      this.emit()
+    }
+  }
+
+  /** A report was served from the local cache — flag it in the sync pill. */
+  markReportsStale() {
+    if (!this.reportsStale) {
+      this.reportsStale = true
+      this.emit()
+    }
+    // The in-memory timestamp resets on page load; recover the persisted
+    // one so the pill can show how old the statement really is.
+    void this.db.getKey(LAST_REPORT_SYNC_KEY).then((raw) => {
+      if (raw && !this.lastReportSyncAt) {
+        this.lastReportSyncAt = Number(raw)
+        this.emit()
+      }
+    })
+  }
+
+  /**
+   * Background refresh of the core reports: network-first, best-effort, and
+   * silently skipped while offline (the cached statement stays authoritative
+   * and the pill shows its age). Throttled — the pull loop calls this every
+   * 30s but it only really fetches at most once a minute.
+   */
+  async warmReports(): Promise<void> {
+    const now = Date.now()
+    if (now - this.lastReportWarm < 60_000) return
+    this.lastReportWarm = now
+    for (const name of CORE_REPORTS) {
+      const path = `/${REPORT_SLUG}/${name}`
+      try {
+        const res = await fetch(`${API_BASE}/api${path}`, {
+          credentials: 'include',
+        })
+        if (!res.ok) continue
+        const data = await res.json()
+        await this.writeReport(reportCacheKey(path), data)
+        this.markReportsSynced()
+      } catch (err) {
+        if (isNetworkError(err)) this.setOnline(false)
+      }
+    }
+    this.emit()
   }
 
   // --- offline reads -------------------------------------------------------
