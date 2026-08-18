@@ -9,6 +9,7 @@ import type { CollectionConfig } from 'payload'
 import { toNum } from '@/utilities/journalValidation'
 import { computeStockLedger } from '@/utilities/stockValuation'
 import { assignTenant } from '@/utilities/tenantScope'
+import { paginate, parsePagination } from '@/utilities/pagination'
 
 export const Items: CollectionConfig = {
   slug: 'items',
@@ -33,6 +34,7 @@ export const Items: CollectionConfig = {
         if (!req.user || !isBillingUser(req.user)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
+        const { searchParams } = new URL(req.url || '/')
         const res = await req.payload.find({
           collection: 'items',
           limit: 1000,
@@ -53,7 +55,14 @@ export const Items: CollectionConfig = {
               Number(item.reorderLevel) > 0 && onHand < Number(item.reorderLevel),
           })
         }
-        return Response.json({ docs: levels })
+        const page = paginate(levels, parsePagination(searchParams))
+        return Response.json({
+          docs: page.docs,
+          total: page.total,
+          hasMore: page.hasMore,
+          limit: parsePagination(searchParams).limit,
+          offset: parsePagination(searchParams).offset,
+        })
       },
     },
     {

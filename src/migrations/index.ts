@@ -5,6 +5,11 @@ import * as migration_20260812_122205 from './20260812_122205';
 import * as migration_20260812_154815 from './20260812_154815';
 import * as migration_20260812_161710 from './20260812_161710';
 import * as migration_20260818_p1_illaka from './20260818_p1_illaka';
+import * as migration_20260818_p2_membership from './20260818_p2_membership';
+import * as migration_20260818_p3_donations from './20260818_p3_donations';
+import * as migration_20260818_p4_orders from './20260818_p4_orders';
+import * as migration_20260818_p5_bank_recon from './20260818_p5_bank_recon';
+import * as migration_20260818_p6_fixed_assets from './20260818_p6_fixed_assets';
 
 export const migrations = [
   {
@@ -41,5 +46,30 @@ export const migrations = [
     up: migration_20260818_p1_illaka.up,
     down: migration_20260818_p1_illaka.down,
     name: '20260818_p1_illaka'
+  },
+  {
+    up: migration_20260818_p2_membership.up,
+    down: migration_20260818_p2_membership.down,
+    name: '20260818_p2_membership'
+  },
+  {
+    up: migration_20260818_p3_donations.up,
+    down: migration_20260818_p3_donations.down,
+    name: '20260818_p3_donations'
+  },
+  {
+    up: migration_20260818_p4_orders.up,
+    down: migration_20260818_p4_orders.down,
+    name: '20260818_p4_orders'
+  },
+  {
+    up: migration_20260818_p5_bank_recon.up,
+    down: migration_20260818_p5_bank_recon.down,
+    name: '20260818_p5_bank_recon'
+  },
+  {
+    up: migration_20260818_p6_fixed_assets.up,
+    down: migration_20260818_p6_fixed_assets.down,
+    name: '20260818_p6_fixed_assets'
   },
 ];

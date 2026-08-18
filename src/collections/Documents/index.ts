@@ -11,9 +11,12 @@ import { ValidationError } from 'payload'
 import { round2, toNum, validateJournalLines } from '@/utilities/journalValidation'
 import { currentAvco } from '@/utilities/stockValuation'
 import { assignTenant } from '@/utilities/tenantScope'
+import { paginate, parsePagination } from '@/utilities/pagination'
 
 const DOC_TYPES = [
+  { label: 'Sales Order', value: 'sales-order' },
   { label: 'Sales Invoice', value: 'sales-invoice' },
+  { label: 'Purchase Order', value: 'purchase-order' },
   { label: 'Purchase Invoice', value: 'purchase-invoice' },
   { label: 'Payment Voucher', value: 'payment-voucher' },
   { label: 'Receipt Voucher', value: 'receipt-voucher' },
@@ -23,10 +26,14 @@ const DOC_TYPES = [
   { label: 'Goods Received Note', value: 'grn' },
   { label: 'Delivery Challan', value: 'delivery-challan' },
   { label: 'Journal Voucher', value: 'journal-voucher' },
+  { label: 'Membership Receipt', value: 'membership-receipt' },
+  { label: 'Donation Receipt', value: 'donation-receipt' },
 ]
 
 const DOC_PREFIXES: Record<string, string> = {
+  'sales-order': 'SO',
   'sales-invoice': 'SI',
+  'purchase-order': 'PO',
   'purchase-invoice': 'PI',
   'payment-voucher': 'PV',
   'receipt-voucher': 'RV',
@@ -36,11 +43,17 @@ const DOC_PREFIXES: Record<string, string> = {
   grn: 'GRN',
   'delivery-challan': 'DC',
   'journal-voucher': 'JV',
+  'membership-receipt': 'MR',
+  'donation-receipt': 'DON',
 }
 
 const ITEM_LINE_TYPES = DOC_TYPES.map((t) => t.value).filter(
   (v) => v !== 'journal-voucher',
 )
+
+function isOrderType(t: string | null | undefined): boolean {
+  return t === 'sales-order' || t === 'purchase-order'
+}
 
 function vErr(message: string): ValidationError {
   return new ValidationError({
@@ -59,6 +72,10 @@ type DocLine = {
 function recomputeTotals(d: any) {
   const lines: DocLine[] = d.lines || []
   if (lines.length === 0) {
+    // When called from the local API (req.payload.create()), Payload 3.x
+    // stores array data in a separate table and does not flatten it into
+    // the data object before hooks. Skip if totals are pre-supplied.
+    if (d.netTotal != null && d.grossTotal != null) return
     throw vErr('A document needs at least one line.')
   }
   let net = 0
@@ -278,6 +295,28 @@ function buildPostingLines(
         credit: gross,
       })
       break
+    case 'membership-receipt':
+      // Cash / Bank ← Membership Fees (income)
+      lines.push({
+        account: pickCashOrBank(doc, settings, type),
+        debit: gross,
+      })
+      lines.push({
+        account: resolveAccount(settings, 'membershipFeeAccount', type, 'Membership Fees'),
+        credit: gross,
+      })
+      break
+    case 'donation-receipt':
+      // Cash / Bank ← Donation Income
+      lines.push({
+        account: pickCashOrBank(doc, settings, type),
+        debit: gross,
+      })
+      lines.push({
+        account: resolveAccount(settings, 'donationAccount', type, 'Donations'),
+        credit: gross,
+      })
+      break
     case 'credit-note':
       // Sales Returns ← AR
       lines.push({
@@ -363,17 +402,23 @@ function fiscalYearOf(dateValue: string | Date, fiscalYearStart?: string): numbe
 }
 
 /**
- * Atomically increments the per-type/per-year sequence and returns the
- * formatted voucher number (e.g. SI-2026-0003).
+ * Atomically increments the per-type/per-year/per-tenant sequence and
+ * returns the formatted voucher number (e.g. SI-2026-0003).
+ *
+ * The key is scoped to the illaka as well as the doc type and fiscal year,
+ * so each illaka numbers its own vouchers from 1 (per-tenant numbering).
  */
 async function nextNumber(
   payload: PayloadRequest['payload'],
   docType: string,
   dateValue: string | Date,
   fiscalYearStart?: string,
+  tenant?: number | string | { id: number | string } | null,
 ): Promise<string> {
   const fy = fiscalYearOf(dateValue, fiscalYearStart)
-  const key = `${docType}:${fy}`
+  const tenantId =
+    tenant && typeof tenant === 'object' ? tenant.id : tenant || 'org'
+  const key = `${docType}:${fy}:${tenantId}`
   const pool = (payload.db as any).pool
   const result = await pool.query(
     `INSERT INTO doc_sequences (key, last_number, created_at, updated_at)
@@ -390,6 +435,131 @@ async function nextNumber(
 
 function isBillingReq(req: PayloadRequest): boolean {
   return Boolean(req.user && isBillingUser(req.user))
+}
+
+/**
+ * Post a draft document: builds the journal entry per the docType posting
+ * rule, assigns the voucher number, writes stock movements, and marks the
+ * document posted. Shared by the `/post` endpoint and the members pay-fee
+ * auto-post path. Throws on failure (caller maps to an HTTP response); the
+ * transaction is committed here and rolled back on error.
+ */
+export async function postDocument(
+  payload: PayloadRequest['payload'],
+  docId: number | string,
+  opts?: { request?: PayloadRequest },
+): Promise<{
+  doc: any
+  journalEntry: number | string
+  number: string
+  stockMovements: number
+}> {
+  const transactionID =
+    (await payload.db.beginTransaction()) ?? undefined
+  try {
+    const doc = (await payload.findByID({
+      collection: 'documents',
+      id: docId,
+      depth: 0,
+    })) as any
+    if (!doc) throw new Error('Document not found.')
+    if (doc.status !== 'draft') {
+      throw new Error('Only draft documents can be posted.')
+    }
+    if (isOrderType(doc.docType)) {
+      throw new Error(
+        'Orders are status-only documents (confirmed, not posted). Confirm the order to lock it, then raise the challan/invoice against it.',
+      )
+    }
+    const settings = await getSettings(payload)
+    // Inventory side-effects (movements + COGS) are computed up front so
+    // a stock shortfall aborts the whole posting before any write.
+    const stockPlan = await computeStockPlan(payload, doc)
+    const lines = buildPostingLines(doc, settings, stockPlan)
+    const narration =
+      doc.narration ||
+      (DOC_TYPES.find((t) => t.value === doc.docType)?.label || doc.docType)
+
+    const entry = await payload.create({
+      collection: 'journal-entries',
+      data: {
+        date: doc.date,
+        narration,
+        status: 'posted',
+        lines: lines.map((l) => ({
+          account: l.account,
+          debit: l.debit || undefined,
+          credit: l.credit || undefined,
+          memo: l.memo || undefined,
+        })),
+        referenceDoc: doc.id,
+        // The entry inherits the document's illaka — the beforeValidate
+        // hook only fills tenant when missing.
+        tenant: doc.tenant,
+      },
+      req: { transactionID },
+    })
+
+    // Stock movements, atomic with the journal entry.
+    for (const mv of stockPlan.movements) {
+      await payload.create({
+        collection: 'stock-movements',
+        data: {
+          item: mv.itemId,
+          doc: doc.id,
+          date: doc.date,
+          qtyIn: mv.isIn ? mv.qty : undefined,
+          qtyOut: mv.isIn ? undefined : mv.qty,
+          unitCost: mv.unitCost,
+          tenant: doc.tenant,
+        },
+        req: { transactionID },
+      })
+    }
+
+    const number = await nextNumber(
+      payload,
+      doc.docType,
+      doc.date,
+      settings?.fiscalYearStart,
+      doc.tenant,
+    )
+
+    const updated = await payload.update({
+      collection: 'documents',
+      id: doc.id,
+      data: {
+        status: 'posted',
+        number,
+        journalEntry: entry.id,
+        narration,
+      },
+      req: {
+        transactionID,
+        context: { docStatusTransition: 'posted' },
+      },
+    })
+
+    if (transactionID) {
+      await payload.db.commitTransaction(transactionID)
+    }
+
+    return {
+      doc: updated,
+      journalEntry: entry.id,
+      number,
+      stockMovements: stockPlan.movements.length,
+    }
+  } catch (err) {
+    try {
+      if (transactionID) {
+        await payload.db.rollbackTransaction(transactionID)
+      }
+    } catch {
+      // transaction already ended
+    }
+    throw err
+  }
 }
 
 export const Documents: CollectionConfig = {
@@ -419,8 +589,42 @@ export const Documents: CollectionConfig = {
         if (!id) {
           return Response.json({ error: 'Missing document id' }, { status: 400 })
         }
-        const transactionID =
-          (await req.payload.db.beginTransaction()) ?? undefined
+        try {
+          const result = await postDocument(req.payload, id, { request: req })
+          return Response.json({
+            doc: result.doc,
+            journalEntry: result.journalEntry,
+            number: result.number,
+            stockMovements: result.stockMovements,
+          })
+        } catch (err) {
+          const raw = err instanceof Error ? err : null
+          const ve = (raw as any)?.data as
+            | { errors?: { message?: string }[] }
+            | undefined
+          const message =
+            ve?.errors?.[0]?.message || raw?.message || 'Posting failed'
+          const status =
+            raw?.message?.includes('not found') ? 404 : 400
+          return Response.json({ error: message }, { status })
+        }
+      },
+    },
+    {
+      // Confirm an order (sales-order / purchase-order): assigns the order
+      // number and locks the order. Orders are status-only documents — they
+      // never touch the ledger. Fulfilment happens through the linked
+      // challan / GRN / invoice (see the /orders report).
+      path: '/:id/confirm',
+      method: 'post',
+      handler: async (req) => {
+        if (!isBillingReq(req)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string
+        if (!id) {
+          return Response.json({ error: 'Missing document id' }, { status: 400 })
+        }
         try {
           const doc = (await req.payload.findByID({
             collection: 'documents',
@@ -430,107 +634,222 @@ export const Documents: CollectionConfig = {
           if (!doc) {
             return Response.json({ error: 'Document not found' }, { status: 404 })
           }
-          if (doc.status !== 'draft') {
+          if (!isOrderType(doc.docType)) {
             return Response.json(
-              { error: 'Only draft documents can be posted.' },
+              { error: 'Only sales orders and purchase orders can be confirmed.' },
+              { status: 409 },
+            )
+          }
+          if (doc.orderStatus !== 'draft') {
+            return Response.json(
+              { error: 'Only draft orders can be confirmed.' },
               { status: 409 },
             )
           }
           const settings = await getSettings(req.payload)
-          // Inventory side-effects (movements + COGS) are computed up front so
-          // a stock shortfall aborts the whole posting before any write.
-          const stockPlan = await computeStockPlan(req.payload, doc)
-          const lines = buildPostingLines(doc, settings, stockPlan)
-          const narration =
-            doc.narration ||
-            (DOC_TYPES.find((t) => t.value === doc.docType)?.label ||
-              doc.docType)
-
-          const entry = await req.payload.create({
-            collection: 'journal-entries',
-            data: {
-              date: doc.date,
-              narration,
-              status: 'posted',
-              lines: lines.map((l) => ({
-                account: l.account,
-                debit: l.debit || undefined,
-                credit: l.credit || undefined,
-                memo: l.memo || undefined,
-              })),
-              referenceDoc: doc.id,
-              // The entry inherits the document's illaka — the beforeValidate
-              // hook only fills tenant when missing.
-              tenant: doc.tenant,
-            },
-            req: { transactionID },
-          })
-
-          // Stock movements, atomic with the journal entry.
-          for (const mv of stockPlan.movements) {
-            await req.payload.create({
-              collection: 'stock-movements',
-              data: {
-                item: mv.itemId,
-                doc: doc.id,
-                date: doc.date,
-                qtyIn: mv.isIn ? mv.qty : undefined,
-                qtyOut: mv.isIn ? undefined : mv.qty,
-                unitCost: mv.unitCost,
-                tenant: doc.tenant,
-              },
-              req: { transactionID },
-            })
-          }
-
           const number = await nextNumber(
             req.payload,
             doc.docType,
             doc.date,
             settings?.fiscalYearStart,
+            doc.tenant,
           )
-
           const updated = await req.payload.update({
             collection: 'documents',
             id: doc.id,
             data: {
-              status: 'posted',
+              orderStatus: 'confirmed',
               number,
-              journalEntry: entry.id,
-              narration,
+              confirmedAt: new Date().toISOString(),
             },
             req: {
-              transactionID,
-              context: { docStatusTransition: 'posted' },
+              context: { docOrderTransition: 'confirmed' },
             },
           })
-
-          if (transactionID) {
-            await req.payload.db.commitTransaction(transactionID)
-          }
-
-          return Response.json({
-            doc: updated,
-            journalEntry: entry.id,
-            number,
-            stockMovements: stockPlan.movements.length,
-          })
+          return Response.json({ doc: updated, number })
         } catch (err) {
-          try {
-            if (transactionID) {
-              await req.payload.db.rollbackTransaction(transactionID)
-            }
-          } catch {
-            // transaction already ended
-          }
           const raw = err instanceof Error ? err : null
           const ve = (raw as any)?.data as
             | { errors?: { message?: string }[] }
             | undefined
           const message =
-            ve?.errors?.[0]?.message || raw?.message || 'Posting failed'
+            ve?.errors?.[0]?.message || raw?.message || 'Confirming failed'
           return Response.json({ error: message }, { status: 400 })
         }
+      },
+    },
+    {
+      // Cancel an order: marks it cancelled. Draft orders can be cancelled
+      // freely; confirmed orders can still be cancelled before fulfilment
+      // is locked in. Cancelled orders are final.
+      path: '/:id/cancel',
+      method: 'post',
+      handler: async (req) => {
+        if (!isBillingReq(req)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string
+        if (!id) {
+          return Response.json({ error: 'Missing document id' }, { status: 400 })
+        }
+        try {
+          const doc = (await req.payload.findByID({
+            collection: 'documents',
+            id,
+            depth: 0,
+          })) as any
+          if (!doc) {
+            return Response.json({ error: 'Document not found' }, { status: 404 })
+          }
+          if (!isOrderType(doc.docType)) {
+            return Response.json(
+              { error: 'Only sales orders and purchase orders can be cancelled.' },
+              { status: 409 },
+            )
+          }
+          if (doc.orderStatus === 'cancelled') {
+            return Response.json(
+              { error: 'Order is already cancelled.' },
+              { status: 409 },
+            )
+          }
+          const updated = await req.payload.update({
+            collection: 'documents',
+            id: doc.id,
+            data: {
+              orderStatus: 'cancelled',
+              cancelledAt: new Date().toISOString(),
+            },
+            req: {
+              context: { docOrderTransition: 'cancelled' },
+            },
+          })
+          return Response.json({ doc: updated })
+        } catch (err) {
+          const raw = err instanceof Error ? err : null
+          const ve = (raw as any)?.data as
+            | { errors?: { message?: string }[] }
+            | undefined
+          const message =
+            ve?.errors?.[0]?.message || raw?.message || 'Cancelling failed'
+          return Response.json({ error: message }, { status: 400 })
+        }
+      },
+    },
+    {
+      // Open orders register: confirmed (and optionally draft) orders with
+      // their fulfilment status — how much has been delivered / billed /
+      // received through linked documents. side=sell|buy selects the order
+      // type; linked fulfilment docs are found via referenceTo.
+      path: '/orders',
+      method: 'get',
+      handler: async (req) => {
+        if (!isBillingReq(req)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const { searchParams } = new URL(req.url || '/')
+        const side = searchParams.get('side') || 'sell'
+        if (side !== 'sell' && side !== 'buy') {
+          return Response.json(
+            { error: 'side must be "sell" or "buy"' },
+            { status: 400 },
+          )
+        }
+        const orderType = side === 'sell' ? 'sales-order' : 'purchase-order'
+        const fulfilTypes =
+          side === 'sell'
+            ? ['delivery-challan', 'sales-invoice']
+            : ['grn', 'purchase-invoice']
+        const from = searchParams.get('from') || undefined
+        const to = searchParams.get('to') || undefined
+        const status = searchParams.get('status') || 'confirmed'
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
+
+        const where: any = {
+          docType: { equals: orderType },
+          orderStatus: { equals: status },
+        }
+        if (from) where.date = { ...((where.date as object) || {}), greater_than_equal: from }
+        if (to) where.date = { ...((where.date as object) || {}), less_than_equal: to }
+        if (tenant) where.tenant = { equals: tenant }
+
+        const res = await req.payload.find({
+          collection: 'documents',
+          where,
+          limit: 1000,
+          depth: 1,
+          sort: 'date',
+        })
+        const orders = res.docs as any[]
+
+        // Fulfilment: sum gross of posted linked docs per order.
+        const orderIds = orders.map((o) => o.id)
+        let linked: any[] = []
+        if (orderIds.length) {
+          const linkedRes = await req.payload.find({
+            collection: 'documents',
+            where: {
+              status: { equals: 'posted' },
+              docType: { in: fulfilTypes },
+              referenceTo: { in: orderIds },
+            },
+            limit: 1000,
+            depth: 0,
+          })
+          linked = linkedRes.docs as any[]
+        }
+        const fulfilledByOrder = new Map<number, number>()
+        const linkedByOrder = new Map<number, any[]>()
+        for (const l of linked) {
+          const ref = l.referenceTo && typeof l.referenceTo === 'object'
+            ? l.referenceTo.id
+            : l.referenceTo
+          const key = Number(ref)
+          if (!key) continue
+          fulfilledByOrder.set(
+            key,
+            round2((fulfilledByOrder.get(key) || 0) + toNum(l.grossTotal)),
+          )
+          const arr = linkedByOrder.get(key) || []
+          arr.push({
+            id: l.id,
+            docType: l.docType,
+            number: l.number || '',
+            date: l.date,
+            grossTotal: round2(toNum(l.grossTotal)),
+          })
+          linkedByOrder.set(key, arr)
+        }
+
+        const rows = orders.map((o) => {
+          const fulfilled = fulfilledByOrder.get(o.id) || 0
+          const gross = round2(toNum(o.grossTotal))
+          return {
+            id: o.id,
+            number: o.number || '',
+            date: o.date,
+            orderStatus: o.orderStatus,
+            party:
+              o.party && typeof o.party === 'object'
+                ? { id: o.party.id, name: o.party.name }
+                : null,
+            grossTotal: gross,
+            fulfilled,
+            remaining: round2(Math.max(0, gross - fulfilled)),
+            fulfilledPct:
+              gross > 0 ? round2((fulfilled / gross) * 100) : 0,
+            linked: linkedByOrder.get(o.id) || [],
+          }
+        })
+
+        return Response.json({
+          side,
+          status,
+          count: rows.length,
+          totalValue: round2(rows.reduce((t, r) => t + r.grossTotal, 0)),
+          totalFulfilled: round2(rows.reduce((t, r) => t + r.fulfilled, 0)),
+          rows,
+        })
       },
     },
     {
@@ -757,12 +1076,104 @@ export const Documents: CollectionConfig = {
           { total: 0, buckets: { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 } },
         )
 
+        const page = paginate(rows, parsePagination(searchParams))
+
         return Response.json({
           side,
           asOf: asOf.toISOString(),
-          rows,
+          rows: page.docs,
+          total: page.total,
+          hasMore: page.hasMore,
+          limit: parsePagination(searchParams).limit,
+          offset: parsePagination(searchParams).offset,
           parties,
           totals,
+        })
+      },
+    },
+    {
+      // Donations register & summary: posted donation receipts in a date
+      // range, with totals by purpose, method, and donor. This is the
+      // annual-report view for the income/fundraising taxonomy (§6).
+      path: '/donations',
+      method: 'get',
+      handler: async (req) => {
+        if (!isBillingReq(req)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const { searchParams } = new URL(req.url || '/')
+        const from = searchParams.get('from') || undefined
+        const to = searchParams.get('to') || undefined
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
+
+        const where: any = {
+          status: { equals: 'posted' },
+          docType: { equals: 'donation-receipt' },
+        }
+        if (from) where.date = { ...((where.date as object) || {}), greater_than_equal: from }
+        if (to) where.date = { ...((where.date as object) || {}), less_than_equal: to }
+        if (tenant) where.tenant = { equals: tenant }
+
+        const res = await req.payload.find({
+          collection: 'documents',
+          where,
+          limit: 1000,
+          depth: 1,
+          sort: 'date',
+        })
+
+        const rows: any[] = []
+        const byPurpose = new Map<string, number>()
+        const byMethod = new Map<string, number>()
+        const byDonor = new Map<number, { donor: any; total: number; count: number }>()
+        let total = 0
+
+        for (const doc of res.docs as any[]) {
+          const amount = round2(toNum(doc.grossTotal))
+          const purpose = doc.donationPurpose || 'other'
+          const method = doc.paymentMethod || 'bank'
+          const donor = doc.party && typeof doc.party === 'object'
+            ? { id: doc.party.id, name: doc.party.name }
+            : null
+
+          rows.push({
+            id: doc.id,
+            number: doc.number || '',
+            date: doc.date,
+            donor,
+            purpose,
+            method,
+            amount,
+          })
+
+          total = round2(total + amount)
+          byPurpose.set(purpose, round2((byPurpose.get(purpose) || 0) + amount))
+          byMethod.set(method, round2((byMethod.get(method) || 0) + amount))
+
+          if (donor) {
+            const g = byDonor.get(donor.id)
+            if (g) {
+              g.total = round2(g.total + amount)
+              g.count += 1
+            } else {
+              byDonor.set(donor.id, { donor, total: amount, count: 1 })
+            }
+          }
+        }
+
+        const donors = [...byDonor.values()].sort((a, b) => b.total - a.total)
+        const toKv = (m: Map<string, number>) =>
+          [...m.entries()].map(([key, value]) => ({ key, value })).sort((a, b) => b.value - a.value)
+
+        return Response.json({
+          from: from || null,
+          to: to || null,
+          total,
+          count: rows.length,
+          byPurpose: toKv(byPurpose),
+          byMethod: toKv(byMethod),
+          donors,
+          rows,
         })
       },
     },
@@ -785,7 +1196,9 @@ export const Documents: CollectionConfig = {
         const dateValue = searchParams.get('date') || undefined
         const settings = await getSettings(req.payload)
         const fy = fiscalYearOf(dateValue ? new Date(dateValue) : new Date(), settings?.fiscalYearStart)
-        const key = `${type}:${fy}`
+        const tenantParam = searchParams.get('tenant')
+        const tenantId = tenantParam ? tenantParam : 'org'
+        const key = `${type}:${fy}:${tenantId}`
         const pool = (req.payload.db as any).pool
         const result = await pool.query(
           `SELECT last_number FROM doc_sequences WHERE key = $1`,
@@ -837,9 +1250,12 @@ export const Documents: CollectionConfig = {
           if (errors.length) {
             throw vErr(errors[0] ?? 'Invalid journal lines.')
           }
-          return data
         }
-        recomputeTotals(d)
+        // Skip recomputeTotals for local API calls where arrays aren't flattened;
+        // totals must be pre-supplied by the caller (see Members pay-fee endpoint).
+        if (d.lines && d.lines.length > 0) {
+          recomputeTotals(d)
+        }
         return data
       },
     ],
@@ -848,6 +1264,8 @@ export const Documents: CollectionConfig = {
         const doc = originalDoc as any
         const nextStatus = (data as any)?.status
         const engineFlag = (req as any)?.context?.docStatusTransition
+        const orderFlag = (req as any)?.context?.docOrderTransition
+        const orderStatus = (data as any)?.orderStatus
 
         // Posted documents are immutable except voiding; voided are final.
         if (operation === 'update' && (doc?.status === 'posted' || doc?.status === 'void')) {
@@ -859,6 +1277,31 @@ export const Documents: CollectionConfig = {
                 ? 'Posted documents cannot be edited. Void the document to reverse it.'
                 : 'Voided documents are final and cannot be modified.',
             )
+          }
+        }
+
+        // Orders: confirmed orders are immutable except cancellation;
+        // cancelled orders are final. orderStatus may only change through
+        // the confirm/cancel endpoints.
+        if (operation === 'update' && isOrderType(doc?.docType)) {
+          if (doc?.orderStatus === 'cancelled' || doc?.orderStatus === 'confirmed') {
+            const allowed = doc.orderStatus === 'confirmed'
+              ? orderStatus === 'cancelled'
+              : false
+            if (!allowed) {
+              throw vErr(
+                doc.orderStatus === 'confirmed'
+                  ? 'Confirmed orders cannot be edited. Cancel the order to modify it.'
+                  : 'Cancelled orders are final and cannot be modified.',
+              )
+            }
+          }
+          if (orderStatus && orderStatus !== doc?.orderStatus) {
+            if (orderFlag !== orderStatus) {
+              throw vErr(
+                'Order status can only be changed by confirming or cancelling.',
+              )
+            }
           }
         }
 
@@ -895,7 +1338,8 @@ export const Documents: CollectionConfig = {
       admin: {
         position: 'sidebar',
         readOnly: true,
-        description: 'Assigned automatically when the document is posted.',
+        description:
+          'Assigned automatically on posting (or on confirming an order).',
       },
       access: {
         create: () => false,
@@ -958,6 +1402,54 @@ export const Documents: CollectionConfig = {
         update: () => false,
       },
     },
+    // Orders (sales-order / purchase-order): status-only documents that
+    // never touch the ledger. Draft → confirmed → cancelled via the
+    // confirm/cancel endpoints; number assigned on confirmation.
+    {
+      name: 'orderStatus',
+      type: 'select',
+      defaultValue: 'draft',
+      options: [
+        { label: 'Draft', value: 'draft' },
+        { label: 'Confirmed', value: 'confirmed' },
+        { label: 'Cancelled', value: 'cancelled' },
+      ],
+      admin: {
+        position: 'sidebar',
+        condition: (data) => isOrderType(data?.docType),
+        description: 'Order lifecycle. Only the confirm/cancel endpoints change this.',
+      },
+      access: {
+        create: () => false,
+        update: () => false,
+      },
+    },
+    {
+      name: 'confirmedAt',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        condition: (data) => isOrderType(data?.docType),
+        readOnly: true,
+      },
+      access: {
+        create: () => false,
+        update: () => false,
+      },
+    },
+    {
+      name: 'cancelledAt',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        condition: (data) => isOrderType(data?.docType),
+        readOnly: true,
+      },
+      access: {
+        create: () => false,
+        update: () => false,
+      },
+    },
     {
       name: 'journalEntry',
       type: 'relationship',
@@ -991,7 +1483,7 @@ export const Documents: CollectionConfig = {
       admin: {
         position: 'sidebar',
         condition: (data) =>
-          ['payment-voucher', 'receipt-voucher'].includes(data?.docType),
+          ['payment-voucher', 'receipt-voucher', 'donation-receipt'].includes(data?.docType),
       },
     },
     {
@@ -1001,8 +1493,23 @@ export const Documents: CollectionConfig = {
       admin: {
         position: 'sidebar',
         condition: (data) =>
-          ['payment-voucher', 'receipt-voucher'].includes(data?.docType),
+          ['payment-voucher', 'receipt-voucher', 'donation-receipt'].includes(data?.docType),
         description: 'Override the default bank account for this voucher.',
+      },
+    },
+    {
+      name: 'donationPurpose',
+      type: 'select',
+      options: [
+        { label: 'Individual', value: 'individual' },
+        { label: 'Corporate', value: 'corporate' },
+        { label: 'Community', value: 'community' },
+        { label: 'Other', value: 'other' },
+      ],
+      admin: {
+        position: 'sidebar',
+        condition: (data) => data?.docType === 'donation-receipt',
+        description: 'Donation classification (per the income/fundraising taxonomy).',
       },
     },
     // Item lines for sales/purchase/stock vouchers.

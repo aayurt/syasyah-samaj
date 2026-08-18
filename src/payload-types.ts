@@ -90,6 +90,9 @@ export interface Config {
     archives: Archive;
     messages: Message;
     'chat-rooms': ChatRoom;
+    'membership-types': MembershipType;
+    'bank-statements': BankStatement;
+    'fixed-assets': FixedAsset;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -129,6 +132,9 @@ export interface Config {
     archives: ArchivesSelect<false> | ArchivesSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
     'chat-rooms': ChatRoomsSelect<false> | ChatRoomsSelect<true>;
+    'membership-types': MembershipTypesSelect<false> | MembershipTypesSelect<true>;
+    'bank-statements': BankStatementsSelect<false> | BankStatementsSelect<true>;
+    'fixed-assets': FixedAssetsSelect<false> | FixedAssetsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -1025,6 +1031,11 @@ export interface JournalEntry {
   narration?: string | null;
   status: 'draft' | 'posted' | 'void';
   postedAt?: string | null;
+  /**
+   * Marked by bank reconciliation when a matching bank-statement row is found.
+   */
+  cleared?: boolean | null;
+  clearedAt?: string | null;
   lines: {
     account: number | GlAccount;
     /**
@@ -1051,7 +1062,9 @@ export interface JournalEntry {
 export interface Document {
   id: number;
   docType:
+    | 'sales-order'
     | 'sales-invoice'
+    | 'purchase-order'
     | 'purchase-invoice'
     | 'payment-voucher'
     | 'receipt-voucher'
@@ -1060,9 +1073,11 @@ export interface Document {
     | 'petty-cash-voucher'
     | 'grn'
     | 'delivery-challan'
-    | 'journal-voucher';
+    | 'journal-voucher'
+    | 'membership-receipt'
+    | 'donation-receipt';
   /**
-   * Assigned automatically when the document is posted.
+   * Assigned automatically on posting (or on confirming an order).
    */
   number?: string | null;
   date: string;
@@ -1077,6 +1092,12 @@ export interface Document {
   status: 'draft' | 'posted' | 'void';
   postedAt?: string | null;
   /**
+   * Order lifecycle. Only the confirm/cancel endpoints change this.
+   */
+  orderStatus?: ('draft' | 'confirmed' | 'cancelled') | null;
+  confirmedAt?: string | null;
+  cancelledAt?: string | null;
+  /**
    * Journal entry created when this document was posted.
    */
   journalEntry?: (number | null) | JournalEntry;
@@ -1089,6 +1110,10 @@ export interface Document {
    * Override the default bank account for this voucher.
    */
   bankAccount?: (number | null) | GlAccount;
+  /**
+   * Donation classification (per the income/fundraising taxonomy).
+   */
+  donationPurpose?: ('individual' | 'corporate' | 'community' | 'other') | null;
   lines?:
     | {
         /**
@@ -1145,6 +1170,10 @@ export interface Party {
    * Outstanding balance at the start of the books (positive = they owe you).
    */
   openingBalance?: number | null;
+  /**
+   * Mark as a donor to surface this party in donation reports.
+   */
+  donor?: boolean | null;
   tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
@@ -1291,6 +1320,39 @@ export interface Member {
     bloodGroup?: string | null;
     emergencyContact?: string | null;
   };
+  /**
+   * Membership category (Basic, Standard, Premium, etc.)
+   */
+  membershipType?: (number | null) | MembershipType;
+  /**
+   * When the current membership period expires
+   */
+  renewalDate?: string | null;
+  /**
+   * Link to the latest membership fee receipt
+   */
+  lastReceipt?: (number | null) | Document;
+  paymentStatus?: ('unpaid' | 'paid' | 'overdue') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "membership-types".
+ */
+export interface MembershipType {
+  id: number;
+  name: string;
+  /**
+   * Annual fee in NPR
+   */
+  fee: number;
+  /**
+   * Membership period in months (default 12 = annual)
+   */
+  periodMonths?: number | null;
+  description?: string | null;
+  active?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1352,6 +1414,106 @@ export interface ChatRoom {
   name: string;
   type: 'direct' | 'group';
   members: (number | User)[];
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bank-statements".
+ */
+export interface BankStatement {
+  id: number;
+  /**
+   * The bank account this statement belongs to (GL account with class = bank).
+   */
+  account: number | GlAccount;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  /**
+   * Bank's stated opening balance for the period.
+   */
+  openingBalance?: number | null;
+  /**
+   * Bank's stated closing balance for the period.
+   */
+  closingBalance?: number | null;
+  /**
+   * Statement lines. Positive amount = deposit (money in), negative = withdrawal (money out).
+   */
+  rows?:
+    | {
+        date: string;
+        description?: string | null;
+        /**
+         * Cheque no / transaction id / reference.
+         */
+        reference?: string | null;
+        /**
+         * Signed amount: + deposit, − withdrawal.
+         */
+        amount: number;
+        /**
+         * Journal entry this row was matched to by reconciliation.
+         */
+        matchedEntry?: (number | null) | JournalEntry;
+        id?: string | null;
+      }[]
+    | null;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "fixed-assets".
+ */
+export interface FixedAsset {
+  id: number;
+  /**
+   * Asset code / tag number.
+   */
+  code?: string | null;
+  /**
+   * Asset name (e.g. "Projector — Hall A").
+   */
+  name: string;
+  /**
+   * Asset category (drives reporting).
+   */
+  category?: ('vehicle' | 'equipment' | 'furniture' | 'computer' | 'building' | 'land' | 'other') | null;
+  /**
+   * Date the asset was acquired. Depreciation starts the following month.
+   */
+  purchaseDate?: string | null;
+  /**
+   * Purchase / acquisition cost.
+   */
+  purchaseCost: number;
+  /**
+   * Estimated residual value at end of useful life.
+   */
+  salvageValue?: number | null;
+  /**
+   * Straight-line useful life in years.
+   */
+  usefulLifeYears: number;
+  /**
+   * Where the asset is kept.
+   */
+  location?: string | null;
+  status?: ('active' | 'disposed') | null;
+  /**
+   * Journal entries posted by the depreciation engine (read-only).
+   */
+  depreciationRows?:
+    | {
+        date: string;
+        amount: number;
+        journalEntry?: (number | null) | JournalEntry;
+        id?: string | null;
+      }[]
+    | null;
+  tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -1732,6 +1894,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'chat-rooms';
         value: number | ChatRoom;
+      } | null)
+    | ({
+        relationTo: 'membership-types';
+        value: number | MembershipType;
+      } | null)
+    | ({
+        relationTo: 'bank-statements';
+        value: number | BankStatement;
+      } | null)
+    | ({
+        relationTo: 'fixed-assets';
+        value: number | FixedAsset;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -2185,6 +2359,8 @@ export interface JournalEntriesSelect<T extends boolean = true> {
   narration?: T;
   status?: T;
   postedAt?: T;
+  cleared?: T;
+  clearedAt?: T;
   lines?:
     | T
     | {
@@ -2212,6 +2388,7 @@ export interface PartiesSelect<T extends boolean = true> {
   taxId?: T;
   address?: T;
   openingBalance?: T;
+  donor?: T;
   tenant?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2228,10 +2405,14 @@ export interface DocumentsSelect<T extends boolean = true> {
   narration?: T;
   status?: T;
   postedAt?: T;
+  orderStatus?: T;
+  confirmedAt?: T;
+  cancelledAt?: T;
   journalEntry?: T;
   referenceTo?: T;
   paymentMethod?: T;
   bankAccount?: T;
+  donationPurpose?: T;
   lines?:
     | T
     | {
@@ -2396,6 +2577,10 @@ export interface MembersSelect<T extends boolean = true> {
         bloodGroup?: T;
         emergencyContact?: T;
       };
+  membershipType?: T;
+  renewalDate?: T;
+  lastReceipt?: T;
+  paymentStatus?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2437,6 +2622,69 @@ export interface ChatRoomsSelect<T extends boolean = true> {
   name?: T;
   type?: T;
   members?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "membership-types_select".
+ */
+export interface MembershipTypesSelect<T extends boolean = true> {
+  name?: T;
+  fee?: T;
+  periodMonths?: T;
+  description?: T;
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bank-statements_select".
+ */
+export interface BankStatementsSelect<T extends boolean = true> {
+  account?: T;
+  periodStart?: T;
+  periodEnd?: T;
+  openingBalance?: T;
+  closingBalance?: T;
+  rows?:
+    | T
+    | {
+        date?: T;
+        description?: T;
+        reference?: T;
+        amount?: T;
+        matchedEntry?: T;
+        id?: T;
+      };
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "fixed-assets_select".
+ */
+export interface FixedAssetsSelect<T extends boolean = true> {
+  code?: T;
+  name?: T;
+  category?: T;
+  purchaseDate?: T;
+  purchaseCost?: T;
+  salvageValue?: T;
+  usefulLifeYears?: T;
+  location?: T;
+  status?: T;
+  depreciationRows?:
+    | T
+    | {
+        date?: T;
+        amount?: T;
+        journalEntry?: T;
+        id?: T;
+      };
+  tenant?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2881,6 +3129,14 @@ export interface BillingSetting {
    */
   pettyCashAccount?: (number | null) | GlAccount;
   /**
+   * Membership fee income account (membership receipts).
+   */
+  membershipFeeAccount?: (number | null) | GlAccount;
+  /**
+   * Donation income account (donation receipts).
+   */
+  donationAccount?: (number | null) | GlAccount;
+  /**
    * Stock on hand (GRN, delivery challans).
    */
   inventoryAccount?: (number | null) | GlAccount;
@@ -2896,6 +3152,14 @@ export interface BillingSetting {
    * Accrued / unbilled purchases (GRN).
    */
   accruedPayableAccount?: (number | null) | GlAccount;
+  /**
+   * Depreciation expense (asset management).
+   */
+  depreciationAccount?: (number | null) | GlAccount;
+  /**
+   * Accumulated depreciation contra-asset (asset management).
+   */
+  accumulatedDepreciationAccount?: (number | null) | GlAccount;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2960,10 +3224,14 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   cashAccount?: T;
   bankAccount?: T;
   pettyCashAccount?: T;
+  membershipFeeAccount?: T;
+  donationAccount?: T;
   inventoryAccount?: T;
   cogsAccount?: T;
   returnsAccount?: T;
   accruedPayableAccount?: T;
+  depreciationAccount?: T;
+  accumulatedDepreciationAccount?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

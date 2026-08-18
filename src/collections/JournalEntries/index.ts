@@ -12,6 +12,7 @@ import { JOURNAL_EPSILON, round2, toNum, validateJournalLines } from '@/utilitie
 import { sumPostedByAccount } from '@/utilities/journalSums'
 import { getBillingSettings } from '@/utilities/billingSettings'
 import { assignTenant } from '@/utilities/tenantScope'
+import { paginate, parsePagination } from '@/utilities/pagination'
 
 function vErr(message: string): ValidationError {
   return new ValidationError({
@@ -101,9 +102,14 @@ export const JournalEntries: CollectionConfig = {
 
         const totalDebit = rows.reduce((s, r) => s + r.debit, 0)
         const totalCredit = rows.reduce((s, r) => s + r.credit, 0)
+        const page = paginate(rows, parsePagination(searchParams))
 
         return Response.json({
-          docs: rows,
+          docs: page.docs,
+          total: page.total,
+          hasMore: page.hasMore,
+          limit: parsePagination(searchParams).limit,
+          offset: parsePagination(searchParams).offset,
           totals: { debit: totalDebit, credit: totalCredit },
           balanced: Math.abs(totalDebit - totalCredit) <= JOURNAL_EPSILON,
         })
@@ -168,7 +174,15 @@ export const JournalEntries: CollectionConfig = {
           }
         })
 
-        return Response.json({ docs, closingBalance: running })
+        const page = paginate(docs, parsePagination(searchParams))
+        return Response.json({
+          docs: page.docs,
+          total: page.total,
+          hasMore: page.hasMore,
+          limit: parsePagination(searchParams).limit,
+          offset: parsePagination(searchParams).offset,
+          closingBalance: running,
+        })
       },
     },
     {
@@ -224,9 +238,16 @@ export const JournalEntries: CollectionConfig = {
         expense.sort(byName)
         const totalIncome = round2(income.reduce((t, r) => t + r.amount, 0))
         const totalExpense = round2(expense.reduce((t, r) => t + r.amount, 0))
+        const p = parsePagination(searchParams)
+        const incomePage = paginate(income, p)
+        const expensePage = paginate(expense, p)
         return Response.json({
-          income,
-          expense,
+          income: incomePage.docs,
+          expense: expensePage.docs,
+          incomeTotal: incomePage.total,
+          expenseTotal: expensePage.total,
+          limit: p.limit,
+          offset: p.offset,
           totals: {
             income: totalIncome,
             expense: totalExpense,
@@ -303,10 +324,19 @@ export const JournalEntries: CollectionConfig = {
           liabilities.reduce((t, r) => t + r.balance, 0),
         )
         const totalEquity = round2(equity.reduce((t, r) => t + r.balance, 0))
+        const p = parsePagination(searchParams)
+        const assetsPage = paginate(assets, p)
+        const liabilitiesPage = paginate(liabilities, p)
+        const equityPage = paginate(equity, p)
         return Response.json({
-          assets,
-          liabilities,
-          equity,
+          assets: assetsPage.docs,
+          liabilities: liabilitiesPage.docs,
+          equity: equityPage.docs,
+          assetsTotal: assetsPage.total,
+          liabilitiesTotal: liabilitiesPage.total,
+          equityTotal: equityPage.total,
+          limit: p.limit,
+          offset: p.offset,
           totals: {
             assets: totalAssets,
             liabilities: totalLiabilities,
@@ -415,9 +445,14 @@ export const JournalEntries: CollectionConfig = {
         }
         const totalDebit = round2(rows.reduce((t, r) => t + r.debit, 0))
         const totalCredit = round2(rows.reduce((t, r) => t + r.credit, 0))
+        const page = paginate(rows, parsePagination(searchParams))
         return Response.json({
           type,
-          rows,
+          rows: page.docs,
+          total: page.total,
+          hasMore: page.hasMore,
+          limit: parsePagination(searchParams).limit,
+          offset: parsePagination(searchParams).offset,
           totals: { debit: totalDebit, credit: totalCredit },
           closingBalance: running,
         })
@@ -442,6 +477,8 @@ export const JournalEntries: CollectionConfig = {
         // collection hooks run, so an edit that doesn't change `status` still
         // arrives here with `data.status === 'posted'` — the strict check below
         // is what actually catches partial edits of posted entries.
+        // (Bank reconciliation marks `cleared` with a raw SQL UPDATE that
+        // bypasses this hook — see the bank-statements reconcile endpoint.)
         if (operation === 'update' && (doc?.status === 'posted' || doc?.status === 'void')) {
           const nextStatus = (data as any)?.status
           const allowed = doc.status === 'posted' ? nextStatus === 'void' : false
@@ -515,6 +552,32 @@ export const JournalEntries: CollectionConfig = {
       admin: {
         position: 'sidebar',
         readOnly: true,
+      },
+    },
+    {
+      name: 'cleared',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Marked by bank reconciliation when a matching bank-statement row is found.',
+      },
+      access: {
+        create: () => false,
+        update: () => false,
+      },
+    },
+    {
+      name: 'clearedAt',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+      access: {
+        create: () => false,
+        update: () => false,
       },
     },
     {

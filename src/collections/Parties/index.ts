@@ -68,6 +68,15 @@ export const Parties: CollectionConfig = {
         position: 'sidebar',
       },
     },
+    {
+      name: 'donor',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Mark as a donor to surface this party in donation reports.',
+        position: 'sidebar',
+      },
+    },
     // Illaka scoping — required; auto-assigned from the user's illaka (or C00).
     {
       name: 'tenant',

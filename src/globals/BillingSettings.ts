@@ -93,6 +93,18 @@ export const BillingSettings: GlobalConfig = {
           admin: { description: 'Petty cash float (petty cash vouchers).' },
         },
         {
+          name: 'membershipFeeAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Membership fee income account (membership receipts).' },
+        },
+        {
+          name: 'donationAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Donation income account (donation receipts).' },
+        },
+        {
           name: 'inventoryAccount',
           type: 'relationship',
           relationTo: 'gl-accounts',
@@ -115,6 +127,18 @@ export const BillingSettings: GlobalConfig = {
           type: 'relationship',
           relationTo: 'gl-accounts',
           admin: { description: 'Accrued / unbilled purchases (GRN).' },
+        },
+        {
+          name: 'depreciationAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Depreciation expense (asset management).' },
+        },
+        {
+          name: 'accumulatedDepreciationAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Accumulated depreciation contra-asset (asset management).' },
         },
       ],
     },

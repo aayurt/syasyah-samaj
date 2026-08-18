@@ -38,6 +38,9 @@ import { Accounts } from './collections/Accounts'
 import { JournalEntries } from './collections/JournalEntries'
 import { Items } from './collections/Items'
 import { StockMovements } from './collections/StockMovements'
+import { MembershipTypes } from './collections/MembershipTypes'
+import { BankStatements } from './collections/BankStatements'
+import { FixedAssets } from './collections/FixedAssets'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -115,6 +118,9 @@ export default buildConfig({
     Archives,
     Messages,
     ChatRooms,
+    MembershipTypes,
+    BankStatements,
+    FixedAssets,
   ],
   cors: [getServerSideURL(), ...trustedOriginsValues].filter(Boolean),
   globals: [Header, Footer, BillingSettings],
