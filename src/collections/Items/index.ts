@@ -1,7 +1,14 @@
-import { isAdmin } from '@/access/admin'
+import {
+  isBillingUser,
+  scopedCreate,
+  scopedDelete,
+  scopedRead,
+  scopedUpdate,
+} from '@/access/tenantScoped'
 import type { CollectionConfig } from 'payload'
 import { toNum } from '@/utilities/journalValidation'
 import { computeStockLedger } from '@/utilities/stockValuation'
+import { assignTenant } from '@/utilities/tenantScope'
 
 export const Items: CollectionConfig = {
   slug: 'items',
@@ -11,10 +18,10 @@ export const Items: CollectionConfig = {
     defaultColumns: ['code', 'name', 'unit', 'openingStock', 'salePrice', 'purchasePrice'],
   },
   access: {
-    create: isAdmin,
-    read: isAdmin,
-    update: isAdmin,
-    delete: isAdmin,
+    create: scopedCreate,
+    read: scopedRead,
+    update: scopedUpdate,
+    delete: scopedDelete,
   },
   endpoints: [
     {
@@ -23,7 +30,7 @@ export const Items: CollectionConfig = {
       path: '/stock-levels',
       method: 'get',
       handler: async (req) => {
-        if (!req.user || !isAdmin({ req })) {
+        if (!req.user || !isBillingUser(req.user)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const res = await req.payload.find({
@@ -55,7 +62,7 @@ export const Items: CollectionConfig = {
       path: '/:id/ledger',
       method: 'get',
       handler: async (req) => {
-        if (!req.user || !isAdmin({ req })) {
+        if (!req.user || !isBillingUser(req.user)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const id = req.routeParams?.id as string
@@ -92,6 +99,7 @@ export const Items: CollectionConfig = {
   ],
   hooks: {
     beforeValidate: [
+      assignTenant,
       ({ data }) => {
         const d = data as any
         const opening = toNum(d.openingStock)
@@ -172,11 +180,12 @@ export const Items: CollectionConfig = {
       type: 'checkbox',
       defaultValue: true,
     },
-    // Optional ilaka scoping — metadata only in v1, not enforced.
+    // Illaka scoping — required; auto-assigned from the user's illaka (or C00).
     {
       name: 'tenant',
       type: 'relationship',
       relationTo: 'tenants',
+      required: true,
       admin: {
         position: 'sidebar',
       },

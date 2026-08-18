@@ -1,9 +1,17 @@
-import { isAdmin } from '@/access/admin'
+import {
+  isBillingUser,
+  resolveScopedTenant,
+  scopedCreate,
+  scopedDelete,
+  scopedRead,
+  scopedUpdate,
+} from '@/access/tenantScoped'
 import type { CollectionConfig } from 'payload'
 import { ValidationError } from 'payload'
 import { JOURNAL_EPSILON, round2, toNum, validateJournalLines } from '@/utilities/journalValidation'
 import { sumPostedByAccount } from '@/utilities/journalSums'
 import { getBillingSettings } from '@/utilities/billingSettings'
+import { assignTenant } from '@/utilities/tenantScope'
 
 function vErr(message: string): ValidationError {
   return new ValidationError({
@@ -34,23 +42,24 @@ export const JournalEntries: CollectionConfig = {
     defaultColumns: ['date', 'narration', 'status', 'postedAt', 'updatedAt'],
   },
   access: {
-    create: isAdmin,
-    read: isAdmin,
-    update: isAdmin,
-    delete: isAdmin,
+    create: scopedCreate,
+    read: scopedRead,
+    update: scopedUpdate,
+    delete: scopedDelete,
   },
   endpoints: [
     {
       path: '/trial-balance',
       method: 'get',
       handler: async (req) => {
-        if (!req.user || !isAdmin({ req })) {
+        if (!req.user || !isBillingUser(req.user)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const { searchParams } = new URL(req.url || '/')
         const from = searchParams.get('from') || undefined
         const to = searchParams.get('to') || undefined
-        const tenant = searchParams.get('tenant') || undefined
+        // Illaka users are forced to their own illaka; central may pass any.
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
 
         const where: any = {}
         if (from) where.date = { ...((where.date as object) || {}), greater_than_equal: from }
@@ -104,7 +113,7 @@ export const JournalEntries: CollectionConfig = {
       path: '/ledger',
       method: 'get',
       handler: async (req) => {
-        if (!req.user || !isAdmin({ req })) {
+        if (!req.user || !isBillingUser(req.user)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const { searchParams } = new URL(req.url || '/')
@@ -114,7 +123,7 @@ export const JournalEntries: CollectionConfig = {
         }
         const from = searchParams.get('from') || undefined
         const to = searchParams.get('to') || undefined
-        const tenant = searchParams.get('tenant') || undefined
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
 
         const where: any = {
           status: { equals: 'posted' },
@@ -168,15 +177,17 @@ export const JournalEntries: CollectionConfig = {
       path: '/profit-loss',
       method: 'get',
       handler: async (req) => {
-        if (!req.user || !isAdmin({ req })) {
+        if (!req.user || !isBillingUser(req.user)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const { searchParams } = new URL(req.url || '/')
         const from = searchParams.get('from') || undefined
         const to = searchParams.get('to') || undefined
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
         const where: any = {}
         if (from) where.date = { ...((where.date as object) || {}), greater_than_equal: from }
         if (to) where.date = { ...((where.date as object) || {}), less_than_equal: to }
+        if (tenant) where.tenant = { equals: tenant }
 
         const sums = await sumPostedByAccount(req.payload, where)
         const ids = [...sums.keys()]
@@ -231,15 +242,17 @@ export const JournalEntries: CollectionConfig = {
       path: '/balance-sheet',
       method: 'get',
       handler: async (req) => {
-        if (!req.user || !isAdmin({ req })) {
+        if (!req.user || !isBillingUser(req.user)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const { searchParams } = new URL(req.url || '/')
         const from = searchParams.get('from') || undefined
         const to = searchParams.get('to') || undefined
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
         const where: any = {}
         if (from) where.date = { ...((where.date as object) || {}), greater_than_equal: from }
         if (to) where.date = { ...((where.date as object) || {}), less_than_equal: to }
+        if (tenant) where.tenant = { equals: tenant }
 
         const sums = await sumPostedByAccount(req.payload, where)
         const ids = [...sums.keys()]
@@ -315,7 +328,7 @@ export const JournalEntries: CollectionConfig = {
       path: '/daybook',
       method: 'get',
       handler: async (req) => {
-        if (!req.user || !isAdmin({ req })) {
+        if (!req.user || !isBillingUser(req.user)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const { searchParams } = new URL(req.url || '/')
@@ -332,9 +345,11 @@ export const JournalEntries: CollectionConfig = {
         }
         const from = searchParams.get('from') || undefined
         const to = searchParams.get('to') || undefined
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
         const where: any = {}
         if (from) where.date = { ...((where.date as object) || {}), greater_than_equal: from }
         if (to) where.date = { ...((where.date as object) || {}), less_than_equal: to }
+        if (tenant) where.tenant = { equals: tenant }
 
         const entries = await req.payload.find({
           collection: 'journal-entries',
@@ -411,6 +426,7 @@ export const JournalEntries: CollectionConfig = {
   ],
   hooks: {
     beforeValidate: [
+      assignTenant,
       ({ data, operation }) => {
         if (operation !== 'create' && operation !== 'update') return data
         const lines = (data as any)?.lines as JournalLine[] | null | undefined
@@ -546,11 +562,12 @@ export const JournalEntries: CollectionConfig = {
         readOnly: true,
       },
     },
-    // Optional ilaka scoping — metadata only in v1, not enforced.
+    // Illaka scoping — required; auto-assigned from the user's illaka (or C00).
     {
       name: 'tenant',
       type: 'relationship',
       relationTo: 'tenants',
+      required: true,
       admin: {
         position: 'sidebar',
       },

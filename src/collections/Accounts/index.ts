@@ -1,5 +1,11 @@
-import { isAdmin } from '@/access/admin'
+import {
+  scopedCreate,
+  scopedDelete,
+  scopedRead,
+  scopedUpdate,
+} from '@/access/tenantScoped'
 import type { CollectionConfig } from 'payload'
+import { assignTenant } from '@/utilities/tenantScope'
 import { accountTypeOptions } from '../AccountGroups'
 
 export const Accounts: CollectionConfig = {
@@ -11,10 +17,10 @@ export const Accounts: CollectionConfig = {
     defaultColumns: ['code', 'name', 'group', 'type', 'class', 'openingBalance', 'active'],
   },
   access: {
-    create: isAdmin,
-    read: isAdmin,
-    update: isAdmin,
-    delete: isAdmin,
+    create: scopedCreate,
+    read: scopedRead,
+    update: scopedUpdate,
+    delete: scopedDelete,
   },
   fields: [
     {
@@ -68,11 +74,15 @@ export const Accounts: CollectionConfig = {
       type: 'checkbox',
       defaultValue: true,
     },
-    // Optional ilaka scoping — metadata only in v1, not enforced.
+    // Illaka scoping — required; auto-assigned from the user's illaka (or C00).
     {
       name: 'tenant',
       type: 'relationship',
       relationTo: 'tenants',
+      required: true,
     },
   ],
+  hooks: {
+    beforeValidate: [assignTenant],
+  },
 }

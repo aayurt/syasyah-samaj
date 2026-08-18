@@ -309,6 +309,18 @@ export interface Post {
 export interface Tenant {
   id: number;
   name: string;
+  /**
+   * Unique illaka code (e.g. IL01 … IL10). The central organization uses C00.
+   */
+  code?: string | null;
+  /**
+   * Central is the parent organization (code C00); everything else is an illaka.
+   */
+  type?: ('central' | 'illaka') | null;
+  /**
+   * Whether the illaka is active for accounting.
+   */
+  active?: boolean | null;
   description?: string | null;
   coverImage?: (number | null) | Media;
   /**
@@ -457,7 +469,22 @@ export interface User {
   name?: string | null;
   image?: (number | null) | Media;
   phoneNumber?: string | null;
-  role?: ('user' | 'admin' | 'super-admin') | null;
+  role?:
+    | (
+        | 'user'
+        | 'admin'
+        | 'super-admin'
+        | 'central-treasurer'
+        | 'central-auditor'
+        | 'central-exec'
+        | 'illaka-chair'
+        | 'illaka-treasurer'
+        | 'illaka-secretary'
+        | 'illaka-accountant'
+        | 'illaka-member-officer'
+        | 'viewer'
+      )
+    | null;
   gender?: ('male' | 'female' | 'other' | 'prefer-not-to-say') | null;
   tenants?:
     | {
@@ -981,7 +1008,7 @@ export interface GlAccount {
   openingBalance?: number | null;
   active?: boolean | null;
   allowManualPosting?: boolean | null;
-  tenant?: (number | null) | Tenant;
+  tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -1012,7 +1039,7 @@ export interface JournalEntry {
     id?: string | null;
   }[];
   createdBy?: (number | null) | User;
-  tenant?: (number | null) | Tenant;
+  tenant: number | Tenant;
   referenceDoc?: (number | null) | Document;
   updatedAt: string;
   createdAt: string;
@@ -1095,7 +1122,7 @@ export interface Document {
   taxTotal?: number | null;
   grossTotal?: number | null;
   createdBy?: (number | null) | User;
-  tenant?: (number | null) | Tenant;
+  tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -1118,7 +1145,7 @@ export interface Party {
    * Outstanding balance at the start of the books (positive = they owe you).
    */
   openingBalance?: number | null;
-  tenant?: (number | null) | Tenant;
+  tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -1158,7 +1185,7 @@ export interface Item {
    */
   purchasePrice?: number | null;
   active?: boolean | null;
-  tenant?: (number | null) | Tenant;
+  tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -1198,7 +1225,7 @@ export interface StockMovement {
    */
   unitCost?: number | null;
   location?: string | null;
-  tenant?: (number | null) | Tenant;
+  tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -2283,6 +2310,9 @@ export interface StockMovementsSelect<T extends boolean = true> {
  */
 export interface TenantsSelect<T extends boolean = true> {
   name?: T;
+  code?: T;
+  type?: T;
+  active?: T;
   description?: T;
   coverImage?: T;
   enabled?: T;

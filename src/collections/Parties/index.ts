@@ -1,5 +1,11 @@
-import { isAdmin } from '@/access/admin'
+import {
+  scopedCreate,
+  scopedDelete,
+  scopedRead,
+  scopedUpdate,
+} from '@/access/tenantScoped'
 import type { CollectionConfig } from 'payload'
+import { assignTenant } from '@/utilities/tenantScope'
 
 export const Parties: CollectionConfig = {
   slug: 'parties',
@@ -9,10 +15,10 @@ export const Parties: CollectionConfig = {
     defaultColumns: ['name', 'type', 'email', 'phone', 'updatedAt'],
   },
   access: {
-    create: isAdmin,
-    read: isAdmin,
-    update: isAdmin,
-    delete: isAdmin,
+    create: scopedCreate,
+    read: scopedRead,
+    update: scopedUpdate,
+    delete: scopedDelete,
   },
   fields: [
     {
@@ -62,14 +68,18 @@ export const Parties: CollectionConfig = {
         position: 'sidebar',
       },
     },
-    // Optional ilaka scoping — metadata only in v1, not enforced.
+    // Illaka scoping — required; auto-assigned from the user's illaka (or C00).
     {
       name: 'tenant',
       type: 'relationship',
       relationTo: 'tenants',
+      required: true,
       admin: {
         position: 'sidebar',
       },
     },
   ],
+  hooks: {
+    beforeValidate: [assignTenant],
+  },
 }

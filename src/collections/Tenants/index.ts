@@ -30,6 +30,9 @@ export const Tenants: CollectionConfig = {
     afterChange: [
       async ({ doc, operation, req }) => {
         if ((operation === 'create' || operation === 'update') && req?.payload) {
+          // The central C00 row is an accounting unit, not a website ilaka —
+          // don't push a notification for it.
+          if (doc.code === 'C00' || doc.type === 'central') return doc
           await sendFCMTopicNotification({
             topic: 'syasyah-samaj-ilaka',
             notification: {
@@ -51,6 +54,40 @@ export const Tenants: CollectionConfig = {
       type: 'text',
       required: true,
       localized: true
+    },
+    {
+      name: 'code',
+      type: 'text',
+      required: false,
+      unique: true,
+      index: true,
+      admin: {
+        description:
+          'Unique illaka code (e.g. IL01 … IL10). The central organization uses C00.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'type',
+      type: 'select',
+      defaultValue: 'illaka',
+      options: [
+        { label: 'Central', value: 'central' },
+        { label: 'Illaka', value: 'illaka' },
+      ],
+      admin: {
+        description: 'Central is the parent organization (code C00); everything else is an illaka.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'active',
+      type: 'checkbox',
+      defaultValue: true,
+      admin: {
+        description: 'Whether the illaka is active for accounting.',
+        position: 'sidebar',
+      },
     },
     {
       name: 'description',

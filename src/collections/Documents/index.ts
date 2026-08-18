@@ -1,8 +1,16 @@
-import { isAdmin } from '@/access/admin'
+import {
+  isBillingUser,
+  resolveScopedTenant,
+  scopedCreate,
+  scopedDelete,
+  scopedRead,
+  scopedUpdate,
+} from '@/access/tenantScoped'
 import type { CollectionConfig, PayloadRequest } from 'payload'
 import { ValidationError } from 'payload'
 import { round2, toNum, validateJournalLines } from '@/utilities/journalValidation'
 import { currentAvco } from '@/utilities/stockValuation'
+import { assignTenant } from '@/utilities/tenantScope'
 
 const DOC_TYPES = [
   { label: 'Sales Invoice', value: 'sales-invoice' },
@@ -380,8 +388,8 @@ async function nextNumber(
   return `${prefix}-${fy}-${String(seq).padStart(4, '0')}`
 }
 
-function isAdminReq(req: PayloadRequest): boolean {
-  return Boolean(req.user && isAdmin({ req }))
+function isBillingReq(req: PayloadRequest): boolean {
+  return Boolean(req.user && isBillingUser(req.user))
 }
 
 export const Documents: CollectionConfig = {
@@ -392,10 +400,10 @@ export const Documents: CollectionConfig = {
     defaultColumns: ['number', 'docType', 'date', 'party', 'status', 'grossTotal', 'updatedAt'],
   },
   access: {
-    create: isAdmin,
-    read: isAdmin,
-    update: isAdmin,
-    delete: isAdmin,
+    create: scopedCreate,
+    read: scopedRead,
+    update: scopedUpdate,
+    delete: scopedDelete,
   },
   endpoints: [
     {
@@ -404,7 +412,7 @@ export const Documents: CollectionConfig = {
       path: '/:id/post',
       method: 'post',
       handler: async (req) => {
-        if (!isAdminReq(req)) {
+        if (!isBillingReq(req)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const id = req.routeParams?.id as string
@@ -451,6 +459,9 @@ export const Documents: CollectionConfig = {
                 memo: l.memo || undefined,
               })),
               referenceDoc: doc.id,
+              // The entry inherits the document's illaka — the beforeValidate
+              // hook only fills tenant when missing.
+              tenant: doc.tenant,
             },
             req: { transactionID },
           })
@@ -466,6 +477,7 @@ export const Documents: CollectionConfig = {
                 qtyIn: mv.isIn ? mv.qty : undefined,
                 qtyOut: mv.isIn ? undefined : mv.qty,
                 unitCost: mv.unitCost,
+                tenant: doc.tenant,
               },
               req: { transactionID },
             })
@@ -527,7 +539,7 @@ export const Documents: CollectionConfig = {
       path: '/:id/void',
       method: 'post',
       handler: async (req) => {
-        if (!isAdminReq(req)) {
+        if (!isBillingReq(req)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const id = req.routeParams?.id as string
@@ -578,6 +590,7 @@ export const Documents: CollectionConfig = {
               status: 'posted',
               lines: reversalLines,
               referenceDoc: doc.id,
+              tenant: doc.tenant,
             },
             req: { transactionID },
           })
@@ -602,6 +615,7 @@ export const Documents: CollectionConfig = {
                 qtyIn: qtyOut > 0 ? qtyOut : undefined,
                 qtyOut: qtyIn > 0 ? qtyIn : undefined,
                 unitCost: toNum(m.unitCost),
+                tenant: doc.tenant,
               },
               req: { transactionID },
             })
@@ -651,7 +665,7 @@ export const Documents: CollectionConfig = {
       path: '/aging',
       method: 'get',
       handler: async (req) => {
-        if (!isAdminReq(req)) {
+        if (!isBillingReq(req)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const { searchParams } = new URL(req.url || '/')
@@ -672,11 +686,15 @@ export const Documents: CollectionConfig = {
             ? ['credit-note', 'receipt-voucher']
             : ['debit-note', 'payment-voucher']
 
+        // Scope to the caller's illaka (forced for illaka users) or the
+        // explicit tenant filter.
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
         const res = await req.payload.find({
           collection: 'documents',
           where: {
             status: { equals: 'posted' },
             docType: { in: [...posTypes, ...negTypes] },
+            ...(tenant ? { tenant: { equals: tenant } } : {}),
           },
           limit: 1000,
           depth: 1,
@@ -753,7 +771,7 @@ export const Documents: CollectionConfig = {
       path: '/number/next',
       method: 'get',
       handler: async (req) => {
-        if (!isAdminReq(req)) {
+        if (!isBillingReq(req)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const { searchParams } = new URL(req.url || '/')
@@ -810,6 +828,7 @@ export const Documents: CollectionConfig = {
       },
     ],
     beforeValidate: [
+      assignTenant,
       ({ data, operation }) => {
         if (operation !== 'create' && operation !== 'update') return data
         const d = data as any
@@ -1097,11 +1116,12 @@ export const Documents: CollectionConfig = {
         readOnly: true,
       },
     },
-    // Optional ilaka scoping — metadata only in v1, not enforced.
+    // Illaka scoping — required; auto-assigned from the user's illaka (or C00).
     {
       name: 'tenant',
       type: 'relationship',
       relationTo: 'tenants',
+      required: true,
       admin: {
         position: 'sidebar',
       },

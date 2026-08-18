@@ -1,6 +1,12 @@
-import { isAdmin } from '@/access/admin'
+import {
+  scopedCreate,
+  scopedDelete,
+  scopedRead,
+  scopedUpdate,
+} from '@/access/tenantScoped'
 import type { CollectionConfig } from 'payload'
 import { toNum } from '@/utilities/journalValidation'
+import { assignTenant } from '@/utilities/tenantScope'
 
 export const StockMovements: CollectionConfig = {
   slug: 'stock-movements',
@@ -10,13 +16,14 @@ export const StockMovements: CollectionConfig = {
     defaultColumns: ['date', 'item', 'doc', 'qtyIn', 'qtyOut', 'unitCost'],
   },
   access: {
-    create: isAdmin,
-    read: isAdmin,
-    update: isAdmin,
-    delete: isAdmin,
+    create: scopedCreate,
+    read: scopedRead,
+    update: scopedUpdate,
+    delete: scopedDelete,
   },
   hooks: {
     beforeValidate: [
+      assignTenant,
       ({ data }) => {
         const d = data as any
         const qtyIn = toNum(d.qtyIn)
@@ -80,11 +87,12 @@ export const StockMovements: CollectionConfig = {
       name: 'location',
       type: 'text',
     },
-    // Optional ilaka scoping — metadata only in v1, not enforced.
+    // Illaka scoping — required; auto-assigned from the user's illaka (or C00).
     {
       name: 'tenant',
       type: 'relationship',
       relationTo: 'tenants',
+      required: true,
       admin: {
         position: 'sidebar',
       },
