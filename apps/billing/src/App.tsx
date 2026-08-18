@@ -31,11 +31,15 @@ import Items from './pages/Items'
 import Reports from './pages/Reports'
 import Daybooks from './pages/Daybooks'
 import Settings from './pages/Settings'
+import Members from './pages/Members'
+import MembershipTypes from './pages/MembershipTypes'
 import SyncBanner from './components/SyncBanner'
 import SyncStatus from './components/SyncStatus'
+import IllakaSwitcher from './components/IllakaSwitcher'
 import Toaster from './components/Toaster'
 import Tour from './components/Tour'
 import UpdatePrompt from './components/UpdatePrompt'
+import { TenantProvider } from './lib/tenant'
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 
@@ -53,6 +57,8 @@ const navGroups: { title?: string; items: NavItem[] }[] = [
     items: [
       { to: '/accounts', label: 'Accounts', icon: FolderTree },
       { to: '/parties', label: 'Parties', icon: Users },
+      { to: '/members', label: 'Members', icon: Users },
+      { to: '/membership-types', label: 'Membership Types', icon: Users },
     ],
   },
   {
@@ -85,6 +91,10 @@ export default function App() {
   if (!session) return <Login />
 
   if (!isAdminUser((session.user as { role?: string }).role)) {
+    // Also allow illaka-scoped roles (they have billing access)
+    const role = (session.user as { role?: string }).role || ''
+    const illakaRoles = ['illaka-chair', 'illaka-treasurer', 'illaka-secretary', 'illaka-accountant', 'illaka-member-officer', 'viewer']
+    if (!illakaRoles.includes(role)) {
     return (
       <div className="grid h-screen place-items-center">
         <div className="text-center">
@@ -101,9 +111,14 @@ export default function App() {
         </div>
       </div>
     )
+    }
   }
 
-  return <Shell email={session.user.email} />
+  return (
+    <TenantProvider>
+      <Shell email={session.user.email} />
+    </TenantProvider>
+  )
 }
 
 function Shell({ email }: { email: string }) {
@@ -199,6 +214,7 @@ function Shell({ email }: { email: string }) {
         <header className="print:hidden flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
           <div className="text-sm text-slate-500">{email}</div>
           <div className="flex items-center gap-3">
+            <IllakaSwitcher />
             <span data-tour="sync">
               <SyncStatus />
             </span>
@@ -235,6 +251,8 @@ function Shell({ email }: { email: string }) {
             <Route path="/inventory" element={<Items />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/daybooks" element={<Daybooks />} />
+            <Route path="/members" element={<Members />} />
+            <Route path="/membership-types" element={<MembershipTypes />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -1321,6 +1321,32 @@ export const Documents: CollectionConfig = {
         return data
       },
     ],
+    // Audit trail: log every create/update/delete to audit-logs.
+    afterChange: [
+      async ({ doc, operation, req, previousDoc }) => {
+        try {
+          const d = doc as any
+          const user = req.user as any
+          await req.payload.create({
+            collection: 'audit-logs',
+            overrideAccess: true,
+            data: {
+              action: operation === 'create' ? 'create' : 'update',
+              entityType: 'documents',
+              entityId: String(d.id),
+              entityLabel: d.number || d.docType || String(d.id),
+              tenant: d.tenant,
+              userName: user?.email || user?.name || 'system',
+              userRole: user?.role || '',
+              before: previousDoc ? { status: previousDoc.status, grossTotal: previousDoc.grossTotal } : null,
+              after: { status: d.status, grossTotal: d.grossTotal, docType: d.docType },
+            },
+          } as any)
+        } catch {
+          // Audit writes must never block the main operation.
+        }
+      },
+    ],
   },
   fields: [
     {

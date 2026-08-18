@@ -93,6 +93,7 @@ export interface Config {
     'membership-types': MembershipType;
     'bank-statements': BankStatement;
     'fixed-assets': FixedAsset;
+    'audit-logs': AuditLog;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -135,6 +136,7 @@ export interface Config {
     'membership-types': MembershipTypesSelect<false> | MembershipTypesSelect<true>;
     'bank-statements': BankStatementsSelect<false> | BankStatementsSelect<true>;
     'fixed-assets': FixedAssetsSelect<false> | FixedAssetsSelect<true>;
+    'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -1052,6 +1054,11 @@ export interface JournalEntry {
   createdBy?: (number | null) | User;
   tenant: number | Tenant;
   referenceDoc?: (number | null) | Document;
+  /**
+   * Shared reference linking both legs of a cross-illaka transfer.
+   */
+  transferRef?: string | null;
+  createdByUser?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1519,6 +1526,67 @@ export interface FixedAsset {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-logs".
+ */
+export interface AuditLog {
+  id: number;
+  action: 'create' | 'update' | 'delete' | 'post' | 'void' | 'transfer';
+  /**
+   * Collection slug (e.g. documents, gl-accounts)
+   */
+  entityType: string;
+  entityId: string;
+  /**
+   * Human-readable identifier (e.g. voucher number)
+   */
+  entityLabel?: string | null;
+  tenant?: (number | null) | Tenant;
+  /**
+   * Display name or email of the user who performed the action
+   */
+  userName?: string | null;
+  userRole?: string | null;
+  /**
+   * Snapshot of the entity before the change (null on create)
+   */
+  before?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Snapshot of the entity after the change
+   */
+  after?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Extra context (e.g. transferRef, posting details)
+   */
+  meta?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1906,6 +1974,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'fixed-assets';
         value: number | FixedAsset;
+      } | null)
+    | ({
+        relationTo: 'audit-logs';
+        value: number | AuditLog;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -2373,6 +2445,8 @@ export interface JournalEntriesSelect<T extends boolean = true> {
   createdBy?: T;
   tenant?: T;
   referenceDoc?: T;
+  transferRef?: T;
+  createdByUser?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2685,6 +2759,24 @@ export interface FixedAssetsSelect<T extends boolean = true> {
         id?: T;
       };
   tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-logs_select".
+ */
+export interface AuditLogsSelect<T extends boolean = true> {
+  action?: T;
+  entityType?: T;
+  entityId?: T;
+  entityLabel?: T;
+  tenant?: T;
+  userName?: T;
+  userRole?: T;
+  before?: T;
+  after?: T;
+  meta?: T;
   updatedAt?: T;
   createdAt?: T;
 }

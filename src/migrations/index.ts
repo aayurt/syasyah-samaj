@@ -10,6 +10,7 @@ import * as migration_20260818_p3_donations from './20260818_p3_donations';
 import * as migration_20260818_p4_orders from './20260818_p4_orders';
 import * as migration_20260818_p5_bank_recon from './20260818_p5_bank_recon';
 import * as migration_20260818_p6_fixed_assets from './20260818_p6_fixed_assets';
+import * as migration_20260819_p1_transfers_audit from './20260819_p1_transfers_audit';
 
 export const migrations = [
   {
@@ -71,5 +72,10 @@ export const migrations = [
     up: migration_20260818_p6_fixed_assets.up,
     down: migration_20260818_p6_fixed_assets.down,
     name: '20260818_p6_fixed_assets'
+  },
+  {
+    up: migration_20260819_p1_transfers_audit.up,
+    down: migration_20260819_p1_transfers_audit.down,
+    name: '20260819_p1_transfers_audit'
   },
 ];

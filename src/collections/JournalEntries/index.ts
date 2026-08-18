@@ -458,6 +458,210 @@ export const JournalEntries: CollectionConfig = {
         })
       },
     },
+    // ── Cross-illaka transfers ───────────────────────────────────────
+    // POST /api/journal-entries/transfers — atomic two-leg posting.
+    {
+      path: '/transfers',
+      method: 'post',
+      handler: async (req) => {
+        if (!isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        try {
+          const body = (await req.json!()) as {
+            fromTenant: number | string
+            toTenant: number | string
+            amount: number
+            fromAccount: number | string   // credit account on fromTenant (e.g. Bank)
+            toAccount: number | string     // debit account on toTenant (e.g. Bank)
+            narration?: string
+            date?: string
+          }
+          if (!body.fromTenant || !body.toTenant || !body.amount || body.amount <= 0) {
+            return Response.json({ error: 'fromTenant, toTenant, and a positive amount are required.' }, { status: 400 })
+          }
+          if (!body.fromAccount || !body.toAccount) {
+            return Response.json({ error: 'fromAccount and toAccount are required.' }, { status: 400 })
+          }
+          if (String(body.fromTenant) === String(body.toTenant)) {
+            return Response.json({ error: 'fromTenant and toTenant must differ.' }, { status: 400 })
+          }
+          const amount = round2(Number(body.amount))
+          const date = body.date || new Date().toISOString().slice(0, 10)
+          const ref = `TXF-${Date.now().toString(36)}`
+          const narration = body.narration || `Cross-illaka transfer ${amount}`
+          const pool = (req.payload.db as any).pool
+          const txn = await req.payload.db.beginTransaction()
+          const txId = txn ?? undefined
+          try {
+            // Leg 1: fromTenant credits their bank/account (credit side)
+            const je1 = await req.payload.create({
+              collection: 'journal-entries',
+              data: {
+                date,
+                narration: `${narration} — outgoing`,
+                status: 'posted',
+                tenant: Number(body.fromTenant),
+                transferRef: ref,
+                lines: [
+                  { account: Number(body.fromAccount), credit: amount },
+                  { account: Number(body.toAccount), debit: amount },
+                ],
+              } as any,
+              req: { transactionID: txId, overrideAccess: true } as any,
+              overrideAccess: true,
+            })
+            // Leg 2: toTenant debits their bank/account (debit side)
+            const je2 = await req.payload.create({
+              collection: 'journal-entries',
+              data: {
+                date,
+                narration: `${narration} — incoming`,
+                status: 'posted',
+                tenant: Number(body.toTenant),
+                transferRef: ref,
+                lines: [
+                  { account: Number(body.toAccount), debit: amount },
+                  { account: Number(body.fromAccount), credit: amount },
+                ],
+              } as any,
+              req: { transactionID: txId, overrideAccess: true } as any,
+              overrideAccess: true,
+            })
+            // Audit log
+            try {
+              await req.payload.create({
+                collection: 'audit-logs',
+                overrideAccess: true,
+                data: {
+                  action: 'transfer',
+                  entityType: 'journal-entries',
+                  entityId: String(je1.id),
+                  entityLabel: ref,
+                  tenant: body.fromTenant,
+                  userName: (req.user as any)?.email || 'system',
+                  userRole: (req.user as any)?.role || '',
+                  after: { fromTenant: body.fromTenant, toTenant: body.toTenant, amount, ref, je1: je1.id, je2: je2.id },
+                },
+              } as any)
+            } catch { /* audit is best-effort */ }
+            if (txId) await req.payload.db.commitTransaction(txId)
+            return Response.json({
+              message: 'Transfer posted successfully',
+              transferRef: ref,
+              fromEntry: je1.id,
+              toEntry: je2.id,
+              amount,
+            })
+          } catch (err) {
+            try { if (txId) await req.payload.db.rollbackTransaction(txId) } catch { /* */ }
+            throw err
+          }
+        } catch (err) {
+          return Response.json({ error: (err as Error).message || 'Transfer failed' }, { status: 400 })
+        }
+      },
+    },
+    // POST /api/journal-entries/transfers/:ref/void — reverse both legs atomically.
+    {
+      path: '/transfers/:ref/void',
+      method: 'post',
+      handler: async (req) => {
+        if (!isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const ref = req.routeParams?.ref as string
+        if (!ref) {
+          return Response.json({ error: 'Missing transfer ref' }, { status: 400 })
+        }
+        try {
+          // Find both legs
+          const found = await req.payload.find({
+            collection: 'journal-entries',
+            where: { transferRef: { equals: ref } },
+            depth: 0,
+            limit: 10,
+            overrideAccess: true,
+          })
+          if (found.docs.length < 2) {
+            return Response.json({ error: `Transfer ${ref} has ${found.docs.length} leg(s) — expected 2.` }, { status: 400 })
+          }
+          const legs = found.docs as any[]
+          // Check neither is already voided
+          if (legs.some((l) => l.narration?.includes('[VOID]'))) {
+            return Response.json({ error: 'Transfer is already voided.' }, { status: 400 })
+          }
+          const txn = await req.payload.db.beginTransaction()
+          const txId = txn ?? undefined
+          try {
+            const voidDate = new Date().toISOString().slice(0, 10)
+            const voidNarration = `VOID ${ref}`
+            const reversals: any[] = []
+            for (const leg of legs) {
+              // Reverse: swap debit ↔ credit
+              const reversedLines = (leg.lines || []).map((l: any) => ({
+                account: l.account,
+                debit: l.credit || undefined,
+                credit: l.debit || undefined,
+                memo: `Reversal of ${ref}`,
+              }))
+              const rev = await req.payload.create({
+                collection: 'journal-entries',
+                data: {
+                  date: voidDate,
+                  narration: voidNarration,
+                  status: 'posted',
+                  tenant: Number(leg.tenant) || leg.tenant,
+                  transferRef: ref,
+                  lines: reversedLines,
+                } as any,
+                req: { transactionID: txId, overrideAccess: true } as any,
+                overrideAccess: true,
+              })
+              reversals.push(rev.id)
+            }
+            // Mark originals as voided
+            for (const leg of legs) {
+              await req.payload.update({
+                collection: 'journal-entries',
+                id: String(leg.id),
+                data: { narration: `[VOID] ${leg.narration || ''}` },
+                req: { transactionID: txId, overrideAccess: true } as any,
+                overrideAccess: true,
+              })
+            }
+            // Audit
+            try {
+              await req.payload.create({
+                collection: 'audit-logs',
+                overrideAccess: true,
+                data: {
+                  action: 'void',
+                  entityType: 'journal-entries',
+                  entityId: ref,
+                  entityLabel: `VOID ${ref}`,
+                  tenant: legs[0].tenant,
+                  userName: (req.user as any)?.email || 'system',
+                  userRole: (req.user as any)?.role || '',
+                  after: { originalLegs: legs.map((l: any) => l.id), reversalLegs: reversals, ref },
+                },
+              } as any)
+            } catch { /* */ }
+            if (txId) await req.payload.db.commitTransaction(txId)
+            return Response.json({
+              message: 'Transfer voided successfully',
+              transferRef: ref,
+              reversals,
+            })
+          } catch (err) {
+            try { if (txId) await req.payload.db.rollbackTransaction(txId) } catch { /* */ }
+            throw err
+          }
+        } catch (err) {
+          return Response.json({ error: (err as Error).message || 'Void failed' }, { status: 400 })
+        }
+      },
+    },
   ],
   hooks: {
     beforeValidate: [
@@ -640,6 +844,25 @@ export const JournalEntries: CollectionConfig = {
       name: 'referenceDoc',
       type: 'relationship',
       relationTo: 'documents',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    // Cross-illaka transfer pairing: links the two legs of a transfer.
+    {
+      name: 'transferRef',
+      type: 'text',
+      admin: {
+        description: 'Shared reference linking both legs of a cross-illaka transfer.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    // Immutable audit fields
+    {
+      name: 'createdByUser',
+      type: 'text',
       admin: {
         position: 'sidebar',
         readOnly: true,

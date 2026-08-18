@@ -41,6 +41,7 @@ import { StockMovements } from './collections/StockMovements'
 import { MembershipTypes } from './collections/MembershipTypes'
 import { BankStatements } from './collections/BankStatements'
 import { FixedAssets } from './collections/FixedAssets'
+import { AuditLogs } from './collections/AuditLogs'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -121,6 +122,7 @@ export default buildConfig({
     MembershipTypes,
     BankStatements,
     FixedAssets,
+    AuditLogs,
   ],
   cors: [getServerSideURL(), ...trustedOriginsValues].filter(Boolean),
   globals: [Header, Footer, BillingSettings],

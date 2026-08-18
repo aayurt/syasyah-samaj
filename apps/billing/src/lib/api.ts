@@ -153,12 +153,15 @@ export async function api<T = unknown>(
   const report = method === 'GET' && isReportPath(path)
   const reportKey = report ? reportCacheKey(path, options.query) : null
 
+  // Extract tenant for scope-partitioned cache keys.
+  const tenant = options.query?.tenant ? String(options.query.tenant) : undefined
+
   // Cache-first: a warm collection list renders immediately; the background
   // refresh updates the cache (and subscribed views) when fresh data lands.
   if (plainList) {
-    const cached = await engine.readCollection(slug)
+    const cached = await engine.readCollection(slug, tenant)
     if (cached) {
-      void engine.refresh(slug)
+      void engine.refresh(slug, tenant)
       return {
         ...cached,
         docs: sortCached(cached.docs, options.query?.sort),
@@ -176,7 +179,7 @@ export async function api<T = unknown>(
     // instead of serving the stale list from cache.
     if (method !== 'GET' && slug && segments.length <= 2) {
       try {
-        await engine.invalidate(slug)
+        await engine.invalidate(slug, tenant)
       } catch {
         // best-effort
       }
@@ -233,7 +236,7 @@ export async function api<T = unknown>(
       const doc = await engine.readDoc(slug, id)
       if (doc) return doc as unknown as T
     } else if (plainList) {
-      const cached = await engine.readCollection(slug)
+      const cached = await engine.readCollection(slug, tenant)
       if (cached) {
         return {
           ...cached,

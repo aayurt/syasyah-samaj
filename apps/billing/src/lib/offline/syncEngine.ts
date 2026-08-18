@@ -499,12 +499,13 @@ export class SyncEngine {
    * cache-first reads on a page don't each trigger a network fetch, and
    * silent on failure (offline) — the cached copy stays authoritative.
    */
-  async refresh(collection: string): Promise<void> {
+  async refresh(collection: string, tenant?: string): Promise<void> {
     const now = Date.now()
-    if (now - (this.lastRefresh[collection] ?? 0) < 10_000) return
-    this.lastRefresh[collection] = now
+    const refreshKey = tenant ? `${tenant}:${collection}` : collection
+    if (now - (this.lastRefresh[refreshKey] ?? 0) < 10_000) return
+    this.lastRefresh[refreshKey] = now
     try {
-      await this.pull(collection)
+      await this.pull(collection, tenant)
     } catch (err) {
       // Offline or collection missing — the cached copy remains valid. Flag
       // a network failure so the sync pill shows the real connection state.
@@ -517,14 +518,21 @@ export class SyncEngine {
    * each changed document into the local cache. Uses the bracket where form
    * (this Payload build silently ignores the JSON form) and depth 1 so cached
    * documents carry the populated relations the UI renders.
+   *
+   * When `tenant` is provided, cursor/pulled keys are scoped to that tenant
+   * so a shared device never leaks another illaka's cached rows.
    */
-  async pull(collection: string): Promise<number> {
-    const cursor = await this.db.getKey(`cursor:${collection}`)
+  async pull(collection: string, tenant?: string): Promise<number> {
+    const scopePrefix = tenant ? `${tenant}:` : ''
+    const cursorKey = `cursor:${scopePrefix}${collection}`
+    const pulledKey = `pulled:${scopePrefix}${collection}`
+    const cursor = await this.db.getKey(cursorKey)
     const params = new URLSearchParams({
       limit: '1000',
       depth: '1',
       sort: 'updatedAt',
     })
+    if (tenant) params.append('tenant', tenant)
     if (cursor) params.append('where[updatedAt][greater_than]', cursor)
     const res = await fetch(`${API_BASE}/api/${collection}?${params}`, {
       credentials: 'include',
@@ -540,10 +548,10 @@ export class SyncEngine {
       if (up && (!latest || up > latest)) latest = up
     }
     const changed = await this.writeChanged(collection, docs)
-    if (latest) await this.db.setKey(`cursor:${collection}`, latest)
+    if (latest) await this.db.setKey(cursorKey, latest)
     // Marks the collection as pulled so even an empty one serves from cache
     // instead of re-hitting the network on every view.
-    await this.db.setKey(`pulled:${collection}`, '1')
+    await this.db.setKey(pulledKey, '1')
     this.setOnline(true)
     if (changed > 0) this.bumpCache()
     return docs.length
@@ -587,10 +595,11 @@ export class SyncEngine {
    * read hits the server. Called after successful writes so the UI never
    * serves a stale list right after the user saved something.
    */
-  async invalidate(collection: string): Promise<void> {
+  async invalidate(collection: string, tenant?: string): Promise<void> {
     await this.db.clearCache(collection)
-    await this.db.deleteKey(`cursor:${collection}`)
-    await this.db.deleteKey(`pulled:${collection}`)
+    const scopePrefix = tenant ? `${tenant}:` : ''
+    await this.db.deleteKey(`cursor:${scopePrefix}${collection}`)
+    await this.db.deleteKey(`pulled:${scopePrefix}${collection}`)
   }
 
   // --- report cache --------------------------------------------------------
@@ -674,9 +683,11 @@ export class SyncEngine {
 
   async readCollection(
     slug: string,
+    tenant?: string,
   ): Promise<{ docs: Record<string, unknown>[]; totalDocs: number } | null> {
     const docs = await this.db.cacheList(slug)
-    const pulled = await this.db.getKey(`pulled:${slug}`)
+    const scopePrefix = tenant ? `${tenant}:` : ''
+    const pulled = await this.db.getKey(`pulled:${scopePrefix}${slug}`)
     if (docs.length === 0 && !pulled) {
       return null
     }
