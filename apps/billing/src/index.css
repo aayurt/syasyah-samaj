@@ -50,3 +50,13 @@
     transform: translateX(400%);
   }
 }
+
+/* Zebra striping for data tables */
+@layer base {
+  tbody tr:nth-child(even) {
+    background-color: var(--color-slate-50);
+  }
+  tbody tr:hover {
+    background-color: var(--color-slate-100);
+  }
+}

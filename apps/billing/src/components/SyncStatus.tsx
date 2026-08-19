@@ -73,11 +73,12 @@ export default function SyncStatus() {
       <button
         onClick={() => void syncNow()}
         disabled={syncing}
-        title="Sync now — push queued changes and refresh data"
-        aria-label="Sync now"
-        className="rounded border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50"
+        title="Resync — push queued changes and pull the latest data from the server"
+        aria-label="Resync"
+        className="flex items-center gap-1.5 rounded border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50"
       >
         <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
+        {syncing ? 'Syncing…' : 'Resync'}
       </button>
     </span>
   )

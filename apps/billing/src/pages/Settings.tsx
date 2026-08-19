@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { HelpCircle, LogOut } from 'lucide-react'
 import { api } from '../lib/api'
+import { authClient, clearCachedSession } from '../lib/auth'
 import type { Account, BillingSettings } from '../lib/types'
 
 const ACCOUNT_FIELDS: { key: keyof BillingSettings; label: string }[] = [
@@ -24,6 +27,7 @@ export default function Settings() {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const navigate = useNavigate()
 
   const load = async () => {
     try {
@@ -141,6 +145,36 @@ export default function Settings() {
           Default accounts are managed in the Payload admin (Billing → Billing
           Settings). Missing accounts block posting until configured.
         </p>
+      </div>
+
+      {/* Account actions */}
+      <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4">
+        <div className="text-sm font-medium text-slate-700">Account</div>
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.removeItem('tour-seen')
+              window.location.reload()
+            }}
+            className="flex items-center gap-2 rounded border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            <HelpCircle size={14} />
+            Show Tutorial
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              await authClient.signOut()
+              await clearCachedSession()
+              navigate('/')
+            }}
+            className="flex items-center gap-2 rounded border border-red-200 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+          >
+            <LogOut size={14} />
+            Sign Out
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -7,18 +7,17 @@ import {
   Clock3,
   FileText,
   FolderTree,
-  HelpCircle,
   LayoutDashboard,
-  LogOut,
   NotebookText,
   PanelLeftClose,
+  Search,
   PanelLeftOpen,
   Scale,
   Settings as SettingsIcon,
   Users,
   type LucideIcon,
 } from 'lucide-react'
-import { authClient, clearCachedSession, isAdminUser, useOfflineSession } from './lib/auth'
+import { isAdminUser, useOfflineSession } from './lib/auth'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Accounts from './pages/Accounts'
@@ -35,6 +34,7 @@ import Members from './pages/Members'
 import MembershipTypes from './pages/MembershipTypes'
 import SyncBanner from './components/SyncBanner'
 import SyncStatus from './components/SyncStatus'
+import CommandPalette from './components/CommandPalette'
 import IllakaSwitcher from './components/IllakaSwitcher'
 import RefreshingBar from './components/RefreshingBar'
 import Toaster from './components/Toaster'
@@ -128,6 +128,7 @@ function Shell({ email }: { email: string }) {
     () => localStorage.getItem('sidebar-collapsed') === '1',
   )
   const [tourOpen, setTourOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   // Auto-start the tutorial once per browser. The flag is only written when
   // the tour is dismissed or finished, so the StrictMode remount can't race it.
@@ -147,8 +148,21 @@ function Shell({ email }: { email: string }) {
     })
   }
 
+  // Cmd+K / Ctrl+K to open command palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setPaletteOpen((o) => !o)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   return (
     <div className="flex h-screen bg-slate-100">
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <aside
         className={`print:hidden flex flex-col bg-slate-900 text-slate-300 transition-[width] duration-200 ${
           collapsed ? 'w-16' : 'w-56'
@@ -220,24 +234,15 @@ function Shell({ email }: { email: string }) {
               <SyncStatus />
             </span>
             <button
-              onClick={() => setTourOpen(true)}
-              title="Show the tutorial again"
+              onClick={() => setPaletteOpen(true)}
+              title="Search & shortcuts (⌘K)"
               className="flex items-center gap-1.5 rounded border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
             >
-              <HelpCircle size={14} />
-              Guide
+              <Search size={14} />
+              Search
+              <kbd className="ml-1 hidden rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px] text-slate-400 lg:inline">⌘K</kbd>
             </button>
-            <button
-              onClick={async () => {
-                await authClient.signOut()
-                await clearCachedSession()
-                navigate('/')
-              }}
-            className="flex items-center gap-1.5 rounded border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-          >
-            <LogOut size={14} />
-            Sign out
-          </button>
+
           </div>
         </header>
         <main className="flex-1 overflow-auto p-6 print:overflow-visible">

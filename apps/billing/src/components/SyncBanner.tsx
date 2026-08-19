@@ -199,7 +199,10 @@ export default function SyncBanner() {
     }
   }, [])
 
-  // Auto-sync when the connection returns.
+  // Auto-sync when the connection returns: queued offline writes must reach
+  // the server the moment the device regains the network. This is a one-shot
+  // event, not a periodic fetch — fresh data is otherwise pulled only via the
+  // resync button.
   useEffect(() => {
     if (state.online && !wasOnline.current) {
       void syncNow()
@@ -207,31 +210,6 @@ export default function SyncBanner() {
     wasOnline.current = state.online
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.online])
-
-  // Background pull loop: keep the local cache fresh so every view renders
-  // from local data instantly — on mount, on a timer, and when the window
-  // regains focus. Pulls are incremental (updatedAt cursor) and cheap.
-  //
-  // Deliberately NOT gated on `online`: a page-load is cache-first, so it
-  // never probes the network — without an unconditional probe, the pill
-  // would stay "Offline" forever after the server comes back (the browser's
-  // `online` event doesn't fire for a server restart). Each pull updates the
-  // online state from its own success/failure.
-  useEffect(() => {
-    void syncNow()
-    const id = setInterval(() => void syncNow(), 30_000)
-    const onFocus = () => {
-      if (document.visibilityState === 'visible') void syncNow()
-    }
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', onFocus)
-    return () => {
-      clearInterval(id)
-      window.removeEventListener('focus', onFocus)
-      document.removeEventListener('visibilitychange', onFocus)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   // True for queued document creates — the user can reopen them in the
   // Vouchers form, fix them, and save again.

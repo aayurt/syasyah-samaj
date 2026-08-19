@@ -140,8 +140,9 @@ function sortCached(
 
 /**
  * Cache-first API client for plain collection reads: serve the local copy
- * instantly (no skeleton on warm caches), then refresh the cache in the
- * background so the view updates with fresh data. Writes are network-first
+ * instantly (no skeleton on warm caches). Fresh data is pulled only when the
+ * user hits the resync button (or after a write invalidates the cache, which
+ * makes the next read fall through to the network). Writes are network-first
  * and queue to the outbox when offline; computed endpoints stay
  * network-first. See lib/offline.
  */
@@ -163,12 +164,12 @@ export async function api<T = unknown>(
   // Extract tenant for scope-partitioned cache keys.
   const tenant = options.query?.tenant ? String(options.query.tenant) : undefined
 
-  // Cache-first: a warm collection list renders immediately; the background
-  // refresh updates the cache (and subscribed views) when fresh data lands.
+  // Cache-first: a warm collection list renders immediately. Fresh data is
+  // pulled on demand via the resync button — reads never trigger a network
+  // fetch on their own.
   if (plainList) {
     const cached = await engine.readCollection(slug, tenant)
     if (cached) {
-      void engine.refresh(slug, tenant)
       return {
         ...cached,
         docs: sortCached(cached.docs, options.query?.sort),

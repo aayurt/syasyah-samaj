@@ -107,8 +107,6 @@ export class SyncEngine {
   private pendingHint = 0
   private conflictsHint = 0
   private cacheVersion = 0
-  /** Per-collection timestamp of the last background refresh (throttle). */
-  private lastRefresh: Record<string, number> = {}
   private listeners = new Set<(s: SyncState) => void>()
   private reportsStale = false
   private lastReportSyncAt: number | null = null
@@ -516,26 +514,6 @@ export class SyncEngine {
       }
     } finally {
       this.syncingAll = false
-    }
-  }
-
-  /**
-   * Background refresh of one collection: incremental cursor pull that
-   * upserts changed documents into the read cache. Throttled so the many
-   * cache-first reads on a page don't each trigger a network fetch, and
-   * silent on failure (offline) — the cached copy stays authoritative.
-   */
-  async refresh(collection: string, tenant?: string): Promise<void> {
-    const now = Date.now()
-    const refreshKey = tenant ? `${tenant}:${collection}` : collection
-    if (now - (this.lastRefresh[refreshKey] ?? 0) < 10_000) return
-    this.lastRefresh[refreshKey] = now
-    try {
-      await this.pull(collection, tenant)
-    } catch (err) {
-      // Offline or collection missing — the cached copy remains valid. Flag
-      // a network failure so the sync pill shows the real connection state.
-      if (isNetworkError(err)) this.setOnline(false)
     }
   }
 
