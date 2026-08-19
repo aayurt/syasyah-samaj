@@ -3280,6 +3280,18 @@ export interface Footer {
 export interface BillingSetting {
   id: number;
   /**
+   * Calendar type for date display across the app.
+   */
+  calendarType?: ('AD' | 'BS') | null;
+  /**
+   * Date format: YYYY-MM-DD, DD/MM/YYYY, YYYY/MM/DD, MMMM DD YYYY, etc.
+   */
+  dateFormat?: string | null;
+  /**
+   * Time display format.
+   */
+  timeFormat?: ('12h' | '24h') | null;
+  /**
    * Month and day the fiscal year begins (e.g. 2026-07-16). Unset = calendar year.
    */
   fiscalYearStart?: string | null;
@@ -3405,6 +3417,9 @@ export interface FooterSelect<T extends boolean = true> {
  * via the `definition` "billing-settings_select".
  */
 export interface BillingSettingsSelect<T extends boolean = true> {
+  calendarType?: T;
+  dateFormat?: T;
+  timeFormat?: T;
   fiscalYearStart?: T;
   freezeDate?: T;
   receivableAccount?: T;

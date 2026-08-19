@@ -22,6 +22,40 @@ export const BillingSettings: GlobalConfig = {
   },
   fields: [
     {
+      type: 'group',
+      label: 'Calendar',
+      fields: [
+        {
+          name: 'calendarType',
+          type: 'select',
+          defaultValue: 'AD',
+          options: [
+            { label: 'AD (Gregorian)', value: 'AD' },
+            { label: 'BS (Bikram Sambat)', value: 'BS' },
+          ],
+          admin: { description: 'Calendar type for date display across the app.' },
+        },
+        {
+          name: 'dateFormat',
+          type: 'text',
+          defaultValue: 'YYYY-MM-DD',
+          admin: {
+            description: 'Date format: YYYY-MM-DD, DD/MM/YYYY, YYYY/MM/DD, MMMM DD YYYY, etc.',
+          },
+        },
+        {
+          name: 'timeFormat',
+          type: 'select',
+          defaultValue: '12h',
+          options: [
+            { label: '12-hour (1:30 PM)', value: '12h' },
+            { label: '24-hour (13:30)', value: '24h' },
+          ],
+          admin: { description: 'Time display format.' },
+        },
+      ],
+    },
+    {
       name: 'fiscalYearStart',
       type: 'date',
       admin: {

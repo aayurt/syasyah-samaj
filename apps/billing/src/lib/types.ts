@@ -263,6 +263,9 @@ export interface DaybookResponse {
 }
 
 export interface BillingSettings {
+  calendarType?: 'AD' | 'BS'
+  dateFormat?: string
+  timeFormat?: '12h' | '24h'
   fiscalYearStart?: string
   freezeDate?: string
   receivableAccount?: number | Account | null
