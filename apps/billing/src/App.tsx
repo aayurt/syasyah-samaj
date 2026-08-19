@@ -7,6 +7,7 @@ import {
   Clock3,
   FileText,
   FolderTree,
+  HelpCircle,
   LayoutDashboard,
   NotebookText,
   PanelLeftClose,
@@ -17,7 +18,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
-import { isAdminUser, useOfflineSession } from './lib/auth'
+import { authClient, isAdminUser, useOfflineSession } from './lib/auth'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Accounts from './pages/Accounts'
@@ -220,6 +221,27 @@ function Shell({ email }: { email: string }) {
               </div>
             </div>
           ))}
+          <div>
+            {!collapsed && (
+              <div className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Help
+              </div>
+            )}
+            <div
+              className={collapsed ? 'flex flex-col items-center gap-1' : 'space-y-1'}
+            >
+              <button
+                onClick={() => setTourOpen(true)}
+                title={collapsed ? 'Guide' : undefined}
+                className={`flex items-center gap-2 rounded px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-crimson-700/70 hover:text-white ${
+                  collapsed ? 'justify-center' : ''
+                }`}
+              >
+                <HelpCircle size={16} />
+                {!collapsed && 'Guide'}
+              </button>
+            </div>
+          </div>
         </nav>
       </aside>
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -236,13 +258,11 @@ function Shell({ email }: { email: string }) {
             <button
               onClick={() => setPaletteOpen(true)}
               title="Search & shortcuts (⌘K)"
-              className="flex items-center gap-1.5 rounded border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+              className="flex shrink-0 items-center gap-1.5 rounded border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
             >
               <Search size={14} />
-              Search
-              <kbd className="ml-1 hidden rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px] text-slate-400 lg:inline">⌘K</kbd>
+              <kbd className="hidden rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px] text-slate-400 lg:inline">⌘K</kbd>
             </button>
-
           </div>
         </header>
         <main className="flex-1 overflow-auto p-6 print:overflow-visible">
