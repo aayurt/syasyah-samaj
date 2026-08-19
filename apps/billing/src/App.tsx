@@ -36,6 +36,7 @@ import MembershipTypes from './pages/MembershipTypes'
 import SyncBanner from './components/SyncBanner'
 import SyncStatus from './components/SyncStatus'
 import IllakaSwitcher from './components/IllakaSwitcher'
+import RefreshingBar from './components/RefreshingBar'
 import Toaster from './components/Toaster'
 import Tour from './components/Tour'
 import UpdatePrompt from './components/UpdatePrompt'
@@ -240,6 +241,7 @@ function Shell({ email }: { email: string }) {
           </div>
         </header>
         <main className="flex-1 overflow-auto p-6 print:overflow-visible">
+          <RefreshingBar />
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/accounts" element={<Accounts />} />

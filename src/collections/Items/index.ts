@@ -1,5 +1,6 @@
 import {
   isBillingUser,
+  resolveScopedTenant,
   scopedCreate,
   scopedDelete,
   scopedRead,
@@ -35,10 +36,12 @@ export const Items: CollectionConfig = {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const { searchParams } = new URL(req.url || '/')
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
         const res = await req.payload.find({
           collection: 'items',
           limit: 1000,
           depth: 0,
+          where: tenant ? { tenant: { equals: tenant } } : undefined,
         })
         const levels: any[] = []
         for (const item of res.docs as any[]) {

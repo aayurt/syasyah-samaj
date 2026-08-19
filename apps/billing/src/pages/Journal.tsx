@@ -6,6 +6,8 @@ import ActionMenu from '../components/ActionMenu'
 import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
+import DataStatus from '../components/DataStatus'
+import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Account, JournalEntry } from '../lib/types'
 import { StatusPill } from './Dashboard'
 
@@ -33,6 +35,8 @@ const emptyForm = {
 
 export default function Journal() {
   const { cacheVersion } = useSyncState()
+  const { tenantId } = useTenant()
+  const tenantQuery = useTenantQuery()
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
   const [error, setError] = useState('')
@@ -48,8 +52,9 @@ export default function Journal() {
         list<JournalEntry>('journal-entries', {
           depth: 0,
           sort: '-date',
+          ...tenantQuery,
         }),
-        list<Account>('gl-accounts', { depth: 0, sort: 'name' }),
+        list<Account>('gl-accounts', { depth: 0, sort: 'name', ...tenantQuery }),
       ])
       setEntries(e.docs)
       setAccounts(a.docs)
@@ -62,7 +67,7 @@ export default function Journal() {
 
   useEffect(() => {
     load()
-  }, [cacheVersion])
+  }, [cacheVersion, tenantId])
 
   const totals = useMemo(() => {
     let debit = 0
@@ -99,6 +104,7 @@ export default function Journal() {
           date: form.date,
           narration: form.narration || undefined,
           status,
+          ...(tenantId ? { tenant: tenantId } : {}),
           lines: form.lines.map((l) => ({
             account: Number(l.account),
             debit: l.debit ? parseFloat(l.debit) : undefined,
@@ -165,6 +171,10 @@ export default function Journal() {
           <Plus size={14} />
           New entry
         </button>
+      </div>
+
+      <div className="mt-2">
+        <DataStatus />
       </div>
 
       {error && (

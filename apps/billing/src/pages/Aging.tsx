@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { FileText, Printer } from 'lucide-react'
 import { api } from '../lib/api'
 import { exportReportPdf } from '../lib/pdf'
+import { ReportSkeleton } from '../components/Skeleton'
+import DataStatus from '../components/DataStatus'
+import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { AgingResponse, AgingRow } from '../lib/types'
 
 const BUCKETS = ['0-30', '31-60', '61-90', '90+'] as const
@@ -10,24 +13,30 @@ export default function Aging() {
   const [side, setSide] = useState<'ar' | 'ap'>('ar')
   const [data, setData] = useState<AgingResponse | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const { tenantId } = useTenant()
+  const tenantQuery = useTenantQuery()
 
   const load = async (s: 'ar' | 'ap') => {
+    setLoading(true)
     setError('')
     setSelected(null)
     try {
       const res = await api<AgingResponse>('/documents/aging', {
-        query: { side: s },
+        query: { side: s, ...tenantQuery },
       })
       setData(res)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load aging')
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
     load(side)
-  }, [side])
+  }, [side, tenantId])
 
   const sideLabel = side === 'ar' ? 'Accounts Receivable' : 'Accounts Payable'
   const rows: AgingRow[] = data?.rows.filter(
@@ -117,7 +126,13 @@ export default function Aging() {
           : ' posted purchase invoices minus debit notes and payments'}
         . Click a party for its open documents.
       </p>
+      <div className="mt-2">
+        <DataStatus />
+      </div>
 
+      {loading && !data ? (
+        <ReportSkeleton sections={2} />
+      ) : (
       <div className="mt-3 rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead>
@@ -200,6 +215,7 @@ export default function Aging() {
           )}
         </table>
       </div>
+      )}
 
       {selected !== null && (
         <div className="mt-6 rounded-lg border border-slate-200 bg-white">

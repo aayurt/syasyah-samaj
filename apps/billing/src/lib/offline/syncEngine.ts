@@ -10,6 +10,7 @@ export const SYNC_COLLECTIONS = [
   'documents',
   'parties',
   'items',
+  'tax-types',
 ]
 
 export const LOCAL_PREFIX = 'local-'
@@ -20,6 +21,10 @@ export function isLocalId(v: unknown): boolean {
 
 export function isNetworkError(err: unknown): boolean {
   return err instanceof TypeError
+}
+
+function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'AbortError'
 }
 
 function msg(err: unknown): string {
@@ -108,6 +113,10 @@ export class SyncEngine {
   private reportsStale = false
   private lastReportSyncAt: number | null = null
   private lastReportWarm = 0
+  /** Network requests (pull/sync) currently in flight. */
+  private syncingCount = 0
+  /** True while syncAll is running — skips re-entrant background runs. */
+  private syncingAll = false
 
   constructor(private db: OfflineDb) {}
 
@@ -121,6 +130,7 @@ export class SyncEngine {
       cacheVersion: this.cacheVersion,
       reportsStale: this.reportsStale,
       lastReportSyncAt: this.lastReportSyncAt,
+      syncingCount: this.syncingCount,
     }
   }
 
@@ -137,7 +147,14 @@ export class SyncEngine {
 
   private emit() {
     const state = this.getState()
-    for (const fn of this.listeners) fn(state)
+    for (const fn of this.listeners) {
+      try {
+        fn(state)
+      } catch {
+        // A throwing listener must not corrupt engine state or break other
+        // listeners — in particular it must never leave syncingCount stuck.
+      }
+    }
   }
 
   /** Recomputes the pending/conflict counts from the outbox (cheap: it's a
@@ -476,20 +493,29 @@ export class SyncEngine {
   }
 
   /** Full manual/background sync: flush queued writes, pull collections,
-   * warm the core reports. Shared by the header button and the banner. */
+   * warm the core reports. Shared by the header button and the banner.
+   * Re-entrant calls (e.g. the 30s loop firing while a slow pull is still
+   * running) are skipped so requests never pile up and pin the in-flight
+   * counter. */
   async syncAll(): Promise<void> {
-    await this.flush()
-    for (const slug of SYNC_COLLECTIONS) {
-      try {
-        await this.pull(slug)
-      } catch {
-        // collection may not exist in this deployment
-      }
-    }
+    if (this.syncingAll) return
+    this.syncingAll = true
     try {
-      await this.warmReports()
-    } catch {
-      // best-effort — reports still fall back to the cache offline
+      await this.flush()
+      for (const slug of SYNC_COLLECTIONS) {
+        try {
+          await this.pull(slug)
+        } catch {
+          // collection may not exist in this deployment
+        }
+      }
+      try {
+        await this.warmReports()
+      } catch {
+        // best-effort — reports still fall back to the cache offline
+      }
+    } finally {
+      this.syncingAll = false
     }
   }
 
@@ -514,15 +540,63 @@ export class SyncEngine {
   }
 
   /**
+   * Tenant-partitioned cache bucket. The cache table is keyed by collection
+   * string, so prefix it with the tenant scope to keep one illaka's cached
+   * rows from leaking into another's views (and to make reads truly filtered).
+   */
+  private scopedKey(collection: string, tenant?: string): string {
+    return tenant ? `${tenant}:${collection}` : collection
+  }
+
+  private async runWithSyncing<T>(fn: () => Promise<T>): Promise<T> {
+    this.syncingCount++
+    this.emit()
+    try {
+      return await fn()
+    } finally {
+      this.syncingCount = Math.max(0, this.syncingCount - 1)
+      this.emit()
+    }
+  }
+
+  /**
+   * fetch with a hard timeout. A background pull must never hang forever —
+   * a half-open connection or slow server would otherwise pin the sync
+   * engine's in-flight counter and leave the "Refreshing" indicator on
+   * indefinitely. Aborts throw a TypeError so the offline path (and the
+   * online/offline state) treats them like a network failure.
+   */
+  private async fetchWithTimeout(
+    path: string,
+    init?: RequestInit,
+    timeoutMs = 15_000,
+  ): Promise<Response> {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      return await fetch(path, { ...init, signal: controller.signal })
+    } catch (err) {
+      if (isAbortError(err)) throw new TypeError('Network timeout')
+      throw err
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+  /**
    * Incremental pull for one collection using an updatedAt cursor, upserting
    * each changed document into the local cache. Uses the bracket where form
    * (this Payload build silently ignores the JSON form) and depth 1 so cached
    * documents carry the populated relations the UI renders.
    *
-   * When `tenant` is provided, cursor/pulled keys are scoped to that tenant
-   * so a shared device never leaks another illaka's cached rows.
+   * When `tenant` is provided, cursor/pulled keys and the cached rows are
+   * scoped to that tenant so a shared device never leaks another illaka's
+   * data — the fetch is also filtered server-side with `where[tenant][equals]`.
    */
   async pull(collection: string, tenant?: string): Promise<number> {
+    return this.runWithSyncing(() => this.doPull(collection, tenant))
+  }
+
+  private async doPull(collection: string, tenant?: string): Promise<number> {
     const scopePrefix = tenant ? `${tenant}:` : ''
     const cursorKey = `cursor:${scopePrefix}${collection}`
     const pulledKey = `pulled:${scopePrefix}${collection}`
@@ -532,11 +606,15 @@ export class SyncEngine {
       depth: '1',
       sort: 'updatedAt',
     })
-    if (tenant) params.append('tenant', tenant)
+    if (tenant) {
+      params.append('tenant', tenant)
+      params.append('where[tenant][equals]', tenant)
+    }
     if (cursor) params.append('where[updatedAt][greater_than]', cursor)
-    const res = await fetch(`${API_BASE}/api/${collection}?${params}`, {
-      credentials: 'include',
-    })
+    const res = await this.fetchWithTimeout(
+      `${API_BASE}/api/${collection}?${params}`,
+      { credentials: 'include' },
+    )
     if (!res.ok) {
       throw new Error(`Pull failed for ${collection}: HTTP ${res.status}`)
     }
@@ -547,7 +625,10 @@ export class SyncEngine {
       const up = doc.updatedAt as string | undefined
       if (up && (!latest || up > latest)) latest = up
     }
-    const changed = await this.writeChanged(collection, docs)
+    const changed = await this.writeChanged(
+      this.scopedKey(collection, tenant),
+      docs,
+    )
     if (latest) await this.db.setKey(cursorKey, latest)
     // Marks the collection as pulled so even an empty one serves from cache
     // instead of re-hitting the network on every view.
@@ -584,9 +665,13 @@ export class SyncEngine {
   async warmCache(
     collection: string,
     docs: Record<string, unknown>[],
+    tenant?: string,
   ): Promise<void> {
-    await this.db.setKey(`pulled:${collection}`, '1')
-    const changed = await this.writeChanged(collection, docs)
+    await this.db.setKey(`pulled:${this.scopedKey(collection, tenant)}`, '1')
+    const changed = await this.writeChanged(
+      this.scopedKey(collection, tenant),
+      docs,
+    )
     if (changed > 0) this.bumpCache()
   }
 
@@ -596,7 +681,7 @@ export class SyncEngine {
    * serves a stale list right after the user saved something.
    */
   async invalidate(collection: string, tenant?: string): Promise<void> {
-    await this.db.clearCache(collection)
+    await this.db.clearCache(this.scopedKey(collection, tenant))
     const scopePrefix = tenant ? `${tenant}:` : ''
     await this.db.deleteKey(`cursor:${scopePrefix}${collection}`)
     await this.db.deleteKey(`pulled:${scopePrefix}${collection}`)
@@ -659,13 +744,17 @@ export class SyncEngine {
    * 30s but it only really fetches at most once a minute.
    */
   async warmReports(): Promise<void> {
+    return this.runWithSyncing(() => this.doWarmReports())
+  }
+
+  private async doWarmReports(): Promise<void> {
     const now = Date.now()
     if (now - this.lastReportWarm < 60_000) return
     this.lastReportWarm = now
     for (const name of CORE_REPORTS) {
       const path = `/${REPORT_SLUG}/${name}`
       try {
-        const res = await fetch(`${API_BASE}/api${path}`, {
+        const res = await this.fetchWithTimeout(`${API_BASE}/api${path}`, {
           credentials: 'include',
         })
         if (!res.ok) continue
@@ -685,7 +774,7 @@ export class SyncEngine {
     slug: string,
     tenant?: string,
   ): Promise<{ docs: Record<string, unknown>[]; totalDocs: number } | null> {
-    const docs = await this.db.cacheList(slug)
+    const docs = await this.db.cacheList(this.scopedKey(slug, tenant))
     const scopePrefix = tenant ? `${tenant}:` : ''
     const pulled = await this.db.getKey(`pulled:${scopePrefix}${slug}`)
     if (docs.length === 0 && !pulled) {

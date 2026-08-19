@@ -11,6 +11,7 @@ import * as migration_20260818_p4_orders from './20260818_p4_orders';
 import * as migration_20260818_p5_bank_recon from './20260818_p5_bank_recon';
 import * as migration_20260818_p6_fixed_assets from './20260818_p6_fixed_assets';
 import * as migration_20260819_p1_transfers_audit from './20260819_p1_transfers_audit';
+import * as migration_20260819_p2_tally_vouchers_tax from './20260819_p2_tally_vouchers_tax';
 
 export const migrations = [
   {
@@ -77,5 +78,10 @@ export const migrations = [
     up: migration_20260819_p1_transfers_audit.up,
     down: migration_20260819_p1_transfers_audit.down,
     name: '20260819_p1_transfers_audit'
+  },
+  {
+    up: migration_20260819_p2_tally_vouchers_tax.up,
+    down: migration_20260819_p2_tally_vouchers_tax.down,
+    name: '20260819_p2_tally_vouchers_tax'
   },
 ];

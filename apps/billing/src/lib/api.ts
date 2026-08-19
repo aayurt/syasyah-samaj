@@ -61,6 +61,13 @@ async function doFetch<T>(path: string, options: ApiOptions): Promise<T> {
     for (const [k, v] of Object.entries(query)) {
       if (v !== undefined && v !== '') url.searchParams.set(k, String(v))
     }
+    // A bare `tenant` param filters custom report endpoints, but Payload's
+    // standard list endpoints only filter through `where[tenant][equals]`.
+    // Emit both so selecting an illaka filters plain collection lists too.
+    const t = query.tenant
+    if (t !== undefined && t !== '') {
+      url.searchParams.set('where[tenant][equals]', String(t))
+    }
   }
   const init: RequestInit = {
     ...rest,
@@ -190,7 +197,7 @@ export async function api<T = unknown>(
     // different shape than the collection's documents.
     if (plainList && Array.isArray((res as { docs?: unknown }).docs)) {
       try {
-        await engine.warmCache(slug, (res as { docs: Record<string, unknown>[] }).docs)
+        await engine.warmCache(slug, (res as { docs: Record<string, unknown>[] }).docs, tenant)
       } catch {
         // cache writes are best-effort
       }

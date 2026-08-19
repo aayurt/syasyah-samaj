@@ -6,6 +6,8 @@ import ActionMenu from '../components/ActionMenu'
 import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
+import DataStatus from '../components/DataStatus'
+import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Item, StockLedgerRow, StockLevel } from '../lib/types'
 
 const emptyForm = {
@@ -20,6 +22,8 @@ const emptyForm = {
 
 export default function Items() {
   const { cacheVersion } = useSyncState()
+  const { tenantId } = useTenant()
+  const tenantQuery = useTenantQuery()
   const [items, setItems] = useState<Item[]>([])
   const [levels, setLevels] = useState<StockLevel[]>([])
   const [error, setError] = useState('')
@@ -36,8 +40,10 @@ export default function Items() {
   const load = async () => {
     try {
       const [i, l] = await Promise.all([
-        list<Item>('items', { depth: 0, sort: 'name' }),
-        api<{ docs: StockLevel[] }>('/items/stock-levels'),
+        list<Item>('items', { depth: 0, sort: 'name', ...tenantQuery }),
+        api<{ docs: StockLevel[] }>('/items/stock-levels', {
+          query: { ...tenantQuery },
+        }),
       ])
       setItems(i.docs)
       setLevels(l.docs)
@@ -50,7 +56,7 @@ export default function Items() {
 
   useEffect(() => {
     load()
-  }, [cacheVersion])
+  }, [cacheVersion, tenantId])
 
   const levelFor = (itemId: number) =>
     levels.find((l) => l.item.id === itemId)
@@ -98,6 +104,7 @@ export default function Items() {
           purchasePrice: form.purchasePrice
             ? Number(form.purchasePrice)
             : undefined,
+          ...(tenantId ? { tenant: tenantId } : {}),
         },
       })
       setForm(emptyForm)
@@ -126,7 +133,7 @@ export default function Items() {
       const res = await api<{
         rows: StockLedgerRow[]
         closing: { onHand: number; avgCost: number; value: number }
-      }>(`/items/${item.id}/ledger`)
+      }>(`/items/${item.id}/ledger`, { query: { ...tenantQuery } })
       setLedger(res)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load stock ledger')
@@ -268,6 +275,10 @@ export default function Items() {
           </div>
         </form>
       )}
+
+      <div className="mt-2">
+        <DataStatus />
+      </div>
 
       {loading ? (
         <TableSkeleton rows={7} />

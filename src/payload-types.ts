@@ -83,6 +83,7 @@ export interface Config {
     'doc-sequences': DocSequence;
     items: Item;
     'stock-movements': StockMovement;
+    'tax-types': TaxType;
     tenants: Tenant;
     notifications: Notification;
     favorites: Favorite;
@@ -126,6 +127,7 @@ export interface Config {
     'doc-sequences': DocSequencesSelect<false> | DocSequencesSelect<true>;
     items: ItemsSelect<false> | ItemsSelect<true>;
     'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
+    'tax-types': TaxTypesSelect<false> | TaxTypesSelect<true>;
     tenants: TenantsSelect<false> | TenantsSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     favorites: FavoritesSelect<false> | FavoritesSelect<true>;
@@ -1081,6 +1083,7 @@ export interface Document {
     | 'grn'
     | 'delivery-challan'
     | 'journal-voucher'
+    | 'contra'
     | 'membership-receipt'
     | 'donation-receipt';
   /**
@@ -1118,6 +1121,14 @@ export interface Document {
    */
   bankAccount?: (number | null) | GlAccount;
   /**
+   * Transfer from (credited). Must be a cash or bank account.
+   */
+  fromAccount?: (number | null) | GlAccount;
+  /**
+   * Transfer to (debited). Must be a cash or bank account.
+   */
+  toAccount?: (number | null) | GlAccount;
+  /**
    * Donation classification (per the income/fundraising taxonomy).
    */
   donationPurpose?: ('individual' | 'corporate' | 'community' | 'other') | null;
@@ -1147,9 +1158,28 @@ export interface Document {
       }[]
     | null;
   /**
-   * Tax rate in percent applied to the net total.
+   * Legacy single tax rate in percent applied to the net total.
    */
   taxRate?: number | null;
+  /**
+   * Taxes on this voucher (additive VAT/GST, inclusive, or withholding TDS).
+   */
+  taxLines?:
+    | {
+        taxType: number | TaxType;
+        nature: 'additive' | 'inclusive' | 'withholding';
+        rate: number;
+        /**
+         * Taxable base (computed on save).
+         */
+        baseAmount?: number | null;
+        /**
+         * Computed tax amount.
+         */
+        amount?: number | null;
+        id?: string | null;
+      }[]
+    | null;
   netTotal?: number | null;
   taxTotal?: number | null;
   grossTotal?: number | null;
@@ -1220,6 +1250,43 @@ export interface Item {
    * Default purchase cost — also values the opening stock.
    */
   purchasePrice?: number | null;
+  active?: boolean | null;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Configurable taxes (VAT, GST, TDS…). The posting engine resolves each tax to its own sales/purchase ledger account.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tax-types".
+ */
+export interface TaxType {
+  id: number;
+  /**
+   * Short code, e.g. VAT, GST-18, TDS-2.
+   */
+  code: string;
+  /**
+   * Display name, e.g. Output VAT, Input TDS.
+   */
+  name: string;
+  /**
+   * additive = VAT/GST added to net; inclusive = baked into gross; withholding = TDS deducted from the payment.
+   */
+  nature: 'additive' | 'inclusive' | 'withholding';
+  /**
+   * Percentage rate (0–100).
+   */
+  rate: number;
+  /**
+   * Output tax / TDS receivable ledger (used when this tax applies to sales).
+   */
+  salesAccount?: (number | null) | GlAccount;
+  /**
+   * Input tax / TDS payable ledger (used when this tax applies to purchases).
+   */
+  purchaseAccount?: (number | null) | GlAccount;
   active?: boolean | null;
   tenant: number | Tenant;
   updatedAt: string;
@@ -1936,6 +2003,10 @@ export interface PayloadLockedDocument {
         value: number | StockMovement;
       } | null)
     | ({
+        relationTo: 'tax-types';
+        value: number | TaxType;
+      } | null)
+    | ({
         relationTo: 'tenants';
         value: number | Tenant;
       } | null)
@@ -2486,6 +2557,8 @@ export interface DocumentsSelect<T extends boolean = true> {
   referenceTo?: T;
   paymentMethod?: T;
   bankAccount?: T;
+  fromAccount?: T;
+  toAccount?: T;
   donationPurpose?: T;
   lines?:
     | T
@@ -2507,6 +2580,16 @@ export interface DocumentsSelect<T extends boolean = true> {
         id?: T;
       };
   taxRate?: T;
+  taxLines?:
+    | T
+    | {
+        taxType?: T;
+        nature?: T;
+        rate?: T;
+        baseAmount?: T;
+        amount?: T;
+        id?: T;
+      };
   netTotal?: T;
   taxTotal?: T;
   grossTotal?: T;
@@ -2555,6 +2638,22 @@ export interface StockMovementsSelect<T extends boolean = true> {
   qtyOut?: T;
   unitCost?: T;
   location?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tax-types_select".
+ */
+export interface TaxTypesSelect<T extends boolean = true> {
+  code?: T;
+  name?: T;
+  nature?: T;
+  rate?: T;
+  salesAccount?: T;
+  purchaseAccount?: T;
+  active?: T;
   tenant?: T;
   updatedAt?: T;
   createdAt?: T;

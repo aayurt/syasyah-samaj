@@ -23,11 +23,16 @@ import {
   type DocumentLine,
   type Item,
   type Party,
+  type TaxLine,
+  type TaxNature,
+  type TaxType,
 } from '../lib/types'
 import { StatusPill } from './Dashboard'
 import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
+import DataStatus from '../components/DataStatus'
+import { useTenant, useTenantQuery } from '../lib/tenant'
 import { exportInvoicePdf } from '../lib/pdf'
 
 interface DocTypeMeta {
@@ -36,20 +41,22 @@ interface DocTypeMeta {
   direction: 'outbound' | 'inbound' | 'internal'
   needsParty: boolean
   cashMode: boolean
-  lineMode: 'item' | 'journal'
+  lineMode: 'item' | 'journal' | 'contra'
+  group: 'primary' | 'more'
 }
 
 const DOC_TYPES: DocTypeMeta[] = [
-  { value: 'sales-invoice', label: 'Sales Invoice', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item' },
-  { value: 'purchase-invoice', label: 'Purchase Invoice', direction: 'inbound', needsParty: true, cashMode: false, lineMode: 'item' },
-  { value: 'payment-voucher', label: 'Payment Voucher', direction: 'outbound', needsParty: true, cashMode: true, lineMode: 'item' },
-  { value: 'receipt-voucher', label: 'Receipt Voucher', direction: 'inbound', needsParty: true, cashMode: true, lineMode: 'item' },
-  { value: 'credit-note', label: 'Credit Note', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item' },
-  { value: 'debit-note', label: 'Debit Note', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item' },
-  { value: 'petty-cash-voucher', label: 'Petty Cash Voucher', direction: 'internal', needsParty: false, cashMode: false, lineMode: 'item' },
-  { value: 'grn', label: 'Goods Received Note', direction: 'inbound', needsParty: true, cashMode: false, lineMode: 'item' },
-  { value: 'delivery-challan', label: 'Delivery Challan', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item' },
-  { value: 'journal-voucher', label: 'Journal Voucher', direction: 'internal', needsParty: false, cashMode: false, lineMode: 'journal' },
+  { value: 'journal-voucher', label: 'Journal Entry', direction: 'internal', needsParty: false, cashMode: false, lineMode: 'journal', group: 'primary' },
+  { value: 'payment-voucher', label: 'Payment Entry', direction: 'outbound', needsParty: true, cashMode: true, lineMode: 'item', group: 'primary' },
+  { value: 'receipt-voucher', label: 'Receipt Entry', direction: 'inbound', needsParty: true, cashMode: true, lineMode: 'item', group: 'primary' },
+  { value: 'sales-invoice', label: 'Sales Entry', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'primary' },
+  { value: 'purchase-invoice', label: 'Purchase Entry', direction: 'inbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'primary' },
+  { value: 'contra', label: 'Contra Entry', direction: 'internal', needsParty: false, cashMode: false, lineMode: 'contra', group: 'primary' },
+  { value: 'credit-note', label: 'Credit Note', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
+  { value: 'debit-note', label: 'Debit Note', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
+  { value: 'petty-cash-voucher', label: 'Petty Cash Voucher', direction: 'internal', needsParty: false, cashMode: false, lineMode: 'item', group: 'more' },
+  { value: 'grn', label: 'Goods Received Note', direction: 'inbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
+  { value: 'delivery-challan', label: 'Delivery Challan', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
 ]
 
 
@@ -80,6 +87,21 @@ interface JLineDraft {
   memo: string
 }
 
+interface TaxLineDraft {
+  key: string
+  id?: string
+  taxType: string
+  nature: TaxNature
+  rate: string
+}
+
+const emptyTaxLine = (): TaxLineDraft => ({
+  key: crypto.randomUUID(),
+  taxType: '',
+  nature: 'additive',
+  rate: '',
+})
+
 const emptyItemLine = (): LineDraft => ({
   key: crypto.randomUUID(),
   item: '',
@@ -105,6 +127,10 @@ interface FormState {
   taxRate: string
   paymentMethod: string
   bankAccount: string
+  fromAccount: string
+  toAccount: string
+  contraAmount: string
+  taxLines: TaxLineDraft[]
   lines: LineDraft[]
   journalLines: JLineDraft[]
 }
@@ -117,16 +143,23 @@ const emptyForm = (): FormState => ({
   taxRate: '0',
   paymentMethod: 'bank',
   bankAccount: '',
+  fromAccount: '',
+  toAccount: '',
+  contraAmount: '',
+  taxLines: [],
   lines: [emptyItemLine()],
   journalLines: [emptyJLine(), emptyJLine()],
 })
 
 export default function Vouchers() {
   const { cacheVersion } = useSyncState()
+  const { tenantId } = useTenant()
+  const tenantQuery = useTenantQuery()
   const [docs, setDocs] = useState<Document[]>([])
   const [parties, setParties] = useState<Party[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
   const [items, setItems] = useState<Item[]>([])
+  const [taxTypes, setTaxTypes] = useState<TaxType[]>([])
   const [error, setError] = useState('')
   const [showPicker, setShowPicker] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm())
@@ -143,16 +176,18 @@ export default function Vouchers() {
 
   const load = async () => {
     try {
-      const [d, p, a, it] = await Promise.all([
-        list<Document>('documents', { depth: 1, sort: '-date' }),
-        list<Party>('parties', { depth: 0, sort: 'name' }),
-        list<Account>('gl-accounts', { depth: 0, sort: 'name' }),
-        list<Item>('items', { depth: 0, sort: 'name' }),
+      const [d, p, a, it, tx] = await Promise.all([
+        list<Document>('documents', { depth: 1, sort: '-date', ...tenantQuery }),
+        list<Party>('parties', { depth: 0, sort: 'name', ...tenantQuery }),
+        list<Account>('gl-accounts', { depth: 0, sort: 'name', ...tenantQuery }),
+        list<Item>('items', { depth: 0, sort: 'name', ...tenantQuery }),
+        list<TaxType>('tax-types', { depth: 0, sort: 'name', ...tenantQuery }),
       ])
       setDocs(d.docs)
       setParties(p.docs)
       setAccounts(a.docs)
       setItems(it.docs)
+      setTaxTypes(tx.docs.filter((t) => t.active !== false))
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load vouchers')
     } finally {
@@ -162,7 +197,7 @@ export default function Vouchers() {
 
   useEffect(() => {
     load()
-  }, [cacheVersion])
+  }, [cacheVersion, tenantId])
 
   // Resume a conflicted queued create into the entry form (dispatched by the
   // sync banner's "Edit" action). The queued entry is kept until the user
@@ -196,6 +231,23 @@ export default function Vouchers() {
           taxRate: String(b.taxRate ?? 0),
           paymentMethod: (b.paymentMethod as string) || 'bank',
           bankAccount: idOf(b.bankAccount),
+          fromAccount: idOf(b.fromAccount),
+          toAccount: idOf(b.toAccount),
+          contraAmount:
+            b.contraAmount !== undefined
+              ? String(b.contraAmount)
+              : b.grossTotal !== undefined
+                ? String(b.grossTotal)
+                : '',
+          taxLines: ((b.taxLines as Record<string, unknown>[]) || []).map(
+            (tl) => ({
+              key: crypto.randomUUID(),
+              id: undefined,
+              taxType: idOf(tl.taxType),
+              nature: (tl.nature as TaxNature) || 'additive',
+              rate: tl.rate !== undefined ? String(tl.rate) : '',
+            }),
+          ),
           lines: isJ
             ? [emptyItemLine()]
             : ((b.lines as Record<string, unknown>[]) || []).map((l) => ({
@@ -239,19 +291,70 @@ export default function Vouchers() {
       return
     }
     api<{ number: string }>('/documents/number/next', {
-      query: { type: form.docType, date: form.date },
+      query: { type: form.docType, date: form.date, ...tenantQuery },
     })
       .then((r) => setNextNumber(r.number))
       .catch(() => setNextNumber(''))
-  }, [form.docType, form.date])
+  }, [form.docType, form.date, tenantId])
 
   const meta = DOC_TYPES.find((t) => t.value === form.docType)
   const isItem = meta?.lineMode === 'item'
+  const isJournal = meta?.lineMode === 'journal'
+  const isContra = meta?.lineMode === 'contra'
   const isCash = meta?.cashMode
   const isInventory = form.docType !== '' && INVENTORY_TYPES.includes(form.docType)
   const bankAccounts = accounts.filter((a) => a.class === 'bank')
+  const cashBankAccounts = accounts.filter(
+    (a) => a.class === 'cash' || a.class === 'bank',
+  )
+  const isTaxable = [
+    'sales-invoice',
+    'purchase-invoice',
+    'payment-voucher',
+    'receipt-voucher',
+  ].includes(form.docType)
+  const taxOptions = taxTypes.filter((t) =>
+    isCash ? t.nature === 'withholding' : true,
+  )
+  const addTaxLine = () =>
+    setForm((f) => ({
+      ...f,
+      taxLines: [...f.taxLines, emptyTaxLine()],
+    }))
+  const removeTaxLine = (key: string) =>
+    setForm((f) => ({
+      ...f,
+      taxLines: f.taxLines.filter((x) => x.key !== key),
+    }))
+  const taxLineAmount = (tl: TaxLineDraft): number => {
+    const rate = parseFloat(tl.rate) || 0
+    if (rate <= 0) return 0
+    let lineSum = 0
+    for (const l of form.lines) {
+      const amt =
+        l.amount !== ''
+          ? parseFloat(l.amount) || 0
+          : (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
+      lineSum += amt
+    }
+    if (tl.nature === 'inclusive') {
+      return lineSum - lineSum / (1 + rate / 100)
+    }
+    let inclusive = 0
+    for (const x of form.taxLines) {
+      if (x.nature === 'inclusive') {
+        const r = parseFloat(x.rate) || 0
+        if (r > 0) inclusive += lineSum - lineSum / (1 + r / 100)
+      }
+    }
+    return ((lineSum - inclusive) * rate) / 100
+  }
 
   const totals = useMemo(() => {
+    if (isContra) {
+      const amount = parseFloat(form.contraAmount) || 0
+      return { net: amount, tax: 0, gross: amount }
+    }
     let net = 0
     for (const l of form.lines) {
       const explicit = l.amount !== ''
@@ -260,10 +363,40 @@ export default function Vouchers() {
         : (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
       net += amt
     }
+    const lineSum = net
+    if (form.taxLines.length > 0) {
+      // Mirror the server semantics: inclusive strips from the line sum,
+      // additive adds on top, withholding deducts.
+      let inclusive = 0
+      for (const tl of form.taxLines) {
+        if (tl.nature === 'inclusive') {
+          const rate = parseFloat(tl.rate) || 0
+          if (rate > 0) inclusive += lineSum - lineSum / (1 + rate / 100)
+        }
+      }
+      const base = lineSum - inclusive
+      let addInc = inclusive
+      let withheld = 0
+      for (const tl of form.taxLines) {
+        if (tl.nature === 'inclusive') continue
+        const rate = parseFloat(tl.rate) || 0
+        const amount = (base * rate) / 100
+        if (tl.nature === 'withholding') withheld += amount
+        else addInc += amount
+      }
+      return {
+        net: base,
+        tax: addInc - withheld,
+        gross: base + addInc - withheld,
+        base,
+        addInc,
+        withheld,
+      }
+    }
     const taxRate = parseFloat(form.taxRate) || 0
-    const tax = (net * taxRate) / 100
-    return { net, tax, gross: net + tax }
-  }, [form.lines, form.taxRate])
+    const tax = (lineSum * taxRate) / 100
+    return { net: lineSum, tax, gross: lineSum + tax, base: lineSum, addInc: tax, withheld: 0 }
+  }, [form.lines, form.taxRate, form.contraAmount, isContra, form.taxLines])
 
   const jTotals = useMemo(() => {
     let debit = 0
@@ -275,9 +408,11 @@ export default function Vouchers() {
     return { debit, credit, diff: debit - credit }
   }, [form.journalLines])
 
-  const canPost = isItem
-    ? totals.gross > 0
-    : Math.abs(jTotals.diff) < 0.001 && jTotals.debit > 0
+  const canPost = isContra
+    ? totals.gross > 0 && !!form.fromAccount && !!form.toAccount
+    : isItem
+      ? totals.gross > 0
+      : Math.abs(jTotals.diff) < 0.001 && jTotals.debit > 0
 
   const setLine = (key: string, patch: Partial<LineDraft>) => {
     setForm((f) => ({
@@ -302,6 +437,7 @@ export default function Vouchers() {
       narration: form.narration || undefined,
       party: form.party ? Number(form.party) : undefined,
       status: 'draft',
+      ...(tenantId ? { tenant: tenantId } : {}),
     }
     if (isItem) {
       base.lines = form.lines.map((l) => ({
@@ -315,6 +451,13 @@ export default function Vouchers() {
         amount: l.amount !== '' ? Number(l.amount) : undefined,
       }))
       base.taxRate = parseFloat(form.taxRate) || 0
+    } else if (isContra) {
+      base.fromAccount = form.fromAccount ? Number(form.fromAccount) : undefined
+      base.toAccount = form.toAccount ? Number(form.toAccount) : undefined
+      base.netTotal = totals.net
+      base.grossTotal = totals.gross
+      base.taxTotal = 0
+      base.taxRate = 0
     } else {
       base.journalLines = form.journalLines.map((l) => ({
         ...(l.id ? { id: l.id } : {}),
@@ -322,6 +465,14 @@ export default function Vouchers() {
         debit: l.debit ? parseFloat(l.debit) : undefined,
         credit: l.credit ? parseFloat(l.credit) : undefined,
         memo: l.memo || undefined,
+      }))
+    }
+    if (form.taxLines.length > 0) {
+      base.taxLines = form.taxLines.map((tl) => ({
+        ...(tl.id ? { id: tl.id } : {}),
+        taxType: Number(tl.taxType),
+        nature: tl.nature,
+        rate: parseFloat(tl.rate) || 0,
       }))
     }
     if (isCash) {
@@ -389,6 +540,16 @@ export default function Vouchers() {
       taxRate: String(d.taxRate ?? 0),
       paymentMethod: d.paymentMethod || 'bank',
       bankAccount: idOf(d.bankAccount),
+      fromAccount: idOf(d.fromAccount),
+      toAccount: idOf(d.toAccount),
+      contraAmount: d.grossTotal !== undefined ? String(d.grossTotal) : '',
+      taxLines: (d.taxLines || []).map((tl) => ({
+        key: crypto.randomUUID(),
+        id: tl.id,
+        taxType: idOf(tl.taxType),
+        nature: tl.nature || 'additive',
+        rate: tl.rate !== undefined ? String(tl.rate) : '',
+      })),
       lines: isJ
         ? [emptyItemLine()]
         : (d.lines || []).map((l) => ({
@@ -498,6 +659,10 @@ export default function Vouchers() {
         </button>
       </div>
 
+      <div className="mt-2">
+        <DataStatus />
+      </div>
+
       {error && (
         <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
@@ -520,7 +685,7 @@ export default function Vouchers() {
             </button>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-            {DOC_TYPES.map((t) => {
+            {DOC_TYPES.filter((t) => t.group === 'primary').map((t) => {
               const Icon = DIRECTION_ICON[t.direction]
               return (
                 <button
@@ -529,15 +694,40 @@ export default function Vouchers() {
                     setForm((f) => ({ ...emptyForm(), date: f.date, docType: t.value }))
                     setShowPicker(false)
                   }}
-                  className="flex flex-col items-start gap-1.5 rounded border border-slate-200 p-3 text-left hover:border-slate-400 hover:bg-slate-50"
+                  className="flex flex-col items-start gap-1.5 rounded border border-slate-300 bg-slate-50/60 p-3 text-left hover:border-slate-500 hover:bg-slate-50"
                 >
-                  <Icon size={14} className="text-slate-400" />
+                  <Icon size={14} className="text-slate-500" />
                   <span className="text-sm font-medium text-slate-800">
                     {t.label}
                   </span>
                 </button>
               )
             })}
+          </div>
+          <div className="mt-4 border-t border-slate-100 pt-3">
+            <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              More
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+              {DOC_TYPES.filter((t) => t.group === 'more').map((t) => {
+                const Icon = DIRECTION_ICON[t.direction]
+                return (
+                  <button
+                    key={t.value}
+                    onClick={() => {
+                      setForm((f) => ({ ...emptyForm(), date: f.date, docType: t.value }))
+                      setShowPicker(false)
+                    }}
+                    className="flex flex-col items-start gap-1.5 rounded border border-slate-200 p-3 text-left hover:border-slate-400 hover:bg-slate-50"
+                  >
+                    <Icon size={14} className="text-slate-400" />
+                    <span className="text-sm font-medium text-slate-800">
+                      {t.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -627,6 +817,61 @@ export default function Vouchers() {
                 className="mt-1 w-full rounded border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-500 outline-none"
               />
             </label>
+            {isContra && (
+              <>
+                <label className="text-sm text-slate-700">
+                  From account (credited)
+                  <select
+                    required
+                    value={form.fromAccount}
+                    onChange={(e) =>
+                      setForm({ ...form, fromAccount: e.target.value })
+                    }
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                  >
+                    <option value="">— select —</option>
+                    {cashBankAccounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm text-slate-700">
+                  To account (debited)
+                  <select
+                    required
+                    value={form.toAccount}
+                    onChange={(e) =>
+                      setForm({ ...form, toAccount: e.target.value })
+                    }
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                  >
+                    <option value="">— select —</option>
+                    {cashBankAccounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm text-slate-700">
+                  Amount
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="0.01"
+                    value={form.contraAmount}
+                    onChange={(e) =>
+                      setForm({ ...form, contraAmount: e.target.value })
+                    }
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-500"
+                    placeholder="0.00"
+                  />
+                </label>
+              </>
+            )}
             {isCash && (
               <>
                 <label className="text-sm text-slate-700">
@@ -677,7 +922,140 @@ export default function Vouchers() {
           {isItem ? (
             <div className="mt-4">
               <div className="flex flex-wrap items-end gap-3">
-                {!isCash && (
+                {isTaxable ? (
+                  <div className="w-full">
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                        Taxes {isCash ? '(TDS withholding)' : '(VAT / GST / TDS)'}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addTaxLine}
+                        className="text-xs font-medium text-slate-500 hover:text-slate-800"
+                      >
+                        + Add tax
+                      </button>
+                    </div>
+                    {form.taxLines.length > 0 && (
+                      <table className="mt-2 w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+                            <th className="py-1 pr-2">Tax type</th>
+                            <th className="py-1 pr-2">Nature</th>
+                            <th className="w-24 py-1 pr-2">Rate %</th>
+                            <th className="w-28 py-1 pr-2 text-right">Amount</th>
+                            <th className="w-8 py-1"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {form.taxLines.map((tl) => {
+                            const tt = taxTypes.find(
+                              (t) => String(t.id) === tl.taxType,
+                            )
+                            return (
+                              <tr
+                                key={tl.key}
+                                className="border-t border-slate-50"
+                              >
+                                <td className="py-1 pr-2">
+                                  <select
+                                    value={tl.taxType}
+                                    onChange={(e) => {
+                                      const t = taxTypes.find(
+                                        (x) => String(x.id) === e.target.value,
+                                      )
+                                      setForm((f) => ({
+                                        ...f,
+                                        taxLines: f.taxLines.map((x) =>
+                                          x.key === tl.key
+                                            ? {
+                                                ...x,
+                                                taxType: e.target.value,
+                                                nature:
+                                                  t?.nature || x.nature,
+                                                rate:
+                                                  t?.rate !== undefined
+                                                    ? String(t.rate)
+                                                    : x.rate,
+                                              }
+                                            : x,
+                                        ),
+                                      }))
+                                    }}
+                                    className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500"
+                                  >
+                                    <option value="">— select —</option>
+                                    {taxOptions.map((t) => (
+                                      <option
+                                        key={t.id}
+                                        value={t.id}
+                                        disabled={form.taxLines.some(
+                                          (x) =>
+                                            x.key !== tl.key &&
+                                            x.taxType === String(t.id),
+                                        )}
+                                      >
+                                        {t.name} ({t.code} · {t.nature})
+                                      </option>
+                                    ))}
+                                  </select>
+                                </td>
+                                <td className="py-1 pr-2 text-xs capitalize text-slate-500">
+                                  {tt?.nature || tl.nature}
+                                </td>
+                                <td className="py-1 pr-2">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={tl.rate}
+                                    onChange={(e) =>
+                                      setForm((f) => ({
+                                        ...f,
+                                        taxLines: f.taxLines.map((x) =>
+                                          x.key === tl.key
+                                            ? { ...x, rate: e.target.value }
+                                            : x,
+                                        ),
+                                      }))
+                                    }
+                                    className="w-full rounded border border-slate-300 px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-slate-500"
+                                  />
+                                </td>
+                                <td className="py-1 pr-2 text-right font-mono text-slate-700">
+                                  {tl.taxType
+                                    ? fmt(taxLineAmount(tl))
+                                    : '—'}
+                                </td>
+                                <td className="py-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeTaxLine(tl.key)}
+                                    className="text-slate-400 hover:text-red-600"
+                                    aria-label="Remove tax"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                    {form.taxLines.length > 0 && (
+                      <div className="mt-1 text-xs text-slate-500">
+                        Net <span className="font-mono">{fmt(totals.net)}</span>
+                        {' · '}Tax{' '}
+                        <span className="font-mono">{fmt(totals.tax)}</span>
+                        {' · '}Gross{' '}
+                        <span className="font-mono font-medium text-slate-800">
+                          {fmt(totals.gross)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : !isCash ? (
                   <label className="text-sm text-slate-700">
                     Tax rate (%)
                     <input
@@ -691,7 +1069,7 @@ export default function Vouchers() {
                       className="mt-1 w-24 rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
                     />
                   </label>
-                )}
+                ) : null}
               </div>
               <div className="mt-3 overflow-x-auto">
                 <table className="w-full text-sm">
@@ -842,6 +1220,36 @@ export default function Vouchers() {
               >
                 + Add line
               </button>
+            </div>
+          ) : isContra ? (
+            <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/50 p-4">
+              <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                Contra transfer
+              </div>
+              <div className="mt-2 space-y-1 text-sm text-slate-700">
+                <p>
+                  Transfer{' '}
+                  <span className="font-mono font-medium text-slate-900">
+                    {fmt(totals.gross)}
+                  </span>{' '}
+                  from{' '}
+                  <span className="font-medium">
+                    {cashBankAccounts.find(
+                      (a) => String(a.id) === form.fromAccount,
+                    )?.name || '—'}
+                  </span>{' '}
+                  →{' '}
+                  <span className="font-medium">
+                    {cashBankAccounts.find(
+                      (a) => String(a.id) === form.toAccount,
+                    )?.name || '—'}
+                  </span>
+                </p>
+                <p className="text-xs text-slate-500">
+                  Debit the target account, credit the source account. No tax,
+                  no party, no stock involved.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="mt-4 overflow-x-auto">

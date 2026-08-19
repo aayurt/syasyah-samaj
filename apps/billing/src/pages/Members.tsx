@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import { CreditCard, Search } from 'lucide-react'
+import { CreditCard } from 'lucide-react'
 import { api, useSyncState, fmt } from '../lib/api'
-import { useTenantQuery } from '../lib/tenant'
+import { useTenant, useTenantQuery } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
 import SortableTh from '../components/SortableTh'
+import { TableSkeleton } from '../components/Skeleton'
+import DataStatus from '../components/DataStatus'
 import { useSortSearch } from '../lib/useSortSearch'
 import SearchBox from '../components/SearchBox'
 
@@ -20,6 +22,7 @@ type Member = {
 
 export default function Members() {
   const { cacheVersion } = useSyncState()
+  const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
@@ -33,17 +36,22 @@ export default function Members() {
       .then((res) => setMembers(res.docs || []))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [cacheVersion, tenantQuery])
+  }, [cacheVersion, tenantId])
 
-  const { sorted, requestSort, key } = useSortSearch(members)
-  const [search, setSearch] = useState('')
-  const filtered = search
-    ? sorted.filter(
-        (m) =>
-          m.fullName?.toLowerCase().includes(search.toLowerCase()) ||
-          m.email?.toLowerCase().includes(search.toLowerCase()),
-      )
-    : sorted
+  const { visible, setQuery, toggleSort, sort, query } = useSortSearch<Member>(members, {
+    searchable: (m) => `${m.fullName || ''} ${m.email || ''} ${m.membershipType?.name || ''}`,
+    valueOf: (m, key) => {
+      switch (key) {
+        case 'fullName': return m.fullName || ''
+        case 'email': return m.email || ''
+        case 'membershipType': return m.membershipType?.name || ''
+        case 'paymentStatus': return m.paymentStatus || ''
+        case 'renewalDate': return m.renewalDate || ''
+        default: return (m as unknown as Record<string, unknown>)[key] as string | number | undefined
+      }
+    },
+  })
+  const filtered = visible
 
   const handlePayFee = async (member: Member) => {
     if (!member.membershipType) {
@@ -73,24 +81,25 @@ export default function Members() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-800">Members</h1>
-        <SearchBox value={search} onChange={setSearch} placeholder="Search members…" />
+        <SearchBox value={query} onChange={setQuery} placeholder="Search members…" />
       </div>
+      <DataStatus />
       {loading ? (
-        <div className="py-12 text-center text-sm text-slate-400">Loading…</div>
+        <TableSkeleton rows={6} />
       ) : filtered.length === 0 ? (
         <div className="py-12 text-center text-sm text-slate-400">
-          {search ? 'No members match your search.' : 'No members yet.'}
+          {query ? 'No members match your search.' : 'No members yet.'}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="w-full text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
               <tr>
-                <SortableTh field="fullName" label="Name" sortKey={key} requestSort={requestSort} />
-                <SortableTh field="email" label="Email" sortKey={key} requestSort={requestSort} />
-                <SortableTh field="membershipType" label="Type" sortKey={key} requestSort={requestSort} />
-                <SortableTh field="paymentStatus" label="Status" sortKey={key} requestSort={requestSort} />
-                <SortableTh field="renewalDate" label="Renewal" sortKey={key} requestSort={requestSort} />
+                <SortableTh label="Name" sortKey="fullName" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Email" sortKey="email" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Type" sortKey="membershipType" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Status" sortKey="paymentStatus" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Renewal" sortKey="renewalDate" sort={sort} onSort={toggleSort} />
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>

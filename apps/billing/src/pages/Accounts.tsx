@@ -5,6 +5,9 @@ import { useSortSearch } from '../lib/useSortSearch'
 import ActionMenu from '../components/ActionMenu'
 import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
+import { TableSkeleton } from '../components/Skeleton'
+import DataStatus from '../components/DataStatus'
+import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Account, AccountGroup, AccountType } from '../lib/types'
 
 const TYPES: AccountType[] = ['asset', 'liability', 'equity', 'income', 'expense']
@@ -27,29 +30,36 @@ const emptyForm = {
 
 export default function Accounts() {
   const { cacheVersion } = useSyncState()
+  const { tenantId } = useTenant()
+  const tenantQuery = useTenantQuery()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [groups, setGroups] = useState<AccountGroup[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
 
   const load = async () => {
+    setLoading(true)
+    setError('')
     try {
       const [a, g] = await Promise.all([
-        list<Account>('gl-accounts', { depth: 1, sort: 'name' }),
+        list<Account>('gl-accounts', { depth: 1, sort: 'name', ...tenantQuery }),
         list<AccountGroup>('account-groups', { depth: 0, sort: 'name' }),
       ])
       setAccounts(a.docs)
       setGroups(g.docs)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load accounts')
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
     load()
-  }, [cacheVersion])
+  }, [cacheVersion, tenantId])
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,6 +77,7 @@ export default function Accounts() {
           openingBalance: form.openingBalance
             ? Number(form.openingBalance)
             : 0,
+          ...(tenantId ? { tenant: tenantId } : {}),
         },
       })
       setForm(emptyForm)
@@ -229,6 +240,14 @@ export default function Accounts() {
         </form>
       )}
 
+      <div className="mt-2">
+        <DataStatus />
+      </div>
+
+      {loading && accounts.length === 0 ? (
+        <TableSkeleton rows={7} />
+      ) : (
+      <>
       <div className="mt-4 flex items-center justify-between gap-3">
         <span className="text-xs text-slate-400">
           {visible.length} of {accounts.length}
@@ -305,6 +324,8 @@ export default function Accounts() {
         <p className="mt-6 text-center text-sm text-slate-400">
           No accounts yet. Add your first account to build the chart of accounts.
         </p>
+      )}
+      </>
       )}
     </div>
   )

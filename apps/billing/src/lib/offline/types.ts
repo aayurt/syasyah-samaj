@@ -27,6 +27,9 @@ export interface SyncState {
   reportsStale: boolean
   /** Epoch ms of the last report successfully fetched from the server. */
   lastReportSyncAt: number | null
+  /** Number of network requests (pull/sync) currently in flight. >0 while
+   * the server is being talked to — drives the "refreshing" indicator. */
+  syncingCount: number
 }
 
 export interface OfflineDb {

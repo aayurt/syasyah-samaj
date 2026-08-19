@@ -364,12 +364,15 @@ export const JournalEntries: CollectionConfig = {
         const { searchParams } = new URL(req.url || '/')
         const type = searchParams.get('type') || 'cash'
         if (
-          !['cash', 'petty-cash', 'sales', 'purchase', 'journal'].includes(
+          !['cash', 'petty-cash', 'sales', 'purchase', 'journal', 'all'].includes(
             type,
           )
         ) {
           return Response.json(
-            { error: 'type must be cash | petty-cash | sales | purchase | journal' },
+            {
+              error:
+                'type must be cash | petty-cash | sales | purchase | journal | all',
+            },
             { status: 400 },
           )
         }
@@ -401,9 +404,34 @@ export const JournalEntries: CollectionConfig = {
           ? Number(settings.pettyCashAccount)
           : null
 
+        // Resolve the source vouchers (documents) referenced by each entry so
+        // daybook rows can drill back to the originating voucher.
+        const refIds = Array.from(
+          new Set(
+            (entries.docs as any[])
+              .filter((e) => e.referenceDoc)
+              .map((e) =>
+                typeof e.referenceDoc === 'object'
+                  ? e.referenceDoc.id
+                  : e.referenceDoc,
+              ),
+          ),
+        )
+        const docById = new Map<number, any>()
+        if (refIds.length) {
+          const docRes = await req.payload.find({
+            collection: 'documents',
+            where: { id: { in: refIds } },
+            limit: 1000,
+            depth: 0,
+          })
+          for (const d of docRes.docs as any[]) docById.set(Number(d.id), d)
+        }
+
         const rows: any[] = []
         for (const entry of entries.docs as any[]) {
-          if (type === 'journal' && entry.referenceDoc) continue
+          // Journal Proper is the register of every free-form and journal
+          // voucher; system-posted vouchers appear in their own registers.
           for (const line of entry.lines || []) {
             const accId =
               typeof line.account === 'object' && line.account
@@ -421,10 +449,21 @@ export const JournalEntries: CollectionConfig = {
               match = a.type === 'income'
             } else if (type === 'purchase') {
               match = a.type === 'expense'
+            } else if (type === 'journal') {
+              match = true
             } else {
+              // 'all' — every posted entry's every line (Tally Day Book).
               match = true
             }
             if (!match) continue
+            const refId = entry.referenceDoc
+              ? Number(
+                  typeof entry.referenceDoc === 'object'
+                    ? entry.referenceDoc.id
+                    : entry.referenceDoc,
+                )
+              : null
+            const srcDoc = refId ? docById.get(refId) : null
             rows.push({
               id: entry.id,
               date: entry.date,
@@ -432,6 +471,9 @@ export const JournalEntries: CollectionConfig = {
               accountName: a.name,
               debit: round2(toNum(line.debit)),
               credit: round2(toNum(line.credit)),
+              docId: refId,
+              docNumber: srcDoc?.number || null,
+              docType: srcDoc?.docType || null,
             })
           }
         }

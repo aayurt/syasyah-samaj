@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, fmt, list, useSyncState } from '../lib/api'
+import DataStatus from '../components/DataStatus'
+import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Account, JournalEntry } from '../lib/types'
 
 interface TrialBalanceSummary {
@@ -9,6 +11,8 @@ interface TrialBalanceSummary {
 
 export default function Dashboard() {
   const { cacheVersion, online } = useSyncState()
+  const { tenantId } = useTenant()
+  const tenantQuery = useTenantQuery()
   const [stats, setStats] = useState<{
     accounts: number
     entries: number
@@ -22,14 +26,14 @@ export default function Dashboard() {
     ;(async () => {
       try {
         const [accts, entries, tb] = await Promise.all([
-          list<Account>('gl-accounts', { depth: 0 }),
-          list<JournalEntry>('journal-entries', { depth: 0 }),
+          list<Account>('gl-accounts', { depth: 0, ...tenantQuery }),
+          list<JournalEntry>('journal-entries', { depth: 0, ...tenantQuery }),
           // Computed report endpoint — cache-first reads don't cover it, so
           // keep it independent: when offline (or still loading) the KPI
           // shows '–' but the cached accounts/entries still render.
-          api<TrialBalanceSummary>('/journal-entries/trial-balance').catch(
-            () => null,
-          ),
+          api<TrialBalanceSummary>('/journal-entries/trial-balance', {
+            query: { ...tenantQuery },
+          }).catch(() => null),
         ])
         setStats({
           accounts: accts.totalDocs,
@@ -42,7 +46,7 @@ export default function Dashboard() {
         setError(err instanceof Error ? err.message : 'Failed to load dashboard')
       }
     })()
-  }, [cacheVersion, online])
+  }, [cacheVersion, online, tenantId])
 
   const kpis = [
     { label: 'Accounts', value: stats ? String(stats.accounts) : '–' },
@@ -72,6 +76,10 @@ export default function Dashboard() {
   return (
     <div className="mx-auto max-w-5xl">
       <h1 className="text-lg font-semibold text-slate-900">Dashboard</h1>
+
+      <div className="mt-2">
+        <DataStatus />
+      </div>
 
       {error && (
         <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

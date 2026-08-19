@@ -3,6 +3,9 @@ import { Download, FileText, Printer } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
+import { ReportSkeleton } from '../components/Skeleton'
+import DataStatus from '../components/DataStatus'
+import { useTenant, useTenantQuery } from '../lib/tenant'
 import type {
   BalanceSheetResponse,
   BsRow,
@@ -22,32 +25,49 @@ export default function Reports() {
   const [to, setTo] = useState('')
   const [pnl, setPnl] = useState<PnlResponse | null>(null)
   const [bs, setBs] = useState<BalanceSheetResponse | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const { tenantId } = useTenant()
+  const tenantQuery = useTenantQuery()
 
   const q = useCallback(
-    () => ({ from: from || undefined, to: to || undefined }),
-    [from, to],
+    () => ({ from: from || undefined, to: to || undefined, ...tenantQuery }),
+    [from, to, tenantQuery],
   )
 
   useEffect(() => {
-    if (tab === 'pnl') {
-      api<PnlResponse>('/journal-entries/profit-loss', { query: q() })
-        .then(setPnl)
-        .catch((err: unknown) =>
-          setError(err instanceof Error ? err.message : 'Failed to load P&L'),
-        )
-    } else {
-      api<BalanceSheetResponse>('/journal-entries/balance-sheet', {
-        query: q(),
+    let alive = true
+    setLoading(true)
+    setError('')
+    const req =
+      tab === 'pnl'
+        ? api<PnlResponse>('/journal-entries/profit-loss', { query: q() })
+        : api<BalanceSheetResponse>('/journal-entries/balance-sheet', {
+            query: q(),
+          })
+    req
+      .then((res) => {
+        if (!alive) return
+        if (tab === 'pnl') setPnl(res as PnlResponse)
+        else setBs(res as BalanceSheetResponse)
       })
-        .then(setBs)
-        .catch((err: unknown) =>
-          setError(
-            err instanceof Error ? err.message : 'Failed to load balance sheet',
-          ),
+      .catch((err: unknown) => {
+        if (!alive) return
+        setError(
+          err instanceof Error
+            ? err.message
+            : tab === 'pnl'
+              ? 'Failed to load P&L'
+              : 'Failed to load balance sheet',
         )
+      })
+      .finally(() => {
+        if (alive) setLoading(false)
+      })
+    return () => {
+      alive = false
     }
-  }, [tab, from, to])
+  }, [tab, from, to, tenantId])
 
   const pnlCsv = () =>
     downloadCsv(
@@ -218,6 +238,12 @@ export default function Reports() {
           {error}
         </p>
       )}
+
+      <div className="mt-2">
+        <DataStatus />
+      </div>
+
+      {loading && !pnl && !bs && <ReportSkeleton sections={2} />}
 
       {tab === 'pnl' && pnl && (
         <div className="mt-4 rounded-lg border border-slate-200 bg-white">

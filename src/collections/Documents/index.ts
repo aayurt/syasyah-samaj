@@ -26,6 +26,7 @@ const DOC_TYPES = [
   { label: 'Goods Received Note', value: 'grn' },
   { label: 'Delivery Challan', value: 'delivery-challan' },
   { label: 'Journal Voucher', value: 'journal-voucher' },
+  { label: 'Contra Voucher', value: 'contra' },
   { label: 'Membership Receipt', value: 'membership-receipt' },
   { label: 'Donation Receipt', value: 'donation-receipt' },
 ]
@@ -43,6 +44,7 @@ const DOC_PREFIXES: Record<string, string> = {
   grn: 'GRN',
   'delivery-challan': 'DC',
   'journal-voucher': 'JV',
+  contra: 'CT',
   'membership-receipt': 'MR',
   'donation-receipt': 'DON',
 }
@@ -91,13 +93,69 @@ function recomputeTotals(d: any) {
     line.amount = round2(amt)
     net += amt
   }
-  const taxRate = Math.max(0, toNum(d.taxRate))
-  const netTotal = round2(net)
-  const taxTotal = round2((netTotal * taxRate) / 100)
+  const lineSum = round2(net)
+
+  const taxLines: any[] = d.taxLines || []
+  if (taxLines.length === 0) {
+    // Legacy single-rate path (additive VAT).
+    const taxRate = Math.max(0, toNum(d.taxRate))
+    const netTotal = lineSum
+    const taxTotal = round2((netTotal * taxRate) / 100)
+    d.netTotal = netTotal
+    d.taxRate = taxRate
+    d.taxTotal = taxTotal
+    d.grossTotal = round2(netTotal + taxTotal)
+    return
+  }
+
+  // Multiple tax system (VAT/GST/TDS). Semantics:
+  //  - additive:    amount = base × rate, added on top of the net total.
+  //  - inclusive:   the line value already contains the tax; strip it out.
+  //  - withholding: amount = base × rate, deducted (TDS) from the payment.
+  let inclusiveAmount = 0
+  for (const tl of taxLines) {
+    const rate = Math.max(0, toNum(tl.rate))
+    if (tl.nature === 'inclusive') {
+      const amount = lineSum - lineSum / (1 + rate / 100)
+      tl.baseAmount = round2(lineSum / (1 + rate / 100))
+      tl.amount = round2(amount)
+      inclusiveAmount += amount
+    }
+  }
+  const base = round2(lineSum - inclusiveAmount)
+  let addInc = inclusiveAmount
+  let withheld = 0
+  for (const tl of taxLines) {
+    const rate = Math.max(0, toNum(tl.rate))
+    if (tl.nature === 'inclusive') continue
+    tl.baseAmount = base
+    tl.amount = round2((base * rate) / 100)
+    if (tl.nature === 'withholding') withheld += tl.amount
+    else addInc += tl.amount
+  }
+  const netTotal = base
+  const taxTotal = round2(addInc - withheld)
+  d.taxLines = taxLines
   d.netTotal = netTotal
-  d.taxRate = taxRate
   d.taxTotal = taxTotal
-  d.grossTotal = round2(netTotal + taxTotal)
+  d.grossTotal = round2(netTotal + addInc - withheld)
+}
+
+/**
+ * Sums a document's tax lines into the aggregate used by the posting engine:
+ *  - addInc:  additive + inclusive taxes that are added to (or embedded in)
+ *             the gross, credited/debited to the tax ledger on the tax side.
+ *  - withheld: withholding taxes (TDS) that are deducted from the payment.
+ */
+function taxAggregates(doc: any): { addInc: number; withheld: number } {
+  let addInc = 0
+  let withheld = 0
+  for (const tl of doc.taxLines || []) {
+    const amount = toNum(tl.amount)
+    if (tl.nature === 'withholding') withheld += amount
+    else addInc += amount
+  }
+  return { addInc: round2(addInc), withheld: round2(withheld) }
 }
 
 async function getSettings(payload: PayloadRequest['payload']) {
@@ -220,12 +278,35 @@ function buildPostingLines(
   doc: any,
   settings: any,
   stockPlan: StockPlan = { movements: [], totalCogs: 0 },
+  taxById: Map<number, any> = new Map(),
 ): PostingLine[] {
   const type = doc.docType
   const net = toNum(doc.netTotal)
   const tax = toNum(doc.taxTotal)
   const gross = toNum(doc.grossTotal)
+  const taxLines: any[] = doc.taxLines || []
+  const { addInc, withheld } = taxAggregates(doc)
   const lines: PostingLine[] = []
+
+  // Resolve the ledger account for a tax line on the sales or purchase side.
+  const taxAccountFor = (tl: any, side: 'sales' | 'purchase'): number => {
+    const typeId = tl.taxType ? accId(tl.taxType) : null
+    const taxType = typeId ? taxById.get(Number(typeId)) : null
+    if (!taxType) {
+      throw new Error(
+        `Tax "${tl.nature}" on this voucher references an unknown tax type.`,
+      )
+    }
+    const account = side === 'sales' ? taxType.salesAccount : taxType.purchaseAccount
+    if (!account) {
+      throw new Error(
+        `Tax type "${taxType.name || taxType.code}" has no ${
+          side === 'sales' ? 'sales' : 'purchase'
+        } account configured. Configure it in Tax Types before posting.`,
+      )
+    }
+    return Number(accId(account))
+  }
 
   switch (type) {
     case 'sales-invoice':
@@ -239,7 +320,26 @@ function buildPostingLines(
         account: resolveAccount(settings, 'revenueAccount', type, 'Sales Revenue'),
         credit: net,
       })
-      if (tax > 0) {
+      if (taxLines.length > 0) {
+        for (const tl of taxLines) {
+          const amount = toNum(tl.amount)
+          if (amount <= 0) continue
+          if (tl.nature === 'withholding') {
+            // TDS withheld from a customer's payment: Dr. TDS receivable.
+            lines.push({
+              account: taxAccountFor(tl, 'sales'),
+              debit: amount,
+              memo: `TDS ${tl.nature}`,
+            })
+          } else {
+            lines.push({
+              account: taxAccountFor(tl, 'sales'),
+              credit: amount,
+              memo: `Tax ${tl.nature}`,
+            })
+          }
+        }
+      } else if (tax > 0) {
         lines.push({
           account: resolveAccount(settings, 'taxAccount', type, 'Output Tax'),
           credit: tax,
@@ -257,12 +357,30 @@ function buildPostingLines(
       }
       break
     case 'purchase-invoice':
-      // Expense (net) + Input Tax ← AP (gross)
+      // Expense (net) + Input Tax ← AP (gross); withholding credits TDS payable.
       lines.push({
         account: resolveAccount(settings, 'expenseAccount', type, 'Purchases / Expense'),
         debit: net,
       })
-      if (tax > 0) {
+      if (taxLines.length > 0) {
+        for (const tl of taxLines) {
+          const amount = toNum(tl.amount)
+          if (amount <= 0) continue
+          if (tl.nature === 'withholding') {
+            lines.push({
+              account: taxAccountFor(tl, 'purchase'),
+              credit: amount,
+              memo: `TDS ${tl.nature}`,
+            })
+          } else {
+            lines.push({
+              account: taxAccountFor(tl, 'purchase'),
+              debit: amount,
+              memo: `Tax ${tl.nature}`,
+            })
+          }
+        }
+      } else if (tax > 0) {
         lines.push({
           account: resolveAccount(settings, 'taxAccount', type, 'Input Tax'),
           debit: tax,
@@ -274,26 +392,68 @@ function buildPostingLines(
       })
       break
     case 'payment-voucher':
-      // AP ← Cash / Bank
+      // AP ← Cash / Bank. The payable leg uses the full amount (net); when
+      // TDS (withholding) is present the cash leg is net of TDS and the TDS
+      // is credited to its payable ledger.
       lines.push({
         account: resolveAccount(settings, 'payableAccount', type, 'Accounts Payable'),
-        debit: gross,
+        debit: net,
       })
-      lines.push({
-        account: pickCashOrBank(doc, settings, type),
-        credit: gross,
-      })
+      if (withheld > 0) {
+        const tds = (doc.taxLines || []).find(
+          (tl: any) => tl.nature === 'withholding' && toNum(tl.amount) > 0,
+        )
+        if (tds) {
+          lines.push({
+            account: taxAccountFor(tds, 'purchase'),
+            credit: withheld,
+            memo: 'TDS payable',
+          })
+        }
+        lines.push({
+          account: pickCashOrBank(doc, settings, type),
+          credit: round2(net - withheld),
+        })
+      } else {
+        lines.push({
+          account: pickCashOrBank(doc, settings, type),
+          credit: gross,
+        })
+      }
       break
     case 'receipt-voucher':
-      // Cash / Bank ← AR
-      lines.push({
-        account: pickCashOrBank(doc, settings, type),
-        debit: gross,
-      })
-      lines.push({
-        account: resolveAccount(settings, 'receivableAccount', type, 'Accounts Receivable'),
-        credit: gross,
-      })
+      // Cash / Bank ← AR. The receivable leg uses the full amount (net);
+      // when TDS (withholding) is present the cash leg is net of TDS and the
+      // TDS is debited to its receivable ledger.
+      if (withheld > 0) {
+        const tds = (doc.taxLines || []).find(
+          (tl: any) => tl.nature === 'withholding' && toNum(tl.amount) > 0,
+        )
+        lines.push({
+          account: pickCashOrBank(doc, settings, type),
+          debit: round2(net - withheld),
+        })
+        if (tds) {
+          lines.push({
+            account: taxAccountFor(tds, 'sales'),
+            debit: withheld,
+            memo: 'TDS receivable',
+          })
+        }
+        lines.push({
+          account: resolveAccount(settings, 'receivableAccount', type, 'Accounts Receivable'),
+          credit: net,
+        })
+      } else {
+        lines.push({
+          account: pickCashOrBank(doc, settings, type),
+          debit: gross,
+        })
+        lines.push({
+          account: resolveAccount(settings, 'receivableAccount', type, 'Accounts Receivable'),
+          credit: gross,
+        })
+      }
       break
     case 'membership-receipt':
       // Cash / Bank ← Membership Fees (income)
@@ -385,10 +545,70 @@ function buildPostingLines(
         })
       }
       break
+    case 'contra':
+      // Transfer between two cash/bank accounts (cash ↔ bank, bank ↔ bank).
+      // The "from" account is credited and the "to" account debited.
+      {
+        const fromId = doc.fromAccount
+          ? accId(doc.fromAccount)
+          : resolveAccount(settings, 'bankAccount', type, 'Bank')
+        const toId = doc.toAccount
+          ? accId(doc.toAccount)
+          : resolveAccount(settings, 'cashAccount', type, 'Cash')
+        if (!fromId || !toId) {
+          throw new Error('Contra vouchers need both a source and target account.')
+        }
+        lines.push({ account: toId, debit: gross })
+        lines.push({ account: fromId, credit: gross })
+      }
+      break
     default:
       throw new Error(`Unsupported document type: ${type}`)
   }
   return lines
+}
+
+/**
+ * Validates a contra voucher: both accounts must be cash/bank (class) and
+ * distinct, with a positive transfer amount. Fetches the linked accounts so
+ * the posting engine never resolves to a non-cash account.
+ */
+async function validateContra(
+  payload: PayloadRequest['payload'],
+  d: any,
+): Promise<void> {
+  const fromId = d.fromAccount ? Number(accId(d.fromAccount)) : NaN
+  const toId = d.toAccount ? Number(accId(d.toAccount)) : NaN
+  if (!fromId || !toId) {
+    throw vErr('Contra vouchers need both a source (from) and target (to) account.')
+  }
+  if (fromId === toId) {
+    throw vErr('The source and target accounts of a contra voucher must be different.')
+  }
+  const amount = toNum(d.grossTotal ?? d.netTotal)
+  if (amount <= 0) {
+    throw vErr('A contra voucher needs a positive transfer amount.')
+  }
+  const [from, to] = await Promise.all([
+    payload.findByID({ collection: 'gl-accounts', id: fromId, depth: 0 }).catch(() => null),
+    payload.findByID({ collection: 'gl-accounts', id: toId, depth: 0 }).catch(() => null),
+  ])
+  for (const [label, acct] of [
+    ['source', from],
+    ['target', to],
+  ] as const) {
+    const a = acct as any
+    if (!a) throw vErr(`Contra ${label} account not found.`)
+    if (!['cash', 'bank'].includes(a.class)) {
+      throw vErr(
+        `Contra ${label} account "${a.name}" is not a cash or bank account.`,
+      )
+    }
+  }
+  d.netTotal = amount
+  d.grossTotal = amount
+  d.taxTotal = 0
+  d.taxRate = 0
 }
 
 function fiscalYearOf(dateValue: string | Date, fiscalYearStart?: string): number {
@@ -475,7 +695,26 @@ export async function postDocument(
     // Inventory side-effects (movements + COGS) are computed up front so
     // a stock shortfall aborts the whole posting before any write.
     const stockPlan = await computeStockPlan(payload, doc)
-    const lines = buildPostingLines(doc, settings, stockPlan)
+    // Resolve the tax types referenced by the document's tax lines so the
+    // posting engine can use each tax's own sales/purchase ledger account.
+    const taxById = new Map<number, any>()
+    const taxTypeIds = Array.from(
+      new Set(
+        (doc.taxLines || [])
+          .map((tl: any) => (tl.taxType ? accId(tl.taxType) : null))
+          .filter((v: number | null) => v !== null),
+      ),
+    )
+    if (taxTypeIds.length) {
+      const taxRes = await payload.find({
+        collection: 'tax-types',
+        where: { id: { in: taxTypeIds } },
+        depth: 0,
+        limit: 1000,
+      })
+      for (const t of taxRes.docs as any[]) taxById.set(Number(t.id), t)
+    }
+    const lines = buildPostingLines(doc, settings, stockPlan, taxById)
     const narration =
       doc.narration ||
       (DOC_TYPES.find((t) => t.value === doc.docType)?.label || doc.docType)
@@ -1242,7 +1481,7 @@ export const Documents: CollectionConfig = {
     ],
     beforeValidate: [
       assignTenant,
-      ({ data, operation }) => {
+      async ({ data, operation, req }) => {
         if (operation !== 'create' && operation !== 'update') return data
         const d = data as any
         if (d.docType === 'journal-voucher') {
@@ -1250,6 +1489,9 @@ export const Documents: CollectionConfig = {
           if (errors.length) {
             throw vErr(errors[0] ?? 'Invalid journal lines.')
           }
+        }
+        if (d.docType === 'contra') {
+          await validateContra(req.payload, d)
         }
         // Skip recomputeTotals for local API calls where arrays aren't flattened;
         // totals must be pre-supplied by the caller (see Members pay-fee endpoint).
@@ -1523,6 +1765,27 @@ export const Documents: CollectionConfig = {
         description: 'Override the default bank account for this voucher.',
       },
     },
+    // Contra vouchers transfer between two cash/bank accounts.
+    {
+      name: 'fromAccount',
+      type: 'relationship',
+      relationTo: 'gl-accounts',
+      admin: {
+        position: 'sidebar',
+        condition: (data) => data?.docType === 'contra',
+        description: 'Transfer from (credited). Must be a cash or bank account.',
+      },
+    },
+    {
+      name: 'toAccount',
+      type: 'relationship',
+      relationTo: 'gl-accounts',
+      admin: {
+        position: 'sidebar',
+        condition: (data) => data?.docType === 'contra',
+        description: 'Transfer to (debited). Must be a cash or bank account.',
+      },
+    },
     {
       name: 'donationPurpose',
       type: 'select',
@@ -1544,7 +1807,9 @@ export const Documents: CollectionConfig = {
       type: 'array',
       admin: {
         condition: (data) =>
-          Boolean(data?.docType) && data.docType !== 'journal-voucher',
+          Boolean(data?.docType) &&
+          data.docType !== 'journal-voucher' &&
+          data.docType !== 'contra',
       },
       fields: [
         {
@@ -1613,8 +1878,63 @@ export const Documents: CollectionConfig = {
       defaultValue: 0,
       admin: {
         position: 'sidebar',
-        description: 'Tax rate in percent applied to the net total.',
+        description: 'Legacy single tax rate in percent applied to the net total.',
       },
+    },
+    // Multiple tax system (VAT/GST/TDS). Each line references a tax type and
+    // records the computed base and amount; the posting engine uses the tax
+    // type's own sales/purchase ledger account.
+    {
+      name: 'taxLines',
+      type: 'array',
+      admin: {
+        condition: (data) =>
+          Boolean(data?.docType) &&
+          ['sales-invoice', 'purchase-invoice', 'payment-voucher', 'receipt-voucher'].includes(
+            data.docType,
+          ),
+        description:
+          'Taxes on this voucher (additive VAT/GST, inclusive, or withholding TDS).',
+      },
+      fields: [
+        {
+          name: 'taxType',
+          type: 'relationship',
+          relationTo: 'tax-types',
+          required: true,
+        },
+        {
+          name: 'nature',
+          type: 'select',
+          required: true,
+          options: [
+            { label: 'Additive', value: 'additive' },
+            { label: 'Inclusive', value: 'inclusive' },
+            { label: 'Withholding', value: 'withholding' },
+          ],
+        },
+        {
+          name: 'rate',
+          type: 'number',
+          required: true,
+        },
+        {
+          name: 'baseAmount',
+          type: 'number',
+          admin: {
+            readOnly: true,
+            description: 'Taxable base (computed on save).',
+          },
+        },
+        {
+          name: 'amount',
+          type: 'number',
+          admin: {
+            readOnly: true,
+            description: 'Computed tax amount.',
+          },
+        },
+      ],
     },
     {
       name: 'netTotal',

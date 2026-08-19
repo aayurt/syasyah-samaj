@@ -38,6 +38,7 @@ import { Accounts } from './collections/Accounts'
 import { JournalEntries } from './collections/JournalEntries'
 import { Items } from './collections/Items'
 import { StockMovements } from './collections/StockMovements'
+import { TaxTypes } from './collections/TaxTypes'
 import { MembershipTypes } from './collections/MembershipTypes'
 import { BankStatements } from './collections/BankStatements'
 import { FixedAssets } from './collections/FixedAssets'
@@ -112,6 +113,7 @@ export default buildConfig({
     DocSequences,
     Items,
     StockMovements,
+    TaxTypes,
     Tenants,
     Notifications,
     Favorites,

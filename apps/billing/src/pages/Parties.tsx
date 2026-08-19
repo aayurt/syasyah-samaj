@@ -6,6 +6,8 @@ import ActionMenu from '../components/ActionMenu'
 import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
+import DataStatus from '../components/DataStatus'
+import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Party } from '../lib/types'
 
 const TYPES: Party['type'][] = ['customer', 'vendor', 'both']
@@ -27,6 +29,8 @@ const emptyForm = {
 
 export default function Parties() {
   const { cacheVersion } = useSyncState()
+  const { tenantId } = useTenant()
+  const tenantQuery = useTenantQuery()
   const [parties, setParties] = useState<Party[]>([])
   const [error, setError] = useState('')
   const [form, setForm] = useState(emptyForm)
@@ -37,7 +41,7 @@ export default function Parties() {
 
   const load = async () => {
     try {
-      const res = await list<Party>('parties', { depth: 0, sort: 'name' })
+      const res = await list<Party>('parties', { depth: 0, sort: 'name', ...tenantQuery })
       setParties(res.docs)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load parties')
@@ -48,7 +52,7 @@ export default function Parties() {
 
   useEffect(() => {
     load()
-  }, [cacheVersion])
+  }, [cacheVersion, tenantId])
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,6 +69,7 @@ export default function Parties() {
           taxId: form.taxId || undefined,
           address: form.address || undefined,
           openingBalance: form.openingBalance ? Number(form.openingBalance) : 0,
+          ...(tenantId ? { tenant: tenantId } : {}),
         },
       })
       setForm(emptyForm)
@@ -118,6 +123,10 @@ export default function Parties() {
           <Plus size={14} />
           New party
         </button>
+      </div>
+
+      <div className="mt-2">
+        <DataStatus />
       </div>
 
       {error && (

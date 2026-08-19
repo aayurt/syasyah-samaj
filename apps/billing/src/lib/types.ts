@@ -14,18 +14,20 @@ export type DocType =
   | 'grn'
   | 'delivery-challan'
   | 'journal-voucher'
+  | 'contra'
 
 export const DOC_TYPE_LABELS: Record<string, string> = {
-  'sales-invoice': 'Sales Invoice',
-  'purchase-invoice': 'Purchase Invoice',
-  'payment-voucher': 'Payment Voucher',
-  'receipt-voucher': 'Receipt Voucher',
+  'sales-invoice': 'Sales Entry',
+  'purchase-invoice': 'Purchase Entry',
+  'payment-voucher': 'Payment Entry',
+  'receipt-voucher': 'Receipt Entry',
   'credit-note': 'Credit Note',
   'debit-note': 'Debit Note',
   'petty-cash-voucher': 'Petty Cash Voucher',
   grn: 'Goods Received Note',
   'delivery-challan': 'Delivery Challan',
-  'journal-voucher': 'Journal Voucher',
+  'journal-voucher': 'Journal Entry',
+  contra: 'Contra Entry',
 }
 
 export interface AccountGroup {
@@ -56,6 +58,29 @@ export interface JournalLine {
   debit?: number
   credit?: number
   memo?: string
+}
+
+export type TaxNature = 'additive' | 'inclusive' | 'withholding'
+
+export interface TaxType {
+  id: number
+  code: string
+  name: string
+  nature: TaxNature
+  rate: number
+  salesAccount?: number | Account | null
+  purchaseAccount?: number | Account | null
+  active?: boolean
+  tenant?: number | null
+}
+
+export interface TaxLine {
+  id?: string
+  taxType: number | string | null
+  nature: TaxNature
+  rate: number
+  baseAmount?: number
+  amount?: number
 }
 
 export interface JournalEntry {
@@ -121,9 +146,12 @@ export interface Document {
   referenceTo?: number | null
   paymentMethod?: 'cash' | 'bank'
   bankAccount?: number | null
+  fromAccount?: number | null
+  toAccount?: number | null
   lines?: DocumentLine[]
   journalLines?: JournalLine[]
   taxRate?: number
+  taxLines?: TaxLine[]
   netTotal?: number
   taxTotal?: number
   grossTotal?: number
@@ -206,7 +234,13 @@ export interface BalanceSheetResponse {
   balanced: boolean
 }
 
-export type DaybookType = 'cash' | 'petty-cash' | 'sales' | 'purchase' | 'journal'
+export type DaybookType =
+  | 'cash'
+  | 'petty-cash'
+  | 'sales'
+  | 'purchase'
+  | 'journal'
+  | 'all'
 
 export interface DaybookRow {
   id: number
@@ -216,6 +250,9 @@ export interface DaybookRow {
   debit: number
   credit: number
   runningBalance?: number
+  docId?: number | string | null
+  docNumber?: string | null
+  docType?: string | null
 }
 
 export interface DaybookResponse {

@@ -4,6 +4,8 @@ import { api, fmt, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { ReportSkeleton } from '../components/Skeleton'
+import DataStatus from '../components/DataStatus'
+import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Account, LedgerRow, TrialBalanceRow } from '../lib/types'
 
 const TYPE_ORDER = ['asset', 'liability', 'equity', 'income', 'expense']
@@ -17,6 +19,8 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function TrialBalance() {
   const { cacheVersion, online } = useSyncState()
+  const { tenantId } = useTenant()
+  const tenantQuery = useTenantQuery()
   const [rows, setRows] = useState<TrialBalanceRow[]>([])
   const [totals, setTotals] = useState({ debit: 0, credit: 0 })
   const [balanced, setBalanced] = useState(true)
@@ -34,8 +38,8 @@ export default function TrialBalance() {
           docs: TrialBalanceRow[]
           totals: { debit: number; credit: number }
           balanced: boolean
-        }>('/journal-entries/trial-balance'),
-        list<Account>('gl-accounts', { depth: 0, sort: 'name' }),
+        }>('/journal-entries/trial-balance', { query: { ...tenantQuery } }),
+        list<Account>('gl-accounts', { depth: 0, sort: 'name', ...tenantQuery }),
       ])
       setRows(tb.docs)
       setTotals(tb.totals)
@@ -50,7 +54,7 @@ export default function TrialBalance() {
 
   useEffect(() => {
     load()
-  }, [cacheVersion, online])
+  }, [cacheVersion, online, tenantId])
 
   const showLedger = async (accountId: string, name: string) => {
     setLedgerAccount(accountId)
@@ -59,7 +63,7 @@ export default function TrialBalance() {
     try {
       const res = await api<{ docs: LedgerRow[]; closingBalance: number }>(
         '/journal-entries/ledger',
-        { query: { account: accountId } },
+        { query: { account: accountId, ...tenantQuery } },
       )
       setLedger(res.docs)
     } catch (err: unknown) {
@@ -134,6 +138,10 @@ export default function TrialBalance() {
             Print
           </button>
         </div>
+      </div>
+
+      <div className="mt-2">
+        <DataStatus />
       </div>
 
       {error && (
