@@ -401,7 +401,7 @@ export default function VoucherForm({ mode }: Props) {
                 type="text"
                 value={invoicePrefix}
                 onChange={(e) => setInvoicePrefix(e.target.value.toUpperCase())}
-                className="mt-1 w-full rounded border border-slate-300 px-2 py-2.5 text-center font-mono text-sm font-semibold uppercase outline-none focus:border-slate-500"
+                className="mt-1 w-full rounded border border-slate-300 px-2 py-[10px] text-center font-mono text-sm font-semibold uppercase outline-none focus:border-slate-500"
                 maxLength={8}
               />
             </label>
@@ -426,10 +426,10 @@ export default function VoucherForm({ mode }: Props) {
                   value={manualNumber}
                   onChange={(e) => setManualNumber(e.target.value)}
                   placeholder="Type invoice number"
-                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2.5 text-sm font-mono outline-none focus:border-slate-500"
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm font-mono outline-none focus:border-slate-500"
                 />
               ) : (
-                <div className="mt-1 w-full rounded border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm text-slate-600">
+                <div className="mt-1 w-full rounded border border-slate-200 bg-slate-50 px-3 py-[10px] font-mono text-sm text-slate-600">
                   {nextNumberPreview || `${invoicePrefix}-...`}
                 </div>
               )}
@@ -444,7 +444,7 @@ export default function VoucherForm({ mode }: Props) {
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded border border-slate-300 px-3 py-2.5 pr-10 text-sm outline-none focus:border-slate-500"
+                className="w-full rounded border border-slate-300 px-3 py-[10px] pr-10 text-sm outline-none focus:border-slate-500"
               />
             </div>
           </div>
@@ -489,7 +489,7 @@ export default function VoucherForm({ mode }: Props) {
                             }}
                             onFocus={() => { setItemSearchRow(l.key); setPartySearch('') }}
                             placeholder="Enter Item name"
-                            className="w-full rounded border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-slate-500"
+                            className="w-full rounded border border-slate-200 px-2 py-[9px] text-sm outline-none focus:border-slate-500"
                           />
                           {itemSearchRow === l.key && partySearch && (
                             <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
@@ -509,28 +509,28 @@ export default function VoucherForm({ mode }: Props) {
                           type="text" value={l.description}
                           onChange={(e) => setLine(l.key, { description: e.target.value })}
                           placeholder="Enter Item name"
-                          className="w-full rounded border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-slate-500"
+                          className="w-full rounded border border-slate-200 px-2 py-[9px] text-sm outline-none focus:border-slate-500"
                         />
                       )}
                     </td>
                     <td className="px-2 py-2">
                       <input type="number" min="0" step="any" value={l.qty}
                         onChange={(e) => setLine(l.key, { qty: e.target.value })}
-                        className="w-full rounded border border-slate-200 px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                        className="w-full rounded border border-slate-200 px-2 py-[9px] text-right font-mono text-sm outline-none focus:border-slate-500" />
                     </td>
                     <td className="px-2 py-2">
                       <div className="flex items-center">
                         <span className="mr-1 text-xs text-slate-400">Rs.</span>
                         <input type="number" min="0" step="0.01" value={l.rate}
                           onChange={(e) => setLine(l.key, { rate: e.target.value })}
-                          className="w-full rounded border border-slate-200 px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                          className="w-full rounded border border-slate-200 px-2 py-[9px] text-right font-mono text-sm outline-none focus:border-slate-500" />
                       </div>
                     </td>
                     <td className="px-2 py-2">
                       <div className="flex items-center">
                         <input type="number" min="0" max="100" step="0.01" value={l.discountPct}
                           onChange={(e) => setLine(l.key, { discountPct: e.target.value })}
-                          className="w-full rounded border border-slate-200 px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                          className="w-full rounded border border-slate-200 px-2 py-[9px] text-right font-mono text-sm outline-none focus:border-slate-500" />
                         <span className="ml-1 text-xs text-slate-400">%</span>
                       </div>
                     </td>
@@ -539,7 +539,7 @@ export default function VoucherForm({ mode }: Props) {
                         <span className="mr-1 text-xs text-slate-400">Rs.</span>
                         <input type="number" min="0" step="0.01" value={l.discountAmt}
                           onChange={(e) => setLine(l.key, { discountAmt: e.target.value })}
-                          className="w-full rounded border border-slate-200 px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                          className="w-full rounded border border-slate-200 px-2 py-[9px] text-right font-mono text-sm outline-none focus:border-slate-500" />
                       </div>
                     </td>
                     <td className="px-4 py-2 text-right font-mono font-medium text-slate-800">
@@ -587,20 +587,20 @@ export default function VoucherForm({ mode }: Props) {
                 <tr key={l.key} className="border-b border-slate-50">
                   <td className="px-2 py-2">
                     <select value={l.account} onChange={(e) => setJLine(l.key, { account: e.target.value })}
-                      className="w-full rounded border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-slate-500">
+                      className="w-full rounded border border-slate-200 px-2 py-[9px] text-sm outline-none focus:border-slate-500">
                       <option value="">— select —</option>
                       {accounts.map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ''}{a.name}</option>)}
                     </select>
                   </td>
                   <td className="px-2 py-2"><input type="number" step="0.01" min="0" value={l.debit}
                     onChange={(e) => setJLine(l.key, { debit: e.target.value, credit: '' })}
-                    className="w-full rounded border border-slate-200 px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
+                    className="w-full rounded border border-slate-200 px-2 py-[9px] text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
                   <td className="px-2 py-2"><input type="number" step="0.01" min="0" value={l.credit}
                     onChange={(e) => setJLine(l.key, { credit: e.target.value, debit: '' })}
-                    className="w-full rounded border border-slate-200 px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
+                    className="w-full rounded border border-slate-200 px-2 py-[9px] text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
                   <td className="px-2 py-2"><input type="text" value={l.memo}
                     onChange={(e) => setJLine(l.key, { memo: e.target.value })}
-                    className="w-full rounded border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-slate-500" /></td>
+                    className="w-full rounded border border-slate-200 px-2 py-[9px] text-sm outline-none focus:border-slate-500" /></td>
                   <td className="px-2 py-2 text-center">
                     <button type="button" onClick={() => removeJLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
                   </td>
@@ -634,7 +634,7 @@ export default function VoucherForm({ mode }: Props) {
             <label className="text-sm text-slate-700">
               From account (credited)
               <select value={fromAccount} onChange={(e) => setFromAccount(e.target.value)}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500">
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500">
                 <option value="">— select —</option>
                 {cashBankAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
@@ -642,7 +642,7 @@ export default function VoucherForm({ mode }: Props) {
             <label className="text-sm text-slate-700">
               To account (debited)
               <select value={toAccount} onChange={(e) => setToAccount(e.target.value)}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500">
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500">
                 <option value="">— select —</option>
                 {cashBankAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
@@ -672,7 +672,7 @@ export default function VoucherForm({ mode }: Props) {
               <label className="text-sm text-slate-700">
                 TDS Account <span className="text-red-500">*</span>
                 <select required value={tdsAccountId} onChange={(e) => setTdsAccountId(e.target.value)}
-                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500">
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500">
                   <option value="">Select Account</option>
                   {accounts.filter((a) => a.type === 'liability' || a.name.toLowerCase().includes('tds') || a.name.toLowerCase().includes('withhold'))
                     .map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ''}{a.name}</option>)}
@@ -682,7 +682,7 @@ export default function VoucherForm({ mode }: Props) {
                 TDS Type <span className="text-red-500">*</span>
                 <select required value={tdsTypeId}
                   onChange={(e) => { setTdsTypeId(e.target.value); setTdsAmountManual('') }}
-                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500">
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500">
                   <option value="">TDS Type</option>
                   {taxTypes.filter((t) => t.nature === 'withholding' && t.active !== false)
                     .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.code} · {t.rate}%)</option>)}
@@ -709,7 +709,7 @@ export default function VoucherForm({ mode }: Props) {
             <label className="text-sm text-slate-700">
               Payment Method
               <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500">
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500">
                 <option value="bank">Bank</option><option value="cash">Cash</option>
               </select>
             </label>
@@ -717,7 +717,7 @@ export default function VoucherForm({ mode }: Props) {
               <label className="text-sm text-slate-700">
                 Bank Account
                 <select value={bankAccount} onChange={(e) => setBankAccount(e.target.value)}
-                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500">
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500">
                   <option value="">— default —</option>
                   {bankAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
@@ -733,20 +733,20 @@ export default function VoucherForm({ mode }: Props) {
           <label className="text-sm font-medium text-slate-700">Notes or Remarks</label>
           <textarea rows={4} value={narration} onChange={(e) => setNarration(e.target.value)}
             placeholder="Enter note or description..."
-            className="mt-2 w-full resize-none rounded border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500" />
+            className="mt-2 w-full resize-none rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500" />
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-5">
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-slate-700">Total Amount</label>
-              <div className="mt-1 rounded border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-lg font-semibold text-slate-800">
+              <div className="mt-1 rounded border border-slate-200 bg-slate-50 px-3 py-[10px] font-mono text-lg font-semibold text-slate-800">
                 Rs. {fmt(grandTotal)}
               </div>
             </div>
             {isCash && (
               <div>
                 <label className="text-sm font-medium text-slate-700">Payment Mode</label>
-                <div className="mt-1 rounded border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
+                <div className="mt-1 rounded border border-slate-200 bg-slate-50 px-3 py-[10px] text-sm text-slate-700">
                   {paymentMethod === 'cash' ? 'Cash' : 'Bank Transfer'}
                 </div>
               </div>
@@ -797,13 +797,13 @@ export default function VoucherForm({ mode }: Props) {
                 Name *
                 <input type="text" required value={newPartyName}
                   onChange={(e) => setNewPartyName(e.target.value)}
-                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500"
                   placeholder="Party name" autoFocus />
               </label>
               <label className="text-sm text-slate-700">
                 Type *
                 <select value={newPartyType} onChange={(e) => setNewPartyType(e.target.value as 'customer' | 'vendor')}
-                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500">
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500">
                   <option value="customer">Customer</option>
                   <option value="vendor">Vendor</option>
                 </select>
@@ -813,13 +813,13 @@ export default function VoucherForm({ mode }: Props) {
                   Phone
                   <input type="tel" value={newPartyPhone}
                     onChange={(e) => setNewPartyPhone(e.target.value)}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500" />
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500" />
                 </label>
                 <label className="text-sm text-slate-700">
                   Email
                   <input type="email" value={newPartyEmail}
                     onChange={(e) => setNewPartyEmail(e.target.value)}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500" />
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500" />
                 </label>
               </div>
             </div>
