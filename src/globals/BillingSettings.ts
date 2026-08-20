@@ -1,4 +1,4 @@
-import { isAdmin } from '@/access/admin'
+import { isAdmin, authenticated } from '@/access/admin'
 import type { GlobalConfig } from 'payload'
 
 /**
@@ -17,7 +17,7 @@ export const BillingSettings: GlobalConfig = {
       'Default accounts used when posting vouchers. Missing accounts block posting until configured.',
   },
   access: {
-    read: isAdmin,
+    read: authenticated,
     update: isAdmin,
   },
   fields: [

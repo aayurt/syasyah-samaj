@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { api } from './api'
 import { formatDate as rawFormatDate, formatTime as rawFormatTime } from './nepaliDate'
 
@@ -16,10 +16,27 @@ interface CalendarCtx extends CalendarSettings {
   update: (partial: Partial<CalendarSettings>) => void
 }
 
+const STORAGE_KEY = 'billing.calendar'
+
 const DEFAULTS: CalendarSettings = {
   calendarType: 'BS',
   dateFormat: 'YYYY-MM-DD',
   timeFormat: '12h',
+}
+
+function loadCached(): CalendarSettings {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<CalendarSettings>
+      return { ...DEFAULTS, ...parsed }
+    }
+  } catch { /* ignore */ }
+  return DEFAULTS
+}
+
+function persist(s: CalendarSettings) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)) } catch { /* ignore */ }
 }
 
 const CalendarContext = createContext<CalendarCtx>({
@@ -31,7 +48,8 @@ const CalendarContext = createContext<CalendarCtx>({
 })
 
 export function CalendarProvider({ children }: { children: React.ReactNode }) {
-  const [cal, setCal] = useState<CalendarSettings>(DEFAULTS)
+  // Start from localStorage so BS dates are immediate on page load
+  const [cal, setCal] = useState<CalendarSettings>(loadCached)
 
   useEffect(() => {
     let alive = true
@@ -41,31 +59,43 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
     )
       .then((r) => {
         if (!alive) return
-        setCal({
+        const next: CalendarSettings = {
           calendarType: (r.calendarType as 'AD' | 'BS') || 'BS',
           dateFormat: r.dateFormat || 'YYYY-MM-DD',
           timeFormat: (r.timeFormat as '12h' | '24h') || '12h',
-        })
+        }
+        setCal(next)
+        persist(next)
       })
       .catch(() => {
-        /* use defaults */
+        /* use cached or defaults */
       })
-    return () => {
-      alive = false
-    }
+    return () => { alive = false }
   }, [])
 
-  const fmtDate = (d: string | null | undefined) =>
-    rawFormatDate(d, cal.calendarType, cal.dateFormat)
+  const fmtDate = useCallback(
+    (d: string | null | undefined) => rawFormatDate(d, cal.calendarType, cal.dateFormat),
+    [cal.calendarType, cal.dateFormat],
+  )
 
-  const fmtDateTime = (d: string | null | undefined) =>
-    rawFormatDate(d, cal.calendarType, cal.dateFormat + ' HH:mm', cal.timeFormat)
+  const fmtDateTime = useCallback(
+    (d: string | null | undefined) =>
+      rawFormatDate(d, cal.calendarType, cal.dateFormat + ' HH:mm', cal.timeFormat),
+    [cal.calendarType, cal.dateFormat, cal.timeFormat],
+  )
 
-  const fmtTime = (d: string | null | undefined) =>
-    rawFormatTime(d, cal.timeFormat)
+  const fmtTime = useCallback(
+    (d: string | null | undefined) => rawFormatTime(d, cal.timeFormat),
+    [cal.timeFormat],
+  )
 
-  const update = (partial: Partial<CalendarSettings>) =>
-    setCal((c) => ({ ...c, ...partial }))
+  const update = useCallback((partial: Partial<CalendarSettings>) => {
+    setCal((c) => {
+      const next = { ...c, ...partial }
+      persist(next)
+      return next
+    })
+  }, [])
 
   return (
     <CalendarContext.Provider
