@@ -122,8 +122,9 @@ export default function VoucherForm({ mode }: Props) {
   const [showPartyDropdown, setShowPartyDropdown] = useState(false)
   const partyRef = useRef<HTMLDivElement>(null)
 
-  // Item search per row
+  // Item search per row (separate from party search)
   const [itemSearchRow, setItemSearchRow] = useState<string | null>(null)
+  const [itemSearchText, setItemSearchText] = useState('')
 
   /* ── Load data ──────────────────────────────────────────────── */
   useEffect(() => {
@@ -213,7 +214,7 @@ export default function VoucherForm({ mode }: Props) {
   const filteredParties = useMemo(() => {
     if (!partySearch) return parties
     const q = partySearch.toLowerCase()
-    return parties.filter((p) => p.name.toLowerCase().includes(q) || (p.code || '').toLowerCase().includes(q))
+    return parties.filter((p) => p.name.toLowerCase().includes(q))
   }, [parties, partySearch])
 
   const selectedParty = parties.find((p) => String(p.id) === party)
@@ -354,7 +355,7 @@ export default function VoucherForm({ mode }: Props) {
 
       {/* ── Top row: Party, Invoice No, Date ──────────────────── */}
       <div className="rounded-lg border border-slate-200 bg-white p-5">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           {/* Party (searchable) */}
           {(isItem || isCash) && (
             <div ref={partyRef} className="relative">
@@ -394,24 +395,35 @@ export default function VoucherForm({ mode }: Props) {
           )}
 
           {/* Invoice No with prefix + manual toggle */}
-          <div className="flex gap-2">
-            <label className="w-20 text-sm font-medium text-slate-700">
-              Prefix
+          <div>
+            <label className="text-sm font-medium text-slate-700">Invoice No</label>
+            <div className="mt-1 grid grid-cols-[auto_1fr] gap-2">
               <input
                 type="text"
                 value={invoicePrefix}
                 onChange={(e) => setInvoicePrefix(e.target.value.toUpperCase())}
-                className="mt-1 w-full rounded border border-slate-300 px-2 py-[10px] text-center font-mono text-sm font-semibold uppercase outline-none focus:border-slate-500"
+                className="w-20 rounded border border-slate-300 px-2 py-[10px] text-center font-mono text-sm font-semibold uppercase outline-none focus:border-slate-500"
                 maxLength={8}
+                placeholder="Prefix"
               />
-            </label>
-            <div className="flex-1">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-slate-700">Invoice No</label>
+                {numberManual ? (
+                  <input
+                    type="text"
+                    value={manualNumber}
+                    onChange={(e) => setManualNumber(e.target.value)}
+                    placeholder="Type invoice number"
+                    className="w-full rounded border border-slate-300 px-3 py-[10px] text-sm font-mono outline-none focus:border-slate-500"
+                  />
+                ) : (
+                  <div className="flex-1 rounded border border-slate-200 bg-slate-50 px-3 py-[10px] font-mono text-sm text-slate-600">
+                    {nextNumberPreview || `${invoicePrefix}-...`}
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => { setNumberManual((m) => !m); setManualNumber('') }}
-                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                  className={`shrink-0 rounded px-2 py-[10px] text-xs font-medium transition-colors ${
                     numberManual
                       ? 'bg-emerald-100 text-emerald-700'
                       : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
@@ -420,19 +432,6 @@ export default function VoucherForm({ mode }: Props) {
                   {numberManual ? 'Manual' : 'Auto'}
                 </button>
               </div>
-              {numberManual ? (
-                <input
-                  type="text"
-                  value={manualNumber}
-                  onChange={(e) => setManualNumber(e.target.value)}
-                  placeholder="Type invoice number"
-                  className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm font-mono outline-none focus:border-slate-500"
-                />
-              ) : (
-                <div className="mt-1 w-full rounded border border-slate-200 bg-slate-50 px-3 py-[10px] font-mono text-sm text-slate-600">
-                  {nextNumberPreview || `${invoicePrefix}-...`}
-                </div>
-              )}
             </div>
           </div>
 
@@ -482,21 +481,21 @@ export default function VoucherForm({ mode }: Props) {
                         <div className="relative">
                           <input
                             type="text"
-                            value={itemSearchRow === l.key ? partySearch : (items.find((it) => String(it.id) === l.item)?.name || '')}
+                            value={itemSearchRow === l.key ? itemSearchText : (items.find((it) => String(it.id) === l.item)?.name || '')}
                             onChange={(e) => {
-                              setItemSearchRow(l.key); setPartySearch(e.target.value)
+                              setItemSearchRow(l.key); setItemSearchText(e.target.value)
                               setLine(l.key, { item: '', description: e.target.value })
                             }}
-                            onFocus={() => { setItemSearchRow(l.key); setPartySearch('') }}
+                            onFocus={() => { setItemSearchRow(l.key); setItemSearchText('') }}
                             placeholder="Enter Item name"
                             className="w-full rounded border border-slate-200 px-2 py-[9px] text-sm outline-none focus:border-slate-500"
                           />
-                          {itemSearchRow === l.key && partySearch && (
+                          {itemSearchRow === l.key && itemSearchText && (
                             <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
-                              {items.filter((it) => it.name.toLowerCase().includes(partySearch.toLowerCase())).slice(0, 5).map((it) => (
+                              {items.filter((it) => it.name.toLowerCase().includes(itemSearchText.toLowerCase())).slice(0, 5).map((it) => (
                                 <button key={it.id} type="button" onClick={() => {
                                   setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || '') })
-                                  setItemSearchRow(null); setPartySearch('')
+                                  setItemSearchRow(null); setItemSearchText('')
                                 }} className="block w-full px-2 py-1.5 text-left text-sm hover:bg-slate-50">
                                   {it.code ? `${it.code} · ` : ''}{it.name}
                                 </button>
