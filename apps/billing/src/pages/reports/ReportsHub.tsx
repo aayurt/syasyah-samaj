@@ -45,12 +45,9 @@ type Category = (typeof CATEGORIES)[number]
 const REPORTS: Record<Category, ReportCard[]> = {
   'All Reports': [], // computed below
   Transactions: [
-    { title: 'Sales', desc: 'View your sales data on a given time', icon: TrendingUp, to: '/reports/sales' },
-    { title: 'Purchase', desc: 'View your purchase data on a given time', icon: ShoppingCart, to: '/reports/purchase' },
-    { title: 'Sales Return', desc: 'View sales return data on a given time', icon: ArrowLeftRight, to: '/reports/sales-return' },
-    { title: 'Purchase Return', desc: 'View purchase return data on a given time', icon: ArrowLeftRight, to: '/reports/purchase-return' },
+    { title: 'Sales', desc: 'View your sales data with payment tracking', icon: TrendingUp, to: '/reports/sales' },
+    { title: 'Purchase', desc: 'View your purchase data with payment tracking', icon: ShoppingCart, to: '/reports/purchase' },
     { title: 'Day Book', desc: 'View all of your daily transactions', icon: BookOpenText, to: '/daybooks' },
-    { title: 'All Transactions', desc: 'View all party transactions in a given time', icon: LayoutList, to: '/reports/all-transactions' },
     { title: 'Profit And Loss', desc: 'View your profit & loss in a given time', icon: BarChart3, to: '/reports/pnl' },
   ],
   Parties: [
@@ -58,8 +55,6 @@ const REPORTS: Record<Category, ReportCard[]> = {
     { title: 'All Party Report', desc: 'Receivable/payable dues of every party', icon: IndianRupee, to: '/aging' },
   ],
   Inventory: [
-    { title: 'Item Details Report', desc: 'Check stock, transaction of individual item', icon: Package, to: '/reports/item-details' },
-    { title: 'Item List Report', desc: 'Shows all the item rates like sales, purchase, MRP price etc.', icon: Boxes, to: '/reports/item-list' },
     { title: 'Low Stock Summary', desc: 'View all items which are getting low on quantity', icon: TrendingDown, to: '/reports/low-stock' },
     { title: 'Stock Quantity Report', desc: 'View opening & closing quantity of each item', icon: Hash, to: '/reports/stock-quantity' },
   ],
@@ -72,7 +67,6 @@ const REPORTS: Record<Category, ReportCard[]> = {
     { title: 'Balance Sheet', desc: 'Assets, liabilities & equity snapshot', icon: Scale, to: '/reports/balance-sheet' },
     { title: 'Cash In Hand Statement', desc: 'Check all transactions made with cash', icon: Wallet, to: '/reports/cash-statement' },
     { title: 'Bank Statement', desc: 'Check all the transactions made with bank', icon: CreditCard, to: '/reports/bank-statement' },
-    { title: 'Discount Report', desc: 'Check the total discounted amount by each party in purchase & sales', icon: Tag, to: '/reports/discount' },
     { title: 'Tax Sales', desc: 'Check report of all tax applicable sales', icon: Receipt, to: '/reports/tax-sales' },
     { title: 'Tax Purchase', desc: 'Check report of all tax applicable purchase', icon: Truck, to: '/reports/tax-purchase' },
   ],

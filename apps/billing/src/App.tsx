@@ -28,7 +28,7 @@ import Vouchers from './pages/Vouchers'
 import Parties from './pages/Parties'
 import Aging from './pages/Aging'
 import Items from './pages/Items'
-import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase } from './pages/reports'
+import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase, CashStatement, BankStatement, ExpenseCategory, IncomeCategory, StockQuantity } from './pages/reports'
 import Daybooks from './pages/Daybooks'
 import Settings from './pages/Settings'
 import Members from './pages/Members'
@@ -286,6 +286,11 @@ function Shell({ email }: { email: string }) {
             <Route path="/reports/low-stock" element={<LowStockSummary />} />
             <Route path="/reports/tax-sales" element={<TaxSales />} />
             <Route path="/reports/tax-purchase" element={<TaxPurchase />} />
+            <Route path="/reports/cash-statement" element={<CashStatement />} />
+            <Route path="/reports/bank-statement" element={<BankStatement />} />
+            <Route path="/reports/expense-category" element={<ExpenseCategory />} />
+            <Route path="/reports/income-category" element={<IncomeCategory />} />
+            <Route path="/reports/stock-quantity" element={<StockQuantity />} />
             <Route path="/daybooks" element={<Daybooks />} />
             <Route path="/members" element={<Members />} />
             <Route path="/membership-types" element={<MembershipTypes />} />

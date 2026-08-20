@@ -34,12 +34,52 @@ function fyEnd(): string {
   const now = new Date(); const y = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear(); return `${y}-07-15`
 }
 
+function computePayments(invoices: Document[], payments: Document[]): Map<number, number> {
+  const payByParty = new Map<number | null, Document[]>()
+  for (const p of payments) {
+    const pid = p.party && typeof p.party === 'object' ? (p.party as Party).id : (p.party as number || null)
+    const arr = payByParty.get(pid) || []
+    arr.push(p)
+    payByParty.set(pid, arr)
+  }
+  const result = new Map<number, number>()
+  for (const inv of invoices) {
+    const invParty = inv.party && typeof inv.party === 'object' ? (inv.party as Party).id : (inv.party as number || null)
+    const invDate = inv.date || ''
+    const invAmount = Number(inv.grossTotal) || 0
+    const partyPayments = payByParty.get(invParty) || []
+    let remaining = invAmount
+    let paid = 0
+    const sorted = [...partyPayments].sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+    for (const p of sorted) {
+      if (remaining <= 0) break
+      if ((p.date || '') < invDate) continue
+      const amt = Math.min(Number(p.grossTotal) || 0, remaining)
+      paid += amt
+      remaining -= amt
+    }
+    result.set(inv.id, paid)
+  }
+  return result
+}
+
+interface Row {
+  doc: Document
+  partyName: string
+  amount: number
+  paid: number
+  balance: number
+  type: 'purchase' | 'return'
+}
+
 export default function PurchaseReport() {
   const navigate = useNavigate()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
-  const [docs, setDocs] = useState<Document[]>([])
+  const [invoices, setInvoices] = useState<Document[]>([])
+  const [debitNotes, setDebitNotes] = useState<Document[]>([])
+  const [payments, setPayments] = useState<Document[]>([])
   const [parties, setParties] = useState<Party[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -62,11 +102,26 @@ export default function PurchaseReport() {
       } else if (to) {
         q.where = JSON.stringify({ date: { less_than_equal: to + 'T23:59:59' } })
       }
-      const [d, p] = await Promise.all([
+      const [docs, p] = await Promise.all([
         list<Document>('documents', q),
         list<Party>('parties', { depth: 0, sort: 'name', ...tenantQuery }),
       ])
-      setDocs(d.docs.filter((doc) => doc.docType === 'purchase-invoice' || doc.docType === 'debit-note'))
+      // Fetch payment vouchers for matching
+      const pQuery: Record<string, string> = { sort: 'date', depth: 0, ...tenantQuery }
+      if (from && to) {
+        pQuery.where = JSON.stringify({ and: [
+          { docType: { equals: 'payment-voucher' } },
+          { date: { greater_than_equal: from } },
+          { date: { less_than_equal: to + 'T23:59:59' } },
+        ]})
+      } else {
+        pQuery.where = JSON.stringify({ docType: { equals: 'payment-voucher' } })
+      }
+      const pDocs = await list<Document>('documents', pQuery)
+
+      setInvoices(docs.docs.filter((d) => d.docType === 'purchase-invoice'))
+      setDebitNotes(docs.docs.filter((d) => d.docType === 'debit-note'))
+      setPayments(pDocs.docs)
       setParties(p.docs)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load purchase report')
@@ -78,34 +133,44 @@ export default function PurchaseReport() {
   const partyName = (d: Document) =>
     d.party && typeof d.party === 'object' ? (d.party as Party).name : parties.find((p) => p.id === d.party)?.name || '—'
 
-  const filtered = useMemo(() => docs.filter((d) => {
-    if (statusFilter !== 'all' && d.status !== statusFilter) return false
-    if (query) {
-      const s = `${d.number || ''} ${d.narration || ''} ${partyName(d)}`.toLowerCase()
-      if (!s.includes(query.toLowerCase())) return false
-    }
-    return true
-  }), [docs, statusFilter, query, parties])
+  const paymentMap = useMemo(() => computePayments(invoices, payments), [invoices, payments])
 
-  const invoices = filtered.filter((d) => d.docType === 'purchase-invoice')
-  const returns = filtered.filter((d) => d.docType === 'debit-note')
+  const rows: Row[] = useMemo(() => {
+    const all = [
+      ...invoices.map((d) => ({ doc: d, partyName: partyName(d), amount: Number(d.grossTotal) || 0, paid: paymentMap.get(d.id) || 0, balance: (Number(d.grossTotal) || 0) - (paymentMap.get(d.id) || 0), type: 'purchase' as const })),
+      ...debitNotes.map((d) => ({ doc: d, partyName: partyName(d), amount: Number(d.grossTotal) || 0, paid: 0, balance: 0, type: 'return' as const })),
+    ]
+    return all.filter((r) => {
+      if (statusFilter !== 'all' && r.doc.status !== statusFilter) return false
+      if (query) {
+        const s = `${r.doc.number || ''} ${r.doc.narration || ''} ${r.partyName}`.toLowerCase()
+        if (!s.includes(query.toLowerCase())) return false
+      }
+      return true
+    })
+  }, [invoices, debitNotes, paymentMap, statusFilter, query, parties])
+
+  const totalPurchases = invoices.reduce((s, d) => s + (Number(d.grossTotal) || 0), 0)
+  const totalPaid = invoices.reduce((s, d) => s + (paymentMap.get(d.id) || 0), 0)
+  const totalUnpaid = totalPurchases - totalPaid
 
   const kpis = [
-    { label: 'Total Entries', value: String(invoices.length), sub: `${returns.length} return${returns.length !== 1 ? 's' : ''}` },
-    { label: 'Total Purchases', value: fmt(invoices.reduce((s, d) => s + (Number(d.grossTotal) || 0), 0)) },
-    { label: 'Posted', value: String(invoices.filter((d) => d.status === 'posted').length) },
-    { label: 'Drafts', value: String(invoices.filter((d) => d.status === 'draft').length), alert: invoices.some((d) => d.status === 'draft') },
+    { label: 'Total Entries', value: String(invoices.length), sub: `${debitNotes.length} return${debitNotes.length !== 1 ? 's' : ''}` },
+    { label: 'Total Purchases', value: fmt(totalPurchases) },
+    { label: 'Paid', value: fmt(totalPaid) },
+    { label: 'Unpaid', value: fmt(totalUnpaid), alert: totalUnpaid > 0 },
   ]
 
-  const csv = () => downloadCsv('purchase-report.csv', ['Date', 'Invoice No', 'Party', 'Status', 'Amount', 'Type'],
-    filtered.map((d) => [formatDate(d.date), d.number || '', partyName(d), d.status, d.grossTotal || 0, d.docType === 'debit-note' ? 'Return' : 'Purchase']))
+  const csv = () => downloadCsv('purchase-report.csv',
+    ['Date', 'Invoice No', 'Party', 'Status', 'Type', 'Amount', 'Paid', 'Balance'],
+    rows.map((r) => [formatDate(r.doc.date), r.doc.number || '', r.partyName, r.doc.status, r.type === 'return' ? 'Return' : 'Purchase', r.amount, r.paid, r.balance]))
 
   const pdf = () => exportReportPdf({
     filename: 'purchase-report.pdf', title: 'Purchase Report',
     meta: [['From', from || 'Earliest'], ['To', to || 'Latest'], ['Generated', formatDate(new Date().toISOString())]],
-    tables: [{ columns: ['Date', 'Invoice No', 'Party', 'Status', 'Amount'],
-      rows: filtered.map((d) => [formatDate(d.date), d.number || '—', partyName(d), d.status, Number(d.grossTotal) || 0]),
-      totals: ['Total', '', '', '', invoices.reduce((s, d) => s + (Number(d.grossTotal) || 0), 0)] }],
+    tables: [{ columns: ['Date', 'Invoice', 'Party', 'Status', 'Amount', 'Paid', 'Balance'],
+      rows: rows.map((r) => [formatDate(r.doc.date), r.doc.number || '—', r.partyName, r.doc.status, r.amount, r.paid, r.balance]),
+      totals: ['Total', '', '', '', totalPurchases, totalPaid, totalUnpaid] }],
   })
 
   return (
@@ -148,8 +213,7 @@ export default function PurchaseReport() {
             {kpis.map((k) => (
               <div key={k.label} className="rounded-lg border border-slate-200 bg-white p-4">
                 <div className="text-xs uppercase tracking-wide text-slate-500">{k.label}</div>
-                <div className="mt-1 font-mono text-lg font-semibold text-amber-700">{k.value}</div>
-                {k.sub && <div className="mt-0.5 text-xs text-slate-400">{k.sub}</div>}
+                <div className={`mt-1 font-mono text-lg font-semibold ${k.alert ? 'text-red-600' : 'text-amber-700'}`}>{k.value}</div>
               </div>
             ))}
           </div>
@@ -161,32 +225,39 @@ export default function PurchaseReport() {
                   <th className="px-4 py-2">Invoice No</th>
                   <th className="px-4 py-2">Party</th>
                   <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Type</th>
                   <th className="px-4 py-2 text-right">Amount</th>
+                  <th className="px-4 py-2 text-right">Paid</th>
+                  <th className="px-4 py-2 text-right">Balance</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 && (
-                  <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No purchase entries found.</td></tr>
-                )}
-                {filtered.map((d) => (
-                  <tr key={d.id} className="border-b border-slate-50">
-                    <td className="px-4 py-2 text-slate-600">{formatDate(d.date)}</td>
-                    <td className="px-4 py-2 font-mono text-slate-700">{d.number || '—'}</td>
-                    <td className="px-4 py-2 text-slate-800">{partyName(d)}</td>
-                    <td className="px-4 py-2"><StatusPill status={d.status} /></td>
-                    <td className="px-4 py-2 text-slate-500">
-                      {d.docType === 'debit-note' ? <span className="text-xs font-medium text-amber-600">Return</span> : 'Purchase'}
+                {rows.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No purchase entries found.</td></tr>}
+                {rows.map((r) => (
+                  <tr key={r.doc.id} className="border-b border-slate-50">
+                    <td className="px-4 py-2 text-slate-600">{formatDate(r.doc.date)}</td>
+                    <td className="px-4 py-2 font-mono text-slate-700">{r.doc.number || '—'}</td>
+                    <td className="px-4 py-2 text-slate-800">{r.partyName}</td>
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <StatusPill status={r.doc.status} />
+                        {r.type === 'return' && <span className="text-xs font-medium text-amber-600">Return</span>}
+                      </div>
                     </td>
-                    <td className="px-4 py-2 text-right font-mono text-slate-800">{fmt(Number(d.grossTotal) || 0)}</td>
+                    <td className="px-4 py-2 text-right font-mono text-slate-800">{fmt(r.amount)}</td>
+                    <td className="px-4 py-2 text-right font-mono text-emerald-700">{r.type === 'purchase' ? fmt(r.paid) : '—'}</td>
+                    <td className={`px-4 py-2 text-right font-mono ${r.balance > 0 ? 'text-red-600 font-medium' : 'text-slate-500'}`}>
+                      {r.type === 'purchase' ? fmt(r.balance) : '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>
-              {filtered.length > 0 && (
+              {rows.length > 0 && (
                 <tfoot>
                   <tr className="border-t border-slate-200 bg-slate-50">
-                    <td colSpan={5} className="px-4 py-2 text-xs font-semibold uppercase text-slate-600">Totals ({filtered.length} entries)</td>
-                    <td className="px-4 py-2 text-right font-mono font-semibold text-slate-900">{fmt(invoices.reduce((s, d) => s + (Number(d.grossTotal) || 0), 0))}</td>
+                    <td colSpan={4} className="px-4 py-2 text-xs font-semibold uppercase text-slate-600">Totals</td>
+                    <td className="px-4 py-2 text-right font-mono font-semibold text-slate-900">{fmt(totalPurchases)}</td>
+                    <td className="px-4 py-2 text-right font-mono font-semibold text-emerald-700">{fmt(totalPaid)}</td>
+                    <td className="px-4 py-2 text-right font-mono font-semibold text-red-600">{fmt(totalUnpaid)}</td>
                   </tr>
                 </tfoot>
               )}
