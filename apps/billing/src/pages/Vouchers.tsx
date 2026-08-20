@@ -10,6 +10,8 @@ import {
   Plus,
   Printer,
   Trash2,
+  ToggleLeft,
+  ToggleRight,
   X,
 } from 'lucide-react'
 import { api, fmt, getEngine, list, useSyncState } from '../lib/api'
@@ -175,6 +177,11 @@ export default function Vouchers() {
   const [viewDoc, setViewDoc] = useState<Document | null>(null)
   /** Outbox seq of a conflicted create being resumed into this form. */
   const resumedSeqRef = useRef<number | null>(null)
+  // TDS toggle state (separate from tax lines for cleaner UX)
+  const [tdsEnabled, setTdsEnabled] = useState(false)
+  const [tdsAccountId, setTdsAccountId] = useState('')
+  const [tdsTypeId, setTdsTypeId] = useState('')
+  const [tdsAmountManual, setTdsAmountManual] = useState('')
 
   const load = async () => {
     try {
@@ -318,6 +325,15 @@ export default function Vouchers() {
   const taxOptions = taxTypes.filter((t) =>
     isCash ? t.nature === 'withholding' : true,
   )
+
+  // TDS computed values
+  const tdsTaxType = taxTypes.find((t) => String(t.id) === tdsTypeId)
+  const tdsRate = tdsTaxType ? Number(tdsTaxType.rate) || 0 : 0
+  const tdsAutoAmount = useMemo(() => {
+    const gross = totals.gross
+    return gross > 0 && tdsRate > 0 ? (gross * tdsRate) / 100 : 0
+  }, [totals.gross, tdsRate])
+  const tdsAmount = tdsAmountManual ? parseFloat(tdsAmountManual) || 0 : tdsAutoAmount
   const addTaxLine = () =>
     setForm((f) => ({
       ...f,
@@ -469,8 +485,18 @@ export default function Vouchers() {
         memo: l.memo || undefined,
       }))
     }
-    if (form.taxLines.length > 0) {
-      base.taxLines = form.taxLines.map((tl) => ({
+    // Merge manual tax lines + TDS toggle
+    const allTaxLines = [...form.taxLines]
+    if (tdsEnabled && tdsAmount > 0 && tdsTypeId) {
+      allTaxLines.push({
+        key: '__tds__',
+        taxType: tdsTypeId,
+        nature: 'withholding' as TaxNature,
+        rate: String(tdsRate),
+      })
+    }
+    if (allTaxLines.length > 0) {
+      base.taxLines = allTaxLines.map((tl) => ({
         ...(tl.id ? { id: tl.id } : {}),
         taxType: Number(tl.taxType),
         nature: tl.nature,
@@ -518,6 +544,10 @@ export default function Vouchers() {
       setForm((f) => ({ ...f, date }))
       setEditingId(null)
       setShowPicker(false)
+      setTdsEnabled(false)
+      setTdsAccountId('')
+      setTdsTypeId('')
+      setTdsAmountManual('')
       await load()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to save voucher')
@@ -574,6 +604,19 @@ export default function Vouchers() {
           }))
         : [emptyJLine(), emptyJLine()],
     })
+    // Auto-populate TDS toggle from existing withholding tax lines
+    const withholdingLine = (d.taxLines || []).find((tl) => tl.nature === 'withholding')
+    if (withholdingLine) {
+      setTdsEnabled(true)
+      setTdsTypeId(idOf(withholdingLine.taxType))
+      setTdsAccountId('') // Will be set from the tax type's account mapping
+      setTdsAmountManual('') // Auto-calc from rate
+    } else {
+      setTdsEnabled(false)
+      setTdsTypeId('')
+      setTdsAccountId('')
+      setTdsAmountManual('')
+    }
   }
 
   const voidDoc = async (id: number) => {
@@ -755,6 +798,7 @@ export default function Vouchers() {
                 onClick={() => {
                   setEditingId(null)
                   setForm(emptyForm())
+                  setTdsEnabled(false); setTdsTypeId(''); setTdsAccountId(''); setTdsAmountManual('')
                 }}
                 className="text-xs font-medium underline"
               >
@@ -767,13 +811,14 @@ export default function Vouchers() {
               Type
               <select
                 value={form.docType}
-                onChange={(e) =>
+                onChange={(e) => {
+                  setTdsEnabled(false); setTdsTypeId(''); setTdsAccountId(''); setTdsAmountManual('')
                   setForm((f) => ({
                     ...emptyForm(),
                     date: f.date,
                     docType: e.target.value as DocType,
                   }))
-                }
+                }}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
               >
                 {DOC_TYPES.map((t) => (
@@ -920,6 +965,89 @@ export default function Vouchers() {
               />
             </label>
           </div>
+
+          {/* ── TDS Toggle ─────────────────────────────── */}
+          {isTaxable && (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+              <button
+                type="button"
+                onClick={() => setTdsEnabled((e) => !e)}
+                className="flex items-center gap-3 text-sm font-medium text-slate-700"
+              >
+                {tdsEnabled ? (
+                  <ToggleRight size={28} className="text-emerald-500" />
+                ) : (
+                  <ToggleLeft size={28} className="text-slate-300" />
+                )}
+                TDS is applicable
+              </button>
+              {tdsEnabled && (
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <label className="text-sm text-slate-700">
+                    TDS Account *
+                    <select
+                      required
+                      value={tdsAccountId}
+                      onChange={(e) => setTdsAccountId(e.target.value)}
+                      className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                    >
+                      <option value="">— select account —</option>
+                      {accounts
+                        .filter((a) =>
+                          a.type === 'liability' ||
+                          a.name.toLowerCase().includes('tds') ||
+                          a.name.toLowerCase().includes('withhold'),
+                        )
+                        .map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.code ? `${a.code} · ` : ''}{a.name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label className="text-sm text-slate-700">
+                    TDS Type *
+                    <select
+                      required
+                      value={tdsTypeId}
+                      onChange={(e) => {
+                        setTdsTypeId(e.target.value)
+                        setTdsAmountManual('')
+                      }}
+                      className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                    >
+                      <option value="">— select type —</option>
+                      {taxTypes
+                        .filter((t) => t.nature === 'withholding' && t.active !== false)
+                        .map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name} ({t.code} · {t.rate}%)
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label className="text-sm text-slate-700">
+                    TDS Amount *
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      step="0.01"
+                      value={tdsAmountManual || (tdsAutoAmount > 0 ? String(tdsAutoAmount.toFixed(2)) : '')}
+                      onChange={(e) => setTdsAmountManual(e.target.value)}
+                      placeholder={tdsAutoAmount > 0 ? fmt(tdsAutoAmount) : '0.00'}
+                      className="mt-1 w-full rounded border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-500"
+                    />
+                    {tdsRate > 0 && (
+                      <span className="mt-1 block text-xs text-slate-400">
+                        Calculated: {tdsRate}% × {fmt(totals.gross)} = {fmt(tdsAutoAmount)}
+                      </span>
+                    )}
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
 
           {isItem ? (
             <div className="mt-4">
