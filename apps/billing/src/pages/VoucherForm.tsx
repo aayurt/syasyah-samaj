@@ -367,9 +367,9 @@ export default function VoucherForm({ mode }: Props) {
                   onChange={(e) => { setPartySearch(e.target.value); setShowPartyDropdown(true); setParty('') }}
                   onFocus={() => { setShowPartyDropdown(true); setPartySearch('') }}
                   placeholder="Search for party"
-                  className="w-full rounded border border-slate-300 px-3 py-2.5 pr-8 text-sm outline-none focus:border-slate-500"
+                  className="w-full rounded border border-slate-300 px-3 py-[10px] pr-8 text-sm outline-none focus:border-slate-500"
                 />
-                <svg className="pointer-events-none absolute right-2.5 top-3 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                <svg className="pointer-events-none absolute right-2.5 top-[11px] h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
               </div>
               {showPartyDropdown && (
                 <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
@@ -650,7 +650,7 @@ export default function VoucherForm({ mode }: Props) {
               Amount
               <input type="number" min="0" step="0.01" value={contraAmount}
                 onChange={(e) => setContraAmount(e.target.value)}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2.5 font-mono text-sm outline-none focus:border-slate-500" placeholder="0.00" />
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] font-mono text-sm outline-none focus:border-slate-500" placeholder="0.00" />
             </label>
           </div>
         </div>
@@ -693,7 +693,7 @@ export default function VoucherForm({ mode }: Props) {
                   value={tdsAmountManual || (tdsAutoAmount > 0 ? String(tdsAutoAmount.toFixed(2)) : '')}
                   onChange={(e) => setTdsAmountManual(e.target.value)}
                   placeholder={tdsAutoAmount > 0 ? fmt(tdsAutoAmount) : 'TDS Amount'}
-                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2.5 font-mono text-sm outline-none focus:border-slate-500" />
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] font-mono text-sm outline-none focus:border-slate-500" />
                 {tdsRate > 0 && <span className="mt-1 block text-xs text-slate-400">Calculated: {tdsRate}% × {fmt(lineTotals)} = {fmt(tdsAutoAmount)}</span>}
               </label>
             </div>
