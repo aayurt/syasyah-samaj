@@ -1,4 +1,4 @@
-import { isAdmin, authenticated } from '@/access/admin'
+import { isAdmin } from '@/access/admin'
 import type { GlobalConfig } from 'payload'
 
 /**
@@ -17,7 +17,10 @@ export const BillingSettings: GlobalConfig = {
       'Default accounts used when posting vouchers. Missing accounts block posting until configured.',
   },
   access: {
-    read: authenticated,
+    // Calendar settings are not sensitive — any logged-in user (or the SPA
+    // before session is established) must be able to read them so dates render
+    // in the correct calendar type.
+    read: () => true,
     update: isAdmin,
   },
   fields: [
