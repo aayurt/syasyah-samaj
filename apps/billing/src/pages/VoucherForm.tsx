@@ -262,8 +262,21 @@ export default function VoucherForm({ mode }: Props) {
     return { debit, credit, diff: debit - credit }
   }, [journalLines])
 
+  // VAT / additive tax total
+  const vatTotal = useMemo(() => {
+    let total = 0
+    for (const tl of taxLines) {
+      if (tl.nature === 'additive') {
+        const txType = taxTypes.find((t) => String(t.id) === tl.taxType)
+        const rate = txType ? Number(txType.rate) || parseFloat(tl.rate) || 0 : parseFloat(tl.rate) || 0
+        total += (lineTotals * rate) / 100
+      }
+    }
+    return total
+  }, [taxLines, taxTypes, lineTotals])
+
   // Grand total
-  const grandTotal = isContra ? contraTotal : lineTotals
+  const grandTotal = isContra ? contraTotal : lineTotals + vatTotal
 
   /* ── Line setters ───────────────────────────────────────────── */
   const setLine = (key: string, patch: Partial<LineDraft>) =>
@@ -712,6 +725,50 @@ export default function VoucherForm({ mode }: Props) {
         </div>
       )}
 
+      {/* ── VAT / Additive Tax Lines ─────────────────────────── */}
+      {isTaxable && (
+        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-slate-700">Tax Lines</h3>
+            <button type="button" onClick={() => setTaxLines((ts) => [...ts, { key: crypto.randomUUID(), taxType: '', nature: 'additive' as TaxNature, rate: '' }])}
+              className="flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700">
+              <Plus size={14} /> Add Tax Line
+            </button>
+          </div>
+          {taxLines.filter((tl) => tl.nature === 'additive').length > 0 && (
+            <div className="mt-3 space-y-2">
+              {taxLines.filter((tl) => tl.nature === 'additive').map((tl) => {
+                const txType = taxTypes.find((t) => String(t.id) === tl.taxType)
+                const rate = txType ? Number(txType.rate) || parseFloat(tl.rate) || 0 : parseFloat(tl.rate) || 0
+                const taxAmt = (lineTotals * rate) / 100
+                return (
+                  <div key={tl.key} className="grid grid-cols-[1fr_80px_100px_32px] items-center gap-2">
+                    <select value={tl.taxType}
+                      onChange={(e) => {
+                        const selected = taxTypes.find((t) => String(t.id) === e.target.value)
+                        setTaxLines((ts) => ts.map((t) => t.key === tl.key ? { ...t, taxType: e.target.value, rate: selected ? String(selected.rate) : t.rate } : t))
+                      }}
+                      className="rounded border border-slate-300 px-2 py-[10px] text-sm outline-none focus:border-slate-500">
+                      <option value="">Select tax type</option>
+                      {taxTypes.filter((t) => t.nature === 'additive' && t.active !== false)
+                        .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.code} · {t.rate}%)</option>)}
+                    </select>
+                    <div className="text-right font-mono text-xs text-slate-500">{rate}%</div>
+                    <div className="text-right font-mono text-sm font-medium text-slate-700">{fmt(taxAmt)}</div>
+                    <button type="button" onClick={() => setTaxLines((ts) => ts.filter((t) => t.key !== tl.key))}
+                      className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                  </div>
+                )
+              })}
+              <div className="flex justify-end border-t border-slate-100 pt-2 text-sm">
+                <span className="text-slate-500">Total Tax: </span>
+                <span className="ml-2 font-mono font-medium text-slate-700">{fmt(vatTotal)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── TDS Toggle ────────────────────────────────────────── */}
       {isTaxable && (
         <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
@@ -794,6 +851,16 @@ export default function VoucherForm({ mode }: Props) {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-slate-700">Total Amount</label>
+              {vatTotal > 0 && (
+                <div className="mt-1 flex justify-between text-xs text-slate-500">
+                  <span>Sub Total</span><span className="font-mono">Rs. {fmt(lineTotals)}</span>
+                </div>
+              )}
+              {vatTotal > 0 && (
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Tax</span><span className="font-mono">Rs. {fmt(vatTotal)}</span>
+                </div>
+              )}
               <div className="mt-1 rounded border border-slate-200 bg-slate-50 px-3 py-[10px] font-mono text-lg font-semibold text-slate-800">
                 Rs. {fmt(grandTotal)}
               </div>
