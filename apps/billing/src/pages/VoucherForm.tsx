@@ -460,7 +460,7 @@ export default function VoucherForm({ mode }: Props) {
                 <th className="px-4 py-3">Name</th>
                 <th className="w-20 px-4 py-3 text-right">Quantity</th>
                 <th className="w-28 px-4 py-3 text-right">Rate</th>
-                <th className="w-16 px-4 py-3 text-right">Disc %</th>
+                <th className="w-24 px-4 py-3 text-right">Disc %</th>
                 <th className="w-24 px-4 py-3 text-right">Disc Rs.</th>
                 <th className="w-28 px-4 py-3 text-right">Amount</th>
                 <th className="w-10 px-4 py-3"></th>
