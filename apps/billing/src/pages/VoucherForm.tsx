@@ -796,13 +796,13 @@ export default function VoucherForm({ mode }: Props) {
                 Name *
                 <input type="text" required value={newPartyName}
                   onChange={(e) => setNewPartyName(e.target.value)}
-                  className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500"
+                  className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
                   placeholder="Party name" autoFocus />
               </label>
               <label className="text-sm text-slate-700">
                 Type *
                 <select value={newPartyType} onChange={(e) => setNewPartyType(e.target.value as 'customer' | 'vendor')}
-                  className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500">
+                  className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500">
                   <option value="customer">Customer</option>
                   <option value="vendor">Vendor</option>
                 </select>
@@ -812,13 +812,13 @@ export default function VoucherForm({ mode }: Props) {
                   Phone
                   <input type="tel" value={newPartyPhone}
                     onChange={(e) => setNewPartyPhone(e.target.value)}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500" />
+                    className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500" />
                 </label>
                 <label className="text-sm text-slate-700">
                   Email
                   <input type="email" value={newPartyEmail}
                     onChange={(e) => setNewPartyEmail(e.target.value)}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500" />
+                    className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500" />
                 </label>
               </div>
             </div>
