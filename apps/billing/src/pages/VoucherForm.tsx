@@ -542,7 +542,7 @@ export default function VoucherForm({ mode }: Props) {
                             }}
                             onFocus={() => { setItemSearchRow(l.key); setItemSearchText('') }}
                             placeholder="Enter Item name"
-                            className="w-full rounded border border-slate-200 px-2 py-[9px] text-sm outline-none focus:border-slate-500"
+                            className="w-full rounded border border-slate-200 px-2 py-[10px] text-sm outline-none focus:border-slate-500"
                           />
                           {itemSearchRow === l.key && (
                             <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
@@ -574,21 +574,21 @@ export default function VoucherForm({ mode }: Props) {
                           type="text" value={l.description}
                           onChange={(e) => setLine(l.key, { description: e.target.value })}
                           placeholder="Enter Item name"
-                          className="w-full rounded border border-slate-200 px-2 py-[9px] text-sm outline-none focus:border-slate-500"
+                          className="w-full rounded border border-slate-200 px-2 py-[10px] text-sm outline-none focus:border-slate-500"
                         />
                       )}
                     </td>
                     <td className="px-2 py-2">
                       <input type="number" min="0" step="any" value={l.qty}
                         onChange={(e) => setLine(l.key, { qty: e.target.value })}
-                        className="w-full rounded border border-slate-200 px-2 py-[9px] text-right font-mono text-sm outline-none focus:border-slate-500" />
+                        className="w-full rounded border border-slate-200 px-2 py-[10px] text-right font-mono text-sm outline-none focus:border-slate-500" />
                     </td>
                     <td className="px-2 py-2">
                       <div className="flex items-center">
                         <span className="mr-1 text-xs text-slate-400">Rs.</span>
                         <input type="number" min="0" step="0.01" value={l.rate}
                           onChange={(e) => setLine(l.key, { rate: e.target.value })}
-                          className="w-full rounded border border-slate-200 px-2 py-[9px] text-right font-mono text-sm outline-none focus:border-slate-500" />
+                          className="w-full rounded border border-slate-200 px-2 py-[10px] text-right font-mono text-sm outline-none focus:border-slate-500" />
                       </div>
                     </td>
                     <td className="px-2 py-2">
@@ -597,7 +597,7 @@ export default function VoucherForm({ mode }: Props) {
                           <>
                             <input type="number" min="0" max="100" step="0.01" value={l.discountPct}
                               onChange={(e) => setLine(l.key, { discountPct: e.target.value, discountAmt: '' })}
-                              className="w-full rounded border border-slate-200 px-2 py-[9px] text-right font-mono text-sm outline-none focus:border-slate-500" />
+                              className="w-full rounded border border-slate-200 px-2 py-[10px] text-right font-mono text-sm outline-none focus:border-slate-500" />
                             <span className="ml-1 text-xs text-slate-400">%</span>
                           </>
                         ) : (
@@ -605,7 +605,7 @@ export default function VoucherForm({ mode }: Props) {
                             <span className="mr-1 text-xs text-slate-400">Rs.</span>
                             <input type="number" min="0" step="0.01" value={l.discountAmt}
                               onChange={(e) => setLine(l.key, { discountAmt: e.target.value, discountPct: '' })}
-                              className="w-full rounded border border-slate-200 px-2 py-[9px] text-right font-mono text-sm outline-none focus:border-slate-500" />
+                              className="w-full rounded border border-slate-200 px-2 py-[10px] text-right font-mono text-sm outline-none focus:border-slate-500" />
                           </>
                         )}
                       </div>
@@ -655,20 +655,20 @@ export default function VoucherForm({ mode }: Props) {
                 <tr key={l.key} className="border-b border-slate-50">
                   <td className="px-2 py-2">
                     <select value={l.account} onChange={(e) => setJLine(l.key, { account: e.target.value })}
-                      className="w-full rounded border border-slate-200 px-2 py-[9px] text-sm outline-none focus:border-slate-500">
+                      className="w-full rounded border border-slate-200 px-2 py-[10px] text-sm outline-none focus:border-slate-500">
                       <option value="">— select —</option>
                       {accounts.map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ''}{a.name}</option>)}
                     </select>
                   </td>
                   <td className="px-2 py-2"><input type="number" step="0.01" min="0" value={l.debit}
                     onChange={(e) => setJLine(l.key, { debit: e.target.value, credit: '' })}
-                    className="w-full rounded border border-slate-200 px-2 py-[9px] text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
+                    className="w-full rounded border border-slate-200 px-2 py-[10px] text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
                   <td className="px-2 py-2"><input type="number" step="0.01" min="0" value={l.credit}
                     onChange={(e) => setJLine(l.key, { credit: e.target.value, debit: '' })}
-                    className="w-full rounded border border-slate-200 px-2 py-[9px] text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
+                    className="w-full rounded border border-slate-200 px-2 py-[10px] text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
                   <td className="px-2 py-2"><input type="text" value={l.memo}
                     onChange={(e) => setJLine(l.key, { memo: e.target.value })}
-                    className="w-full rounded border border-slate-200 px-2 py-[9px] text-sm outline-none focus:border-slate-500" /></td>
+                    className="w-full rounded border border-slate-200 px-2 py-[10px] text-sm outline-none focus:border-slate-500" /></td>
                   <td className="px-2 py-2 text-center">
                     <button type="button" onClick={() => removeJLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
                   </td>
@@ -925,7 +925,7 @@ export default function VoucherForm({ mode }: Props) {
               <label className="text-sm text-slate-700">
                 Type *
                 <select value={newPartyType} onChange={(e) => setNewPartyType(e.target.value as 'customer' | 'vendor')}
-                  className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500">
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-[10px] text-sm outline-none focus:border-slate-500">
                   <option value="customer">Customer</option>
                   <option value="vendor">Vendor</option>
                 </select>
