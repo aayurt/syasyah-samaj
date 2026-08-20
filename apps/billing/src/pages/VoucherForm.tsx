@@ -71,6 +71,13 @@ export default function VoucherForm({ mode }: Props) {
 
   // Form state
   const [docType, setDocType] = useState<DocType>('sales-invoice')
+  // Sync prefix when docType changes
+  const updateDocType = (dt: DocType) => {
+    setDocType(dt)
+    setInvoicePrefix(DOC_PREFIXES[dt] || 'INV')
+    setManualNumber('')
+    setNumberManual(false)
+  }
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [party, setParty] = useState('')
   const [partySearch, setPartySearch] = useState('')
@@ -90,6 +97,26 @@ export default function VoucherForm({ mode }: Props) {
   const [tdsAccountId, setTdsAccountId] = useState('')
   const [tdsTypeId, setTdsTypeId] = useState('')
   const [tdsAmountManual, setTdsAmountManual] = useState('')
+
+  // Invoice number
+  const DOC_PREFIXES: Record<string, string> = {
+    'sales-invoice': 'SI', 'purchase-invoice': 'PI', 'payment-voucher': 'PV',
+    'receipt-voucher': 'RV', 'credit-note': 'CN', 'debit-note': 'DN',
+    'petty-cash-voucher': 'PC', grn: 'GRN', 'delivery-challan': 'DC',
+    'journal-voucher': 'JV', contra: 'CT',
+  }
+  const [invoicePrefix, setInvoicePrefix] = useState(() => DOC_PREFIXES['sales-invoice'] || 'INV')
+  const [numberManual, setNumberManual] = useState(false)
+  const [manualNumber, setManualNumber] = useState('')
+  const [nextNumberPreview, setNextNumberPreview] = useState('')
+
+  // Add party popup
+  const [showPartyPopup, setShowPartyPopup] = useState(false)
+  const [newPartyName, setNewPartyName] = useState('')
+  const [newPartyType, setNewPartyType] = useState<'customer' | 'vendor'>('customer')
+  const [newPartyPhone, setNewPartyPhone] = useState('')
+  const [newPartyEmail, setNewPartyEmail] = useState('')
+  const [newPartySaving, setNewPartySaving] = useState(false)
 
   // Party search dropdown
   const [showPartyDropdown, setShowPartyDropdown] = useState(false)
@@ -121,7 +148,7 @@ export default function VoucherForm({ mode }: Props) {
     ;(async () => {
       try {
         const d = await api<Document>(`/documents/${id}`, { query: { depth: 1, ...tenantQuery } })
-        setDocType(d.docType)
+        setDocType(d.docType); setInvoicePrefix(DOC_PREFIXES[d.docType] || 'INV')
         setDate(d.date?.slice(0, 10) || new Date().toISOString().slice(0, 10))
         setNarration(d.narration || '')
         setTaxRate(String(d.taxRate ?? 0))
@@ -234,9 +261,11 @@ export default function VoucherForm({ mode }: Props) {
 
   /* ── Submit ─────────────────────────────────────────────────── */
   const buildBody = () => {
+    const finalNumber = numberManual ? manualNumber : nextNumberPreview
     const base: Record<string, unknown> = {
       docType, date, narration: narration || undefined,
       party: party ? Number(party) : undefined, status: 'draft',
+      number: finalNumber || undefined,
       ...(tenantId ? { tenant: tenantId } : {}),
     }
     if (isItem) {
@@ -344,6 +373,10 @@ export default function VoucherForm({ mode }: Props) {
               {showPartyDropdown && (
                 <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                   {filteredParties.length === 0 && <div className="px-3 py-2 text-sm text-slate-400">No parties found</div>}
+                  <button type="button" onClick={() => { setShowPartyPopup(true); setShowPartyDropdown(false) }}
+                    className="w-full border-t border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
+                    + Add new party
+                  </button>
                   {filteredParties.map((p) => (
                     <button
                       key={p.id}
@@ -360,17 +393,47 @@ export default function VoucherForm({ mode }: Props) {
             </div>
           )}
 
-          {/* Invoice No */}
-          <div>
-            <label className="text-sm font-medium text-slate-700">
-              Invoice No <span className="ml-1 text-xs font-normal text-emerald-600">Manual</span>
+          {/* Invoice No with prefix + manual toggle */}
+          <div className="flex gap-2">
+            <label className="w-20 text-sm font-medium text-slate-700">
+              Prefix
+              <input
+                type="text"
+                value={invoicePrefix}
+                onChange={(e) => setInvoicePrefix(e.target.value.toUpperCase())}
+                className="mt-1 w-full rounded border border-slate-300 px-2 py-2.5 text-center font-mono text-sm font-semibold uppercase outline-none focus:border-slate-500"
+                maxLength={8}
+              />
             </label>
-            <input
-              type="text"
-              readOnly
-              value={mode === 'edit' && id ? `#${id}` : '—'}
-              className="mt-1 w-full rounded border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500"
-            />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-slate-700">Invoice No</label>
+                <button
+                  type="button"
+                  onClick={() => { setNumberManual((m) => !m); setManualNumber('') }}
+                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                    numberManual
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                >
+                  {numberManual ? 'Manual' : 'Auto'}
+                </button>
+              </div>
+              {numberManual ? (
+                <input
+                  type="text"
+                  value={manualNumber}
+                  onChange={(e) => setManualNumber(e.target.value)}
+                  placeholder="Type invoice number"
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2.5 text-sm font-mono outline-none focus:border-slate-500"
+                />
+              ) : (
+                <div className="mt-1 w-full rounded border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm text-slate-600">
+                  {nextNumberPreview || `${invoicePrefix}-...`}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Date */}
@@ -723,6 +786,69 @@ export default function VoucherForm({ mode }: Props) {
           </div>
         </div>
       </div>
+      {/* ── Add Party Popup ──────────────────────────────── */}
+      {showPartyPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-slate-900">Add New Party</h2>
+            <p className="mt-1 text-sm text-slate-500">Create a new customer or vendor</p>
+            <div className="mt-4 space-y-3">
+              <label className="text-sm text-slate-700">
+                Name *
+                <input type="text" required value={newPartyName}
+                  onChange={(e) => setNewPartyName(e.target.value)}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                  placeholder="Party name" autoFocus />
+              </label>
+              <label className="text-sm text-slate-700">
+                Type *
+                <select value={newPartyType} onChange={(e) => setNewPartyType(e.target.value as 'customer' | 'vendor')}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500">
+                  <option value="customer">Customer</option>
+                  <option value="vendor">Vendor</option>
+                </select>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-sm text-slate-700">
+                  Phone
+                  <input type="tel" value={newPartyPhone}
+                    onChange={(e) => setNewPartyPhone(e.target.value)}
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500" />
+                </label>
+                <label className="text-sm text-slate-700">
+                  Email
+                  <input type="email" value={newPartyEmail}
+                    onChange={(e) => setNewPartyEmail(e.target.value)}
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500" />
+                </label>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" onClick={() => { setShowPartyPopup(false); setNewPartyName(''); setNewPartyPhone(''); setNewPartyEmail('') }}
+                className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancel</button>
+              <button type="button" disabled={!newPartyName || newPartySaving}
+                onClick={async () => {
+                  setNewPartySaving(true)
+                  try {
+                    const created = await api<{ doc: Party }>('/parties', {
+                      method: 'POST',
+                      body: { name: newPartyName, type: newPartyType, phone: newPartyPhone || undefined, email: newPartyEmail || undefined, ...(tenantId ? { tenant: tenantId } : {}) },
+                    })
+                    setParties((ps) => [...ps, created.doc])
+                    setParty(String(created.doc.id))
+                    setPartySearch(created.doc.name)
+                    setShowPartyPopup(false)
+                    setNewPartyName(''); setNewPartyPhone(''); setNewPartyEmail('')
+                  } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to create party') }
+                  setNewPartySaving(false)
+                }}
+                className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
+                {newPartySaving ? 'Creating…' : 'Create Party'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
