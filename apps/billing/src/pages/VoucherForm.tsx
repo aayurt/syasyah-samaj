@@ -533,6 +533,10 @@ export default function VoucherForm({ mode }: Props) {
                           />
                           {itemSearchRow === l.key && (
                             <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
+                              <button type="button" onClick={() => { setNewItemTargetLine(l.key); setShowItemPopup(true); setItemSearchRow(null) }}
+                                className="w-full border-b border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
+                                + Add new item
+                              </button>
                               {itemSearchText && items.filter((it) => it.name.toLowerCase().includes(itemSearchText.toLowerCase())).slice(0, 5).map((it) => (
                                 <button key={it.id} type="button" onClick={() => {
                                   setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || '') })
@@ -549,10 +553,6 @@ export default function VoucherForm({ mode }: Props) {
                                   {it.code ? `${it.code} · ` : ''}{it.name}
                                 </button>
                               ))}
-                              <button type="button" onClick={() => { setNewItemTargetLine(l.key); setShowItemPopup(true); setItemSearchRow(null) }}
-                                className="w-full border-t border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
-                                + Add new item
-                              </button>
                             </div>
                           )}
                         </div>
