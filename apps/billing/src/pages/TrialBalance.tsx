@@ -5,6 +5,7 @@ import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
+import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Account, LedgerRow, TrialBalanceRow } from '../lib/types'
 
@@ -30,6 +31,7 @@ export default function TrialBalance() {
   const [ledgerName, setLedgerName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const { formatDate } = useCalendar()
 
   const load = async () => {
     try {
@@ -268,7 +270,7 @@ export default function TrialBalance() {
                 {ledger.map((l) => (
                   <tr key={l.id} className="border-b border-slate-50">
                     <td className="px-4 py-2 text-slate-600">
-                      {l.date?.slice(0, 10)}
+                      {formatDate(l.date)}
                     </td>
                     <td className="px-4 py-2 text-slate-800">
                       {l.narration || '—'}

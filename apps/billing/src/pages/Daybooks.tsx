@@ -5,6 +5,7 @@ import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
+import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { DOC_TYPE_LABELS } from '../lib/types'
 import type { DaybookResponse, DaybookType, Document } from '../lib/types'
@@ -28,6 +29,7 @@ export default function Daybooks() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [voucher, setVoucher] = useState<Document | null>(null)
+  const { formatDate } = useCalendar()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
 
@@ -244,7 +246,7 @@ export default function Daybooks() {
                 onClick={() => r.docId && openVoucher(r.docId)}
               >
                 <td className="px-4 py-2 text-slate-600">
-                  {r.date?.slice(0, 10)}
+                  {formatDate(r.date)}
                 </td>
                 <td className="px-4 py-2">
                   {r.docNumber ? (

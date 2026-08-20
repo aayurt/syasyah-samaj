@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { exportReportPdf } from '../lib/pdf'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
+import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { AgingResponse, AgingRow } from '../lib/types'
 
@@ -17,6 +18,7 @@ export default function Aging() {
   const [error, setError] = useState('')
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
+  const { formatDate } = useCalendar()
 
   const load = async (s: 'ar' | 'ap') => {
     setLoading(true)
@@ -49,7 +51,7 @@ export default function Aging() {
       filename: `aging-${side}.pdf`,
       title: `Aging — ${sideLabel}`,
       meta: [
-        ['As of', data.asOf?.slice(0, 10) || '—'],
+        ['As of', formatDate(data.asOf)],
         ['Generated', new Date().toLocaleString()],
       ],
       tables: [
@@ -120,7 +122,7 @@ export default function Aging() {
       )}
 
       <p className="mt-2 text-xs text-slate-400">
-        Open balances as of {data ? new Date(data.asOf).toLocaleDateString() : '…'} —
+        Open balances as of {data ? formatDate(data.asOf) : '…'} —
         {side === 'ar'
           ? ' posted sales invoices minus credit notes and receipts'
           : ' posted purchase invoices minus debit notes and payments'}
@@ -249,7 +251,7 @@ export default function Aging() {
                   </td>
                   <td className="px-4 py-2 text-slate-600">{r.docType}</td>
                   <td className="px-4 py-2 text-slate-600">
-                    {r.date?.slice(0, 10)}
+                    {formatDate(r.date)}
                   </td>
                   <td className="px-4 py-2 text-right text-slate-600">
                     {r.days}

@@ -7,6 +7,7 @@ import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
+import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Item, StockLedgerRow, StockLevel } from '../lib/types'
 
@@ -24,6 +25,7 @@ export default function Items() {
   const { cacheVersion } = useSyncState()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
+  const { formatDate } = useCalendar()
   const [items, setItems] = useState<Item[]>([])
   const [levels, setLevels] = useState<StockLevel[]>([])
   const [error, setError] = useState('')
@@ -423,7 +425,7 @@ export default function Items() {
                       className="border-b border-slate-50"
                     >
                       <td className="px-4 py-2 text-slate-600">
-                        {r.date ? r.date.slice(0, 10) : (
+                        {r.date ? formatDate(r.date) : (
                           <span className="text-slate-400">opening</span>
                         )}
                       </td>

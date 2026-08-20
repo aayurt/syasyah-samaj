@@ -32,6 +32,7 @@ import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
+import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { exportInvoicePdf } from '../lib/pdf'
 
@@ -168,6 +169,7 @@ export default function Vouchers() {
   const [typeFilter, setTypeFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [loading, setLoading] = useState(true)
+  const { formatDate } = useCalendar()
   const [menuFor, setMenuFor] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [viewDoc, setViewDoc] = useState<Document | null>(null)
@@ -1516,7 +1518,7 @@ export default function Vouchers() {
             {visible.map((d) => (
               <tr key={d.id} className="border-b border-slate-50">
                 <td className="px-4 py-2 text-slate-600">
-                  {d.date?.slice(0, 10)}
+                  {formatDate(d.date)}
                 </td>
                 <td className="px-4 py-2 font-mono text-slate-700">
                   {d.number || (
@@ -1649,7 +1651,7 @@ export default function Vouchers() {
               <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-3">
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-slate-400">Date</dt>
-                  <dd className="mt-0.5 text-slate-700">{viewDoc.date?.slice(0, 10)}</dd>
+                  <dd className="mt-0.5 text-slate-700">{formatDate(viewDoc.date)}</dd>
                 </div>
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-slate-400">Party</dt>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, fmt, list, useSyncState } from '../lib/api'
 import DataStatus from '../components/DataStatus'
+import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Account, JournalEntry } from '../lib/types'
 
@@ -21,6 +22,7 @@ export default function Dashboard() {
   } | null>(null)
   const [recent, setRecent] = useState<JournalEntry[]>([])
   const [error, setError] = useState('')
+  const { formatDate } = useCalendar()
 
   useEffect(() => {
     ;(async () => {
@@ -139,7 +141,7 @@ export default function Dashboard() {
               return (
                 <tr key={e.id} className="border-b border-slate-50">
                   <td className="px-4 py-2 text-slate-600">
-                    {e.date?.slice(0, 10)}
+                    {formatDate(e.date)}
                   </td>
                   <td className="px-4 py-2 text-slate-800">
                     {e.narration || '—'}

@@ -7,6 +7,7 @@ import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
+import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Account, JournalEntry } from '../lib/types'
 import { StatusPill } from './Dashboard'
@@ -45,6 +46,7 @@ export default function Journal() {
   const [saving, setSaving] = useState(false)
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(true)
+  const { formatDate } = useCalendar()
 
   const load = async () => {
     try {
@@ -434,7 +436,7 @@ export default function Journal() {
               return (
                 <tr key={e.id} className="border-b border-slate-50">
                   <td className="px-4 py-2 text-slate-600">
-                    {e.date?.slice(0, 10)}
+                    {formatDate(e.date)}
                   </td>
                   <td className="px-4 py-2 text-slate-800">
                     {e.narration || '—'}

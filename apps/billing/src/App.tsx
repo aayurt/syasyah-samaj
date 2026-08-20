@@ -42,6 +42,7 @@ import Toaster from './components/Toaster'
 import Tour from './components/Tour'
 import UpdatePrompt from './components/UpdatePrompt'
 import { TenantProvider } from './lib/tenant'
+import { CalendarProvider } from './lib/calendar'
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 
@@ -118,7 +119,9 @@ export default function App() {
 
   return (
     <TenantProvider>
-      <Shell email={session.user.email} />
+      <CalendarProvider>
+        <Shell email={session.user.email} />
+      </CalendarProvider>
     </TenantProvider>
   )
 }
