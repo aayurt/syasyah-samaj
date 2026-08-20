@@ -265,24 +265,22 @@ export default function VoucherForm({ mode }: Props) {
 
   /* ── Discount toggle with auto-conversion ─────────────────── */
   const toggleDiscountMode = () => {
-    setDiscountMode((prev) => {
-      const next = prev === 'pct' ? 'amt' : 'pct'
-      setLines((ls) => ls.map((l) => {
-        const base = (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
-        if (next === 'amt') {
-          // % → Rs.: convert current % to flat amount
-          const pct = parseFloat(l.discountPct) || 0
-          const amt = base > 0 && pct > 0 ? base * (pct / 100) : 0
-          return { ...l, discountAmt: amt > 0 ? amt.toFixed(2) : '', discountPct: '' }
-        } else {
-          // Rs. → %: convert current flat amount to %
-          const amt = parseFloat(l.discountAmt) || 0
-          const pct = base > 0 && amt > 0 ? (amt / base) * 100 : 0
-          return { ...l, discountPct: pct > 0 ? Math.round(pct * 100) / 100 + '' : '', discountAmt: '' }
-        }
-      }))
-      return next
-    })
+    const next = discountMode === 'pct' ? 'amt' : 'pct'
+    setLines((ls) => ls.map((l) => {
+      const base = (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
+      if (next === 'amt') {
+        // % → Rs.: convert current % to flat amount
+        const pct = parseFloat(l.discountPct) || 0
+        const amt = base > 0 && pct > 0 ? base * (pct / 100) : 0
+        return { ...l, discountAmt: amt > 0 ? amt.toFixed(2) : '', discountPct: '' }
+      } else {
+        // Rs. → %: convert current flat amount to %
+        const amt = parseFloat(l.discountAmt) || 0
+        const pct = base > 0 && amt > 0 ? (amt / base) * 100 : 0
+        return { ...l, discountPct: pct > 0 ? (Math.round(pct * 100) / 100) + '' : '', discountAmt: '' }
+      }
+    }))
+    setDiscountMode(next)
   }
 
   /* ── Submit ─────────────────────────────────────────────────── */
