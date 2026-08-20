@@ -263,6 +263,28 @@ export default function VoucherForm({ mode }: Props) {
   const removeLine = (key: string) => setLines((ls) => ls.length > 1 ? ls.filter((l) => l.key !== key) : ls)
   const removeJLine = (key: string) => setJournalLines((ls) => ls.length > 2 ? ls.filter((l) => l.key !== key) : ls)
 
+  /* ── Discount toggle with auto-conversion ─────────────────── */
+  const toggleDiscountMode = () => {
+    setDiscountMode((prev) => {
+      const next = prev === 'pct' ? 'amt' : 'pct'
+      setLines((ls) => ls.map((l) => {
+        const base = (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
+        if (next === 'amt') {
+          // % → Rs.: convert current % to flat amount
+          const pct = parseFloat(l.discountPct) || 0
+          const amt = base > 0 && pct > 0 ? base * (pct / 100) : 0
+          return { ...l, discountAmt: amt > 0 ? amt.toFixed(2) : '', discountPct: '' }
+        } else {
+          // Rs. → %: convert current flat amount to %
+          const amt = parseFloat(l.discountAmt) || 0
+          const pct = base > 0 && amt > 0 ? (amt / base) * 100 : 0
+          return { ...l, discountPct: pct > 0 ? Math.round(pct * 100) / 100 + '' : '', discountAmt: '' }
+        }
+      }))
+      return next
+    })
+  }
+
   /* ── Submit ─────────────────────────────────────────────────── */
   const buildBody = () => {
     const finalNumber = numberManual ? manualNumber : nextNumberPreview
@@ -466,7 +488,7 @@ export default function VoucherForm({ mode }: Props) {
                 <th className="w-28 px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-1.5">
                     <span>Discount</span>
-                    <button type="button" onClick={() => setDiscountMode((m) => m === 'pct' ? 'amt' : 'pct')}
+                    <button type="button" onClick={toggleDiscountMode}
                       className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100">
                       {discountMode === 'pct' ? 'Rs.' : '%'}
                       <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
