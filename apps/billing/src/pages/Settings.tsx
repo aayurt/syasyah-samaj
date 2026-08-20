@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Calendar, HelpCircle, LogOut, Settings2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { authClient, clearCachedSession } from '../lib/auth'
 import { formatDate } from '../lib/nepaliDate'
+import { useCalendar } from '../lib/calendar'
 import type { Account, BillingSettings } from '../lib/types'
 
 const ACCOUNT_FIELDS: { key: keyof BillingSettings; label: string }[] = [
@@ -26,12 +27,15 @@ export default function Settings() {
   const [fiscalYearStart, setFiscalYearStart] = useState('')
   const [freezeDate, setFreezeDate] = useState('')
   const [error, setError] = useState('')
-  const [calendarType, setCalendarType] = useState<'AD' | 'BS'>('AD')
+  const [calendarType, setCalendarType] = useState<'AD' | 'BS'>('BS')
   const [dateFormat, setDateFormat] = useState('YYYY-MM-DD')
   const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>('12h')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [calSaved, setCalSaved] = useState(false)
+  const loaded = useRef(false)
   const navigate = useNavigate()
+  const { update: updateCalendar } = useCalendar()
 
   const load = async () => {
     try {
@@ -41,9 +45,10 @@ export default function Settings() {
       setSettings(res)
       setFiscalYearStart(res.fiscalYearStart?.slice(0, 10) || '')
       setFreezeDate(res.freezeDate?.slice(0, 10) || '')
-      setCalendarType(res.calendarType || 'AD')
+      setCalendarType(res.calendarType || 'BS')
       setDateFormat(res.dateFormat || 'YYYY-MM-DD')
       setTimeFormat(res.timeFormat || '12h')
+      loaded.current = true
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load settings')
     }
@@ -52,6 +57,34 @@ export default function Settings() {
   useEffect(() => {
     load()
   }, [])
+
+  // Auto-save the calendar (AD/BS, date/time format) as soon as it changes —
+  // debounced so flicking between AD and BS saves once, not per click.
+  const persistCalendar = async () => {
+    try {
+      await api('/globals/billing-settings', {
+        method: 'POST',
+        body: { calendarType, dateFormat, timeFormat },
+      })
+      updateCalendar({ calendarType, dateFormat, timeFormat })
+      setCalSaved(true)
+    } catch {
+      // offline — the Save button will retry
+    }
+  }
+
+  useEffect(() => {
+    if (!loaded.current) return
+    const id = setTimeout(() => void persistCalendar(), 500)
+    return () => clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calendarType, dateFormat, timeFormat])
+
+  useEffect(() => {
+    if (!calSaved) return
+    const id = setTimeout(() => setCalSaved(false), 2000)
+    return () => clearTimeout(id)
+  }, [calSaved])
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,17 +131,20 @@ export default function Settings() {
           <div>
             <div className="text-sm font-medium text-slate-700">Calendar</div>
             <div className="text-xs text-slate-400">
-              To adjust calendar type, choose from available options
+              Choose the calendar — changes save automatically
             </div>
           </div>
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex items-center gap-2">
+            {calSaved && <span className="text-xs text-emerald-600">✓ Saved</span>}
+            <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setCalendarType('AD')}
-              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+              aria-pressed={calendarType === 'AD'}
+              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ring-1 ring-inset ${
                 calendarType === 'AD'
-                  ? 'bg-slate-200 text-slate-800'
-                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  ? 'bg-crimson-600 text-white ring-crimson-600'
+                  : 'bg-slate-100 text-slate-500 ring-slate-200 hover:bg-slate-200'
               }`}
             >
               AD
@@ -116,14 +152,16 @@ export default function Settings() {
             <button
               type="button"
               onClick={() => setCalendarType('BS')}
-              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+              aria-pressed={calendarType === 'BS'}
+              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ring-1 ring-inset ${
                 calendarType === 'BS'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  ? 'bg-crimson-600 text-white ring-crimson-600'
+                  : 'bg-slate-100 text-slate-500 ring-slate-200 hover:bg-slate-200'
               }`}
             >
               BS
             </button>
+            </div>
           </div>
         </div>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -166,6 +204,16 @@ export default function Settings() {
               </span>
             </div>
           </div>
+        </div>
+        <div className="mt-3 flex items-center gap-3 border-t border-slate-100 pt-3">
+          <button
+            type="button"
+            onClick={() => void persistCalendar()}
+            className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
+          >
+            Save
+          </button>
+          {calSaved && <span className="text-sm text-emerald-600">✓ Saved</span>}
         </div>
       </div>
 

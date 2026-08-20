@@ -28,7 +28,7 @@ import Vouchers from './pages/Vouchers'
 import Parties from './pages/Parties'
 import Aging from './pages/Aging'
 import Items from './pages/Items'
-import Reports from './pages/Reports'
+import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase } from './pages/reports'
 import Daybooks from './pages/Daybooks'
 import Settings from './pages/Settings'
 import Members from './pages/Members'
@@ -279,7 +279,13 @@ function Shell({ email }: { email: string }) {
             <Route path="/trial-balance" element={<TrialBalance />} />
             <Route path="/aging" element={<Aging />} />
             <Route path="/inventory" element={<Items />} />
-            <Route path="/reports" element={<Reports />} />
+            <Route path="/reports" element={<ReportsHub />} />
+            <Route path="/reports/sales" element={<SalesReport />} />
+            <Route path="/reports/purchase" element={<PurchaseReport />} />
+            <Route path="/reports/party-statement" element={<PartyStatement />} />
+            <Route path="/reports/low-stock" element={<LowStockSummary />} />
+            <Route path="/reports/tax-sales" element={<TaxSales />} />
+            <Route path="/reports/tax-purchase" element={<TaxPurchase />} />
             <Route path="/daybooks" element={<Daybooks />} />
             <Route path="/members" element={<Members />} />
             <Route path="/membership-types" element={<MembershipTypes />} />

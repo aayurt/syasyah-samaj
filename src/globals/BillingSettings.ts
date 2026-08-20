@@ -28,7 +28,7 @@ export const BillingSettings: GlobalConfig = {
         {
           name: 'calendarType',
           type: 'select',
-          defaultValue: 'AD',
+          defaultValue: 'BS',
           options: [
             { label: 'AD (Gregorian)', value: 'AD' },
             { label: 'BS (Bikram Sambat)', value: 'BS' },
