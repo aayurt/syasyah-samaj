@@ -25,6 +25,7 @@ import Accounts from './pages/Accounts'
 import Journal from './pages/Journal'
 import TrialBalance from './pages/TrialBalance'
 import Vouchers from './pages/Vouchers'
+import VoucherForm from './pages/VoucherForm'
 import Parties from './pages/Parties'
 import Aging from './pages/Aging'
 import Items from './pages/Items'
@@ -41,6 +42,7 @@ import RefreshingBar from './components/RefreshingBar'
 import Toaster from './components/Toaster'
 import Tour from './components/Tour'
 import UpdatePrompt from './components/UpdatePrompt'
+import ErrorBoundary from './components/ErrorBoundary'
 import { TenantProvider } from './lib/tenant'
 import { CalendarProvider } from './lib/calendar'
 
@@ -271,9 +273,19 @@ function Shell({ email }: { email: string }) {
         <main className="flex-1 overflow-auto p-6 print:overflow-visible">
           <RefreshingBar />
           <Routes>
+            <Route
+              path="/vouchers"
+              element={
+                <ErrorBoundary>
+                  <Vouchers />
+                </ErrorBoundary>
+              }
+            />
             <Route path="/" element={<Dashboard />} />
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/vouchers" element={<Vouchers />} />
+            <Route path="/vouchers/new/:docType" element={<VoucherForm mode="create" />} />
+            <Route path="/vouchers/edit/:id" element={<VoucherForm mode="edit" />} />
             <Route path="/parties" element={<Parties />} />
             <Route path="/journal" element={<Journal />} />
             <Route path="/trial-balance" element={<TrialBalance />} />

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -155,6 +156,7 @@ const emptyForm = (): FormState => ({
 })
 
 export default function Vouchers() {
+  const navigate = useNavigate()
   const { cacheVersion } = useSyncState()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
@@ -330,9 +332,15 @@ export default function Vouchers() {
   const tdsTaxType = taxTypes.find((t) => String(t.id) === tdsTypeId)
   const tdsRate = tdsTaxType ? Number(tdsTaxType.rate) || 0 : 0
   const tdsAutoAmount = useMemo(() => {
-    const gross = totals.gross
-    return gross > 0 && tdsRate > 0 ? (gross * tdsRate) / 100 : 0
-  }, [totals.gross, tdsRate])
+    let lineSum = 0
+    for (const l of form.lines) {
+      lineSum +=
+        l.amount !== ''
+          ? parseFloat(l.amount) || 0
+          : (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
+    }
+    return lineSum > 0 && tdsRate > 0 ? (lineSum * tdsRate) / 100 : 0
+  }, [form.lines, tdsRate])
   const tdsAmount = tdsAmountManual ? parseFloat(tdsAmountManual) || 0 : tdsAutoAmount
   const addTaxLine = () =>
     setForm((f) => ({
@@ -735,10 +743,7 @@ export default function Vouchers() {
               return (
                 <button
                   key={t.value}
-                  onClick={() => {
-                    setForm((f) => ({ ...emptyForm(), date: f.date, docType: t.value }))
-                    setShowPicker(false)
-                  }}
+                  onClick={() => navigate(`/vouchers/new/${t.value}`)}
                   className="flex flex-col items-start gap-1.5 rounded border border-slate-300 bg-slate-50/60 p-3 text-left hover:border-slate-500 hover:bg-slate-50"
                 >
                   <Icon size={14} className="text-slate-500" />
@@ -759,10 +764,7 @@ export default function Vouchers() {
                 return (
                   <button
                     key={t.value}
-                    onClick={() => {
-                      setForm((f) => ({ ...emptyForm(), date: f.date, docType: t.value }))
-                      setShowPicker(false)
-                    }}
+                    onClick={() => navigate(`/vouchers/new/${t.value}`)}
                     className="flex flex-col items-start gap-1.5 rounded border border-slate-200 p-3 text-left hover:border-slate-400 hover:bg-slate-50"
                   >
                     <Icon size={14} className="text-slate-400" />
