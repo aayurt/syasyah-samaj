@@ -9,6 +9,7 @@ import {
   TriangleAlert,
   X,
 } from 'lucide-react'
+import { useCalendar } from '../lib/calendar'
 import { getEngine, fmt, useSyncState } from '../lib/api'
 import type { OutboxEntry } from '../lib/offline/types'
 import { DOC_TYPE_LABELS } from '../lib/types'
@@ -49,7 +50,7 @@ function DraftBody({ entry }: { entry: OutboxEntry }) {
           <div>
             <dt className="text-xs uppercase tracking-wide text-slate-400">Date</dt>
             <dd className="mt-0.5 text-slate-700">
-              {String(b.date ?? '').slice(0, 10) || '—'}
+              {formatDate(String(b.date ?? ''))}
             </dd>
           </div>
           {b.party !== undefined && b.party !== '' && (
@@ -158,6 +159,7 @@ function DraftBody({ entry }: { entry: OutboxEntry }) {
 
 export default function SyncBanner() {
   const state = useSyncState()
+  const { formatDateTime } = useCalendar()
   const navigate = useNavigate()
   const [syncing, setSyncing] = useState(false)
   const [conflicts, setConflicts] = useState<OutboxEntry[]>([])
@@ -381,7 +383,7 @@ export default function SyncBanner() {
                 </div>
                 <div className="mt-0.5 text-xs text-slate-500">
                   {viewEntry.method} {viewEntry.path} · queued{' '}
-                  {new Date(viewEntry.queuedAt).toLocaleString()}
+                  {formatDateTime(viewEntry.queuedAt)}
                 </div>
               </div>
               <button

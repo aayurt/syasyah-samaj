@@ -336,7 +336,7 @@ export default function Daybooks() {
                   {DOC_TYPE_LABELS[voucher.docType] || voucher.docType}
                 </h2>
                 <p className="font-mono text-sm text-slate-500">
-                  {voucher.number || `#${voucher.id}`} · {voucher.date?.slice(0, 10)}
+                  {voucher.number || `#${voucher.id}`} · {formatDate(voucher.date)}
                 </p>
               </div>
               <button
