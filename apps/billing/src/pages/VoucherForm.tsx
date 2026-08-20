@@ -129,6 +129,16 @@ export default function VoucherForm({ mode }: Props) {
   const [itemSearchRow, setItemSearchRow] = useState<string | null>(null)
   const [itemSearchText, setItemSearchText] = useState('')
 
+  // Add item popup
+  const [showItemPopup, setShowItemPopup] = useState(false)
+  const [newItemName, setNewItemName] = useState('')
+  const [newItemCode, setNewItemCode] = useState('')
+  const [newItemUnit, setNewItemUnit] = useState('')
+  const [newItemSalePrice, setNewItemSalePrice] = useState('')
+  const [newItemPurchasePrice, setNewItemPurchasePrice] = useState('')
+  const [newItemSaving, setNewItemSaving] = useState(false)
+  const [newItemTargetLine, setNewItemTargetLine] = useState<string | null>(null)
+
   /* ── Load data ──────────────────────────────────────────────── */
   useEffect(() => {
     ;(async () => {
@@ -521,9 +531,9 @@ export default function VoucherForm({ mode }: Props) {
                             placeholder="Enter Item name"
                             className="w-full rounded border border-slate-200 px-2 py-[9px] text-sm outline-none focus:border-slate-500"
                           />
-                          {itemSearchRow === l.key && itemSearchText && (
+                          {itemSearchRow === l.key && (
                             <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
-                              {items.filter((it) => it.name.toLowerCase().includes(itemSearchText.toLowerCase())).slice(0, 5).map((it) => (
+                              {itemSearchText && items.filter((it) => it.name.toLowerCase().includes(itemSearchText.toLowerCase())).slice(0, 5).map((it) => (
                                 <button key={it.id} type="button" onClick={() => {
                                   setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || '') })
                                   setItemSearchRow(null); setItemSearchText('')
@@ -531,6 +541,18 @@ export default function VoucherForm({ mode }: Props) {
                                   {it.code ? `${it.code} · ` : ''}{it.name}
                                 </button>
                               ))}
+                              {!itemSearchText && items.slice(0, 5).map((it) => (
+                                <button key={it.id} type="button" onClick={() => {
+                                  setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || '') })
+                                  setItemSearchRow(null); setItemSearchText('')
+                                }} className="block w-full px-2 py-1.5 text-left text-sm hover:bg-slate-50">
+                                  {it.code ? `${it.code} · ` : ''}{it.name}
+                                </button>
+                              ))}
+                              <button type="button" onClick={() => { setNewItemTargetLine(l.key); setShowItemPopup(true); setItemSearchRow(null) }}
+                                className="w-full border-t border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
+                                + Add new item
+                              </button>
                             </div>
                           )}
                         </div>
@@ -877,6 +899,92 @@ export default function VoucherForm({ mode }: Props) {
                 }}
                 className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
                 {newPartySaving ? 'Creating…' : 'Create Party'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── Add Item Popup ────────────────────────────────── */}
+      {showItemPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-slate-900">Add New Item</h2>
+            <p className="mt-1 text-sm text-slate-500">Create a new inventory item</p>
+            <div className="mt-4 space-y-3">
+              <label className="text-sm text-slate-700">
+                Name *
+                <input type="text" required value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                  placeholder="Item name" autoFocus />
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-sm text-slate-700">
+                  Code
+                  <input type="text" value={newItemCode}
+                    onChange={(e) => setNewItemCode(e.target.value)}
+                    className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                    placeholder="SKU / code" />
+                </label>
+                <label className="text-sm text-slate-700">
+                  Unit
+                  <input type="text" value={newItemUnit}
+                    onChange={(e) => setNewItemUnit(e.target.value)}
+                    className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                    placeholder="e.g. pcs, kg" />
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-sm text-slate-700">
+                  Sale Price
+                  <input type="number" min="0" step="0.01" value={newItemSalePrice}
+                    onChange={(e) => setNewItemSalePrice(e.target.value)}
+                    className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 font-mono text-sm outline-none focus:border-slate-500"
+                    placeholder="0.00" />
+                </label>
+                <label className="text-sm text-slate-700">
+                  Purchase Price
+                  <input type="number" min="0" step="0.01" value={newItemPurchasePrice}
+                    onChange={(e) => setNewItemPurchasePrice(e.target.value)}
+                    className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 font-mono text-sm outline-none focus:border-slate-500"
+                    placeholder="0.00" />
+                </label>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" onClick={() => { setShowItemPopup(false); setNewItemName(''); setNewItemCode(''); setNewItemUnit(''); setNewItemSalePrice(''); setNewItemPurchasePrice('') }}
+                className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancel</button>
+              <button type="button" disabled={!newItemName || newItemSaving}
+                onClick={async () => {
+                  setNewItemSaving(true)
+                  try {
+                    const created = await api<{ doc: Item }>('/items', {
+                      method: 'POST',
+                      body: {
+                        name: newItemName,
+                        code: newItemCode || undefined,
+                        unit: newItemUnit || undefined,
+                        salePrice: newItemSalePrice ? Number(newItemSalePrice) : undefined,
+                        purchasePrice: newItemPurchasePrice ? Number(newItemPurchasePrice) : undefined,
+                        ...(tenantId ? { tenant: tenantId } : {}),
+                      },
+                    })
+                    setItems((is) => [...is, created.doc])
+                    // Auto-select in the line that triggered the popup
+                    if (newItemTargetLine) {
+                      setLine(newItemTargetLine, {
+                        item: String(created.doc.id),
+                        description: created.doc.name,
+                        rate: String(created.doc.salePrice || ''),
+                      })
+                    }
+                    setShowItemPopup(false)
+                    setNewItemName(''); setNewItemCode(''); setNewItemUnit(''); setNewItemSalePrice(''); setNewItemPurchasePrice('')
+                  } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to create item') }
+                  setNewItemSaving(false)
+                }}
+                className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
+                {newItemSaving ? 'Creating…' : 'Create Item'}
               </button>
             </div>
           </div>
