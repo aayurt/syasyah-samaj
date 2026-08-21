@@ -29,9 +29,10 @@ import VoucherForm from './pages/VoucherForm'
 import Parties from './pages/Parties'
 import Aging from './pages/Aging'
 import Items from './pages/Items'
-import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase, CashStatement, BankStatement, ExpenseCategory, IncomeCategory, StockQuantity } from './pages/reports'
+import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase, CashStatement, BankStatement, ExpenseCategory, IncomeCategory, StockQuantity, BalanceSheet, ProfitLoss } from './pages/reports'
 import Daybooks from './pages/Daybooks'
 import Settings from './pages/Settings'
+import AuditLog from './pages/AuditLog'
 import Members from './pages/Members'
 import MembershipTypes from './pages/MembershipTypes'
 import SyncBanner from './components/SyncBanner'
@@ -77,6 +78,12 @@ const navGroups: { title?: string; items: NavItem[] }[] = [
       { to: '/aging', label: 'Aging', icon: Clock3 },
       { to: '/reports', label: 'Reports', icon: BarChart3 },
       { to: '/daybooks', label: 'Daybooks', icon: NotebookText },
+    ],
+  },
+  {
+    title: 'Admin',
+    items: [
+      { to: '/audit', label: 'Audit Log', icon: FileText },
     ],
   },
   { items: [{ to: '/settings', label: 'Settings', icon: SettingsIcon }] },
@@ -303,6 +310,9 @@ function Shell({ email }: { email: string }) {
             <Route path="/reports/expense-category" element={<ExpenseCategory />} />
             <Route path="/reports/income-category" element={<IncomeCategory />} />
             <Route path="/reports/stock-quantity" element={<StockQuantity />} />
+            <Route path="/reports/balance-sheet" element={<BalanceSheet />} />
+            <Route path="/reports/pnl" element={<ProfitLoss />} />
+            <Route path="/audit" element={<AuditLog />} />
             <Route path="/daybooks" element={<Daybooks />} />
             <Route path="/members" element={<Members />} />
             <Route path="/membership-types" element={<MembershipTypes />} />
