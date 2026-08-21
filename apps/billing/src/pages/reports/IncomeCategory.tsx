@@ -21,7 +21,7 @@ function monthEnd(o: number): string { const d = new Date(); d.setMonth(d.getMon
 function fyStart(): string { const n = new Date(); return (n.getMonth() >= 6 ? n.getFullYear() : n.getFullYear() - 1) + '-07-16' }
 function fyEnd(): string { const n = new Date(); return (n.getMonth() >= 6 ? n.getFullYear() + 1 : n.getFullYear()) + '-07-15' }
 
-interface GroupedCategory { groupName: string; accounts: { name: string; amount: number }[]; total: number }
+interface GroupedCategory { name: string; accounts: { name: string; amount: number }[]; total: number }
 
 export default function IncomeCategory() {
   const navigate = useNavigate()
@@ -54,7 +54,7 @@ export default function IncomeCategory() {
       let grandTotal = 0
       for (const row of pnl.income) {
         const amount = Number(row.amount) || 0; grandTotal += amount
-        const acc = acctMap.get(row.account.id)
+        const acc = acctMap.get(Number(row.account.id))
         const groupId = acc?.group ? (typeof acc.group === 'object' ? (acc.group as AccountGroup).id : acc.group) : null
         const groupName = groupId ? (groupMap.get(groupId)?.name || 'Ungrouped') : 'Ungrouped'
         if (!byGroup.has(groupName)) byGroup.set(groupName, { name: groupName, accounts: [] })

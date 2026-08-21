@@ -24,11 +24,11 @@ export default function LowStockSummary() {
         list<Item>('items', { depth: 0, sort: 'name', ...tenantQuery }),
         api<{ docs: StockLevel[] }>('/items/stock-levels', { query: { ...tenantQuery } }),
       ])
-      const stockMap = new Map(s.docs.map((sl) => [sl.item, sl]))
+      const stockMap = new Map(s.docs.map((sl) => [sl.item.id, sl]))
       const lowStock = i.docs.filter((it) => {
         const sl = stockMap.get(it.id)
         if (!sl || it.reorderLevel == null || it.reorderLevel <= 0) return false
-        return (sl.quantity || 0) <= it.reorderLevel
+        return (sl.onHand || 0) <= it.reorderLevel
       }).map((it) => ({ ...it, stock: stockMap.get(it.id) }))
       setItems(lowStock)
     } catch (err: unknown) {
@@ -39,13 +39,13 @@ export default function LowStockSummary() {
   useEffect(() => { load() }, [load])
 
   const csv = () => downloadCsv('low-stock.csv', ['Code', 'Name', 'Current Qty', 'Reorder Level', 'Shortage'],
-    items.map((it) => [it.code || '', it.name, it.stock?.quantity || 0, it.reorderLevel || 0, (it.reorderLevel || 0) - (it.stock?.quantity || 0)]))
+    items.map((it) => [it.code || '', it.name, it.stock?.onHand || 0, it.reorderLevel || 0, (it.reorderLevel || 0) - (it.stock?.onHand || 0)]))
 
   const pdf = () => exportReportPdf({
     filename: 'low-stock.pdf', title: 'Low Stock Summary',
     meta: [['Items below reorder level', String(items.length)]],
     tables: [{ columns: ['Code', 'Name', 'Current Qty', 'Reorder Level', 'Shortage'],
-      rows: items.map((it) => [it.code || '—', it.name, it.stock?.quantity || 0, it.reorderLevel || 0, (it.reorderLevel || 0) - (it.stock?.quantity || 0)]) }],
+      rows: items.map((it) => [it.code || '—', it.name, it.stock?.onHand || 0, it.reorderLevel || 0, (it.reorderLevel || 0) - (it.stock?.onHand || 0)]) }],
   })
 
   return (
@@ -87,7 +87,7 @@ export default function LowStockSummary() {
                   <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">All items are above reorder levels.</td></tr>
                 )}
                 {items.map((it) => {
-                  const qty = it.stock?.quantity || 0
+                  const qty = it.stock?.onHand || 0
                   const shortage = (it.reorderLevel || 0) - qty
                   return (
                     <tr key={it.id} className="border-b border-slate-50">

@@ -25,7 +25,7 @@ const COLLECTION_LABELS: Record<string, string> = {
 }
 
 /** Render one queued write's request body as a readable draft. */
-function DraftBody({ entry }: { entry: OutboxEntry }) {
+function DraftBody({ entry, formatDate }: { entry: OutboxEntry; formatDate: (d: string) => string }) {
   const b = (entry.body ?? {}) as Record<string, unknown>
   const isDoc =
     entry.path.replace(/^\/+|\/+$/g, '') === 'documents' ||
@@ -159,7 +159,7 @@ function DraftBody({ entry }: { entry: OutboxEntry }) {
 
 export default function SyncBanner() {
   const state = useSyncState()
-  const { formatDateTime } = useCalendar()
+  const { formatDateTime, formatDate } = useCalendar()
   const navigate = useNavigate()
   const [syncing, setSyncing] = useState(false)
   const [conflicts, setConflicts] = useState<OutboxEntry[]>([])
@@ -395,7 +395,7 @@ export default function SyncBanner() {
               </button>
             </div>
             <div className="px-6 py-4">
-              <DraftBody entry={viewEntry} />
+              <DraftBody entry={viewEntry} formatDate={formatDate} />
             </div>
             <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
               <button

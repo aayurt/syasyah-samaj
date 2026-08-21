@@ -55,7 +55,7 @@ export default function StockQuantity() {
         api<{ docs: StockLevel[] }>('/items/stock-levels', { query: { ...tenantQuery } }),
         list<{ item: number | { id: number }; qtyIn: number; qtyOut: number; date: string; docType: string }>('stock-movements', { depth: 0, sort: 'date', ...tenantQuery }),
       ])
-      const stockMap = new Map(stockLevels.docs.map((s) => [s.item, s]))
+      const stockMap = new Map(stockLevels.docs.map((s) => [s.item.id, s]))
       // Filter movements by date range
       let filteredMovements = movements.docs
       if (from) filteredMovements = filteredMovements.filter((m) => (m.date || '') >= from)
@@ -74,7 +74,7 @@ export default function StockQuantity() {
       const result: StockRow[] = items.docs.map((it) => {
         const mv = mvByItem.get(it.id) || { purchased: 0, sold: 0 }
         const opening = Number(it.openingStock) || 0
-        const closing = Number(stockMap.get(it.id)?.quantity) || (opening + mv.purchased - mv.sold)
+        const closing = Number(stockMap.get(it.id)?.onHand) || (opening + mv.purchased - mv.sold)
         const reorderLevel = it.reorderLevel != null ? Number(it.reorderLevel) : null
         let status: 'ok' | 'low' | 'below' = 'ok'
         if (reorderLevel && reorderLevel > 0) {

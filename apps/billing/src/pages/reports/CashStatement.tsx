@@ -57,8 +57,8 @@ export default function CashStatement() {
       let filtered = entries.docs.filter((e) => {
         const lines = Array.isArray(e.lines) ? e.lines : []
         return lines.some((l) => {
-          const accId = typeof l.account === 'object' ? (l.account as { id: number }).id : l.account
-          return cashIds.has(accId)
+          const accId = typeof l.account === 'object' && l.account ? (l.account as { id: number }).id : l.account
+          return cashIds.has(Number(accId))
         })
       })
 
@@ -72,14 +72,14 @@ export default function CashStatement() {
       for (const e of filtered) {
         const lines = Array.isArray(e.lines) ? e.lines : []
         for (const l of lines) {
-          const accId = typeof l.account === 'object' ? (l.account as { id: number }).id : l.account
-          if (!cashIds.has(accId)) continue
+          const accId = typeof l.account === 'object' && l.account ? (l.account as { id: number }).id : l.account
+          if (!cashIds.has(Number(accId))) continue
           const debit = Number(l.debit) || 0
           const credit = Number(l.credit) || 0
           running += debit - credit
           result.push({
             id: e.id, date: e.date || '', narration: e.narration || '',
-            docNumber: null, accountName: cashNames.get(accId) || 'Cash',
+            docNumber: null, accountName: cashNames.get(Number(accId)) || 'Cash',
             debit, credit, runningBalance: running,
           })
         }

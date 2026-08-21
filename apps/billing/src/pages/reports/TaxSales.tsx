@@ -36,7 +36,7 @@ export default function TaxSales() {
   const load = useCallback(async () => {
     setLoading(true); setError('')
     try {
-      const q: Record<string, string> = { sort: '-date', depth: 1, ...tenantQuery }
+      const q: Record<string, string | number> = { sort: '-date', depth: 1, ...tenantQuery }
       if (from && to) {
         q.where = JSON.stringify({ and: [
           { date: { greater_than_equal: from } },
@@ -59,16 +59,16 @@ export default function TaxSales() {
         if (!doc.taxLines?.length) continue
         const pName = doc.party && typeof doc.party === 'object'
           ? (doc.party as Party).name
-          : partyMap.get(doc.party) || '—'
+          : partyMap.get(Number(doc.party)) || '—'
         for (const tl of doc.taxLines) {
-          const tt = typeof tl.taxType === 'object' ? tl.taxType as TaxType : taxTypeMap.get(tl.taxType)
+          const tt = tl.taxType && typeof tl.taxType === 'object' ? tl.taxType as TaxType : taxTypeMap.get(Number(tl.taxType))
           if (!tt) continue
           if (tt.nature === 'withholding') continue // skip TDS for tax-sales
           const rate = Number(tl.rate) || Number(tt.rate) || 0
           const lineSum = Number(doc.netTotal) || Number(doc.grossTotal) || 0
           const taxAmt = (lineSum * rate) / 100
           rows.push({
-            docId: doc.id, date: doc.date || '', number: doc.number,
+            docId: doc.id, date: doc.date || '', number: doc.number || null,
             partyName: pName, taxTypeName: tt.name, rate,
             baseAmount: lineSum, taxAmount: taxAmt, nature: tt.nature,
           })

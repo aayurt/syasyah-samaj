@@ -91,7 +91,7 @@ export default function PurchaseReport() {
   const load = useCallback(async () => {
     setLoading(true); setError('')
     try {
-      const q: Record<string, string> = { sort: '-date', depth: 1, ...tenantQuery }
+      const q: Record<string, string | number> = { sort: '-date', depth: 1, ...tenantQuery }
       if (from && to) {
         q.where = JSON.stringify({ and: [
           { date: { greater_than_equal: from } },
@@ -107,7 +107,7 @@ export default function PurchaseReport() {
         list<Party>('parties', { depth: 0, sort: 'name', ...tenantQuery }),
       ])
       // Fetch payment vouchers for matching
-      const pQuery: Record<string, string> = { sort: 'date', depth: 0, ...tenantQuery }
+      const pQuery: Record<string, string | number> = { sort: 'date', depth: 0, ...tenantQuery }
       if (from && to) {
         pQuery.where = JSON.stringify({ and: [
           { docType: { equals: 'payment-voucher' } },

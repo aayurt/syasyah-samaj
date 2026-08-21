@@ -98,7 +98,7 @@ export default function SalesReport() {
   const load = useCallback(async () => {
     setLoading(true); setError('')
     try {
-      const q: Record<string, string> = { sort: '-date', depth: 1, ...tenantQuery }
+      const q: Record<string, string | number> = { sort: '-date', depth: 1, ...tenantQuery }
       if (from && to) {
         q.where = JSON.stringify({ and: [
           { date: { greater_than_equal: from } },
@@ -114,7 +114,7 @@ export default function SalesReport() {
         list<Party>('parties', { depth: 0, sort: 'name', ...tenantQuery }),
       ])
       // Also fetch receipts in the same date range for payment matching
-      const rQuery: Record<string, string> = { sort: 'date', depth: 0, ...tenantQuery }
+      const rQuery: Record<string, string | number> = { sort: 'date', depth: 0, ...tenantQuery }
       if (from && to) {
         rQuery.where = JSON.stringify({ and: [
           { docType: { equals: 'receipt-voucher' } },

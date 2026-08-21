@@ -45,7 +45,7 @@ export default function BankStatement() {
       const bankNames = new Map(accts.docs.filter((a) => a.class === 'bank').map((a) => [a.id, `${a.code ? a.code + ' · ' : ''}${a.name}`]))
       let filtered = entries.docs.filter((e) => {
         const lines = Array.isArray(e.lines) ? e.lines : []
-        return lines.some((l) => { const accId = typeof l.account === 'object' ? (l.account as { id: number }).id : l.account; return bankIds.has(accId) })
+        return lines.some((l) => { const accId = typeof l.account === 'object' && l.account ? (l.account as { id: number }).id : l.account; return bankIds.has(Number(accId)) })
       })
       if (from) filtered = filtered.filter((e) => (e.date || '') >= from)
       if (to) filtered = filtered.filter((e) => (e.date || '') <= to + 'T23:59:59')
@@ -54,11 +54,11 @@ export default function BankStatement() {
       for (const e of filtered) {
         const lines = Array.isArray(e.lines) ? e.lines : []
         for (const l of lines) {
-          const accId = typeof l.account === 'object' ? (l.account as { id: number }).id : l.account
-          if (!bankIds.has(accId)) continue
+          const accId = typeof l.account === 'object' && l.account ? (l.account as { id: number }).id : l.account
+          if (!bankIds.has(Number(accId))) continue
           const debit = Number(l.debit) || 0; const credit = Number(l.credit) || 0
           running += debit - credit
-          result.push({ id: e.id, date: e.date || '', narration: e.narration || '', accountName: bankNames.get(accId) || 'Bank', debit, credit, runningBalance: running })
+          result.push({ id: e.id, date: e.date || '', narration: e.narration || '', accountName: bankNames.get(Number(accId)) || 'Bank', debit, credit, runningBalance: running })
         }
       }
       setRows(result)
