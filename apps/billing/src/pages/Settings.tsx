@@ -105,6 +105,19 @@ export default function Settings() {
     return () => clearTimeout(id)
   }, [calSaved])
 
+  // Auto-save feature toggles immediately on change
+  useEffect(() => {
+    if (!loaded.current) return
+    const id = setTimeout(() => {
+      api('/globals/billing-settings', {
+        method: 'POST',
+        body: { bankReconciliationEnabled: bankRecEnabled },
+      }).catch(() => {})
+    }, 300)
+    return () => clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bankRecEnabled])
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
