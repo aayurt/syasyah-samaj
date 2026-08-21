@@ -176,6 +176,8 @@ export default function Vouchers() {
   const [loading, setLoading] = useState(true)
   const { formatDate } = useCalendar()
   const [printDoc, setPrintDoc] = useState<Document | null>(null)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
   const [menuFor, setMenuFor] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [viewDoc, setViewDoc] = useState<Document | null>(null)
@@ -647,6 +649,56 @@ export default function Vouchers() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to delete document')
     }
+  }
+
+  // Bulk actions
+  const toggleSelect = (id: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    setSelected((prev) => {
+      if (prev.size === visible.length) return new Set()
+      return new Set(visible.map((d) => d.id))
+    })
+  }
+
+  const bulkPost = async () => {
+    const drafts = visible.filter((d) => selected.has(d.id) && d.status === 'draft')
+    if (drafts.length === 0) return
+    if (!window.confirm(`Post ${drafts.length} draft voucher(s)?`)) return
+    setBulkLoading(true); setError('')
+    try {
+      for (const d of drafts) {
+        await api(`/documents/${d.id}/post`, { method: 'POST' })
+      }
+      setSelected(new Set())
+      await load()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to batch post')
+    }
+    setBulkLoading(false)
+  }
+
+  const bulkVoid = async () => {
+    const posted = visible.filter((d) => selected.has(d.id) && d.status === 'posted')
+    if (posted.length === 0) return
+    if (!window.confirm(`Void ${posted.length} posted voucher(s)? This posts reversals and cannot be undone.`)) return
+    setBulkLoading(true); setError('')
+    try {
+      for (const d of posted) {
+        await api(`/documents/${d.id}/void`, { method: 'POST' })
+      }
+      setSelected(new Set())
+      await load()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to batch void')
+    }
+    setBulkLoading(false)
   }
 
   const downloadPdf = async (doc: Document) => {
@@ -1625,11 +1677,52 @@ export default function Vouchers() {
         </div>
       </div>
 
+      {/* Bulk actions bar */}
+      {selected.size > 0 && (
+        <div className="mt-3 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2">
+          <span className="text-sm font-medium text-blue-700">
+            {selected.size} selected
+          </span>
+          {visible.some((d) => selected.has(d.id) && d.status === 'draft') && (
+            <button
+              onClick={bulkPost}
+              disabled={bulkLoading}
+              className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
+            >
+              {bulkLoading ? 'Posting…' : `Post ${visible.filter((d) => selected.has(d.id) && d.status === 'draft').length} Draft(s)`}
+            </button>
+          )}
+          {visible.some((d) => selected.has(d.id) && d.status === 'posted') && (
+            <button
+              onClick={bulkVoid}
+              disabled={bulkLoading}
+              className="rounded border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
+            >
+              {bulkLoading ? 'Voiding…' : `Void ${visible.filter((d) => selected.has(d.id) && d.status === 'posted').length} Posted`}
+            </button>
+          )}
+          <button
+            onClick={() => setSelected(new Set())}
+            className="ml-auto text-xs text-blue-600 hover:underline"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
+
       {/* List */}
       <div className="mt-3 rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+              <th className="w-10 px-4 py-2">
+                <input
+                  type="checkbox"
+                  checked={visible.length > 0 && selected.size === visible.length}
+                  onChange={toggleSelectAll}
+                  className="h-4 w-4 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500"
+                />
+              </th>
               <SortableTh label="Date" sortKey="date" sort={sort} onSort={toggleSort} />
               <SortableTh label="Number" sortKey="number" sort={sort} onSort={toggleSort} />
               <SortableTh label="Type" sortKey="type" sort={sort} onSort={toggleSort} />
@@ -1642,13 +1735,21 @@ export default function Vouchers() {
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
                   No vouchers yet.
                 </td>
               </tr>
             )}
             {visible.map((d) => (
-              <tr key={d.id} className="border-b border-slate-50">
+              <tr key={d.id} className={`border-b border-slate-50 ${selected.has(d.id) ? 'bg-blue-50' : ''}`}>
+                <td className="px-4 py-2">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(d.id)}
+                    onChange={() => toggleSelect(d.id)}
+                    className="h-4 w-4 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500"
+                  />
+                </td>
                 <td className="px-4 py-2 text-slate-600">
                   {formatDate(d.date)}
                 </td>
