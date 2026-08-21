@@ -52,18 +52,18 @@ const emptyJLine = (): JLineDraft => ({
 const INVENTORY_TYPES = ['sales-invoice', 'delivery-challan', 'grn']
 const CASH_TYPES = ['payment-voucher', 'receipt-voucher']
 
-const DOC_TYPE_META: Record<string, { icon: string; color: string; shortLabel: string }> = {
-  'sales-invoice':     { icon: '🛒', color: 'crimson', shortLabel: 'Sales' },
-  'purchase-invoice':  { icon: '📦', color: 'blue',    shortLabel: 'Purchase' },
-  'payment-voucher':   { icon: '💸', color: 'amber',   shortLabel: 'Payment' },
-  'receipt-voucher':   { icon: '📥', color: 'emerald', shortLabel: 'Receipt' },
-  'credit-note':       { icon: '↩️', color: 'slate',   shortLabel: 'Credit Note' },
-  'debit-note':        { icon: '↪️', color: 'slate',   shortLabel: 'Debit Note' },
-  'petty-cash-voucher':{ icon: '🪙', color: 'amber',   shortLabel: 'Petty Cash' },
-  grn:                 { icon: '🏭', color: 'blue',    shortLabel: 'GRN' },
-  'delivery-challan':  { icon: '🚚', color: 'emerald', shortLabel: 'Challan' },
-  'journal-voucher':   { icon: '📒', color: 'violet',  shortLabel: 'Journal' },
-  contra:              { icon: '🔄', color: 'orange',  shortLabel: 'Contra' },
+const DOC_TYPE_META: Record<string, { icon: string; activeClasses: string; inactiveClasses: string; textClasses: string; shortLabel: string }> = {
+  'sales-invoice':     { icon: '🛒', activeClasses: 'border-crimson-500 bg-crimson-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-crimson-700', shortLabel: 'Sales' },
+  'purchase-invoice':  { icon: '📦', activeClasses: 'border-blue-500 bg-blue-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-blue-700', shortLabel: 'Purchase' },
+  'payment-voucher':   { icon: '💸', activeClasses: 'border-amber-500 bg-amber-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-amber-700', shortLabel: 'Payment' },
+  'receipt-voucher':   { icon: '📥', activeClasses: 'border-emerald-500 bg-emerald-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-emerald-700', shortLabel: 'Receipt' },
+  'credit-note':       { icon: '↩️', activeClasses: 'border-slate-400 bg-slate-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-slate-700', shortLabel: 'Credit Note' },
+  'debit-note':        { icon: '↪️', activeClasses: 'border-slate-400 bg-slate-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-slate-700', shortLabel: 'Debit Note' },
+  'petty-cash-voucher':{ icon: '🪙', activeClasses: 'border-amber-500 bg-amber-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-amber-700', shortLabel: 'Petty Cash' },
+  grn:                 { icon: '🏭', activeClasses: 'border-blue-500 bg-blue-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-blue-700', shortLabel: 'GRN' },
+  'delivery-challan':  { icon: '🚚', activeClasses: 'border-emerald-500 bg-emerald-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-emerald-700', shortLabel: 'Challan' },
+  'journal-voucher':   { icon: '📒', activeClasses: 'border-violet-500 bg-violet-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-violet-700', shortLabel: 'Journal' },
+  contra:              { icon: '🔄', activeClasses: 'border-orange-500 bg-orange-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-orange-700', shortLabel: 'Contra' },
 }
 
 type Props = { mode: 'create' | 'edit' }
@@ -502,12 +502,12 @@ export default function VoucherForm({ mode }: Props) {
                   onClick={() => updateDocType(dt)}
                   className={`flex flex-col items-center gap-1.5 rounded-lg border-2 px-3 py-3 text-center transition-all ${
                     active
-                      ? `border-${m.color}-500 bg-${m.color}-50 shadow-sm`
-                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      ? `${m.activeClasses} shadow-sm`
+                      : m.inactiveClasses
                   }`}
                 >
                   <span className="text-xl">{m.icon}</span>
-                  <span className={`text-xs font-medium ${active ? `text-${m.color}-700` : 'text-slate-600'}`}>
+                  <span className={`text-xs font-medium ${active ? m.textClasses : 'text-slate-600'}`}>
                     {m.shortLabel}
                   </span>
                 </button>
