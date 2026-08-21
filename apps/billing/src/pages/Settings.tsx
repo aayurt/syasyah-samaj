@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, HelpCircle, LogOut, Settings2 } from 'lucide-react'
+import { Calendar, Hash, HelpCircle, LogOut, RotateCcw, Settings2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { authClient, clearCachedSession } from '../lib/auth'
 import { formatDate } from '../lib/nepaliDate'
@@ -34,6 +34,11 @@ export default function Settings() {
   const [saved, setSaved] = useState(false)
   const [calSaved, setCalSaved] = useState(false)
   const loaded = useRef(false)
+  // Doc sequences
+  const [sequences, setSequences] = useState<{ key: string; lastNumber: number; id?: number }[]>([])
+  const [resetKey, setResetKey] = useState('')
+  const [resetValue, setResetValue] = useState('')
+  const [resetting, setResetting] = useState(false)
   const navigate = useNavigate()
   const { update: updateCalendar } = useCalendar()
 
@@ -56,7 +61,19 @@ export default function Settings() {
 
   useEffect(() => {
     load()
+    loadSequences()
   }, [])
+
+  const loadSequences = async () => {
+    try {
+      const res = await api<{ docs: { key: string; lastNumber: number; id?: number }[] }>('doc-sequences', {
+        query: { limit: 100, sort: 'key' },
+      })
+      setSequences(res.docs || [])
+    } catch {
+      // Silently fail — non-critical
+    }
+  }
 
   // Auto-save the calendar (AD/BS, date/time format) as soon as it changes —
   // debounced so flicking between AD and BS saves once, not per click.
@@ -281,6 +298,106 @@ export default function Settings() {
         <p className="border-t border-slate-100 px-4 py-3 text-xs text-slate-400">
           Default accounts are managed in the Payload admin (Billing → Billing
           Settings). Missing accounts block posting until configured.
+        </p>
+      </div>
+
+      {/* ── Doc Sequences ──────────────────────────────────────── */}
+      <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4">
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <Hash size={16} className="text-slate-500" />
+          <div>
+            <div className="text-sm font-medium text-slate-700">Voucher Numbering</div>
+            <div className="text-xs text-slate-400">
+              View and reset sequence counters for voucher numbers
+            </div>
+          </div>
+        </div>
+        {sequences.length === 0 ? (
+          <p className="mt-3 text-sm text-slate-400">
+            No sequences yet. Numbers are created automatically when vouchers are posted.
+          </p>
+        ) : (
+          <table className="mt-3 w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                <th className="px-3 py-2">Key</th>
+                <th className="px-3 py-2">Doc Type</th>
+                <th className="px-3 py-2">Fiscal Year</th>
+                <th className="px-3 py-2 text-right">Last Number</th>
+                <th className="px-3 py-2 text-right">Next Number</th>
+                <th className="px-3 py-2 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sequences.map((seq) => {
+                const [docType, fy] = seq.key.split(':')
+                return (
+                  <tr key={seq.key} className="border-b border-slate-50 last:border-0">
+                    <td className="px-3 py-2 font-mono text-xs text-slate-600">{seq.key}</td>
+                    <td className="px-3 py-2 text-slate-700">{docType || '—'}</td>
+                    <td className="px-3 py-2 text-slate-600">{fy || '—'}</td>
+                    <td className="px-3 py-2 text-right font-mono text-slate-800">{seq.lastNumber}</td>
+                    <td className="px-3 py-2 text-right font-mono font-medium text-emerald-700">{seq.lastNumber + 1}</td>
+                    <td className="px-3 py-2 text-right">
+                      <button
+                        onClick={() => { setResetKey(seq.key); setResetValue('0') }}
+                        className="flex items-center gap-1 rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50"
+                      >
+                        <RotateCcw size={10} /> Reset
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+        {resetKey && (
+          <div className="mt-3 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <div className="text-sm text-slate-700">
+              Reset <span className="font-mono font-medium">{resetKey}</span> to:
+            </div>
+            <input
+              type="number"
+              min="0"
+              value={resetValue}
+              onChange={(e) => setResetValue(e.target.value)}
+              className="w-24 rounded border border-slate-300 px-2 py-1 text-sm font-mono outline-none focus:border-slate-500"
+            />
+            <button
+              onClick={async () => {
+                if (!resetKey) return
+                const val = parseInt(resetValue) || 0
+                if (!window.confirm(`Reset ${resetKey} to ${val}? The next voucher will use ${val + 1}.`)) return
+                setResetting(true)
+                try {
+                  await api(`doc-sequences/${sequences.find((s) => s.key === resetKey)?.id}`, {
+                    method: 'PATCH',
+                    body: { lastNumber: val },
+                  })
+                  setResetKey('')
+                  await loadSequences()
+                } catch (err: unknown) {
+                  setError(err instanceof Error ? err.message : 'Failed to reset sequence')
+                }
+                setResetting(false)
+              }}
+              disabled={resetting}
+              className="rounded bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-40"
+            >
+              {resetting ? 'Saving…' : 'Confirm Reset'}
+            </button>
+            <button
+              onClick={() => setResetKey('')}
+              className="text-xs text-slate-400 hover:text-slate-700"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+        <p className="mt-3 text-xs text-slate-400">
+          Sequences are keyed by document type and fiscal year (e.g. sales-invoice:2083).
+          Resetting sets the counter — the next posted voucher will use the new value + 1.
         </p>
       </div>
 
