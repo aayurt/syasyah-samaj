@@ -33,6 +33,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [calSaved, setCalSaved] = useState(false)
+  const [bankRecEnabled, setBankRecEnabled] = useState(false)
   const loaded = useRef(false)
   // Doc sequences
   const [sequences, setSequences] = useState<{ key: string; lastNumber: number; id?: number }[]>([])
@@ -53,6 +54,7 @@ export default function Settings() {
       setCalendarType(res.calendarType || 'BS')
       setDateFormat(res.dateFormat || 'YYYY-MM-DD')
       setTimeFormat(res.timeFormat || '12h')
+      setBankRecEnabled(res.bankReconciliationEnabled || false)
       loaded.current = true
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load settings')
@@ -115,6 +117,7 @@ export default function Settings() {
           calendarType,
           dateFormat,
           timeFormat,
+          bankReconciliationEnabled: bankRecEnabled,
           fiscalYearStart: fiscalYearStart || null,
           freezeDate: freezeDate || null,
         },
@@ -299,6 +302,29 @@ export default function Settings() {
           Default accounts are managed in the Payload admin (Billing → Billing
           Settings). Missing accounts block posting until configured.
         </p>
+      </div>
+
+      {/* ── Feature Toggles ──────────────────────────────────────── */}
+      <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4">
+        <div className="text-sm font-medium text-slate-700 mb-3">Feature Toggles</div>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <div className="relative">
+            <input
+              type="checkbox"
+              checked={bankRecEnabled}
+              onChange={(e) => setBankRecEnabled(e.target.checked)}
+              className="peer sr-only"
+            />
+            <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+            <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+          </div>
+          <div>
+            <div className="text-sm text-slate-700">Bank Reconciliation</div>
+            <div className="text-xs text-slate-400">
+              {bankRecEnabled ? 'Enabled — visible in sidebar' : 'Disabled — hidden from sidebar'}
+            </div>
+          </div>
+        </label>
       </div>
 
       {/* ── Doc Sequences ──────────────────────────────────────── */}

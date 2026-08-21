@@ -48,6 +48,8 @@ import UpdatePrompt from './components/UpdatePrompt'
 import ErrorBoundary from './components/ErrorBoundary'
 import { TenantProvider } from './lib/tenant'
 import { CalendarProvider } from './lib/calendar'
+import { api } from './lib/api'
+import type { BillingSettings } from './lib/types'
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 
@@ -145,11 +147,19 @@ function Shell({ email }: { email: string }) {
   )
   const [tourOpen, setTourOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [features, setFeatures] = useState<Record<string, boolean>>({})
 
   // Auto-start the tutorial once per browser. The flag is only written when
   // the tour is dismissed or finished, so the StrictMode remount can't race it.
   useEffect(() => {
     if (localStorage.getItem('tour-seen') !== '1') setTourOpen(true)
+  }, [])
+
+  // Load feature toggles from settings
+  useEffect(() => {
+    api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
+      .then((s) => setFeatures({ bankReconciliationEnabled: !!s.bankReconciliationEnabled }))
+      .catch(() => {}) // non-critical
   }, [])
 
   const closeTour = () => {
@@ -203,7 +213,13 @@ function Shell({ email }: { email: string }) {
           </button>
         </div>
         <nav className="flex-1 space-y-4 overflow-y-auto px-2 pb-4">
-          {navGroups.map((group) => (
+          {navGroups.map((group) => {
+            const items = group.items.filter((item) => {
+              if (item.to === '/bank-reconciliation' && !features.bankReconciliationEnabled) return false
+              return true
+            })
+            if (items.length === 0) return null
+            return (
             <div key={group.items[0].to}>
               {!collapsed && group.title && (
                 <div className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
@@ -213,7 +229,7 @@ function Shell({ email }: { email: string }) {
               <div
                 className={collapsed ? 'flex flex-col items-center gap-1' : 'space-y-1'}
               >
-                {group.items.map(({ to, label, icon: Icon, end }) => (
+                {items.map(({ to, label, icon: Icon, end }) => (
                   <NavLink
                     key={to}
                     to={to}
@@ -235,7 +251,8 @@ function Shell({ email }: { email: string }) {
                 ))}
               </div>
             </div>
-          ))}
+          )})
+          }
           <div>
             {!collapsed && (
               <div className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
@@ -316,7 +333,7 @@ function Shell({ email }: { email: string }) {
             <Route path="/reports/balance-sheet" element={<BalanceSheet />} />
             <Route path="/reports/pnl" element={<ProfitLoss />} />
             <Route path="/audit" element={<AuditLog />} />
-            <Route path="/bank-reconciliation" element={<BankReconciliation />} />
+            {features.bankReconciliationEnabled && <Route path="/bank-reconciliation" element={<BankReconciliation />} />}
             <Route path="/daybooks" element={<Daybooks />} />
             <Route path="/members" element={<Members />} />
             <Route path="/membership-types" element={<MembershipTypes />} />

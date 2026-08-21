@@ -280,6 +280,9 @@ export interface BillingSettings {
   cogsAccount?: number | Account | null
   returnsAccount?: number | Account | null
   accruedPayableAccount?: number | Account | null
+  bankReconciliationEnabled?: boolean
+  membershipFeeAccount?: number | Account | null
+  donationAccount?: number | Account | null
 }
 
 export type AgingBucket = '0-30' | '31-60' | '61-90' | '90+'

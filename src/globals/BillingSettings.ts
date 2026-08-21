@@ -75,6 +75,21 @@ export const BillingSettings: GlobalConfig = {
       },
     },
     {
+      type: 'group',
+      label: 'Features',
+      fields: [
+        {
+          name: 'bankReconciliationEnabled',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: {
+            description:
+              'Enable the bank reconciliation feature. When disabled, the Bank Reconciliation page is hidden from the sidebar.',
+          },
+        },
+      ],
+    },
+    {
       type: 'collapsible',
       label: 'Default accounts',
       admin: {
