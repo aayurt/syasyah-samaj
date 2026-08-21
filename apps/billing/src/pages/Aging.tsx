@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { FileText, Printer } from 'lucide-react'
+import { Download, FileText, Printer } from 'lucide-react'
 import { api } from '../lib/api'
+import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
@@ -95,6 +96,18 @@ export default function Aging() {
             ))}
           </div>
           <div className="print:hidden flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (!data) return
+                downloadCsv(`aging-${side}.csv`, ['Party', ...BUCKETS, 'Total'],
+                  data.parties.map((p) => [p.party.name, ...BUCKETS.map((b) => p.buckets[b] || 0), p.total]))
+              }}
+              disabled={!data}
+              className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+            >
+              <Download size={14} />
+              CSV
+            </button>
             <button
               onClick={pdf}
               disabled={!data}

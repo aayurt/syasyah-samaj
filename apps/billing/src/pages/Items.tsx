@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, TriangleAlert } from 'lucide-react'
+import { Download, Plus, Trash2, TriangleAlert } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
+import { downloadCsv } from '../lib/csv'
 import { useSortSearch } from '../lib/useSortSearch'
 import ActionMenu from '../components/ActionMenu'
 import SearchBox from '../components/SearchBox'
@@ -148,13 +149,24 @@ export default function Items() {
     <div className="mx-auto max-w-6xl">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">Inventory</h1>
-        <button
-          onClick={() => setShowForm((s) => !s)}
-          className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-          <Plus size={14} />
-          New item
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => downloadCsv('inventory.csv', ['Code', 'Name', 'Unit', 'Sale Price', 'Purchase Price', 'Reorder Level'],
+              visible.map((i) => [i.code || '', i.name, i.unit || '', i.salePrice || 0, i.purchasePrice || 0, i.reorderLevel || 0]))
+            }
+            disabled={visible.length === 0}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <Download size={14} /> CSV
+          </button>
+          <button
+            onClick={() => setShowForm((s) => !s)}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            <Plus size={14} />
+            New item
+          </button>
+        </div>
       </div>
 
       {error && (

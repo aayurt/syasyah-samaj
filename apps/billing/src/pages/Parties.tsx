@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Download, Plus, Trash2 } from 'lucide-react'
 import { api, list, useSyncState } from '../lib/api'
+import { downloadCsv } from '../lib/csv'
 import { useSortSearch } from '../lib/useSortSearch'
 import ActionMenu from '../components/ActionMenu'
 import SearchBox from '../components/SearchBox'
@@ -116,13 +117,24 @@ export default function Parties() {
     <div className="mx-auto max-w-5xl">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">Parties</h1>
-        <button
-          onClick={() => setShowForm((s) => !s)}
-          className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-          <Plus size={14} />
-          New party
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => downloadCsv('parties.csv', ['Name', 'Type', 'Phone', 'Email', 'Opening Balance'],
+              visible.map((p) => [p.name, p.type, p.phone || '', p.email || '', p.openingBalance || 0]))
+            }
+            disabled={visible.length === 0}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <Download size={14} /> CSV
+          </button>
+          <button
+            onClick={() => setShowForm((s) => !s)}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            <Plus size={14} />
+            New party
+          </button>
+        </div>
       </div>
 
       <div className="mt-2">

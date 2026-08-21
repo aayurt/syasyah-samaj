@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Download, Plus, Pencil, Trash2 } from 'lucide-react'
 import { api, useSyncState, fmt } from '../lib/api'
+import { downloadCsv } from '../lib/csv'
 import { pushToast } from '../lib/toast'
 import SearchBox from '../components/SearchBox'
 
@@ -91,6 +92,15 @@ export default function MembershipTypes() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-800">Membership Types</h1>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => downloadCsv('membership-types.csv', ['Name', 'Fee', 'Period (months)', 'Description', 'Active'],
+              filtered.map((t) => [t.name, t.fee, t.periodMonths, t.description || '', t.active ? 'Yes' : 'No']))
+            }
+            disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <Download size={14} /> CSV
+          </button>
           <SearchBox value={search} onChange={setSearch} placeholder="Search types…" />
           <button
             onClick={() => { setShowForm(!showForm); setEditing(null); setForm(emptyForm) }}

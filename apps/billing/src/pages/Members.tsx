@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { CreditCard } from 'lucide-react'
+import { CreditCard, Download } from 'lucide-react'
 import { api, useSyncState, fmt } from '../lib/api'
+import { downloadCsv } from '../lib/csv'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
 import SortableTh from '../components/SortableTh'
@@ -81,7 +82,18 @@ export default function Members() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-800">Members</h1>
-        <SearchBox value={query} onChange={setQuery} placeholder="Search members…" />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => downloadCsv('members.csv', ['Name', 'Email', 'Membership Type', 'Payment Status', 'Renewal Date'],
+              filtered.map((m) => [m.fullName, m.email, m.membershipType?.name || '', m.paymentStatus || '', m.renewalDate || '']))
+            }
+            disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <Download size={14} /> CSV
+          </button>
+          <SearchBox value={query} onChange={setQuery} placeholder="Search members…" />
+        </div>
       </div>
       <DataStatus />
       {loading ? (
