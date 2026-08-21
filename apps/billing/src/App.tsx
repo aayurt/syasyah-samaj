@@ -5,6 +5,7 @@ import {
   BookOpenText,
   Boxes,
   Clock3,
+  CreditCard,
   FileText,
   FolderTree,
   HelpCircle,
@@ -31,6 +32,7 @@ import Aging from './pages/Aging'
 import Items from './pages/Items'
 import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase, CashStatement, BankStatement, ExpenseCategory, IncomeCategory, StockQuantity, BalanceSheet, ProfitLoss } from './pages/reports'
 import Daybooks from './pages/Daybooks'
+import BankReconciliation from './pages/BankReconciliation'
 import Settings from './pages/Settings'
 import AuditLog from './pages/AuditLog'
 import Members from './pages/Members'
@@ -78,6 +80,7 @@ const navGroups: { title?: string; items: NavItem[] }[] = [
       { to: '/aging', label: 'Aging', icon: Clock3 },
       { to: '/reports', label: 'Reports', icon: BarChart3 },
       { to: '/daybooks', label: 'Daybooks', icon: NotebookText },
+      { to: '/bank-reconciliation', label: 'Bank Reconciliation', icon: CreditCard },
     ],
   },
   {
@@ -313,6 +316,7 @@ function Shell({ email }: { email: string }) {
             <Route path="/reports/balance-sheet" element={<BalanceSheet />} />
             <Route path="/reports/pnl" element={<ProfitLoss />} />
             <Route path="/audit" element={<AuditLog />} />
+            <Route path="/bank-reconciliation" element={<BankReconciliation />} />
             <Route path="/daybooks" element={<Daybooks />} />
             <Route path="/members" element={<Members />} />
             <Route path="/membership-types" element={<MembershipTypes />} />
