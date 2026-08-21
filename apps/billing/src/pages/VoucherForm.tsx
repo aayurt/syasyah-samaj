@@ -169,6 +169,12 @@ export default function VoucherForm({ mode }: Props) {
   const [tdsTypeId, setTdsTypeId] = useState('')
   const [tdsAmountManual, setTdsAmountManual] = useState('')
 
+  // Global discount (invoice-level)
+  const [globalDiscountEnabled, setGlobalDiscountEnabled] = useState(false)
+  const [globalDiscountMode, setGlobalDiscountMode] = useState<'pct' | 'amt'>('pct')
+  const [globalDiscountValue, setGlobalDiscountValue] = useState('')
+  const [discountSectionOpen, setDiscountSectionOpen] = useState(false)
+
   // Invoice number
   const DOC_PREFIXES: Record<string, string> = {
     'sales-invoice': 'SI', 'purchase-invoice': 'PI', 'payment-voucher': 'PV',
@@ -350,7 +356,16 @@ export default function VoucherForm({ mode }: Props) {
     return total
   }, [taxLines, taxTypes, lineTotals])
 
-  const grandTotal = isContra ? contraTotal : lineTotals + vatTotal
+  const globalDiscountAmount = useMemo(() => {
+    if (!globalDiscountEnabled) return 0
+    const v = parseFloat(globalDiscountValue) || 0
+    if (globalDiscountMode === 'pct') {
+      return lineTotals * (v / 100)
+    }
+    return v
+  }, [globalDiscountEnabled, globalDiscountMode, globalDiscountValue, lineTotals])
+
+  const grandTotal = isContra ? contraTotal : lineTotals + vatTotal - globalDiscountAmount
 
   // Required field checklist
   const requiredFields = useMemo(() => {
@@ -420,6 +435,11 @@ export default function VoucherForm({ mode }: Props) {
         amount: l.amount !== '' ? Number(l.amount) : undefined,
       }))
       base.taxRate = parseFloat(taxRate) || 0
+      if (globalDiscountEnabled && globalDiscountAmount > 0) {
+        base.discountTotal = globalDiscountAmount
+        base.discountMode = globalDiscountMode
+        base.discountValue = parseFloat(globalDiscountValue) || 0
+      }
     } else if (isContra) {
       base.fromAccount = fromAccount ? Number(fromAccount) : undefined
       base.toAccount = toAccount ? Number(toAccount) : undefined
@@ -950,6 +970,73 @@ export default function VoucherForm({ mode }: Props) {
         </div>
       )}
 
+      {/* ── Global Discount (collapsible) ──────────────────── */}
+      {isItem && (
+        <div className="mt-4">
+          <CollapsibleSection
+            title="Discount on Total"
+            open={discountSectionOpen}
+            onToggle={() => setDiscountSectionOpen((o) => !o)}
+            badge={globalDiscountEnabled && globalDiscountAmount > 0 ? `−${fmt(globalDiscountAmount)}` : undefined}
+          >
+            <div className="flex items-center justify-between">
+              <button type="button" onClick={() => setGlobalDiscountEnabled((e) => !e)}
+                className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                <div className={`relative h-7 w-12 rounded-full transition-colors ${globalDiscountEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                  <div className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${globalDiscountEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </div>
+                Apply discount on subtotal
+              </button>
+              {globalDiscountEnabled && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400">
+                    {fmt(lineTotals)} − {fmt(globalDiscountAmount)} = {fmt(lineTotals - globalDiscountAmount)}
+                  </span>
+                </div>
+              )}
+            </div>
+            {globalDiscountEnabled && (
+              <div className="mt-4 flex items-center gap-3">
+                <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                  <button type="button" onClick={() => { setGlobalDiscountMode('pct'); setGlobalDiscountValue('') }}
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${globalDiscountMode === 'pct' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                    % Percentage
+                  </button>
+                  <button type="button" onClick={() => { setGlobalDiscountMode('amt'); setGlobalDiscountValue('') }}
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${globalDiscountMode === 'amt' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                    Rs. Amount
+                  </button>
+                </div>
+                <div className="relative flex-1 max-w-xs">
+                  {globalDiscountMode === 'pct' ? (
+                    <>
+                      <input type="number" min="0" max="100" step="0.01" value={globalDiscountValue}
+                        onChange={(e) => setGlobalDiscountValue(e.target.value)}
+                        placeholder="0"
+                        className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 pr-8 font-mono text-sm outline-none focus:border-slate-500" />
+                      <span className="pointer-events-none absolute right-3 top-[11px] text-sm text-slate-400">%</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="pointer-events-none absolute left-3 top-[11px] text-sm text-slate-400">Rs.</span>
+                      <input type="number" min="0" step="0.01" value={globalDiscountValue}
+                        onChange={(e) => setGlobalDiscountValue(e.target.value)}
+                        placeholder="0"
+                        className="w-full rounded border border-slate-300 pl-8 min-h-[40px] py-2.5 font-mono text-sm outline-none focus:border-slate-500" />
+                    </>
+                  )}
+                </div>
+                {globalDiscountMode === 'pct' && parseFloat(globalDiscountValue) > 0 && (
+                  <span className="text-xs text-slate-400">
+                    = {fmt(lineTotals * (parseFloat(globalDiscountValue) / 100))}
+                  </span>
+                )}
+              </div>
+            )}
+          </CollapsibleSection>
+        </div>
+      )}
+
       {/* ── TDS (collapsible) ───────────────────────────────── */}
       {isTaxable && (
         <div className="mt-4">
@@ -1039,11 +1126,12 @@ export default function VoucherForm({ mode }: Props) {
             {!isJournal && (
               <div className="hidden sm:block text-sm text-slate-500">
                 Total: <span className="font-mono font-semibold text-slate-800">Rs. {fmt(grandTotal)}</span>
-                {vatTotal > 0 && (
-                  <span className="ml-3 text-xs text-slate-400">
-                    (Sub: {fmt(lineTotals)} + Tax: {fmt(vatTotal)})
-                  </span>
-                )}
+                <span className="ml-3 text-xs text-slate-400">
+                  (Sub: {fmt(lineTotals)}
+                  {vatTotal > 0 && <> + Tax: {fmt(vatTotal)}</>}
+                  {globalDiscountAmount > 0 && <> − Disc: {fmt(globalDiscountAmount)}</>}
+                  )
+                </span>
               </div>
             )}
             {isJournal && (
