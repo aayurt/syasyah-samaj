@@ -313,6 +313,7 @@ function Shell({ email }: { email: string }) {
             <Route path="/" element={<Dashboard />} />
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/vouchers" element={<Vouchers />} />
+            <Route path="/vouchers/new" element={<VoucherForm mode="create" />} />
             <Route path="/vouchers/new/:docType" element={<VoucherForm mode="create" />} />
             <Route path="/vouchers/edit/:id" element={<VoucherForm mode="edit" />} />
             <Route path="/parties" element={<Parties />} />

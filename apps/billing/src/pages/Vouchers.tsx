@@ -167,7 +167,6 @@ export default function Vouchers() {
   const [items, setItems] = useState<Item[]>([])
   const [taxTypes, setTaxTypes] = useState<TaxType[]>([])
   const [error, setError] = useState('')
-  const [showPicker, setShowPicker] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm())
   const [saving, setSaving] = useState(false)
   const [nextNumber, setNextNumber] = useState('')
@@ -235,7 +234,6 @@ export default function Vouchers() {
         setMenuFor(null)
         setError('')
         setEditingId(null)
-        setShowPicker(false)
         setForm({
           docType: ((b.docType as string) || '') as DocType,
           date:
@@ -555,7 +553,6 @@ export default function Vouchers() {
       setForm(emptyForm())
       setForm((f) => ({ ...f, date }))
       setEditingId(null)
-      setShowPicker(false)
       setTdsEnabled(false)
       setTdsAccountId('')
       setTdsTypeId('')
@@ -758,7 +755,7 @@ export default function Vouchers() {
         <h1 className="text-lg font-semibold text-slate-900">Vouchers</h1>
         <button
           data-tour="new-voucher"
-          onClick={() => setShowPicker(true)}
+          onClick={() => navigate('/vouchers/new')}
           className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           <Plus size={14} />
@@ -774,63 +771,6 @@ export default function Vouchers() {
         <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
         </p>
-      )}
-
-      {/* New-voucher type picker */}
-      {showPicker && (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium text-slate-700">
-              New voucher — pick a type
-            </div>
-            <button
-              onClick={() => setShowPicker(false)}
-              className="text-slate-400 hover:text-slate-700"
-              aria-label="Close"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-            {DOC_TYPES.filter((t) => t.group === 'primary').map((t) => {
-              const Icon = DIRECTION_ICON[t.direction]
-              return (
-                <button
-                  key={t.value}
-                  onClick={() => navigate(`/vouchers/new/${t.value}`)}
-                  className="flex flex-col items-start gap-1.5 rounded border border-slate-300 bg-slate-50/60 p-3 text-left hover:border-slate-500 hover:bg-slate-50"
-                >
-                  <Icon size={14} className="text-slate-500" />
-                  <span className="text-sm font-medium text-slate-800">
-                    {t.label}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-          <div className="mt-4 border-t border-slate-100 pt-3">
-            <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              More
-            </div>
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-              {DOC_TYPES.filter((t) => t.group === 'more').map((t) => {
-                const Icon = DIRECTION_ICON[t.direction]
-                return (
-                  <button
-                    key={t.value}
-                    onClick={() => navigate(`/vouchers/new/${t.value}`)}
-                    className="flex flex-col items-start gap-1.5 rounded border border-slate-200 p-3 text-left hover:border-slate-400 hover:bg-slate-50"
-                  >
-                    <Icon size={14} className="text-slate-400" />
-                    <span className="text-sm font-medium text-slate-800">
-                      {t.label}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Entry form */}

@@ -122,7 +122,7 @@ function RequiredChecklist({ items }: { items: { label: string; filled: boolean 
 
 export default function VoucherForm({ mode }: Props) {
   const navigate = useNavigate()
-  const { id } = useParams()
+  const { id, docType: urlDocType } = useParams()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
@@ -137,12 +137,16 @@ export default function VoucherForm({ mode }: Props) {
   const [error, setError] = useState('')
 
   // Form state
-  const [docType, setDocType] = useState<DocType>('sales-invoice')
+  const [docType, setDocType] = useState<DocType>((urlDocType as DocType) || 'sales-invoice')
   const updateDocType = (dt: DocType) => {
     setDocType(dt)
     setInvoicePrefix(DOC_PREFIXES[dt] || 'INV')
     setManualNumber('')
     setNumberManual(false)
+    // Navigate to the typed URL so refresh preserves the selection
+    if (mode === 'create' && !id) {
+      navigate(`/vouchers/new/${dt}`, { replace: true })
+    }
   }
 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
