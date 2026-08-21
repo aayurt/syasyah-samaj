@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
   BarChart3,
   BookOpenText,
@@ -155,12 +155,14 @@ function Shell({ email }: { email: string }) {
     if (localStorage.getItem('tour-seen') !== '1') setTourOpen(true)
   }, [])
 
-  // Load feature toggles from settings
+  // Load feature toggles from settings — re-fetch on route change
+  // so toggling a feature in Settings reflects immediately
+  const location = useLocation()
   useEffect(() => {
     api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
       .then((s) => setFeatures({ bankReconciliationEnabled: !!s.bankReconciliationEnabled }))
       .catch(() => {}) // non-critical
-  }, [])
+  }, [location.pathname])
 
   const closeTour = () => {
     localStorage.setItem('tour-seen', '1')
