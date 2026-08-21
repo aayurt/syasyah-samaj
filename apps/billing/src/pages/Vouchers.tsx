@@ -38,6 +38,7 @@ import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { exportInvoicePdf } from '../lib/pdf'
+import PrintVoucher from '../components/PrintVoucher'
 
 interface DocTypeMeta {
   value: DocType
@@ -174,6 +175,7 @@ export default function Vouchers() {
   const [statusFilter, setStatusFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const { formatDate } = useCalendar()
+  const [printDoc, setPrintDoc] = useState<Document | null>(null)
   const [menuFor, setMenuFor] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [viewDoc, setViewDoc] = useState<Document | null>(null)
@@ -1749,6 +1751,17 @@ export default function Vouchers() {
         </>
       )}
 
+      {/* Print modal */}
+      {printDoc && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-white">
+          <PrintVoucher
+            doc={printDoc}
+            accounts={accounts}
+            partyName={partyName(printDoc)}
+          />
+        </div>
+      )}
+
       {/* Voucher detail modal */}
       {viewDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1968,6 +1981,14 @@ export default function Vouchers() {
                     Edit draft
                   </button>
                 </>
+              )}
+              {viewDoc.status === 'posted' && (
+                <button
+                  onClick={() => setPrintDoc(viewDoc)}
+                  className="flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  <Printer size={14} /> Print
+                </button>
               )}
               <button
                 onClick={() => setViewDoc(null)}
