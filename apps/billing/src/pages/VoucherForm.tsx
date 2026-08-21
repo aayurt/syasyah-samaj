@@ -375,6 +375,8 @@ export default function VoucherForm({ mode }: Props) {
     return items
   }, [docType, party, date, lines, fromAccount, toAccount, contraTotal, paymentMethod, isJournal, isContra, isItem, isCash])
 
+  const allRequiredFilled = requiredFields.every((f) => f.filled)
+
   /* ── Line setters ───────────────────────────────────────────── */
   const setLine = (key: string, patch: Partial<LineDraft>) =>
     setLines((ls) => ls.map((l) => l.key === key ? { ...l, ...patch } : l))
@@ -1059,8 +1061,9 @@ export default function VoucherForm({ mode }: Props) {
               className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
               {saving ? 'Saving…' : 'Save Draft'}
             </button>
-            <button type="button" onClick={() => submit(true)} disabled={saving}
-              className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40">
+            <button type="button" onClick={() => submit(true)} disabled={saving || !allRequiredFilled}
+              title={!allRequiredFilled ? 'Fill all required fields first' : undefined}
+              className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
               Save & Post
             </button>
           </div>
