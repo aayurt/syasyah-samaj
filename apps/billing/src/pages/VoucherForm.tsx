@@ -1015,7 +1015,7 @@ export default function VoucherForm({ mode }: Props) {
                 <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
               </div>
               {grandTotal > 0 && (
-                <p className="pt-2 text-xs italic text-slate-400">
+                <p className="pt-2 text-sm font-medium text-slate-600">
                   In words: {amountInWords(grandTotal)}
                 </p>
               )}
@@ -1164,6 +1164,141 @@ export default function VoucherForm({ mode }: Props) {
             <Camera size={24} />
           </button>
           <span className="text-xs text-slate-400">Upload receipts, invoices, or supporting documents</span>
+        </div>
+      </div>
+
+      {/* ── Invoice Preview ──────────────────────────────────── */}
+      <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
+        {/* Header */}
+        <div className="border-b border-slate-200 bg-slate-50 px-6 py-4 text-center">
+          <h1 className="text-lg font-bold tracking-tight text-slate-900">Syasya Samaj</h1>
+          <p className="text-[10px] uppercase tracking-widest text-slate-400">Tax Invoice / Voucher</p>
+        </div>
+
+        {/* Info bar */}
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-3">
+          <div>
+            <span className="text-sm font-bold text-slate-900">{meta}</span>
+            <span className="ml-2 font-mono text-xs text-slate-500">{invoicePrefix}-{manualNumber || '...'}</span>
+          </div>
+          <div className="text-right">
+            <span className="text-sm text-slate-600">{formatDate(date)}</span>
+          </div>
+        </div>
+
+        {/* Party */}
+        {(isItem || isCash) && (
+          <div className="border-b border-slate-200 px-6 py-3">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Bill To</span>
+            <p className="mt-0.5 text-sm font-semibold text-slate-900">{selectedParty?.name || partySearch || '—'}</p>
+          </div>
+        )}
+
+        {/* Items table */}
+        {isItem && lines.some((l) => l.item || l.description) && (
+          <div className="px-6 py-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-slate-200 text-left text-[10px] uppercase tracking-wide text-slate-400">
+                  <th className="w-8 py-2">#</th>
+                  <th className="py-2">Item</th>
+                  <th className="w-16 py-2 text-right">Qty</th>
+                  <th className="w-24 py-2 text-right">Rate</th>
+                  <th className="w-28 py-2 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.filter((l) => l.item || l.description).map((l, i) => {
+                  const base = l.amount !== '' ? parseFloat(l.amount) || 0 : (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
+                  const discPct = parseFloat(l.discountPct) || 0
+                  const discAmt = parseFloat(l.discountAmt) || 0
+                  const afterPct = discPct > 0 ? base * (1 - discPct / 100) : base
+                  const finalAmt = afterPct - discAmt
+                  return (
+                    <tr key={l.key} className="border-b border-slate-50">
+                      <td className="py-2 text-center text-slate-400">{i + 1}</td>
+                      <td className="py-2 font-medium text-slate-800">{l.description || '—'}</td>
+                      <td className="py-2 text-right font-mono text-slate-600">{l.qty || '—'}</td>
+                      <td className="py-2 text-right font-mono text-slate-600">{l.rate ? fmt(parseFloat(l.rate)) : '—'}</td>
+                      <td className="py-2 text-right font-mono font-medium text-slate-800">{fmt(Math.max(finalAmt, 0))}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Journal lines */}
+        {isJournal && journalLines.some((l) => l.account) && (
+          <div className="px-6 py-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-slate-200 text-left text-[10px] uppercase tracking-wide text-slate-400">
+                  <th className="py-2">Account</th>
+                  <th className="w-28 py-2 text-right">Debit</th>
+                  <th className="w-28 py-2 text-right">Credit</th>
+                  <th className="py-2">Memo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {journalLines.filter((l) => l.account).map((l) => {
+                  const a = accounts.find((x) => String(x.id) === l.account)
+                  return (
+                    <tr key={l.key} className="border-b border-slate-50">
+                      <td className="py-2 text-slate-700">{a ? `${a.code ? a.code + ' · ' : ''}${a.name}` : '—'}</td>
+                      <td className="py-2 text-right font-mono text-slate-800">{l.debit ? fmt(parseFloat(l.debit)) : ''}</td>
+                      <td className="py-2 text-right font-mono text-slate-800">{l.credit ? fmt(parseFloat(l.credit)) : ''}</td>
+                      <td className="py-2 text-slate-500">{l.memo || ''}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Summary */}
+        <div className="border-t border-slate-200 px-6 py-4">
+          <div className="ml-auto w-64 space-y-1.5 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Sub Total</span>
+              <span className="font-mono text-slate-700">{fmt(isContra ? contraTotal : lineTotals)}</span>
+            </div>
+            {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Discount</span>
+                <span className="font-mono text-red-600">−{fmt(globalDiscountAmount)}</span>
+              </div>
+            )}
+            {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
+              <div className="flex justify-between border-t border-slate-200 pt-1.5">
+                <span className="text-slate-500">Taxable Amount</span>
+                <span className="font-mono text-slate-700">{fmt(lineTotals - globalDiscountAmount)}</span>
+              </div>
+            )}
+            {vatTotal > 0 && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Tax</span>
+                <span className="font-mono text-slate-700">+{fmt(vatTotal)}</span>
+              </div>
+            )}
+            {tdsEnabled && tdsAmount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">TDS</span>
+                <span className="font-mono text-red-600">−{fmt(tdsAmount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between border-t-2 border-slate-300 pt-2 text-base">
+              <span className="font-bold text-slate-900">Total</span>
+              <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
+            </div>
+            {grandTotal > 0 && (
+              <p className="pt-2 text-sm font-medium text-slate-600">
+                In words: {amountInWords(grandTotal)}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
