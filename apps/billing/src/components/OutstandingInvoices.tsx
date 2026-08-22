@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Check, FileText, Search, X } from 'lucide-react'
+import { useCalendar } from '../lib/calendar'
+import { adToBsString, bsToAdString } from '../lib/nepaliDate'
 import { api, fmt } from '../lib/api'
 import { useTenantQuery } from '../lib/tenant'
 import type { Document } from '../lib/types'
@@ -28,6 +30,7 @@ export default function OutstandingInvoices({
   const [dateTo, setDateTo] = useState('')
   const [filterMode, setFilterMode] = useState<'and' | 'or'>('and')
   const [showFilters, setShowFilters] = useState(false)
+  const { calendarType } = useCalendar()
   const tenantQuery = useTenantQuery()
   const invoiceType = docType === 'receipt-voucher' ? 'sales-invoice' : 'purchase-invoice'
 
@@ -103,8 +106,9 @@ export default function OutstandingInvoices({
       result = result.filter((inv) => {
         const d = (inv.date || '').slice(0, 10)
         if (!d) return false
-        const afterFrom = !dateFrom || d >= dateFrom
-        const beforeTo = !dateTo || d <= dateTo
+        // Compare as AD dates (stored as AD internally)
+        const afterFrom = !dateFrom || d >= (calendarType === 'BS' ? bsToAdString(dateFrom) : dateFrom)
+        const beforeTo = !dateTo || d <= (calendarType === 'BS' ? bsToAdString(dateTo) : dateTo)
         return filterMode === 'and' ? (afterFrom && beforeTo) : (afterFrom || beforeTo)
       })
     }
@@ -175,8 +179,11 @@ export default function OutstandingInvoices({
                 <label className="text-[11px] font-medium text-slate-500">From</label>
                 <input
                   type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
+                  value={calendarType === 'BS' && dateFrom ? adToBsString(dateFrom) : dateFrom}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setDateFrom(calendarType === 'BS' && v ? bsToAdString(v) : v)
+                  }}
                   className="mt-0.5 block w-36 rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-slate-400"
                 />
               </div>
@@ -184,8 +191,11 @@ export default function OutstandingInvoices({
                 <label className="text-[11px] font-medium text-slate-500">To</label>
                 <input
                   type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
+                  value={calendarType === 'BS' && dateTo ? adToBsString(dateTo) : dateTo}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setDateTo(calendarType === 'BS' && v ? bsToAdString(v) : v)
+                  }}
                   className="mt-0.5 block w-36 rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-slate-400"
                 />
               </div>

@@ -12,6 +12,7 @@ import {
   Settings2,
   Trash2,
 } from 'lucide-react'
+import NepaliDateInput from '../components/NepaliDateInput'
 import OutstandingInvoices from '../components/OutstandingInvoices'
 import { api, fmt } from '../lib/api'
 import { useCachedList } from '../lib/useCachedList'
@@ -647,17 +648,12 @@ export default function VoucherForm({ mode }: Props) {
           </div>
 
           {/* Date */}
-          <div>
-            <label className="text-sm font-medium text-slate-700">
-              Date <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
-            />
-          </div>
+          <NepaliDateInput
+            label="Date"
+            required
+            value={date}
+            onChange={setDate}
+          />
 
           {/* Invoice No for cash types */}
           {isCash && (

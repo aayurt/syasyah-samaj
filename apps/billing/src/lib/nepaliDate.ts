@@ -127,4 +127,36 @@ export function todayBS(): string {
   return `${bs.year}-${String(bs.month + 1).padStart(2, '0')}-${String(bs.date).padStart(2, '0')}`
 }
 
+/**
+ * Convert BS year/month/date to an AD Date object.
+ * Uses the library's BS→AD conversion by parsing a BS string.
+ */
+export function toAD(bsYear: number, bsMonth: number, bsDate: number): Date {
+  const bs = new NepaliDate(`${bsYear}/${String(bsMonth + 1).padStart(2, '0')}/${String(bsDate).padStart(2, '0')}`)
+  return new Date(bs.toString())
+}
+
+/**
+ * Convert a BS date string (YYYY-MM-DD) to an AD ISO date string.
+ */
+export function bsToAdString(bsStr: string): string {
+  if (!bsStr) return ''
+  const parts = bsStr.split('-')
+  if (parts.length !== 3) return ''
+  const d = toAD(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+  return d.toISOString().slice(0, 10)
+}
+
+/**
+ * Convert an AD ISO date string to a BS date string (YYYY-MM-DD).
+ */
+export function adToBsString(adStr: string): string {
+  if (!adStr) return ''
+  const bs = toBS(adStr)
+  return `${bs.year}-${String(bs.month + 1).padStart(2, '0')}-${String(bs.date).padStart(2, '0')}`
+}
+
+/** Number of days in each BS month (approx — standard calendar) */
+export const BS_MONTH_DAYS = [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30]
+
 export { BS_MONTHS, BS_MONTHS_SHORT, AD_MONTHS, AD_MONTHS_SHORT }
