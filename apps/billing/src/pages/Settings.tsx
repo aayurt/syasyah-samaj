@@ -355,23 +355,7 @@ export default function Settings() {
 
       {/* ── Feature Toggles ──────────────────────────────────────── */}
       <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm font-medium text-slate-700">Feature Toggles</div>
-          <div className="flex items-center gap-2">
-            {featuresSaved && <span className="text-xs text-emerald-600">✓ Saved</span>}
-            {featuresDirty && !featuresSaved && (
-              <span className="text-xs text-amber-600">Unsaved changes</span>
-            )}
-            <button
-              type="button"
-              onClick={() => void persistFeatures()}
-              disabled={!featuresDirty}
-              className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Save
-            </button>
-          </div>
-        </div>
+        <div className="text-sm font-medium text-slate-700 mb-3">Feature Toggles</div>
         <label className="flex items-center gap-3 cursor-pointer">
           <div className="relative">
             <input
@@ -424,6 +408,22 @@ export default function Settings() {
             />
           </div>
         )}
+        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+          <div className="flex items-center gap-2">
+            {featuresSaved && <span className="text-sm text-emerald-600">✓ Saved</span>}
+            {featuresDirty && !featuresSaved && (
+              <span className="text-sm text-amber-600">Unsaved changes</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => void persistFeatures()}
+            disabled={!featuresDirty}
+            className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Save
+          </button>
+        </div>
       </div>
 
       {/* ── Doc Sequences ──────────────────────────────────────── */}
