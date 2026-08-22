@@ -55,7 +55,7 @@ export default function OutstandingInvoices({
       .then((r) => r.json())
       .then(async (res: { docs?: Document[] }) => {
         if (!alive) return
-        const docs = (res.docs || []).filter((d) => d.docType === invoiceType)
+        const docs = (res.docs || []).filter((d) => d.docType === invoiceType && String((d as any).party) === String(partyId))
         if (docs.length === 0) { setInvoices([]); setLoading(false); return }
 
         const whereLinked = JSON.stringify({
@@ -69,7 +69,7 @@ export default function OutstandingInvoices({
           credentials: 'include',
         }).then((r) => r.json()).catch(() => ({ docs: [] as Document[] }))
         // Client-side filter: only receipt/payment vouchers for this docType
-        const linkedDocs = (linkedRes.docs || []).filter((d: Document) => d.docType === docType)
+        const linkedDocs = (linkedRes.docs || []).filter((d: Document) => d.docType === docType && String((d as any).party) === String(partyId))
 
         // 1. Count linked receipts per invoice
         const paidMap = new Map<number, number>()
