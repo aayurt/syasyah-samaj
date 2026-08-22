@@ -24,7 +24,6 @@ export default function OutstandingInvoices({
   const [invoices, setInvoices] = useState<OutstandingInvoice[]>([])
   const [loading, setLoading] = useState(false)
   const tenantQuery = useTenantQuery()
-
   const invoiceType = docType === 'receipt-voucher' ? 'sales-invoice' : 'purchase-invoice'
 
   useEffect(() => {
@@ -40,7 +39,6 @@ export default function OutstandingInvoices({
       ],
     })
 
-    // Single query: fetch all invoices for this party
     api<{ docs: Document[] }>('/documents', {
       query: { limit: 100, depth: 0, where: whereInv, sort: '-date', ...tenantQuery },
     })
@@ -49,7 +47,6 @@ export default function OutstandingInvoices({
         const docs = res.docs || []
         if (docs.length === 0) { setInvoices([]); setLoading(false); return }
 
-        // Fetch all receipts/payments that might be linked (single query)
         const whereLinked = JSON.stringify({
           and: [
             { docType: { equals: docType } },
@@ -60,7 +57,6 @@ export default function OutstandingInvoices({
           query: { limit: 1000, depth: 0, where: whereLinked, ...tenantQuery },
         }).catch(() => ({ docs: [] as Document[] }))
 
-        // Build a map: invoiceId → total paid
         const paidMap = new Map<number, number>()
         for (const d of linked.docs) {
           const invId = (d as any).linkedInvoice
@@ -88,7 +84,7 @@ export default function OutstandingInvoices({
   if (!partyId) return null
 
   return (
-    <div className="mt-3 rounded-lg border border-slate-200 bg-white p-4">
+    <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
       <div className="flex items-center gap-2 mb-3">
         <FileText size={16} className="text-slate-500" />
         <div className="text-sm font-medium text-slate-700">
@@ -105,32 +101,38 @@ export default function OutstandingInvoices({
 
       {invoices.length > 0 && (
         <div className="space-y-2">
-          <label
-            className={`flex items-center gap-3 rounded-md border p-3 cursor-pointer transition-colors ${
+          {/* General payment option */}
+          <button
+            type="button"
+            onClick={() => onSelect(null)}
+            className={`w-full flex items-center gap-3 rounded-md border p-3 text-left transition-colors ${
               selectedInvoiceId === null
                 ? 'border-crimson-300 bg-crimson-50'
                 : 'border-slate-200 hover:bg-slate-50'
             }`}
           >
-            <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+            <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
               selectedInvoiceId === null ? 'border-crimson-600 bg-crimson-600' : 'border-slate-300'
             }`}>
               {selectedInvoiceId === null && <div className="h-2 w-2 rounded-full bg-white" />}
             </div>
             <div className="text-sm text-slate-700">No specific invoice (general payment)</div>
-          </label>
+          </button>
 
+          {/* Individual invoices */}
           {invoices.map((inv) => (
-            <label
+            <button
+              type="button"
               key={inv.id}
-              className={`flex items-center justify-between rounded-md border p-3 cursor-pointer transition-colors ${
+              onClick={() => onSelect(String(inv.id))}
+              className={`w-full flex items-center justify-between rounded-md border p-3 text-left transition-colors ${
                 selectedInvoiceId === String(inv.id)
                   ? 'border-crimson-300 bg-crimson-50'
                   : 'border-slate-200 hover:bg-slate-50'
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+                <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
                   selectedInvoiceId === String(inv.id) ? 'border-crimson-600 bg-crimson-600' : 'border-slate-300'
                 }`}>
                   {selectedInvoiceId === String(inv.id) && <Check size={12} className="text-white" />}
@@ -146,7 +148,7 @@ export default function OutstandingInvoices({
                 <div className="text-sm font-medium text-slate-800">Rs. {fmt(inv.outstanding)}</div>
                 <div className="text-xs text-slate-400">of Rs. {fmt(inv.grossTotal || 0)}</div>
               </div>
-            </label>
+            </button>
           ))}
         </div>
       )}
