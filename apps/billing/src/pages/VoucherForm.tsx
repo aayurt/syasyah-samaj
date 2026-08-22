@@ -346,15 +346,16 @@ export default function VoucherForm({ mode }: Props) {
 
   const vatTotal = useMemo(() => {
     let total = 0
+    const taxable = lineTotals - globalDiscountAmount
     for (const tl of taxLines) {
       if (tl.nature === 'additive') {
         const txType = taxTypes.find((t) => String(t.id) === tl.taxType)
         const rate = txType ? Number(txType.rate) || parseFloat(tl.rate) || 0 : parseFloat(tl.rate) || 0
-        total += (lineTotals * rate) / 100
+        total += (Math.max(taxable, 0) * rate) / 100
       }
     }
     return total
-  }, [taxLines, taxTypes, lineTotals])
+  }, [taxLines, taxTypes, lineTotals, globalDiscountAmount])
 
   const globalDiscountAmount = useMemo(() => {
     if (!globalDiscountEnabled) return 0
@@ -365,7 +366,7 @@ export default function VoucherForm({ mode }: Props) {
     return v
   }, [globalDiscountEnabled, globalDiscountMode, globalDiscountValue, lineTotals])
 
-  const grandTotal = isContra ? contraTotal : lineTotals + vatTotal - globalDiscountAmount
+  const grandTotal = isContra ? contraTotal : lineTotals + vatTotal - globalDiscountAmount - tdsAmount
 
   // Required field checklist
   const requiredFields = useMemo(() => {
@@ -1152,9 +1153,10 @@ export default function VoucherForm({ mode }: Props) {
               <div className="hidden sm:block text-sm text-slate-500">
                 Total: <span className="font-mono font-semibold text-slate-800">Rs. {fmt(grandTotal)}</span>
                 <span className="ml-3 text-xs text-slate-400">
-                  (Sub: {fmt(lineTotals)}
-                  {vatTotal > 0 && <> + Tax: {fmt(vatTotal)}</>}
-                  {globalDiscountAmount > 0 && <> − Disc: {fmt(globalDiscountAmount)}</>}
+                  ({fmt(lineTotals)}
+                  {globalDiscountAmount > 0 && <> − Disc {fmt(globalDiscountAmount)}</>}
+                  {vatTotal > 0 && <> + Tax {fmt(vatTotal)}</>}
+                  {tdsEnabled && tdsAmount > 0 && <> − TDS {fmt(tdsAmount)}</>}
                   )
                 </span>
               </div>
