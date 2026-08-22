@@ -6,7 +6,6 @@ import type { Document } from '../lib/types'
 
 interface Props {
   partyId: string
-  /** 'receipt-voucher' links to sales-invoice, 'payment-voucher' links to purchase-invoice */
   docType: 'receipt-voucher' | 'payment-voucher'
   selectedInvoiceId: string | null
   onSelect: (invoiceId: string | null) => void
@@ -16,10 +15,6 @@ interface OutstandingInvoice extends Document {
   outstanding: number
 }
 
-/**
- * Shows outstanding (unpaid) invoices for a party and lets the user
- * link a receipt/payment to a specific invoice.
- */
 export default function OutstandingInvoices({
   partyId,
   docType,
@@ -37,52 +32,58 @@ export default function OutstandingInvoices({
     let alive = true
     setLoading(true)
 
+    const whereInv = JSON.stringify({
+      and: [
+        { docType: { equals: invoiceType } },
+        { party: { equals: Number(partyId) } },
+        { status: { equals: 'posted' } },
+      ],
+    })
+
+    // Single query: fetch all invoices for this party
     api<{ docs: Document[] }>('/documents', {
-      query: {
-        limit: 100,
-        depth: 0,
-        where: JSON.stringify({ and: [{ docType: { equals: invoiceType } }, { party: { equals: Number(partyId) } }, { status: { equals: 'posted' } }] }),
-        sort: '-date',
-        ...tenantQuery,
-      },
+      query: { limit: 100, depth: 0, where: whereInv, sort: '-date', ...tenantQuery },
     })
       .then(async (res) => {
         if (!alive) return
-        // Calculate outstanding for each invoice
-        const results: OutstandingInvoice[] = []
-        for (const inv of res.docs) {
-          const gross = inv.grossTotal || 0
-          // Fetch linked receipts/payments for this invoice
-          const linked = await api<{ docs: Document[] }>('/documents', {
-            query: {
-              limit: 100,
-              depth: 0,
-              where: JSON.stringify({
-                and: [
-                  { docType: { equals: docType } },
-                  { linkedInvoice: { equals: inv.id } },
-                  { status: { equals: 'posted' } },
-                ],
-              }),
-              ...tenantQuery,
-            },
-          }).catch(() => ({ docs: [] }))
+        const docs = res.docs || []
+        if (docs.length === 0) { setInvoices([]); setLoading(false); return }
 
-          const paid = linked.docs.reduce((sum, d) => sum + (d.grossTotal || 0), 0)
+        // Fetch all receipts/payments that might be linked (single query)
+        const whereLinked = JSON.stringify({
+          and: [
+            { docType: { equals: docType } },
+            { status: { equals: 'posted' } },
+          ],
+        })
+        const linked = await api<{ docs: Document[] }>('/documents', {
+          query: { limit: 1000, depth: 0, where: whereLinked, ...tenantQuery },
+        }).catch(() => ({ docs: [] as Document[] }))
+
+        // Build a map: invoiceId → total paid
+        const paidMap = new Map<number, number>()
+        for (const d of linked.docs) {
+          const invId = (d as any).linkedInvoice
+          if (invId) {
+            paidMap.set(Number(invId), (paidMap.get(Number(invId)) || 0) + (d.grossTotal || 0))
+          }
+        }
+
+        const results: OutstandingInvoice[] = []
+        for (const inv of docs) {
+          const gross = inv.grossTotal || 0
+          const paid = paidMap.get(inv.id) || 0
           const outstanding = gross - paid
           if (outstanding > 0.01) {
             results.push({ ...inv, outstanding })
           }
         }
-        if (alive) {
-          setInvoices(results)
-          setLoading(false)
-        }
+        if (alive) { setInvoices(results); setLoading(false) }
       })
       .catch(() => { if (alive) setLoading(false) })
 
     return () => { alive = false }
-  }, [partyId, invoiceType, docType, tenantQuery])
+  }, [partyId, invoiceType, docType]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!partyId) return null
 
@@ -96,7 +97,7 @@ export default function OutstandingInvoices({
         {loading && <span className="text-xs text-slate-400">Loading…</span>}
       </div>
 
-      {invoices.length === 0 && !loading && (
+      {!loading && invoices.length === 0 && (
         <p className="text-sm text-slate-400">
           No outstanding {invoiceType.replace('-', ' ')}s for this party.
         </p>
