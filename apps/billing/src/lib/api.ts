@@ -138,6 +138,25 @@ function sortCached(
   return desc ? sorted.reverse() : sorted
 }
 
+/* ── Global settings localStorage cache ─────────────────────────────── */
+const GS_KEY = 'billing.settingsCache'
+const GS_TTL = 5 * 60 * 1000 // 5 minutes
+
+function readGlobalsCache(): Record<string, unknown> | null {
+  try {
+    const raw = localStorage.getItem(GS_KEY)
+    if (!raw) return null
+    const { data, ts } = JSON.parse(raw)
+    return Date.now() - ts < GS_TTL ? data : null
+  } catch { return null }
+}
+
+function writeGlobalsCache(data: unknown): void {
+  try {
+    localStorage.setItem(GS_KEY, JSON.stringify({ data, ts: Date.now() }))
+  } catch { /* quota exceeded — ignore */ }
+}
+
 /**
  * Cache-first API client for plain collection reads: serve the local copy
  * instantly (no skeleton on warm caches). Fresh data is pulled only when the
@@ -161,8 +180,22 @@ export async function api<T = unknown>(
   const report = method === 'GET' && isReportPath(path)
   const reportKey = report ? reportCacheKey(path, options.query) : null
 
+  const isGlobals = method === 'GET' && path === '/globals/billing-settings'
+
   // Extract tenant for scope-partitioned cache keys.
   const tenant = options.query?.tenant ? String(options.query.tenant) : undefined
+
+  // Cache-first for globals — calendar settings must be instant on page load.
+  if (isGlobals) {
+    const cached = readGlobalsCache()
+    if (cached) {
+      // Serve from cache, but refresh in background
+      doFetch<T>(path, options).then((fresh) => {
+        writeGlobalsCache(fresh)
+      }).catch(() => { /* stale cache is fine */ })
+      return cached as unknown as T
+    }
+  }
 
   // Cache-first: a warm collection list renders immediately. Fresh data is
   // pulled on demand via the resync button — reads never trigger a network
@@ -182,6 +215,8 @@ export async function api<T = unknown>(
   try {
     const res = await doFetch<T>(path, options)
     engine.setOnline(true)
+    // Cache globals on successful read
+    if (isGlobals) writeGlobalsCache(res)
     // A successful write changes the collection — drop the cached copy so
     // the next read (e.g. the page's post-save reload) fetches fresh data
     // instead of serving the stale list from cache.
@@ -192,7 +227,13 @@ export async function api<T = unknown>(
         // best-effort
       }
     }
-    if (method !== 'GET') crudToast(method, path)
+    if (method !== 'GET') {
+      crudToast(method, path)
+      // Invalidate globals cache so next read fetches fresh
+      if (path === '/globals/billing-settings') {
+        try { localStorage.removeItem(GS_KEY) } catch { /* ignore */ }
+      }
+    }
     // Warm the read cache only for plain collection lists — never for
     // computed endpoints (trial-balance, daybook…) whose `docs` array has a
     // different shape than the collection's documents.
@@ -232,6 +273,11 @@ export async function api<T = unknown>(
 
   // --- offline path ---
   if (method === 'GET') {
+    if (isGlobals) {
+      const cached = readGlobalsCache()
+      if (cached) return cached as unknown as T
+      throw new Error('Offline — billing settings have not been synced yet.')
+    }
     if (report && reportKey) {
       const hit = await engine.readReport(reportKey)
       if (hit) {
