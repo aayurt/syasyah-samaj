@@ -335,14 +335,21 @@ export default function VoucherForm({ mode }: Props) {
 
   const tdsTaxType = taxTypes.find((t) => String(t.id) === tdsTypeId)
   const tdsRate = tdsTaxType ? Number(tdsTaxType.rate) || 0 : 0
-  const tdsAutoAmount = lineTotals > 0 && tdsRate > 0 ? (lineTotals * tdsRate) / 100 : 0
-  const tdsAmount = tdsAmountManual ? parseFloat(tdsAmountManual) || 0 : tdsAutoAmount
 
   const jTotals = useMemo(() => {
     let debit = 0; let credit = 0
     for (const l of journalLines) { debit += parseFloat(l.debit) || 0; credit += parseFloat(l.credit) || 0 }
     return { debit, credit, diff: debit - credit }
   }, [journalLines])
+
+  const globalDiscountAmount = useMemo(() => {
+    if (!globalDiscountEnabled) return 0
+    const v = parseFloat(globalDiscountValue) || 0
+    if (globalDiscountMode === 'pct') {
+      return lineTotals * (v / 100)
+    }
+    return v
+  }, [globalDiscountEnabled, globalDiscountMode, globalDiscountValue, lineTotals])
 
   const vatTotal = useMemo(() => {
     let total = 0
@@ -357,14 +364,8 @@ export default function VoucherForm({ mode }: Props) {
     return total
   }, [taxLines, taxTypes, lineTotals, globalDiscountAmount])
 
-  const globalDiscountAmount = useMemo(() => {
-    if (!globalDiscountEnabled) return 0
-    const v = parseFloat(globalDiscountValue) || 0
-    if (globalDiscountMode === 'pct') {
-      return lineTotals * (v / 100)
-    }
-    return v
-  }, [globalDiscountEnabled, globalDiscountMode, globalDiscountValue, lineTotals])
+  const tdsAutoAmount = lineTotals > 0 && tdsRate > 0 ? (lineTotals * tdsRate) / 100 : 0
+  const tdsAmount = tdsAmountManual ? parseFloat(tdsAmountManual) || 0 : tdsAutoAmount
 
   const grandTotal = isContra ? contraTotal : lineTotals + vatTotal - globalDiscountAmount - tdsAmount
 
