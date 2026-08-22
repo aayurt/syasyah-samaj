@@ -65,18 +65,38 @@ export default function OutstandingInvoices({
           query: { limit: 1000, depth: 0, where: whereLinked, ...tenantQuery },
         }).catch(() => ({ docs: [] as Document[] }))
 
+        // 1. Count linked receipts per invoice
         const paidMap = new Map<number, number>()
+        let totalLinked = 0
         for (const d of linked.docs) {
           const invId = (d as any).linkedInvoice
           if (invId) {
-            paidMap.set(Number(invId), (paidMap.get(Number(invId)) || 0) + (d.grossTotal || 0))
+            const amt = d.grossTotal || 0
+            paidMap.set(Number(invId), (paidMap.get(Number(invId)) || 0) + amt)
+            totalLinked += amt
           }
         }
 
+        // 2. Unlinked receipts for this party — pro-rate against oldest invoices first
+        const unlinkedTotal = linked.docs
+          .filter((d) => !(d as any).linkedInvoice)
+          .reduce((sum, d) => sum + (d.grossTotal || 0), 0)
+
+        // Sort invoices oldest first for pro-rating
+        const sorted = [...docs].sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+        let unlinkedRemaining = unlinkedTotal
+
         const results: OutstandingInvoice[] = []
-        for (const inv of docs) {
+        for (const inv of sorted) {
           const gross = inv.grossTotal || 0
-          const paid = paidMap.get(inv.id) || 0
+          let paid = paidMap.get(inv.id) || 0
+
+          // Apply unlinked receipts oldest-first
+          if (unlinkedRemaining > 0.01) {
+            const apply = Math.min(unlinkedRemaining, gross - paid)
+            if (apply > 0) { paid += apply; unlinkedRemaining -= apply }
+          }
+
           const outstanding = gross - paid
           if (outstanding > 0.01) {
             results.push({ ...inv, outstanding })
