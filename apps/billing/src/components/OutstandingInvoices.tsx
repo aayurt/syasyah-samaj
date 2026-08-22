@@ -3,6 +3,7 @@ import { Check, FileText, Search, X } from 'lucide-react'
 import { useCalendar } from '../lib/calendar'
 import { adToBsString, bsToAdString } from '../lib/nepaliDate'
 import { fmt } from '../lib/api'
+import { API_BASE } from '../lib/base'
 import { useTenantQuery } from '../lib/tenant'
 import type { Document } from '../lib/types'
 
@@ -48,8 +49,7 @@ export default function OutstandingInvoices({
     })
 
     // Use direct fetch to bypass the api() cache (which caches by slug, not query)
-    const base = import.meta.env.VITE_API_URL || ''
-    fetch(`${base}/api/documents?limit=100&depth=0&sort=-date&where=${encodeURIComponent(whereInv)}`, {
+    fetch(`${API_BASE}/api/documents?limit=100&depth=0&sort=-date&where=${encodeURIComponent(whereInv)}`, {
       credentials: 'include',
     })
       .then((r) => r.json())
@@ -65,7 +65,7 @@ export default function OutstandingInvoices({
           ],
         })
         const whereLinkedEnc = encodeURIComponent(whereLinked)
-        const linkedRes = await fetch(`${base}/api/documents?limit=1000&depth=0&where=${whereLinkedEnc}`, {
+        const linkedRes = await fetch(`${API_BASE}/api/documents?limit=1000&depth=0&where=${whereLinkedEnc}`, {
           credentials: 'include',
         }).then((r) => r.json()).catch(() => ({ docs: [] as Document[] }))
         // Client-side filter: only receipt/payment vouchers for this docType
