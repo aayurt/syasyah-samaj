@@ -155,6 +155,9 @@ export interface Document {
   netTotal?: number
   taxTotal?: number
   grossTotal?: number
+  discountTotal?: number
+  discountMode?: 'pct' | 'amt'
+  discountValue?: number
   tenant?: number | null
 }
 

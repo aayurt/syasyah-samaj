@@ -3300,6 +3300,18 @@ export interface BillingSetting {
    */
   freezeDate?: string | null;
   /**
+   * Enable the bank reconciliation feature. When disabled, the Bank Reconciliation page is hidden from the sidebar.
+   */
+  bankReconciliationEnabled?: boolean | null;
+  /**
+   * Show a simplified VAT-inclusive invoice for totals below the threshold. When off, always show the full tax breakdown.
+   */
+  simplifiedInvoiceEnabled?: boolean | null;
+  /**
+   * Amount threshold for simplified invoice (in Rs.). Invoices below this amount show as VAT Inclusive without breakdown.
+   */
+  simplifiedInvoiceThreshold?: number | null;
+  /**
    * Accounts Receivable (sales invoices, receipts).
    */
   receivableAccount?: (number | null) | GlAccount;
@@ -3422,6 +3434,9 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   timeFormat?: T;
   fiscalYearStart?: T;
   freezeDate?: T;
+  bankReconciliationEnabled?: T;
+  simplifiedInvoiceEnabled?: T;
+  simplifiedInvoiceThreshold?: T;
   receivableAccount?: T;
   payableAccount?: T;
   revenueAccount?: T;
