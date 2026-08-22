@@ -37,6 +37,13 @@ export default function Settings() {
   const [simplifiedInvEnabled, setSimplifiedInvEnabled] = useState(true)
   const [simplifiedInvThreshold, setSimplifiedInvThreshold] = useState('5000')
   const loaded = useRef(false)
+  // Track last-saved feature values for dirty detection
+  const savedFeatures = useRef({ bankRec: false, simplifiedInv: true, threshold: '5000' })
+  const featuresDirty =
+    bankRecEnabled !== savedFeatures.current.bankRec ||
+    simplifiedInvEnabled !== savedFeatures.current.simplifiedInv ||
+    simplifiedInvThreshold !== savedFeatures.current.threshold
+  const [featuresSaved, setFeaturesSaved] = useState(false)
   // Doc sequences
   const [sequences, setSequences] = useState<{ key: string; lastNumber: number; id?: number }[]>([])
   const [resetKey, setResetKey] = useState('')
@@ -59,6 +66,11 @@ export default function Settings() {
       setBankRecEnabled(res.bankReconciliationEnabled || false)
       setSimplifiedInvEnabled(res.simplifiedInvoiceEnabled !== false)
       setSimplifiedInvThreshold(String(res.simplifiedInvoiceThreshold || 5000))
+      savedFeatures.current = {
+        bankRec: res.bankReconciliationEnabled || false,
+        simplifiedInv: res.simplifiedInvoiceEnabled !== false,
+        threshold: String(res.simplifiedInvoiceThreshold || 5000),
+      }
       loaded.current = true
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load settings')
@@ -109,22 +121,36 @@ export default function Settings() {
     return () => clearTimeout(id)
   }, [calSaved])
 
-  // Auto-save feature toggles immediately on change
-  useEffect(() => {
-    if (!loaded.current) return
-    const id = setTimeout(() => {
-      api('/globals/billing-settings', {
-        method: 'POST',
-        body: {
-          bankReconciliationEnabled: bankRecEnabled,
-          simplifiedInvoiceEnabled: simplifiedInvEnabled,
-          simplifiedInvoiceThreshold: parseFloat(simplifiedInvThreshold) || 5000,
-        },
-      }).catch(() => {})
-    }, 300)
-    return () => clearTimeout(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bankRecEnabled, simplifiedInvEnabled, simplifiedInvThreshold])
+
+
+  // Cache-first save: write to localStorage instantly, then sync to server
+  const persistFeatures = async () => {
+    const body = {
+      bankReconciliationEnabled: bankRecEnabled,
+      simplifiedInvoiceEnabled: simplifiedInvEnabled,
+      simplifiedInvoiceThreshold: parseFloat(simplifiedInvThreshold) || 5000,
+    }
+    // 1. Write to localStorage cache instantly
+    try {
+      const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
+      const data = { ...(cached.data || {}), ...body }
+      localStorage.setItem('billing.settingsCache', JSON.stringify({ data, ts: Date.now() }))
+    } catch { /* ignore */ }
+    // 2. Update saved ref so dirty tracking resets
+    savedFeatures.current = {
+      bankRec: bankRecEnabled,
+      simplifiedInv: simplifiedInvEnabled,
+      threshold: simplifiedInvThreshold,
+    }
+    setFeaturesSaved(true)
+    setTimeout(() => setFeaturesSaved(false), 2000)
+    // 3. Sync to server (best-effort — offline is fine, cache already saved)
+    try {
+      await api('/globals/billing-settings', { method: 'POST', body })
+    } catch {
+      // offline — cache is authoritative, server will catch up on next sync
+    }
+  }
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -329,7 +355,23 @@ export default function Settings() {
 
       {/* ── Feature Toggles ──────────────────────────────────────── */}
       <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4">
-        <div className="text-sm font-medium text-slate-700 mb-3">Feature Toggles</div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm font-medium text-slate-700">Feature Toggles</div>
+          <div className="flex items-center gap-2">
+            {featuresSaved && <span className="text-xs text-emerald-600">✓ Saved</span>}
+            {featuresDirty && !featuresSaved && (
+              <span className="text-xs text-amber-600">Unsaved changes</span>
+            )}
+            <button
+              type="button"
+              onClick={() => void persistFeatures()}
+              disabled={!featuresDirty}
+              className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Save
+            </button>
+          </div>
+        </div>
         <label className="flex items-center gap-3 cursor-pointer">
           <div className="relative">
             <input
