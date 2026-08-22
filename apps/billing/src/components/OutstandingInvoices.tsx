@@ -52,7 +52,8 @@ export default function OutstandingInvoices({
     })
       .then(async (res) => {
         if (!alive) return
-        const docs = res.docs || []
+        // Client-side filter: API where clause may not work reliably
+        const docs = (res.docs || []).filter((d) => d.docType === invoiceType)
         if (docs.length === 0) { setInvoices([]); setLoading(false); return }
 
         const whereLinked = JSON.stringify({
@@ -64,11 +65,13 @@ export default function OutstandingInvoices({
         const linked = await api<{ docs: Document[] }>('/documents', {
           query: { limit: 1000, depth: 0, where: whereLinked, ...tenantQuery },
         }).catch(() => ({ docs: [] as Document[] }))
+        // Client-side filter: only receipt/payment vouchers for this docType
+        const linkedDocs = linked.docs.filter((d) => d.docType === docType)
 
         // 1. Count linked receipts per invoice
         const paidMap = new Map<number, number>()
         let totalLinked = 0
-        for (const d of linked.docs) {
+        for (const d of linkedDocs) {
           const invId = (d as any).linkedInvoice
           if (invId) {
             const amt = d.grossTotal || 0
@@ -78,7 +81,7 @@ export default function OutstandingInvoices({
         }
 
         // 2. Unlinked receipts for this party — pro-rate against oldest invoices first
-        const unlinkedTotal = linked.docs
+        const unlinkedTotal = linkedDocs
           .filter((d) => !(d as any).linkedInvoice)
           .reduce((sum, d) => sum + (d.grossTotal || 0), 0)
 
