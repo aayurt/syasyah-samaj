@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Check, FileText } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Check, FileText, Search, X } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { useTenantQuery } from '../lib/tenant'
 import type { Document } from '../lib/types'
@@ -23,6 +23,11 @@ export default function OutstandingInvoices({
 }: Props) {
   const [invoices, setInvoices] = useState<OutstandingInvoice[]>([])
   const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [filterMode, setFilterMode] = useState<'and' | 'or'>('and')
+  const [showFilters, setShowFilters] = useState(false)
   const tenantQuery = useTenantQuery()
   const invoiceType = docType === 'receipt-voucher' ? 'sales-invoice' : 'purchase-invoice'
 
@@ -81,27 +86,164 @@ export default function OutstandingInvoices({
     return () => { alive = false }
   }, [partyId, invoiceType, docType]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Client-side filtering
+  const filtered = useMemo(() => {
+    let result = invoices
+    const q = search.toLowerCase().trim()
+
+    if (q) {
+      result = result.filter((inv) =>
+        (inv.number || '').toLowerCase().includes(q) ||
+        String(inv.id).includes(q) ||
+        (inv.date || '').includes(q)
+      )
+    }
+
+    if (dateFrom || dateTo) {
+      result = result.filter((inv) => {
+        const d = (inv.date || '').slice(0, 10)
+        if (!d) return false
+        const afterFrom = !dateFrom || d >= dateFrom
+        const beforeTo = !dateTo || d <= dateTo
+        return filterMode === 'and' ? (afterFrom && beforeTo) : (afterFrom || beforeTo)
+      })
+    }
+
+    return result
+  }, [invoices, search, dateFrom, dateTo, filterMode])
+
+  const hasFilters = search || dateFrom || dateTo
+  const selectedInv = selectedInvoiceId ? invoices.find((i) => String(i.id) === selectedInvoiceId) : null
+
   if (!partyId) return null
 
   return (
     <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <FileText size={16} className="text-slate-500" />
-        <div className="text-sm font-medium text-slate-700">
-          {docType === 'receipt-voucher' ? 'Outstanding Sales Invoices' : 'Outstanding Purchase Invoices'}
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <FileText size={16} className="text-slate-500" />
+          <div className="text-sm font-medium text-slate-700">
+            {docType === 'receipt-voucher' ? 'Outstanding Sales Invoices' : 'Outstanding Purchase Invoices'}
+          </div>
+          {loading && <span className="text-xs text-slate-400">Loading…</span>}
         </div>
-        {loading && <span className="text-xs text-slate-400">Loading…</span>}
+        {!loading && invoices.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowFilters((f) => !f)}
+            className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
+              showFilters || hasFilters
+                ? 'bg-crimson-50 text-crimson-600'
+                : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+            }`}
+          >
+            <Search size={12} />
+            {hasFilters ? 'Filtered' : 'Filter'}
+          </button>
+        )}
       </div>
 
+      {/* Search + Filters */}
+      {!loading && invoices.length > 0 && (
+        <div className="mb-3 space-y-2">
+          {/* Search bar — always visible */}
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by invoice number or date…"
+              className="w-full rounded border border-slate-200 bg-slate-50 py-2 pl-9 pr-8 text-sm outline-none focus:border-slate-400 focus:bg-white"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Date range filters — collapsible */}
+          {showFilters && (
+            <div className="flex flex-wrap items-end gap-3 rounded-md border border-slate-100 bg-slate-50 p-3">
+              <div>
+                <label className="text-[11px] font-medium text-slate-500">From</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="mt-0.5 block w-36 rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-slate-400"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-slate-500">To</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="mt-0.5 block w-36 rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-slate-400"
+                />
+              </div>
+              {(dateFrom || dateTo) && (
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[11px] font-medium text-slate-500">Match</label>
+                  <div className="flex overflow-hidden rounded border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setFilterMode('and')}
+                      className={`px-2 py-1 text-[11px] font-medium transition-colors ${
+                        filterMode === 'and' ? 'bg-crimson-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      AND
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFilterMode('or')}
+                      className={`px-2 py-1 text-[11px] font-medium transition-colors ${
+                        filterMode === 'or' ? 'bg-crimson-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      OR
+                    </button>
+                  </div>
+                </div>
+              )}
+              {hasFilters && (
+                <button
+                  type="button"
+                  onClick={() => { setSearch(''); setDateFrom(''); setDateTo('') }}
+                  className="text-[11px] text-slate-400 hover:text-slate-600"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* No results */}
+      {!loading && invoices.length > 0 && filtered.length === 0 && hasFilters && (
+        <p className="text-sm text-slate-400">No invoices match your filters.</p>
+      )}
+
+      {/* Empty state */}
       {!loading && invoices.length === 0 && (
         <p className="text-sm text-slate-400">
           No outstanding {invoiceType.replace('-', ' ')}s for this party.
         </p>
       )}
 
-      {invoices.length > 0 && (
+      {/* Invoice list */}
+      {filtered.length > 0 && (
         <div className="space-y-2">
-          {/* General payment option */}
+          {/* General payment */}
           <button
             type="button"
             onClick={() => onSelect(null)}
@@ -120,7 +262,7 @@ export default function OutstandingInvoices({
           </button>
 
           {/* Individual invoices */}
-          {invoices.map((inv) => (
+          {filtered.map((inv) => (
             <button
               type="button"
               key={inv.id}
@@ -150,25 +292,28 @@ export default function OutstandingInvoices({
               </div>
             </button>
           ))}
+
+          {/* Results count */}
+          {hasFilters && (
+            <div className="text-center text-[11px] text-slate-400 pt-1">
+              {filtered.length} of {invoices.length} invoices
+            </div>
+          )}
         </div>
       )}
 
       {/* Remaining amount after payment */}
-      {!loading && selectedInvoiceId && invoices.length > 0 && (() => {
-        const sel = invoices.find((i) => String(i.id) === selectedInvoiceId)
-        if (!sel) return null
-        return (
-          <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
-            <span className="font-medium">Remaining after payment:</span>{' '}
-            Rs. {fmt(sel.outstanding)} of Rs. {fmt(sel.grossTotal || 0)}
-            {sel.outstanding < (sel.grossTotal || 0) && (
-              <span className="ml-2 text-emerald-600">
-                (Rs. {fmt((sel.grossTotal || 0) - sel.outstanding)} already paid)
-              </span>
-            )}
-          </div>
-        )
-      })()}
+      {!loading && selectedInv && (
+        <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          <span className="font-medium">Remaining after payment:</span>{' '}
+          Rs. {fmt(selectedInv.outstanding)} of Rs. {fmt(selectedInv.grossTotal || 0)}
+          {selectedInv.outstanding < (selectedInv.grossTotal || 0) && (
+            <span className="ml-2 text-emerald-600">
+              (Rs. {fmt((selectedInv.grossTotal || 0) - selectedInv.outstanding)} already paid)
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
