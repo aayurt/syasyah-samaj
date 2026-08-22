@@ -12,7 +12,8 @@ import {
   Settings2,
   Trash2,
 } from 'lucide-react'
-import { api, fmt, list } from '../lib/api'
+import { api, fmt } from '../lib/api'
+import { useCachedList } from '../lib/useCachedList'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import {
@@ -150,11 +151,11 @@ export default function VoucherForm({ mode }: Props) {
   const { formatDate } = useCalendar()
 
   // Data
-  const [parties, setParties] = useState<Party[]>([])
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [items, setItems] = useState<Item[]>([])
-  const [taxTypes, setTaxTypes] = useState<TaxType[]>([])
-  const [loading, setLoading] = useState(true)
+  const { docs: parties, setDocs: setParties } = useCachedList<Party>('parties', { sort: 'name', ...tenantQuery })
+  const { docs: accounts, setDocs: setAccounts } = useCachedList<Account>('gl-accounts', { sort: 'name', ...tenantQuery })
+  const { docs: items, setDocs: setItems } = useCachedList<Item>('items', { sort: 'name', ...tenantQuery })
+  const { docs: taxTypesRaw, setDocs: setTaxTypesRaw } = useCachedList<TaxType>('tax-types', tenantQuery)
+  const taxTypes = taxTypesRaw.filter((t) => t.active !== false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [simplifiedInv, setSimplifiedInv] = useState({ enabled: true, threshold: 5000 })
@@ -245,29 +246,15 @@ export default function VoucherForm({ mode }: Props) {
   const [notesSectionOpen, setNotesSectionOpen] = useState(false)
   const [paymentSectionOpen, setPaymentSectionOpen] = useState(false)
 
-  /* ── Load data ──────────────────────────────────────────────── */
+  /* ── Load billing settings (cache-first globals) ─────────────── */
   useEffect(() => {
-    ;(async () => {
-      try {
-        const [p, a, it, tx] = await Promise.all([
-          list<Party>('parties', { depth: 0, sort: 'name', ...tenantQuery }),
-          list<Account>('gl-accounts', { depth: 0, sort: 'name', ...tenantQuery }),
-          list<Item>('items', { depth: 0, sort: 'name', ...tenantQuery }),
-          list<TaxType>('tax-types', { depth: 0, ...tenantQuery }),
-        ])
-        setParties(p.docs); setAccounts(a.docs); setItems(it.docs)
-        setTaxTypes(tx.docs.filter((t) => t.active !== false))
-        // Load billing settings for simplified invoice feature
-        api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
-          .then((s) => setSimplifiedInv({
-            enabled: s.simplifiedInvoiceEnabled !== false,
-            threshold: s.simplifiedInvoiceThreshold || 5000,
-          }))
-          .catch(() => {})
-      } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to load') }
-      finally { setLoading(false) }
-    })()
-  }, [tenantId])
+    api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
+      .then((s) => setSimplifiedInv({
+        enabled: s.simplifiedInvoiceEnabled !== false,
+        threshold: s.simplifiedInvoiceThreshold || 5000,
+      }))
+      .catch(() => {})
+  }, [])
 
   /* ── Load existing doc for edit ─────────────────────────────── */
   useEffect(() => {
@@ -513,21 +500,6 @@ export default function VoucherForm({ mode }: Props) {
       navigate('/vouchers')
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to save') }
     setSaving(false)
-  }
-
-  /* ── Loading ────────────────────────────────────────────────── */
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-5xl">
-        <div className="flex items-center gap-3 py-4">
-          <button onClick={() => navigate('/vouchers')} className="rounded p-1 text-slate-400 hover:bg-slate-100"><ArrowLeft size={18} /></button>
-          <div className="h-6 w-48 animate-pulse rounded bg-slate-200" />
-        </div>
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100" />)}
-        </div>
-      </div>
-    )
   }
 
   /* ── Render ─────────────────────────────────────────────────── */
