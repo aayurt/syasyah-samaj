@@ -1205,10 +1205,17 @@ export default function VoucherForm({ mode }: Props) {
       {/* ── Invoice Preview ──────────────────────────────────── */}
       <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
         {/* Header */}
-        <div className="border-b border-slate-200 bg-slate-50 px-6 py-4 text-center">
-          <h1 className="text-lg font-bold tracking-tight text-slate-900">Syasya Samaj</h1>
-          <p className="text-[10px] uppercase tracking-widest text-slate-400">Tax Invoice / Voucher</p>
-        </div>
+        {(() => {
+          const isSimplified = grandTotal > 0 && grandTotal < 5000
+          return (
+            <div className="border-b border-slate-200 bg-slate-50 px-6 py-4 text-center">
+              <h1 className="text-lg font-bold tracking-tight text-slate-900">Syasya Samaj</h1>
+              <p className="text-[10px] uppercase tracking-widest text-slate-400">
+                {isSimplified ? 'Tax Invoice (VAT Inclusive)' : 'Tax Invoice / Voucher'}
+              </p>
+            </div>
+          )
+        })()}
 
         {/* Info bar */}
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-3">
@@ -1294,47 +1301,63 @@ export default function VoucherForm({ mode }: Props) {
         )}
 
         {/* Summary */}
-        <div className="border-t border-slate-200 px-6 py-4">
-          <div className="ml-auto w-64 space-y-1.5 text-sm">
-            <div className="flex justify-between">
-              <span className="text-slate-500">Sub Total</span>
-              <span className="font-mono text-slate-700">{fmt(isContra ? contraTotal : lineTotals)}</span>
+        {(() => {
+          const isSimplified = grandTotal > 0 && grandTotal < 5000
+          return (
+            <div className="border-t border-slate-200 px-6 py-4">
+              {isSimplified ? (
+                /* ── Simplified: VAT Inclusive ────────────── */
+                <div className="text-center">
+                  <div className="text-sm text-slate-500">Total Amount (VAT Inclusive)</div>
+                  <div className="mt-1 font-mono text-2xl font-bold text-slate-900">Rs. {fmt(grandTotal)}</div>
+                  <p className="mt-2 text-sm font-medium text-slate-600">
+                    In words: {amountInWords(grandTotal)}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">Includes all applicable taxes</p>
+                </div>
+              ) : (
+                /* ── Full breakdown ──────────────────────── */
+                <div className="ml-auto w-64 space-y-1.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Sub Total</span>
+                    <span className="font-mono text-slate-700">{fmt(isContra ? contraTotal : lineTotals)}</span>
+                  </div>
+                  {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Discount</span>
+                      <span className="font-mono text-red-600">−{fmt(globalDiscountAmount)}</span>
+                    </div>
+                  )}
+                  {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
+                    <div className="flex justify-between border-t border-slate-200 pt-1.5">
+                      <span className="text-slate-500">Taxable Amount</span>
+                      <span className="font-mono text-slate-700">{fmt(lineTotals - globalDiscountAmount)}</span>
+                    </div>
+                  )}
+                  {vatTotal > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Tax</span>
+                      <span className="font-mono text-slate-700">+{fmt(vatTotal)}</span>
+                    </div>
+                  )}
+                  {tdsEnabled && tdsAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">TDS</span>
+                      <span className="font-mono text-red-600">−{fmt(tdsAmount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t-2 border-slate-300 pt-2 text-base">
+                    <span className="font-bold text-slate-900">Total</span>
+                    <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
+                  </div>
+                  <p className="pt-2 text-sm font-medium text-slate-600">
+                    In words: {amountInWords(grandTotal)}
+                  </p>
+                </div>
+              )}
             </div>
-            {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
-              <div className="flex justify-between">
-                <span className="text-slate-500">Discount</span>
-                <span className="font-mono text-red-600">−{fmt(globalDiscountAmount)}</span>
-              </div>
-            )}
-            {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
-              <div className="flex justify-between border-t border-slate-200 pt-1.5">
-                <span className="text-slate-500">Taxable Amount</span>
-                <span className="font-mono text-slate-700">{fmt(lineTotals - globalDiscountAmount)}</span>
-              </div>
-            )}
-            {vatTotal > 0 && (
-              <div className="flex justify-between">
-                <span className="text-slate-500">Tax</span>
-                <span className="font-mono text-slate-700">+{fmt(vatTotal)}</span>
-              </div>
-            )}
-            {tdsEnabled && tdsAmount > 0 && (
-              <div className="flex justify-between">
-                <span className="text-slate-500">TDS</span>
-                <span className="font-mono text-red-600">−{fmt(tdsAmount)}</span>
-              </div>
-            )}
-            <div className="flex justify-between border-t-2 border-slate-300 pt-2 text-base">
-              <span className="font-bold text-slate-900">Total</span>
-              <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
-            </div>
-            {grandTotal > 0 && (
-              <p className="pt-2 text-sm font-medium text-slate-600">
-                In words: {amountInWords(grandTotal)}
-              </p>
-            )}
-          </div>
-        </div>
+          )
+        })()}
       </div>
 
       {/* ── Floating Bottom Bar ─────────────────────────────── */}
