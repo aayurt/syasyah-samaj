@@ -488,7 +488,7 @@ export default function VoucherForm({ mode }: Props) {
       if (bankAccount) base.bankAccount = Number(bankAccount)
       // For receipt/payment: send the amount as a single line
       if (!isItem && lines.length > 0 && lines[0].amount) {
-        base.lines = [{ amount: Number(lines[0].amount), qty: 1, rate: Number(lines[0].amount) }]
+        base.lines = [{ description: docType === 'receipt-voucher' ? 'Receipt' : 'Payment', amount: Number(lines[0].amount), qty: 1, rate: Number(lines[0].amount) }]
       }
     }
     // Link receipt/payment to a specific invoice
