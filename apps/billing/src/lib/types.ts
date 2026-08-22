@@ -144,6 +144,7 @@ export interface Document {
   postedAt?: string
   journalEntry?: number | null
   referenceTo?: number | null
+  linkedInvoice?: number | null
   paymentMethod?: 'cash' | 'bank'
   bankAccount?: number | null
   fromAccount?: number | null

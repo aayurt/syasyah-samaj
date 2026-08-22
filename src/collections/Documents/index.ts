@@ -1742,6 +1742,17 @@ export const Documents: CollectionConfig = {
       },
     },
     {
+      name: 'linkedInvoice',
+      type: 'relationship',
+      relationTo: 'documents',
+      admin: {
+        position: 'sidebar',
+        description: 'Sales/Purchase invoice this receipt/payment settles. Links payment to a specific invoice for outstanding tracking.',
+        condition: (_data, { siblingData }) =>
+          ['receipt-voucher', 'payment-voucher'].includes(siblingData?.docType),
+      },
+    },
+    {
       name: 'paymentMethod',
       type: 'select',
       options: [

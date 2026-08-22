@@ -12,6 +12,7 @@ import {
   Settings2,
   Trash2,
 } from 'lucide-react'
+import OutstandingInvoices from '../components/OutstandingInvoices'
 import { api, fmt } from '../lib/api'
 import { useCachedList } from '../lib/useCachedList'
 import { useCalendar } from '../lib/calendar'
@@ -184,6 +185,7 @@ export default function VoucherForm({ mode }: Props) {
   const [fromAccount, setFromAccount] = useState('')
   const [toAccount, setToAccount] = useState('')
   const [contraAmount, setContraAmount] = useState('')
+  const [linkedInvoiceId, setLinkedInvoiceId] = useState<string | null>(null)
   const [taxRate, setTaxRate] = useState('0')
   const [taxLines, setTaxLines] = useState<TaxLineDraft[]>([])
 
@@ -483,6 +485,10 @@ export default function VoucherForm({ mode }: Props) {
     if (isCash) {
       base.paymentMethod = paymentMethod || 'bank'
       if (bankAccount) base.bankAccount = Number(bankAccount)
+    }
+    // Link receipt/payment to a specific invoice
+    if (linkedInvoiceId && (docType === 'receipt-voucher' || docType === 'payment-voucher')) {
+      base.linkedInvoice = Number(linkedInvoiceId)
     }
     return base
   }
@@ -1126,6 +1132,16 @@ export default function VoucherForm({ mode }: Props) {
             </label>
           </div>
         </div>
+      )}
+
+      {/* ── Outstanding Invoices (receipt/payment only) ────── */}
+      {(docType === 'receipt-voucher' || docType === 'payment-voucher') && party && (
+        <OutstandingInvoices
+          partyId={party}
+          docType={docType as 'receipt-voucher' | 'payment-voucher'}
+          selectedInvoiceId={linkedInvoiceId}
+          onSelect={setLinkedInvoiceId}
+        />
       )}
 
       {/* ── Payment Fields (collapsible for cash types) ─────── */}
