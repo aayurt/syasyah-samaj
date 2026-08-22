@@ -656,177 +656,6 @@ export default function VoucherForm({ mode }: Props) {
           )}
         </div>
 
-        {/* ── Discount / Tax / TDS toggles (inside main card) ── */}
-        {isItem && (
-          <>
-            <div className="border-t border-slate-100" />
-            <div className="flex items-center justify-between py-3">
-              <button type="button" onClick={() => setGlobalDiscountEnabled((e) => !e)}
-                className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                <div className={`relative h-6 w-10 rounded-full transition-colors ${globalDiscountEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                  <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${globalDiscountEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                </div>
-                Discount
-              </button>
-              {globalDiscountEnabled && globalDiscountAmount > 0 && (
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
-                  −{fmt(globalDiscountAmount)}
-                </span>
-              )}
-            </div>
-            {globalDiscountEnabled && (
-              <div className="flex items-center gap-3 pb-4">
-                <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-                  <button type="button" onClick={() => { setGlobalDiscountMode('pct'); setGlobalDiscountValue('') }}
-                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${globalDiscountMode === 'pct' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                    %
-                  </button>
-                  <button type="button" onClick={() => { setGlobalDiscountMode('amt'); setGlobalDiscountValue('') }}
-                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${globalDiscountMode === 'amt' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                    Rs.
-                  </button>
-                </div>
-                <div className="relative flex-1 max-w-[180px]">
-                  {globalDiscountMode === 'pct' ? (
-                    <>
-                      <input type="number" min="0" max="100" step="0.01" value={globalDiscountValue}
-                        onChange={(e) => setGlobalDiscountValue(e.target.value)}
-                        placeholder="0"
-                        className="w-full rounded border border-slate-300 px-3 h-9 pr-8 font-mono text-sm outline-none focus:border-slate-500" />
-                      <span className="pointer-events-none absolute right-2.5 top-[7px] text-xs text-slate-400">%</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="pointer-events-none absolute left-2.5 top-[7px] text-xs text-slate-400">Rs.</span>
-                      <input type="number" min="0" step="0.01" value={globalDiscountValue}
-                        onChange={(e) => setGlobalDiscountValue(e.target.value)}
-                        placeholder="0"
-                        className="w-full rounded border border-slate-300 pl-8 h-9 font-mono text-sm outline-none focus:border-slate-500" />
-                    </>
-                  )}
-                </div>
-                <span className="text-xs text-slate-400">
-                  = {fmt(globalDiscountMode === 'pct' ? lineTotals * ((parseFloat(globalDiscountValue) || 0) / 100) : parseFloat(globalDiscountValue) || 0)}
-                </span>
-                <span className="ml-2 text-xs text-slate-400">
-                  {fmt(lineTotals)} − {fmt(globalDiscountAmount)} = {fmt(lineTotals - globalDiscountAmount)}
-                </span>
-              </div>
-            )}
-          </>
-        )}
-
-        {isTaxable && (
-          <>
-            <div className="border-t border-slate-100" />
-            <div className="flex items-center justify-between py-3">
-              <button type="button" onClick={() => setTaxSectionOpen((o) => !o)}
-                className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                <div className={`relative h-6 w-10 rounded-full transition-colors ${taxSectionOpen ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                  <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${taxSectionOpen ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                </div>
-                Tax (VAT / GST)
-              </button>
-              {taxSectionOpen && vatTotal > 0 && (
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
-                  {fmt(vatTotal)}
-                </span>
-              )}
-            </div>
-            {taxSectionOpen && (
-              <div className="pb-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Additive taxes</span>
-                  <button type="button" onClick={() => setTaxLines((ts) => [...ts, { key: crypto.randomUUID(), taxType: '', nature: 'additive' as TaxNature, rate: '' }])}
-                    className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700">
-                    <Plus size={12} /> Add Tax Line
-                  </button>
-                </div>
-                {taxLines.filter((tl) => tl.nature === 'additive').map((tl) => {
-                  const txType = taxTypes.find((t) => String(t.id) === tl.taxType)
-                  const rate = txType ? Number(txType.rate) || parseFloat(tl.rate) || 0 : parseFloat(tl.rate) || 0
-                  const taxAmt = (lineTotals * rate) / 100
-                  return (
-                    <div key={tl.key} className="flex items-center gap-2">
-                      <select value={tl.taxType}
-                        onChange={(e) => {
-                          const selected = taxTypes.find((t) => String(t.id) === e.target.value)
-                          setTaxLines((ts) => ts.map((t) => t.key === tl.key ? { ...t, taxType: e.target.value, rate: selected ? String(selected.rate) : t.rate } : t))
-                        }}
-                        className="flex-1 rounded border border-slate-300 px-2 h-9 text-sm outline-none focus:border-slate-500">
-                        <option value="">Select tax type</option>
-                        {taxTypes.filter((t) => t.nature === 'additive' && t.active !== false)
-                          .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
-                      </select>
-                      <span className="w-12 text-right font-mono text-xs text-slate-500">{rate}%</span>
-                      <span className="w-20 text-right font-mono text-xs font-medium text-slate-700">{fmt(taxAmt)}</span>
-                      <button type="button" onClick={() => setTaxLines((ts) => ts.filter((t) => t.key !== tl.key))}
-                        className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
-                    </div>
-                  )
-                })}
-                {vatTotal > 0 && (
-                  <div className="flex justify-end border-t border-slate-100 pt-2 text-xs">
-                    <span className="text-slate-500">Total Tax: </span>
-                    <span className="ml-2 font-mono font-medium text-slate-700">{fmt(vatTotal)}</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        )}
-
-        {isTaxable && (
-          <>
-            <div className="border-t border-slate-100" />
-            <div className="flex items-center justify-between py-3">
-              <button type="button" onClick={() => setTdsEnabled((e) => !e)}
-                className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                <div className={`relative h-6 w-10 rounded-full transition-colors ${tdsEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                  <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${tdsEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                </div>
-                TDS (Tax Deducted at Source)
-              </button>
-              {tdsEnabled && tdsAmount > 0 && (
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
-                  {fmt(tdsAmount)}
-                </span>
-              )}
-            </div>
-            {tdsEnabled && (
-              <div className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-3">
-                <label className="text-sm text-slate-700">
-                  TDS Account <span className="text-red-500">*</span>
-                  <select required value={tdsAccountId} onChange={(e) => setTdsAccountId(e.target.value)}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 h-9 text-sm outline-none focus:border-slate-500">
-                    <option value="">Select Account</option>
-                    {accounts.filter((a) => a.type === 'liability' || a.name.toLowerCase().includes('tds') || a.name.toLowerCase().includes('withhold'))
-                      .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </select>
-                </label>
-                <label className="text-sm text-slate-700">
-                  TDS Type <span className="text-red-500">*</span>
-                  <select required value={tdsTypeId}
-                    onChange={(e) => { setTdsTypeId(e.target.value); setTdsAmountManual('') }}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 h-9 text-sm outline-none focus:border-slate-500">
-                    <option value="">TDS Type</option>
-                    {taxTypes.filter((t) => t.nature === 'withholding' && t.active !== false)
-                      .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
-                  </select>
-                </label>
-                <label className="text-sm text-slate-700">
-                  TDS Amount <span className="text-red-500">*</span>
-                  <input type="number" min="0" step="0.01" required
-                    value={tdsAmountManual || (tdsAutoAmount > 0 ? String(tdsAutoAmount.toFixed(2)) : '')}
-                    onChange={(e) => setTdsAmountManual(e.target.value)}
-                    placeholder={tdsAutoAmount > 0 ? fmt(tdsAutoAmount) : 'Amount'}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 h-9 font-mono text-sm outline-none focus:border-slate-500" />
-                  {tdsRate > 0 && <span className="mt-1 block text-xs text-slate-400">{tdsRate}% × {fmt(lineTotals)} = {fmt(tdsAutoAmount)}</span>}
-                </label>
-              </div>
-            )}
-          </>
-        )}
       </div>
 
       {/* ── Item Lines Table ────────────────────────────────── */}
@@ -966,6 +795,165 @@ export default function VoucherForm({ mode }: Props) {
               className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700">
               <Plus size={14} /> Add Item
             </button>
+          </div>
+
+          {/* ── Discount / Tax / TDS toggles ──────────────── */}
+          <div className="border-t border-slate-100 px-4 py-3 space-y-0">
+            {/* Discount */}
+            <div className="flex items-center justify-between py-2.5">
+              <button type="button" onClick={() => setGlobalDiscountEnabled((e) => !e)}
+                className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                <div className={`relative h-6 w-10 rounded-full transition-colors ${globalDiscountEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                  <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${globalDiscountEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                </div>
+                Discount on Total
+              </button>
+              {globalDiscountEnabled && globalDiscountAmount > 0 && (
+                <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
+                  −{fmt(globalDiscountAmount)}
+                </span>
+              )}
+            </div>
+            {globalDiscountEnabled && (
+              <div className="flex items-center gap-3 pb-3">
+                <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                  <button type="button" onClick={() => { setGlobalDiscountMode('pct'); setGlobalDiscountValue('') }}
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${globalDiscountMode === 'pct' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                    %
+                  </button>
+                  <button type="button" onClick={() => { setGlobalDiscountMode('amt'); setGlobalDiscountValue('') }}
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${globalDiscountMode === 'amt' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                    Rs.
+                  </button>
+                </div>
+                <div className="relative flex-1 max-w-[180px]">
+                  {globalDiscountMode === 'pct' ? (
+                    <>
+                      <input type="number" min="0" max="100" step="0.01" value={globalDiscountValue}
+                        onChange={(e) => setGlobalDiscountValue(e.target.value)}
+                        placeholder="0"
+                        className="w-full rounded border border-slate-300 px-3 h-9 pr-8 font-mono text-sm outline-none focus:border-slate-500" />
+                      <span className="pointer-events-none absolute right-2.5 top-[7px] text-xs text-slate-400">%</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="pointer-events-none absolute left-2.5 top-[7px] text-xs text-slate-400">Rs.</span>
+                      <input type="number" min="0" step="0.01" value={globalDiscountValue}
+                        onChange={(e) => setGlobalDiscountValue(e.target.value)}
+                        placeholder="0"
+                        className="w-full rounded border border-slate-300 pl-8 h-9 font-mono text-sm outline-none focus:border-slate-500" />
+                    </>
+                  )}
+                </div>
+                <span className="text-xs text-slate-400">
+                  = {fmt(globalDiscountMode === 'pct' ? lineTotals * ((parseFloat(globalDiscountValue) || 0) / 100) : parseFloat(globalDiscountValue) || 0)}
+                </span>
+              </div>
+            )}
+
+            {/* Tax */}
+            <div className="flex items-center justify-between py-2.5">
+              <button type="button" onClick={() => setTaxSectionOpen((o) => !o)}
+                className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                <div className={`relative h-6 w-10 rounded-full transition-colors ${taxSectionOpen ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                  <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${taxSectionOpen ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                </div>
+                Tax (VAT / GST)
+              </button>
+              {taxSectionOpen && vatTotal > 0 && (
+                <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
+                  {fmt(vatTotal)}
+                </span>
+              )}
+            </div>
+            {taxSectionOpen && (
+              <div className="pb-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Additive taxes</span>
+                  <button type="button" onClick={() => setTaxLines((ts) => [...ts, { key: crypto.randomUUID(), taxType: '', nature: 'additive' as TaxNature, rate: '' }])}
+                    className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700">
+                    <Plus size={12} /> Add Tax Line
+                  </button>
+                </div>
+                {taxLines.filter((tl) => tl.nature === 'additive').map((tl) => {
+                  const txType = taxTypes.find((t) => String(t.id) === tl.taxType)
+                  const rate = txType ? Number(txType.rate) || parseFloat(tl.rate) || 0 : parseFloat(tl.rate) || 0
+                  const taxAmt = (lineTotals * rate) / 100
+                  return (
+                    <div key={tl.key} className="flex items-center gap-2">
+                      <select value={tl.taxType}
+                        onChange={(e) => {
+                          const selected = taxTypes.find((t) => String(t.id) === e.target.value)
+                          setTaxLines((ts) => ts.map((t) => t.key === tl.key ? { ...t, taxType: e.target.value, rate: selected ? String(selected.rate) : t.rate } : t))
+                        }}
+                        className="flex-1 rounded border border-slate-300 px-2 h-9 text-sm outline-none focus:border-slate-500">
+                        <option value="">Select tax type</option>
+                        {taxTypes.filter((t) => t.nature === 'additive' && t.active !== false)
+                          .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
+                      </select>
+                      <span className="w-12 text-right font-mono text-xs text-slate-500">{rate}%</span>
+                      <span className="w-20 text-right font-mono text-xs font-medium text-slate-700">{fmt(taxAmt)}</span>
+                      <button type="button" onClick={() => setTaxLines((ts) => ts.filter((t) => t.key !== tl.key))}
+                        className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                    </div>
+                  )
+                })}
+                {vatTotal > 0 && (
+                  <div className="flex justify-end border-t border-slate-100 pt-2 text-xs">
+                    <span className="text-slate-500">Total Tax: </span>
+                    <span className="ml-2 font-mono font-medium text-slate-700">{fmt(vatTotal)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TDS */}
+            <div className="flex items-center justify-between py-2.5">
+              <button type="button" onClick={() => setTdsEnabled((e) => !e)}
+                className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                <div className={`relative h-6 w-10 rounded-full transition-colors ${tdsEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                  <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${tdsEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                </div>
+                TDS (Tax Deducted at Source)
+              </button>
+              {tdsEnabled && tdsAmount > 0 && (
+                <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
+                  {fmt(tdsAmount)}
+                </span>
+              )}
+            </div>
+            {tdsEnabled && (
+              <div className="grid grid-cols-1 gap-3 pb-3 sm:grid-cols-3">
+                <label className="text-sm text-slate-700">
+                  TDS Account <span className="text-red-500">*</span>
+                  <select required value={tdsAccountId} onChange={(e) => setTdsAccountId(e.target.value)}
+                    className="mt-1 w-full rounded border border-slate-300 px-3 h-9 text-sm outline-none focus:border-slate-500">
+                    <option value="">Select Account</option>
+                    {accounts.filter((a) => a.type === 'liability' || a.name.toLowerCase().includes('tds') || a.name.toLowerCase().includes('withhold'))
+                      .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </label>
+                <label className="text-sm text-slate-700">
+                  TDS Type <span className="text-red-500">*</span>
+                  <select required value={tdsTypeId}
+                    onChange={(e) => { setTdsTypeId(e.target.value); setTdsAmountManual('') }}
+                    className="mt-1 w-full rounded border border-slate-300 px-3 h-9 text-sm outline-none focus:border-slate-500">
+                    <option value="">TDS Type</option>
+                    {taxTypes.filter((t) => t.nature === 'withholding' && t.active !== false)
+                      .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
+                  </select>
+                </label>
+                <label className="text-sm text-slate-700">
+                  TDS Amount <span className="text-red-500">*</span>
+                  <input type="number" min="0" step="0.01" required
+                    value={tdsAmountManual || (tdsAutoAmount > 0 ? String(tdsAutoAmount.toFixed(2)) : '')}
+                    onChange={(e) => setTdsAmountManual(e.target.value)}
+                    placeholder={tdsAutoAmount > 0 ? fmt(tdsAutoAmount) : 'Amount'}
+                    className="mt-1 w-full rounded border border-slate-300 px-3 h-9 font-mono text-sm outline-none focus:border-slate-500" />
+                  {tdsRate > 0 && <span className="mt-1 block text-xs text-slate-400">{tdsRate}% × {fmt(lineTotals)} = {fmt(tdsAutoAmount)}</span>}
+                </label>
+              </div>
+            )}
           </div>
         </div>
       )}
