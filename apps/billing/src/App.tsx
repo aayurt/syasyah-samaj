@@ -155,14 +155,19 @@ function Shell({ email }: { email: string }) {
     if (localStorage.getItem('tour-seen') !== '1') setTourOpen(true)
   }, [])
 
-  // Load feature toggles from settings — re-fetch on route change
-  // so toggling a feature in Settings reflects immediately
+  // Load feature toggles from settings — cache-first via localStorage
+  // Re-fetch on route change AND when Settings dispatches a change event
   const location = useLocation()
-  useEffect(() => {
+  const refreshFeatures = () => {
     api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
       .then((s) => setFeatures({ bankReconciliationEnabled: !!s.bankReconciliationEnabled }))
-      .catch(() => {}) // non-critical
-  }, [location.pathname])
+      .catch(() => {})
+  }
+  useEffect(() => { refreshFeatures() }, [location.pathname])
+  useEffect(() => {
+    window.addEventListener('billing-settings-changed', refreshFeatures)
+    return () => window.removeEventListener('billing-settings-changed', refreshFeatures)
+  }, [])
 
   const closeTour = () => {
     localStorage.setItem('tour-seen', '1')

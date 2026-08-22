@@ -102,6 +102,7 @@ export default function Settings() {
         body: { calendarType, dateFormat, timeFormat },
       })
       updateCalendar({ calendarType, dateFormat, timeFormat })
+      window.dispatchEvent(new Event('billing-settings-changed'))
       setCalSaved(true)
     } catch {
       // offline — the Save button will retry
@@ -136,6 +137,8 @@ export default function Settings() {
       const data = { ...(cached.data || {}), ...body }
       localStorage.setItem('billing.settingsCache', JSON.stringify({ data, ts: Date.now() }))
     } catch { /* ignore */ }
+    // Notify App.tsx to re-read features (sidebar update)
+    window.dispatchEvent(new Event('billing-settings-changed'))
     // 2. Update saved ref so dirty tracking resets
     savedFeatures.current = {
       bankRec: bankRecEnabled,
@@ -172,6 +175,7 @@ export default function Settings() {
         },
       })
       setSaved(true)
+      window.dispatchEvent(new Event('billing-settings-changed'))
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to save settings')
     }
