@@ -946,35 +946,70 @@ export default function VoucherForm({ mode }: Props) {
               )}
             </div>
             {tdsEnabled && (
-              <div className="grid grid-cols-1 gap-3 pb-3 sm:grid-cols-3">
-                <label className="text-sm text-slate-700">
-                  TDS Account <span className="text-red-500">*</span>
-                  <select required value={tdsAccountId} onChange={(e) => setTdsAccountId(e.target.value)}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 h-9 text-sm outline-none focus:border-slate-500">
-                    <option value="">Select Account</option>
-                    {accounts.filter((a) => a.type === 'liability' || a.name.toLowerCase().includes('tds') || a.name.toLowerCase().includes('withhold'))
-                      .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </select>
-                </label>
-                <label className="text-sm text-slate-700">
-                  TDS Type <span className="text-red-500">*</span>
-                  <select required value={tdsTypeId}
+              <div className="space-y-3 pb-3">
+                {/* TDS Type selector */}
+                <div className="flex items-center gap-3">
+                  <select value={tdsTypeId}
                     onChange={(e) => { setTdsTypeId(e.target.value); setTdsAmountManual('') }}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 h-9 text-sm outline-none focus:border-slate-500">
-                    <option value="">TDS Type</option>
+                    className="h-9 flex-1 rounded border border-slate-300 px-2 text-sm outline-none focus:border-slate-500">
+                    <option value="">Select TDS type</option>
                     {taxTypes.filter((t) => t.nature === 'withholding' && t.active !== false)
                       .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
                   </select>
-                </label>
-                <label className="text-sm text-slate-700">
-                  TDS Amount <span className="text-red-500">*</span>
-                  <input type="number" min="0" step="0.01" required
-                    value={tdsAmountManual || (tdsAutoAmount > 0 ? String(tdsAutoAmount.toFixed(2)) : '')}
-                    onChange={(e) => setTdsAmountManual(e.target.value)}
-                    placeholder={tdsAutoAmount > 0 ? fmt(tdsAutoAmount) : 'Amount'}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 h-9 font-mono text-sm outline-none focus:border-slate-500" />
-                  {tdsRate > 0 && <span className="mt-1 block text-xs text-slate-400">{tdsRate}% × {fmt(lineTotals)} = {fmt(tdsAutoAmount)}</span>}
-                </label>
+                </div>
+                {/* %/Rs toggle + input */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                    <button type="button" onClick={() => setTdsAmountManual('')}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${!tdsAmountManual ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                      %
+                    </button>
+                    <button type="button" onClick={() => setTdsAmountManual(String(tdsAutoAmount.toFixed(2)))}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${tdsAmountManual ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                      Rs.
+                    </button>
+                  </div>
+                  <div className="relative flex-1 max-w-[180px]">
+                    {!tdsAmountManual ? (
+                      <>
+                        <input type="number" min="0" max="100" step="0.01"
+                          value={tdsRate || ''}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            if (val === '') {
+                              setTdsTypeId('')
+                            } else {
+                              // Find or create a matching tax type
+                              const existing = taxTypes.find((t) => t.nature === 'withholding' && Number(t.rate) === parseFloat(val))
+                              if (existing) setTdsTypeId(String(existing.id))
+                            }
+                          }}
+                          placeholder="0"
+                          className="w-full rounded border border-slate-300 px-3 h-9 pr-8 font-mono text-sm outline-none focus:border-slate-500" />
+                        <span className="pointer-events-none absolute right-2.5 top-[7px] text-xs text-slate-400">%</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="pointer-events-none absolute left-2.5 top-[7px] text-xs text-slate-400">Rs.</span>
+                        <input type="number" min="0" step="0.01"
+                          value={tdsAmountManual}
+                          onChange={(e) => setTdsAmountManual(e.target.value)}
+                          placeholder="0"
+                          className="w-full rounded border border-slate-300 pl-8 h-9 font-mono text-sm outline-none focus:border-slate-500" />
+                      </>
+                    )}
+                  </div>
+                  <span className="text-xs text-slate-400">
+                    = {fmt(tdsAmount)}
+                  </span>
+                </div>
+                {/* TDS Account (compact) */}
+                <select value={tdsAccountId} onChange={(e) => setTdsAccountId(e.target.value)}
+                  className="h-9 w-full rounded border border-slate-300 px-2 text-sm outline-none focus:border-slate-500">
+                  <option value="">Select TDS account</option>
+                  {accounts.filter((a) => a.type === 'liability' || a.name.toLowerCase().includes('tds') || a.name.toLowerCase().includes('withhold'))
+                    .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
               </div>
             )}
           </div>
