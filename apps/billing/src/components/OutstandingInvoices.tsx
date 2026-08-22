@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Check, FileText, Search, X } from 'lucide-react'
 import { useCalendar } from '../lib/calendar'
 import { adToBsString, bsToAdString } from '../lib/nepaliDate'
-import { api, fmt } from '../lib/api'
+import { fmt } from '../lib/api'
 import { useTenantQuery } from '../lib/tenant'
 import type { Document } from '../lib/types'
 
@@ -47,12 +47,14 @@ export default function OutstandingInvoices({
       ],
     })
 
-    api<{ docs: Document[] }>('/documents', {
-      query: { limit: 100, depth: 0, where: whereInv, sort: '-date', ...tenantQuery },
+    // Use direct fetch to bypass the api() cache (which caches by slug, not query)
+    const base = import.meta.env.VITE_API_URL || ''
+    fetch(`${base}/api/documents?limit=100&depth=0&sort=-date&where=${encodeURIComponent(whereInv)}`, {
+      credentials: 'include',
     })
-      .then(async (res) => {
+      .then((r) => r.json())
+      .then(async (res: { docs?: Document[] }) => {
         if (!alive) return
-        // Client-side filter: API where clause may not work reliably
         const docs = (res.docs || []).filter((d) => d.docType === invoiceType)
         if (docs.length === 0) { setInvoices([]); setLoading(false); return }
 
@@ -62,11 +64,12 @@ export default function OutstandingInvoices({
             { status: { equals: 'posted' } },
           ],
         })
-        const linked = await api<{ docs: Document[] }>('/documents', {
-          query: { limit: 1000, depth: 0, where: whereLinked, ...tenantQuery },
-        }).catch(() => ({ docs: [] as Document[] }))
+        const whereLinkedEnc = encodeURIComponent(whereLinked)
+        const linkedRes = await fetch(`${base}/api/documents?limit=1000&depth=0&where=${whereLinkedEnc}`, {
+          credentials: 'include',
+        }).then((r) => r.json()).catch(() => ({ docs: [] as Document[] }))
         // Client-side filter: only receipt/payment vouchers for this docType
-        const linkedDocs = linked.docs.filter((d) => d.docType === docType)
+        const linkedDocs = (linkedRes.docs || []).filter((d: Document) => d.docType === docType)
 
         // 1. Count linked receipts per invoice
         const paidMap = new Map<number, number>()
@@ -82,8 +85,8 @@ export default function OutstandingInvoices({
 
         // 2. Unlinked receipts for this party — pro-rate against oldest invoices first
         const unlinkedTotal = linkedDocs
-          .filter((d) => !(d as any).linkedInvoice)
-          .reduce((sum, d) => sum + (d.grossTotal || 0), 0)
+          .filter((d: Document) => !(d as any).linkedInvoice)
+          .reduce((sum: number, d: Document) => sum + (d.grossTotal || 0), 0)
 
         // Sort invoices oldest first for pro-rating
         const sorted = [...docs].sort((a, b) => (a.date || '').localeCompare(b.date || ''))
@@ -110,7 +113,7 @@ export default function OutstandingInvoices({
       .catch(() => { if (alive) setLoading(false) })
 
     return () => { alive = false }
-  }, [partyId, invoiceType, docType]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [partyId, invoiceType, docType, tenantQuery]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Client-side filtering
   const filtered = useMemo(() => {
