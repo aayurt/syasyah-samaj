@@ -297,8 +297,28 @@ export default function OutstandingInvoices({
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-sm font-medium text-slate-800">Rs. {fmt(inv.outstanding)}</div>
-                <div className="text-xs text-slate-400">of Rs. {fmt(inv.grossTotal || 0)}</div>
+                <div className="flex items-center gap-2 justify-end">
+                  <div className="text-sm font-medium text-slate-800">Rs. {fmt(inv.outstanding)}</div>
+                  {(() => {
+                    const total = inv.grossTotal || 0
+                    const paid = total - inv.outstanding
+                    const pct = total > 0 ? Math.round((paid / total) * 100) : 0
+                    if (paid > 0.01 && inv.outstanding > 0.01) {
+                      return <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Partial ({pct}%)</span>
+                    }
+                    if (inv.outstanding <= 0.01) {
+                      return <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Paid</span>
+                    }
+                    return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">Unpaid</span>
+                  })()}
+                </div>
+                <div className="text-xs text-slate-400 mt-0.5">
+                  of Rs. {fmt(inv.grossTotal || 0)}
+                  {(() => {
+                    const paid = (inv.grossTotal || 0) - inv.outstanding
+                    return paid > 0.01 ? <span className="ml-1 text-emerald-600">· Rs. {fmt(paid)} paid</span> : null
+                  })()}
+                </div>
               </div>
             </button>
           ))}
