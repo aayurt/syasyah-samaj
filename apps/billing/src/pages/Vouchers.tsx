@@ -1804,243 +1804,242 @@ export default function Vouchers() {
       )}
 
       {/* Voucher detail modal */}
-      {viewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop is visual only — the modal closes via the Close button,
-              the X, or the footer action, never on an outside click. */}
-          <div className="fixed inset-0 bg-slate-900/50" />
-          <div className="relative z-10 max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-2xl">
-            <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-semibold text-slate-900">
+      {viewDoc && (() => {
+        const additiveTaxLines = (viewDoc.taxLines || []).filter((tl: TaxLine) => tl.nature === 'additive')
+        const withholdingTaxLines = (viewDoc.taxLines || []).filter((tl: TaxLine) => tl.nature === 'withholding')
+        const totalAdditiveTax = additiveTaxLines.reduce((s: number, tl: TaxLine) => s + (tl.amount || 0), 0)
+        const totalWithholding = withholdingTaxLines.reduce((s: number, tl: TaxLine) => s + (tl.amount || 0), 0)
+        const subTotal = viewDoc.netTotal || viewDoc.grossTotal || 0
+        const discountAmt = viewDoc.discountTotal || 0
+        const taxable = subTotal - discountAmt
+        const grandTotal = viewDoc.grossTotal || 0
+
+        function numWords(n: number): string {
+          if (n === 0) return 'Zero'
+          const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+            'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
+          const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
+          const conv = (v: number): string => {
+            if (v === 0) return ''
+            if (v < 20) return ones[v]
+            if (v < 100) return tens[Math.floor(v / 10)] + (v % 10 ? ' ' + ones[v % 10] : '')
+            if (v < 1000) return ones[Math.floor(v / 100)] + ' Hundred' + (v % 100 ? ' and ' + conv(v % 100) : '')
+            if (v < 100000) return conv(Math.floor(v / 1000)) + ' Thousand' + (v % 1000 ? ' ' + conv(v % 1000) : '')
+            if (v < 10000000) return conv(Math.floor(v / 100000)) + ' Lakh' + (v % 100000 ? ' ' + conv(v % 100000) : '')
+            return conv(Math.floor(v / 10000000)) + ' Crore' + (v % 10000000 ? ' ' + conv(v % 10000000) : '')
+          }
+          const whole = Math.floor(Math.abs(n))
+          const dec = Math.round((Math.abs(n) - whole) * 100)
+          let r = conv(whole) + ' Rupees'
+          if (dec > 0) r += ' and ' + conv(dec) + ' Paisa'
+          return r + ' Only'
+        }
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-slate-900/50" />
+            <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-2xl print:shadow-none print:max-w-full print:max-h-full print:rounded-none">
+
+              {/* ── Header ──────────────────────────────────── */}
+              <div className="border-b border-slate-200 bg-slate-50 px-8 py-5 text-center rounded-t-xl print:bg-white print:rounded-none">
+                <h1 className="text-xl font-bold tracking-tight text-slate-900">Syasya Samaj</h1>
+                <p className="mt-0.5 text-xs text-slate-400">Tax Invoice / Voucher</p>
+              </div>
+
+              {/* ── Voucher Info Bar ────────────────────────── */}
+              <div className="flex items-center justify-between border-b border-slate-200 px-8 py-4">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
                     {DOC_TYPE_LABELS[viewDoc.docType] || viewDoc.docType}
                   </h2>
-                  <StatusPill status={viewDoc.status} />
+                  <div className="mt-0.5 font-mono text-sm text-slate-500">
+                    {viewDoc.number || '— draft —'}
+                  </div>
                 </div>
-                <div className="mt-0.5 font-mono text-sm text-slate-500">
-                  {viewDoc.number || '— draft —'}
+                <div className="text-right">
+                  <div className={`inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
+                    viewDoc.status === 'posted' ? 'bg-emerald-100 text-emerald-700' :
+                    viewDoc.status === 'void' ? 'bg-red-100 text-red-700' :
+                    'bg-slate-100 text-slate-600'
+                  }`}>
+                    {viewDoc.status}
+                  </div>
+                  <div className="mt-1 text-sm text-slate-600">{formatDate(viewDoc.date)}</div>
                 </div>
               </div>
-              <button
-                onClick={() => setViewDoc(null)}
-                className="rounded p-1 text-slate-400 hover:text-slate-700"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
 
-            <div className="px-6 py-4">
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-3">
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400">Date</dt>
-                  <dd className="mt-0.5 text-slate-700">{formatDate(viewDoc.date)}</dd>
+              {/* ── Party Info ──────────────────────────────── */}
+              <div className="border-b border-slate-200 px-8 py-4">
+                <div className="grid grid-cols-2 gap-6 text-sm">
+                  <div>
+                    <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Bill To</span>
+                    <p className="mt-1 font-semibold text-slate-900">{partyName(viewDoc) || '—'}</p>
+                  </div>
+                  {viewDoc.paymentMethod && (
+                    <div className="text-right">
+                      <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Payment</span>
+                      <p className="mt-1 capitalize text-slate-700">{viewDoc.paymentMethod}</p>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400">Party</dt>
-                  <dd className="mt-0.5 text-slate-700">{partyName(viewDoc)}</dd>
-                </div>
-                {viewDoc.narration && (
-                  <div className="col-span-2 md:col-span-1">
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">Narration</dt>
-                    <dd className="mt-0.5 text-slate-700">{viewDoc.narration}</dd>
-                  </div>
-                )}
-                {viewDoc.paymentMethod && (
-                  <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">Payment</dt>
-                    <dd className="mt-0.5 capitalize text-slate-700">{viewDoc.paymentMethod}</dd>
-                  </div>
-                )}
-                {viewDoc.taxRate ? (
-                  <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">Tax rate</dt>
-                    <dd className="mt-0.5 text-slate-700">{viewDoc.taxRate}%</dd>
-                  </div>
-                ) : null}
-                {viewDoc.referenceTo && (
-                  <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">Ref</dt>
-                    <dd className="mt-0.5 text-slate-700">#{String(viewDoc.referenceTo)}</dd>
-                  </div>
-                )}
-              </dl>
+              </div>
 
+              {/* ── Items Table ─────────────────────────────── */}
               {viewDoc.lines && viewDoc.lines.length > 0 ? (
-                <table className="mt-4 w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
-                      <th className="py-2 pr-2">Item</th>
-                      <th className="py-2 pr-2">Description</th>
-                      <th className="w-16 py-2 pr-2 text-right">Qty</th>
-                      <th className="w-24 py-2 pr-2 text-right">Rate</th>
-                      <th className="w-28 py-2 text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {viewDoc.lines.map((l, i) => (
-                      <tr key={l.id || i} className="border-b border-slate-50">
-                        <td className="py-2 pr-2 text-slate-700">
-                          {l.item && typeof l.item === 'object'
-                            ? l.item.name
-                            : l.item
-                              ? `#${String(l.item)}`
-                              : '—'}
-                        </td>
-                        <td className="py-2 pr-2 text-slate-600">{l.description}</td>
-                        <td className="py-2 pr-2 text-right font-mono text-slate-700">
-                          {l.qty ?? '—'}
-                        </td>
-                        <td className="py-2 pr-2 text-right font-mono text-slate-700">
-                          {l.rate !== undefined ? fmt(l.rate) : '—'}
-                        </td>
-                        <td className="py-2 text-right font-mono text-slate-800">
-                          {fmt(l.amount)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t border-slate-200">
-                      <td
-                        colSpan={3}
-                        className="py-2 pr-2 text-xs uppercase tracking-wide text-slate-500"
-                      >
-                        Totals
-                      </td>
-                      <td colSpan={2} className="py-2 text-right">
-                        {viewDoc.taxTotal ? (
-                          <div className="text-xs text-slate-500">
-                            Net {fmt(viewDoc.netTotal)} · Tax {fmt(viewDoc.taxTotal)}
-                            <div className="text-sm font-semibold text-slate-800">
-                              {fmt(viewDoc.grossTotal)}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="font-semibold text-slate-800">
-                            {fmt(viewDoc.grossTotal)}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              ) : (
-                viewDoc.journalLines &&
-                viewDoc.journalLines.length > 0 && (
-                  <table className="mt-4 w-full text-sm">
+                <div className="px-8 py-4">
+                  <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
-                        <th className="py-2 pr-2">Account</th>
-                        <th className="w-28 py-2 pr-2 text-right">Debit</th>
-                        <th className="w-28 py-2 pr-2 text-right">Credit</th>
-                        <th className="py-2">Memo</th>
+                      <tr className="border-b-2 border-slate-300 text-left text-xs uppercase tracking-wide text-slate-500">
+                        <th className="w-8 py-2.5">#</th>
+                        <th className="py-2.5">Item / Description</th>
+                        <th className="w-16 py-2.5 text-right">Qty</th>
+                        <th className="w-24 py-2.5 text-right">Rate</th>
+                        <th className="w-28 py-2.5 text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewDoc.lines.map((l, i) => (
+                        <tr key={l.id || i} className="border-b border-slate-100">
+                          <td className="py-2.5 text-center text-slate-400">{i + 1}</td>
+                          <td className="py-2.5">
+                            <span className="font-medium text-slate-800">
+                              {l.item && typeof l.item === 'object' ? l.item.name : l.description || '—'}
+                            </span>
+                          </td>
+                          <td className="py-2.5 text-right font-mono text-slate-700">{l.qty ?? '—'}</td>
+                          <td className="py-2.5 text-right font-mono text-slate-700">{l.rate !== undefined ? fmt(l.rate) : '—'}</td>
+                          <td className="py-2.5 text-right font-mono font-medium text-slate-800">{fmt(l.amount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* ── Summary ──────────────────────────── */}
+                  <div className="mt-4 ml-auto w-72 space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Sub Total</span>
+                      <span className="font-mono text-slate-700">{fmt(subTotal)}</span>
+                    </div>
+                    {discountAmt > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Discount</span>
+                        <span className="font-mono text-red-600">−{fmt(discountAmt)}</span>
+                      </div>
+                    )}
+                    {discountAmt > 0 && (
+                      <div className="flex justify-between border-t border-slate-200 pt-1.5">
+                        <span className="text-slate-500">Taxable Amount</span>
+                        <span className="font-mono text-slate-700">{fmt(taxable)}</span>
+                      </div>
+                    )}
+                    {totalAdditiveTax > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Tax</span>
+                        <span className="font-mono text-slate-700">+{fmt(totalAdditiveTax)}</span>
+                      </div>
+                    )}
+                    {totalWithholding > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">TDS</span>
+                        <span className="font-mono text-red-600">−{fmt(totalWithholding)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t-2 border-slate-300 pt-2 text-base">
+                      <span className="font-bold text-slate-900">Total</span>
+                      <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
+                    </div>
+                    <p className="pt-1 text-sm font-medium text-slate-600">
+                      In words: {numWords(grandTotal)}
+                    </p>
+                  </div>
+                </div>
+              ) : viewDoc.journalLines && viewDoc.journalLines.length > 0 ? (
+                <div className="px-8 py-4">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b-2 border-slate-300 text-left text-xs uppercase tracking-wide text-slate-500">
+                        <th className="py-2.5">Account</th>
+                        <th className="w-28 py-2.5 text-right">Debit</th>
+                        <th className="w-28 py-2.5 text-right">Credit</th>
+                        <th className="py-2.5">Memo</th>
                       </tr>
                     </thead>
                     <tbody>
                       {viewDoc.journalLines.map((l, i) => {
-                        const accId =
-                          l.account && typeof l.account === 'object'
-                            ? (l.account as { id: unknown }).id
-                            : l.account
+                        const accId = l.account && typeof l.account === 'object' ? (l.account as { id: unknown }).id : l.account
                         const a = accounts.find((x) => x.id === Number(accId))
                         return (
-                          <tr key={l.id || i} className="border-b border-slate-50">
-                            <td className="py-2 pr-2 text-slate-700">
-                              {a
-                                ? `${a.code ? a.code + ' · ' : ''}${a.name}`
-                                : accId
-                                  ? `#${String(accId)}`
-                                  : '—'}
-                            </td>
-                            <td className="py-2 pr-2 text-right font-mono text-slate-800">
-                              {l.debit ? fmt(l.debit) : ''}
-                            </td>
-                            <td className="py-2 pr-2 text-right font-mono text-slate-800">
-                              {l.credit ? fmt(l.credit) : ''}
-                            </td>
-                            <td className="py-2 text-slate-500">{l.memo || ''}</td>
+                          <tr key={l.id || i} className="border-b border-slate-100">
+                            <td className="py-2.5 text-slate-700">{a ? `${a.code ? a.code + ' · ' : ''}${a.name}` : accId ? `#${String(accId)}` : '—'}</td>
+                            <td className="py-2.5 text-right font-mono text-slate-800">{l.debit ? fmt(l.debit) : ''}</td>
+                            <td className="py-2.5 text-right font-mono text-slate-800">{l.credit ? fmt(l.credit) : ''}</td>
+                            <td className="py-2.5 text-slate-500">{l.memo || ''}</td>
                           </tr>
                         )
                       })}
                     </tbody>
                     {(() => {
-                      const db = (viewDoc.journalLines || []).reduce(
-                        (s, l) => s + (l.debit || 0),
-                        0,
-                      )
-                      const cr = (viewDoc.journalLines || []).reduce(
-                        (s, l) => s + (l.credit || 0),
-                        0,
-                      )
+                      const db = (viewDoc.journalLines || []).reduce((s: number, l: { debit?: number }) => s + (l.debit || 0), 0)
+                      const cr = (viewDoc.journalLines || []).reduce((s: number, l: { credit?: number }) => s + (l.credit || 0), 0)
                       const balanced = Math.abs(db - cr) < 0.001
                       return (
                         <tfoot>
-                          <tr className="border-t border-slate-200">
-                            <td className="py-2 pr-2 text-xs uppercase tracking-wide text-slate-500">
-                              Totals
-                            </td>
-                            <td className="py-2 pr-2 text-right font-mono text-slate-800">
-                              {fmt(db)}
-                            </td>
-                            <td className="py-2 pr-2 text-right font-mono text-slate-800">
-                              {fmt(cr)}
-                            </td>
-                            <td
-                              className={`py-2 text-xs font-medium ${
-                                balanced ? 'text-emerald-600' : 'text-red-600'
-                              }`}
-                            >
-                              {balanced ? '✓ balanced' : `difference ${fmt(db - cr)}`}
+                          <tr className="border-t-2 border-slate-300">
+                            <td className="py-2.5 text-xs font-medium uppercase tracking-wide text-slate-500">Totals</td>
+                            <td className="py-2.5 text-right font-mono font-medium text-slate-800">{fmt(db)}</td>
+                            <td className="py-2.5 text-right font-mono font-medium text-slate-800">{fmt(cr)}</td>
+                            <td className={`py-2.5 text-xs font-medium ${balanced ? 'text-emerald-600' : 'text-red-600'}`}>
+                              {balanced ? '✓ balanced' : `diff ${fmt(db - cr)}`}
                             </td>
                           </tr>
                         </tfoot>
                       )
                     })()}
                   </table>
-                )
-              )}
-            </div>
+                </div>
+              ) : null}
 
-            <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-3">
-              {viewDoc.status === 'draft' && (
-                <>
-                  <button
-                    onClick={() => {
-                      setViewDoc(null)
-                      deleteDoc(viewDoc.id)
-                    }}
-                    className="rounded border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
-                  >
-                    Delete draft
-                  </button>
-                  <button
-                    onClick={() => editDraft(viewDoc)}
-                    className="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                  >
-                    Edit draft
-                  </button>
-                </>
+              {/* ── Narration ──────────────────────────────── */}
+              {viewDoc.narration && (
+                <div className="border-t border-slate-200 px-8 py-3">
+                  <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Remarks</span>
+                  <p className="mt-0.5 text-sm text-slate-600">{viewDoc.narration}</p>
+                </div>
               )}
-              {viewDoc.status === 'posted' && (
-                <button
-                  onClick={() => setPrintDoc(viewDoc)}
-                  className="flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  <Printer size={14} /> Print
-                </button>
-              )}
-              <button
-                onClick={() => setViewDoc(null)}
-                className="rounded bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
-              >
-                Close
-              </button>
+
+              {/* ── Action Bar ─────────────────────────────── */}
+              <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-8 py-4 rounded-b-xl print:hidden">
+                <div>
+                  {viewDoc.status === 'draft' && (
+                    <div className="flex gap-2">
+                      <button onClick={() => { setViewDoc(null); deleteDoc(viewDoc.id) }}
+                        className="rounded border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">
+                        Delete
+                      </button>
+                      <button onClick={() => editDraft(viewDoc)}
+                        className="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        Edit Draft
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {viewDoc.status === 'posted' && (
+                    <button onClick={() => setPrintDoc(viewDoc)}
+                      className="flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                      <Printer size={14} /> Print
+                    </button>
+                  )}
+                  <button onClick={() => setViewDoc(null)}
+                    className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700">
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
