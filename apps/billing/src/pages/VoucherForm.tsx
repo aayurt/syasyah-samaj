@@ -1144,7 +1144,14 @@ export default function VoucherForm({ mode }: Props) {
           partyId={party}
           docType={docType as 'receipt-voucher' | 'payment-voucher'}
           selectedInvoiceId={linkedInvoiceId}
-          onSelect={setLinkedInvoiceId}
+          onSelect={(id, outstanding) => {
+            setLinkedInvoiceId(id)
+            // Auto-fill amount with remaining balance
+            if (id && outstanding !== undefined) {
+              const amt = String(outstanding)
+              setLines([{ key: crypto.randomUUID(), item: '', description: 'Payment', qty: '1', rate: amt, amount: amt, discountPct: '', discountAmt: '' }])
+            }
+          }}
         />
       )}
 

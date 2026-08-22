@@ -8,7 +8,7 @@ interface Props {
   partyId: string
   docType: 'receipt-voucher' | 'payment-voucher'
   selectedInvoiceId: string | null
-  onSelect: (invoiceId: string | null) => void
+  onSelect: (invoiceId: string | null, outstanding?: number) => void
 }
 
 interface OutstandingInvoice extends Document {
@@ -124,7 +124,7 @@ export default function OutstandingInvoices({
             <button
               type="button"
               key={inv.id}
-              onClick={() => onSelect(String(inv.id))}
+              onClick={() => onSelect(String(inv.id), inv.outstanding)}
               className={`w-full flex items-center justify-between rounded-md border p-3 text-left transition-colors ${
                 selectedInvoiceId === String(inv.id)
                   ? 'border-crimson-300 bg-crimson-50'
@@ -152,6 +152,23 @@ export default function OutstandingInvoices({
           ))}
         </div>
       )}
+
+      {/* Remaining amount after payment */}
+      {!loading && selectedInvoiceId && invoices.length > 0 && (() => {
+        const sel = invoices.find((i) => String(i.id) === selectedInvoiceId)
+        if (!sel) return null
+        return (
+          <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            <span className="font-medium">Remaining after payment:</span>{' '}
+            Rs. {fmt(sel.outstanding)} of Rs. {fmt(sel.grossTotal || 0)}
+            {sel.outstanding < (sel.grossTotal || 0) && (
+              <span className="ml-2 text-emerald-600">
+                (Rs. {fmt((sel.grossTotal || 0) - sel.outstanding)} already paid)
+              </span>
+            )}
+          </div>
+        )
+      })()}
     </div>
   )
 }
