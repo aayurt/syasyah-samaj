@@ -317,7 +317,7 @@ export default function VoucherForm({ mode }: Props) {
 
   /* ── Derived ────────────────────────────────────────────────── */
   const meta = DOC_TYPE_LABELS[docType] || docType
-  const isItem = ['sales-invoice', 'purchase-invoice', 'payment-voucher', 'receipt-voucher',
+  const isItem = ['sales-invoice', 'purchase-invoice',
     'credit-note', 'debit-note', 'petty-cash-voucher', 'grn', 'delivery-challan'].includes(docType)
   const isContra = docType === 'contra'
   const isJournal = docType === 'journal-voucher'
@@ -485,6 +485,10 @@ export default function VoucherForm({ mode }: Props) {
     if (isCash) {
       base.paymentMethod = paymentMethod || 'bank'
       if (bankAccount) base.bankAccount = Number(bankAccount)
+      // For receipt/payment: send the amount as a single line
+      if (!isItem && lines.length > 0 && lines[0].amount) {
+        base.lines = [{ amount: Number(lines[0].amount), qty: 1, rate: Number(lines[0].amount) }]
+      }
     }
     // Link receipt/payment to a specific invoice
     if (linkedInvoiceId && (docType === 'receipt-voucher' || docType === 'payment-voucher')) {
@@ -1142,6 +1146,35 @@ export default function VoucherForm({ mode }: Props) {
           selectedInvoiceId={linkedInvoiceId}
           onSelect={setLinkedInvoiceId}
         />
+      )}
+
+      {/* ── Amount (receipt/payment only) ──────────────────── */}
+      {isCash && !isItem && (
+        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+          <label className="text-sm font-medium text-slate-700">
+            Amount <span className="text-red-500">*</span>
+          </label>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="text-sm text-slate-500">Rs.</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={lines[0]?.amount || ''}
+              onChange={(e) => {
+                const val = e.target.value
+                setLines((prev) => {
+                  if (prev.length === 0) {
+                    return [{ key: crypto.randomUUID(), item: '', description: 'Payment', qty: '1', rate: val, amount: val, discountPct: '', discountAmt: '' }]
+                  }
+                  return [{ ...prev[0], amount: val, rate: val }]
+                })
+              }}
+              placeholder="0.00"
+              className="mt-1 w-48 rounded border border-slate-300 px-3 py-2.5 font-mono text-sm outline-none focus:border-slate-500"
+            />
+          </div>
+        </div>
       )}
 
       {/* ── Payment Fields (collapsible for cash types) ─────── */}
