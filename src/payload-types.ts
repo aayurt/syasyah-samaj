@@ -1115,6 +1115,10 @@ export interface Document {
    * Original document this note/challan refers to.
    */
   referenceTo?: (number | null) | Document;
+  /**
+   * Sales/Purchase invoice this receipt/payment settles. Links payment to a specific invoice for outstanding tracking.
+   */
+  linkedInvoice?: (number | null) | Document;
   paymentMethod?: ('cash' | 'bank') | null;
   /**
    * Override the default bank account for this voucher.
@@ -2555,6 +2559,7 @@ export interface DocumentsSelect<T extends boolean = true> {
   cancelledAt?: T;
   journalEntry?: T;
   referenceTo?: T;
+  linkedInvoice?: T;
   paymentMethod?: T;
   bankAccount?: T;
   fromAccount?: T;
