@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Check, FileText, Search, X } from 'lucide-react'
+import { api, fmt } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
-import { adToBsString, bsToAdString } from '../lib/nepaliDate'
-import { fmt } from '../lib/api'
-import { API_BASE } from '../lib/base'
 import { useTenantQuery } from '../lib/tenant'
+import { adToBsString, bsToAdString } from '../lib/nepaliDate'
 import type { Document } from '../lib/types'
 
 interface Props {
@@ -40,46 +39,47 @@ export default function OutstandingInvoices({
     let alive = true
     setLoading(true)
 
-    const whereInv = JSON.stringify({
-      and: [
-        { docType: { equals: invoiceType } },
-        { party: { equals: Number(partyId) } },
-        { status: { equals: 'posted' } },
-      ],
+    // Fetch ALL invoices for this party — use client-side filtering
+    // (API where clause doesn't work reliably for compound filters)
+    api<{ docs: Document[] }>('/documents', {
+      query: {
+        limit: 500,
+        depth: 0,
+        sort: '-date',
+        where: JSON.stringify({ status: { equals: 'posted' } }),
+        ...tenantQuery,
+      },
     })
-
-    // Use direct fetch to bypass the api() cache (which caches by slug, not query)
-    fetch(`${API_BASE}/api/documents?limit=100&depth=0&sort=-date&where=${encodeURIComponent(whereInv)}`, {
-      credentials: 'include',
-    })
-      .then((r) => r.json())
-      .then(async (res: { docs?: Document[] }) => {
+      .then(async (res) => {
         if (!alive) return
-        const docs = (res.docs || []).filter((d) => d.docType === invoiceType && String((d as any).party) === String(partyId))
+        // Client-side filter: correct docType + correct party
+        const docs = (res.docs || []).filter(
+          (d) => d.docType === invoiceType && String((d as any).party) === String(partyId)
+        )
         if (docs.length === 0) { setInvoices([]); setLoading(false); return }
 
-        const whereLinked = JSON.stringify({
-          and: [
-            { docType: { equals: docType } },
-            { status: { equals: 'posted' } },
-          ],
-        })
-        const whereLinkedEnc = encodeURIComponent(whereLinked)
-        const linkedRes = await fetch(`${API_BASE}/api/documents?limit=1000&depth=0&where=${whereLinkedEnc}`, {
-          credentials: 'include',
-        }).then((r) => r.json()).catch(() => ({ docs: [] as Document[] }))
-        // Client-side filter: only receipt/payment vouchers for this docType
-        const linkedDocs = (linkedRes.docs || []).filter((d: Document) => d.docType === docType && String((d as any).party) === String(partyId))
+        // Fetch ALL receipts/payments — client-side filter later
+        const linked = await api<{ docs: Document[] }>('/documents', {
+          query: {
+            limit: 1000,
+            depth: 0,
+            where: JSON.stringify({ status: { equals: 'posted' } }),
+            ...tenantQuery,
+          },
+        }).catch(() => ({ docs: [] as Document[] }))
+
+        // Client-side filter: only this docType + this party
+        const linkedDocs = (linked.docs || []).filter(
+          (d: Document) => d.docType === docType && String((d as any).party) === String(partyId)
+        )
 
         // 1. Count linked receipts per invoice
         const paidMap = new Map<number, number>()
-        let totalLinked = 0
         for (const d of linkedDocs) {
           const invId = (d as any).linkedInvoice
           if (invId) {
             const amt = d.grossTotal || 0
             paidMap.set(Number(invId), (paidMap.get(Number(invId)) || 0) + amt)
-            totalLinked += amt
           }
         }
 
@@ -113,9 +113,9 @@ export default function OutstandingInvoices({
       .catch(() => { if (alive) setLoading(false) })
 
     return () => { alive = false }
-  }, [partyId, invoiceType, docType, tenantQuery]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [partyId, invoiceType, docType]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Client-side filtering
+  // Client-side search + date filtering
   const filtered = useMemo(() => {
     let result = invoices
     const q = search.toLowerCase().trim()
@@ -132,7 +132,6 @@ export default function OutstandingInvoices({
       result = result.filter((inv) => {
         const d = (inv.date || '').slice(0, 10)
         if (!d) return false
-        // Compare as AD dates (stored as AD internally)
         const afterFrom = !dateFrom || d >= (calendarType === 'BS' ? bsToAdString(dateFrom) : dateFrom)
         const beforeTo = !dateTo || d <= (calendarType === 'BS' ? bsToAdString(dateTo) : dateTo)
         return filterMode === 'and' ? (afterFrom && beforeTo) : (afterFrom || beforeTo)
@@ -140,7 +139,7 @@ export default function OutstandingInvoices({
     }
 
     return result
-  }, [invoices, search, dateFrom, dateTo, filterMode])
+  }, [invoices, search, dateFrom, dateTo, filterMode, calendarType])
 
   const hasFilters = search || dateFrom || dateTo
   const selectedInv = selectedInvoiceId ? invoices.find((i) => String(i.id) === selectedInvoiceId) : null
@@ -177,7 +176,6 @@ export default function OutstandingInvoices({
       {/* Search + Filters */}
       {!loading && invoices.length > 0 && (
         <div className="mb-3 space-y-2">
-          {/* Search bar — always visible */}
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -198,7 +196,6 @@ export default function OutstandingInvoices({
             )}
           </div>
 
-          {/* Date range filters — collapsible */}
           {showFilters && (
             <div className="flex flex-wrap items-end gap-3 rounded-md border border-slate-100 bg-slate-50 p-3">
               <div>
@@ -235,58 +232,43 @@ export default function OutstandingInvoices({
                       className={`px-2 py-1 text-[11px] font-medium transition-colors ${
                         filterMode === 'and' ? 'bg-crimson-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'
                       }`}
-                    >
-                      AND
-                    </button>
+                    >AND</button>
                     <button
                       type="button"
                       onClick={() => setFilterMode('or')}
                       className={`px-2 py-1 text-[11px] font-medium transition-colors ${
                         filterMode === 'or' ? 'bg-crimson-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'
                       }`}
-                    >
-                      OR
-                    </button>
+                    >OR</button>
                   </div>
                 </div>
               )}
               {hasFilters && (
-                <button
-                  type="button"
-                  onClick={() => { setSearch(''); setDateFrom(''); setDateTo('') }}
-                  className="text-[11px] text-slate-400 hover:text-slate-600"
-                >
-                  Clear all
-                </button>
+                <button type="button" onClick={() => { setSearch(''); setDateFrom(''); setDateTo('') }}
+                  className="text-[11px] text-slate-400 hover:text-slate-600">Clear all</button>
               )}
             </div>
           )}
         </div>
       )}
 
-      {/* No results */}
       {!loading && invoices.length > 0 && filtered.length === 0 && hasFilters && (
         <p className="text-sm text-slate-400">No invoices match your filters.</p>
       )}
 
-      {/* Empty state */}
       {!loading && invoices.length === 0 && (
         <p className="text-sm text-slate-400">
           No outstanding {invoiceType.replace('-', ' ')}s for this party.
         </p>
       )}
 
-      {/* Invoice list */}
       {filtered.length > 0 && (
         <div className="space-y-2">
-          {/* General payment */}
           <button
             type="button"
             onClick={() => onSelect(null)}
             className={`w-full flex items-center gap-3 rounded-md border p-3 text-left transition-colors ${
-              selectedInvoiceId === null
-                ? 'border-crimson-300 bg-crimson-50'
-                : 'border-slate-200 hover:bg-slate-50'
+              selectedInvoiceId === null ? 'border-crimson-300 bg-crimson-50' : 'border-slate-200 hover:bg-slate-50'
             }`}
           >
             <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
@@ -297,16 +279,13 @@ export default function OutstandingInvoices({
             <div className="text-sm text-slate-700">No specific invoice (general payment)</div>
           </button>
 
-          {/* Individual invoices */}
           {filtered.map((inv) => (
             <button
               type="button"
               key={inv.id}
               onClick={() => onSelect(String(inv.id), inv.outstanding)}
               className={`w-full flex items-center justify-between rounded-md border p-3 text-left transition-colors ${
-                selectedInvoiceId === String(inv.id)
-                  ? 'border-crimson-300 bg-crimson-50'
-                  : 'border-slate-200 hover:bg-slate-50'
+                selectedInvoiceId === String(inv.id) ? 'border-crimson-300 bg-crimson-50' : 'border-slate-200 hover:bg-slate-50'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -316,9 +295,7 @@ export default function OutstandingInvoices({
                   {selectedInvoiceId === String(inv.id) && <Check size={12} className="text-white" />}
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-slate-700">
-                    {inv.number || `#${inv.id}`}
-                  </div>
+                  <div className="text-sm font-medium text-slate-700">{inv.number || `#${inv.id}`}</div>
                   <div className="text-xs text-slate-400">{inv.date?.slice(0, 10)}</div>
                 </div>
               </div>
@@ -349,7 +326,6 @@ export default function OutstandingInvoices({
             </button>
           ))}
 
-          {/* Results count */}
           {hasFilters && (
             <div className="text-center text-[11px] text-slate-400 pt-1">
               {filtered.length} of {invoices.length} invoices
@@ -358,7 +334,6 @@ export default function OutstandingInvoices({
         </div>
       )}
 
-      {/* Remaining amount after payment */}
       {!loading && selectedInv && (
         <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
           <span className="font-medium">Remaining after payment:</span>{' '}
