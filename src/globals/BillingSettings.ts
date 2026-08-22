@@ -87,6 +87,24 @@ export const BillingSettings: GlobalConfig = {
               'Enable the bank reconciliation feature. When disabled, the Bank Reconciliation page is hidden from the sidebar.',
           },
         },
+        {
+          name: 'simplifiedInvoiceEnabled',
+          type: 'checkbox',
+          defaultValue: true,
+          admin: {
+            description:
+              'Show a simplified VAT-inclusive invoice for totals below the threshold. When off, always show the full tax breakdown.',
+          },
+        },
+        {
+          name: 'simplifiedInvoiceThreshold',
+          type: 'number',
+          defaultValue: 5000,
+          admin: {
+            description:
+              'Amount threshold for simplified invoice (in Rs.). Invoices below this amount show as VAT Inclusive without breakdown.',
+          },
+        },
       ],
     },
     {

@@ -18,6 +18,7 @@ import { useTenant, useTenantQuery } from '../lib/tenant'
 import {
   DOC_TYPE_LABELS,
   type Account,
+  type BillingSettings,
   type DocType,
   type Document,
   type Item,
@@ -156,6 +157,7 @@ export default function VoucherForm({ mode }: Props) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [simplifiedInv, setSimplifiedInv] = useState({ enabled: true, threshold: 5000 })
 
   // Form state
   const [docType, setDocType] = useState<DocType>((urlDocType as DocType) || 'sales-invoice')
@@ -255,6 +257,13 @@ export default function VoucherForm({ mode }: Props) {
         ])
         setParties(p.docs); setAccounts(a.docs); setItems(it.docs)
         setTaxTypes(tx.docs.filter((t) => t.active !== false))
+        // Load billing settings for simplified invoice feature
+        api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
+          .then((s) => setSimplifiedInv({
+            enabled: s.simplifiedInvoiceEnabled !== false,
+            threshold: s.simplifiedInvoiceThreshold || 5000,
+          }))
+          .catch(() => {})
       } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to load') }
       finally { setLoading(false) }
     })()
@@ -1206,7 +1215,7 @@ export default function VoucherForm({ mode }: Props) {
       <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
         {/* Header */}
         {(() => {
-          const isSimplified = grandTotal > 0 && grandTotal < 5000
+          const isSimplified = simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold
           return (
             <div className="border-b border-slate-200 bg-slate-50 px-6 py-4 text-center">
               <h1 className="text-lg font-bold tracking-tight text-slate-900">Syasya Samaj</h1>
@@ -1302,7 +1311,7 @@ export default function VoucherForm({ mode }: Props) {
 
         {/* Summary */}
         {(() => {
-          const isSimplified = grandTotal > 0 && grandTotal < 5000
+          const isSimplified = simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold
           return (
             <div className="border-t border-slate-200 px-6 py-4">
               {isSimplified ? (

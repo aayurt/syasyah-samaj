@@ -34,6 +34,8 @@ export default function Settings() {
   const [saved, setSaved] = useState(false)
   const [calSaved, setCalSaved] = useState(false)
   const [bankRecEnabled, setBankRecEnabled] = useState(false)
+  const [simplifiedInvEnabled, setSimplifiedInvEnabled] = useState(true)
+  const [simplifiedInvThreshold, setSimplifiedInvThreshold] = useState('5000')
   const loaded = useRef(false)
   // Doc sequences
   const [sequences, setSequences] = useState<{ key: string; lastNumber: number; id?: number }[]>([])
@@ -55,6 +57,8 @@ export default function Settings() {
       setDateFormat(res.dateFormat || 'YYYY-MM-DD')
       setTimeFormat(res.timeFormat || '12h')
       setBankRecEnabled(res.bankReconciliationEnabled || false)
+      setSimplifiedInvEnabled(res.simplifiedInvoiceEnabled !== false)
+      setSimplifiedInvThreshold(String(res.simplifiedInvoiceThreshold || 5000))
       loaded.current = true
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load settings')
@@ -111,12 +115,16 @@ export default function Settings() {
     const id = setTimeout(() => {
       api('/globals/billing-settings', {
         method: 'POST',
-        body: { bankReconciliationEnabled: bankRecEnabled },
+        body: {
+          bankReconciliationEnabled: bankRecEnabled,
+          simplifiedInvoiceEnabled: simplifiedInvEnabled,
+          simplifiedInvoiceThreshold: parseFloat(simplifiedInvThreshold) || 5000,
+        },
       }).catch(() => {})
     }, 300)
     return () => clearTimeout(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bankRecEnabled])
+  }, [bankRecEnabled, simplifiedInvEnabled, simplifiedInvThreshold])
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,6 +139,8 @@ export default function Settings() {
           dateFormat,
           timeFormat,
           bankReconciliationEnabled: bankRecEnabled,
+          simplifiedInvoiceEnabled: simplifiedInvEnabled,
+          simplifiedInvoiceThreshold: parseFloat(simplifiedInvThreshold) || 5000,
           fiscalYearStart: fiscalYearStart || null,
           freezeDate: freezeDate || null,
         },
@@ -338,6 +348,40 @@ export default function Settings() {
             </div>
           </div>
         </label>
+
+        <label className="flex items-center gap-3 cursor-pointer mt-4">
+          <div className="relative">
+            <input
+              type="checkbox"
+              checked={simplifiedInvEnabled}
+              onChange={(e) => setSimplifiedInvEnabled(e.target.checked)}
+              className="peer sr-only"
+            />
+            <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+            <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+          </div>
+          <div>
+            <div className="text-sm text-slate-700">Simplified Invoice (VAT Inclusive)</div>
+            <div className="text-xs text-slate-400">
+              {simplifiedInvEnabled
+                ? `Enabled — shows VAT-inclusive invoice for totals under Rs. ${simplifiedInvThreshold}`
+                : 'Disabled — always show full tax breakdown'}
+            </div>
+          </div>
+        </label>
+        {simplifiedInvEnabled && (
+          <div className="mt-3 ml-14">
+            <label className="text-xs text-slate-500">Threshold amount (Rs.)</label>
+            <input
+              type="number"
+              min="0"
+              step="100"
+              value={simplifiedInvThreshold}
+              onChange={(e) => setSimplifiedInvThreshold(e.target.value)}
+              className="mt-1 w-32 rounded border border-slate-300 px-3 h-9 font-mono text-sm outline-none focus:border-slate-500"
+            />
+          </div>
+        )}
       </div>
 
       {/* ── Doc Sequences ──────────────────────────────────────── */}

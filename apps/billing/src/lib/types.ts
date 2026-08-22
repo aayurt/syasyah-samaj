@@ -281,6 +281,8 @@ export interface BillingSettings {
   returnsAccount?: number | Account | null
   accruedPayableAccount?: number | Account | null
   bankReconciliationEnabled?: boolean
+  simplifiedInvoiceEnabled?: boolean
+  simplifiedInvoiceThreshold?: number
   membershipFeeAccount?: number | Account | null
   donationAccount?: number | Account | null
 }

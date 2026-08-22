@@ -21,6 +21,7 @@ import type { OutboxEntry } from '../lib/offline/types'
 import {
   DOC_TYPE_LABELS,
   type Account,
+  type BillingSettings,
   type DocType,
   type Document,
   type DocumentLine,
@@ -187,6 +188,17 @@ export default function Vouchers() {
   const [tdsAccountId, setTdsAccountId] = useState('')
   const [tdsTypeId, setTdsTypeId] = useState('')
   const [tdsAmountManual, setTdsAmountManual] = useState('')
+  const [simplifiedInv, setSimplifiedInv] = useState({ enabled: true, threshold: 5000 })
+
+  // Load simplified invoice setting
+  useEffect(() => {
+    api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
+      .then((s) => setSimplifiedInv({
+        enabled: s.simplifiedInvoiceEnabled !== false,
+        threshold: s.simplifiedInvoiceThreshold || 5000,
+      }))
+      .catch(() => {})
+  }, [])
 
   const load = async () => {
     try {
@@ -1842,7 +1854,7 @@ export default function Vouchers() {
 
               {/* ── Header ──────────────────────────────────── */}
               {(() => {
-                const isSimplified = grandTotal > 0 && grandTotal < 5000
+                const isSimplified = simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold
                 return (
                   <div className="border-b border-slate-200 bg-slate-50 px-8 py-5 text-center rounded-t-xl print:bg-white print:rounded-none">
                     <h1 className="text-xl font-bold tracking-tight text-slate-900">Syasya Samaj</h1>
@@ -1923,7 +1935,7 @@ export default function Vouchers() {
 
                   {/* ── Summary ──────────────────────────── */}
                   <div className="mt-4 px-0 py-0">
-                    {grandTotal > 0 && grandTotal < 5000 ? (
+                    {simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold ? (
                       /* ── Simplified: VAT Inclusive ────────── */
                       <div className="text-center">
                         <div className="text-sm text-slate-500">Total Amount (VAT Inclusive)</div>
