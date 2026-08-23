@@ -17,6 +17,7 @@ import OutstandingInvoices from '../components/OutstandingInvoices'
 import { api, fmt } from '../lib/api'
 import { useCachedList } from '../lib/useCachedList'
 import { useCalendar } from '../lib/calendar'
+import { calcEval } from '../lib/calcEval'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import {
   DOC_TYPE_LABELS,
@@ -760,6 +761,7 @@ export default function VoucherForm({ mode }: Props) {
                         <span className="mr-1 text-xs text-slate-400">Rs.</span>
                         <input type="number" min="0" step="0.01" value={l.rate}
                           onChange={(e) => setLine(l.key, { rate: e.target.value })}
+                          onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { rate: r }) }}
                           className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                       </div>
                     </td>
@@ -769,6 +771,7 @@ export default function VoucherForm({ mode }: Props) {
                           <>
                             <input type="number" min="0" max="100" step="0.01" value={l.discountPct}
                               onChange={(e) => setLine(l.key, { discountPct: e.target.value, discountAmt: '' })}
+                              onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountPct: r, discountAmt: '' }) }}
                               className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                             <span className="ml-1 text-xs text-slate-400">%</span>
                           </>
@@ -777,6 +780,7 @@ export default function VoucherForm({ mode }: Props) {
                             <span className="mr-1 text-xs text-slate-400">Rs.</span>
                             <input type="number" min="0" step="0.01" value={l.discountAmt}
                               onChange={(e) => setLine(l.key, { discountAmt: e.target.value, discountPct: '' })}
+                              onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountAmt: r, discountPct: '' }) }}
                               className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                           </>
                         )}
@@ -981,6 +985,7 @@ export default function VoucherForm({ mode }: Props) {
                         <input type="number" min="0" step="0.01"
                           value={tdsAmountManual}
                           onChange={(e) => setTdsAmountManual(e.target.value)}
+                          onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setTdsAmountManual(r) }}
                           placeholder="0"
                           className="w-full rounded border border-slate-300 pl-8 h-9 font-mono text-sm outline-none focus:border-slate-500" />
                       </>
@@ -1128,6 +1133,7 @@ export default function VoucherForm({ mode }: Props) {
               Amount <span className="text-red-500">*</span>
               <input type="number" min="0" step="0.01" value={contraAmount}
                 onChange={(e) => setContraAmount(e.target.value)}
+                onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setContraAmount(r) }}
                 className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 font-mono text-sm outline-none focus:border-slate-500" placeholder="0.00" />
             </label>
           </div>
