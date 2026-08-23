@@ -1020,43 +1020,51 @@ export default function VoucherForm({ mode }: Props) {
             )}
           </div>
 
-          {/* ── Summary Footer ──────────────────────────────── */}
-          <div className="border-t border-slate-200 bg-slate-50 px-5 py-4">
-            <div className="space-y-1.5 text-sm">
+        </div>
+      )}
+
+      {/* ── Item Summary Card ─────────────────────────────── */}
+      {isItem && (
+        <div className="mt-4 rounded-lg border border-slate-200 bg-white">
+          <div className="border-b border-slate-100 px-5 py-3">
+            <h3 className="text-sm font-semibold text-slate-700">Item Summary</h3>
+          </div>
+          <div className="px-5 py-4">
+            <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-500">Sub Total</span>
-                <span className="font-mono font-medium text-slate-700">{fmt(lineTotals)}</span>
+                <span className="text-slate-500">Items ({lines.filter((l) => l.item || l.description).length})</span>
+                <span className="font-mono text-slate-700">{fmt(lineTotals)}</span>
               </div>
               {globalDiscountEnabled && globalDiscountAmount > 0 && (
                 <div className="flex justify-between">
                   <span className="text-slate-500">Discount</span>
-                  <span className="font-mono font-medium text-red-600">−{fmt(globalDiscountAmount)}</span>
+                  <span className="font-mono text-red-600">−{fmt(globalDiscountAmount)}</span>
                 </div>
               )}
-              {(globalDiscountEnabled && globalDiscountAmount > 0) && (
-                <div className="flex justify-between border-t border-slate-200 pt-1.5">
+              {globalDiscountEnabled && globalDiscountAmount > 0 && (
+                <div className="flex justify-between border-t border-slate-100 pt-2">
                   <span className="text-slate-500">Taxable Amount</span>
-                  <span className="font-mono font-medium text-slate-700">{fmt(lineTotals - globalDiscountAmount)}</span>
+                  <span className="font-mono text-slate-700">{fmt(lineTotals - globalDiscountAmount)}</span>
                 </div>
               )}
               {vatTotal > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Total Tax</span>
-                  <span className="font-mono font-medium text-slate-700">+{fmt(vatTotal)}</span>
+                  <span className="text-slate-500">Tax (VAT)</span>
+                  <span className="font-mono text-slate-700">+{fmt(vatTotal)}</span>
                 </div>
               )}
               {tdsEnabled && tdsAmount > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-slate-500">TDS</span>
-                  <span className="font-mono font-medium text-red-600">−{fmt(tdsAmount)}</span>
+                  <span className="text-slate-500">TDS (Withholding)</span>
+                  <span className="font-mono text-red-600">−{fmt(tdsAmount)}</span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-slate-200 pt-2 text-base">
-                <span className="font-semibold text-slate-900">Total</span>
-                <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
+              <div className="flex justify-between border-t-2 border-slate-300 pt-3 mt-1">
+                <span className="text-base font-bold text-slate-900">Grand Total</span>
+                <span className="font-mono text-lg font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
               </div>
               {grandTotal > 0 && (
-                <p className="pt-2 text-sm font-medium text-slate-600">
+                <p className="pt-2 text-sm font-medium text-slate-600 bg-slate-50 rounded px-3 py-2">
                   In words: {amountInWords(grandTotal)}
                 </p>
               )}
