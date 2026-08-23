@@ -61,6 +61,7 @@ export default function OutstandingInvoices({
             limit: 500,
             depth: 0,
             sort: '-date',
+            _t: Date.now(),
             ...stableTenantQuery,
           },
         })
@@ -81,6 +82,7 @@ export default function OutstandingInvoices({
           query: {
             limit: 1000,
             depth: 0,
+            _t: Date.now(),
             ...stableTenantQuery,
           },
         }).catch(() => ({ docs: [] as Document[] }))
