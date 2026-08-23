@@ -1820,6 +1820,17 @@ export default function Vouchers() {
                     )
                   })() : '—'}
                 </td>
+                <td className="px-4 py-2 text-center">
+                  {d.voidedItems && d.voidedItems.length > 0 ? (
+                    <span className="inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                      {d.voidedItems.length} item{d.voidedItems.length > 1 ? 's' : ''} voided
+                    </span>
+                  ) : d.status === 'void' ? (
+                    <span className="inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                      Full void
+                    </span>
+                  ) : null}
+                </td>
                 <td className="px-4 py-2 text-right">
                   <div className="relative inline-block">
                     <button
