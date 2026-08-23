@@ -115,6 +115,11 @@ export class SyncEngine {
   private syncingCount = 0
   /** True while syncAll is running — skips re-entrant background runs. */
   private syncingAll = false
+  /** Heartbeat: consecutive failed pings before marking offline. */
+  private consecutiveFailures = 0
+  /** Periodic sync + heartbeat interval handles. */
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null
+  private syncTimer: ReturnType<typeof setInterval> | null = null
 
   constructor(private db: OfflineDb) {}
 
@@ -203,9 +208,58 @@ export class SyncEngine {
   }
 
   /** Refreshes counts on mount so the pill shows queued writes from a
-   * previous session. */
+   * previous session. Starts the heartbeat and periodic sync loop. */
   async init() {
     await this.refreshCounts()
+    this.startHeartbeat()
+    this.startPeriodicSync()
+  }
+
+  /** Lightweight heartbeat: pings the server every 30s. Two consecutive
+   * failures mark the app offline; a single success restores online. */
+  private startHeartbeat() {
+    if (this.heartbeatTimer) return
+    this.heartbeatTimer = setInterval(() => {
+      void this.heartbeat()
+    }, 30_000)
+    // Also listen for browser online/offline events as a supplementary signal
+    window.addEventListener('online', () => this.setOnline(true))
+    window.addEventListener('offline', () => {
+      // Don't immediately go offline — the heartbeat will confirm
+      this.consecutiveFailures++
+      if (this.consecutiveFailures >= 2) this.setOnline(false)
+    })
+  }
+
+  private async heartbeat() {
+    try {
+      const res = await this.fetchWithTimeout(
+        `${API_BASE}/api/globals/billing-settings?depth=0&limit=1`,
+        { credentials: 'include' },
+        10_000,
+      )
+      if (res.ok) {
+        this.consecutiveFailures = 0
+        if (!this.online) this.setOnline(true)
+      } else {
+        this.consecutiveFailures++
+        if (this.consecutiveFailures >= 2) this.setOnline(false)
+      }
+    } catch {
+      this.consecutiveFailures++
+      if (this.consecutiveFailures >= 2) this.setOnline(false)
+    }
+  }
+
+  /** Periodic background sync: flush outbox + pull fresh data every 60s
+   * while the app is open and online. */
+  private startPeriodicSync() {
+    if (this.syncTimer) return
+    this.syncTimer = setInterval(() => {
+      if (this.online && !this.syncingAll) {
+        void this.syncAll()
+      }
+    }, 60_000)
   }
 
   // --- queuing -------------------------------------------------------------
@@ -228,7 +282,7 @@ export class SyncEngine {
     path: string,
     body: unknown,
   ): Promise<unknown> {
-    const { id } = parsePath(path)
+    const { slug, id } = parsePath(path)
     const queuedAt = new Date().toISOString()
     const queued = method === 'POST' && !id
     if (queued) {
@@ -240,6 +294,15 @@ export class SyncEngine {
         queuedAt,
         localId,
       })
+      // Optimistic cache: insert the document into the collection cache
+      // with a local ID so the UI shows it immediately while offline.
+      if (slug) {
+        try {
+          const doc = { ...(body as Record<string, unknown>), id: localId, _pendingSync: true }
+          await this.db.cacheUpsert(slug, doc)
+          this.bumpCache()
+        } catch { /* best-effort */ }
+      }
       await this.refreshCounts()
       pushToast(
         'info',
@@ -248,7 +311,20 @@ export class SyncEngine {
       )
       return { doc: { id: localId }, queued: true }
     }
+    // For updates (PATCH/DELETE), queue and optimistically update the cache
     await this.db.enqueue({ method, path, body, queuedAt })
+    if (slug && id) {
+      try {
+        const existing = await this.db.cacheGet(slug, id)
+        if (existing && method === 'PATCH') {
+          const updated = { ...existing, ...(body as Record<string, unknown>), _pendingSync: true }
+          await this.db.cacheUpsert(slug, updated)
+          this.bumpCache()
+        } else if (method === 'DELETE') {
+          await this.db.clearCache(slug)
+        }
+      } catch { /* best-effort */ }
+    }
     await this.refreshCounts()
     pushToast(
       'info',
@@ -500,8 +576,12 @@ export class SyncEngine {
     this.syncingAll = true
     try {
       await this.flush()
+      // Invalidate stale cache entries so the next read pulls fresh data,
+      // then re-pull each collection. This ensures the UI reflects server
+      // state even when other users or sessions modified data.
       for (const slug of SYNC_COLLECTIONS) {
         try {
+          await this.invalidate(slug)
           await this.pull(slug)
         } catch {
           // collection may not exist in this deployment

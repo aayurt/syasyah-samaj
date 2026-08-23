@@ -217,12 +217,22 @@ export async function api<T = unknown>(
     engine.setOnline(true)
     // Cache globals on successful read
     if (isGlobals) writeGlobalsCache(res)
-    // A successful write changes the collection — drop the cached copy so
-    // the next read (e.g. the page's post-save reload) fetches fresh data
-    // instead of serving the stale list from cache.
+    // A successful write changes the collection — optimistically update the
+    // cache so the list re-renders immediately (no skeleton / stale data).
     if (method !== 'GET' && slug && segments.length <= 2) {
       try {
-        await engine.invalidate(slug, tenant)
+        const resData = res as Record<string, unknown>
+        const doc = resData?.doc as Record<string, unknown> | undefined
+        if (method === 'POST' && doc?.id) {
+          // New document — upsert into collection cache
+          await engine.warmCache(slug, [doc], tenant)
+        } else if (method === 'PATCH' && id && doc) {
+          // Updated document — upsert into collection cache
+          await engine.warmCache(slug, [doc], tenant)
+        } else {
+          // Fallback: invalidate so next read is fresh
+          await engine.invalidate(slug, tenant)
+        }
       } catch {
         // best-effort
       }
@@ -257,8 +267,8 @@ export async function api<T = unknown>(
     return res
   } catch (err) {
     if (isNetworkError(err)) {
-      engine.setOnline(false)
-      // fall through to offline handling
+      // Don't set offline here — the heartbeat determines connectivity.
+      // Fall through to the offline path (cache / outbox) instead.
     } else {
       if (method !== 'GET') {
         crudToast(

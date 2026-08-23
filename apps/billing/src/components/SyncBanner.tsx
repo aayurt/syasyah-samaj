@@ -190,16 +190,8 @@ export default function SyncBanner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.conflicts])
 
-  useEffect(() => {
-    const online = () => getEngine().setOnline(true)
-    const offline = () => getEngine().setOnline(false)
-    window.addEventListener('online', online)
-    window.addEventListener('offline', offline)
-    return () => {
-      window.removeEventListener('online', online)
-      window.removeEventListener('offline', offline)
-    }
-  }, [])
+  // Online/offline events are handled by the SyncEngine heartbeat — no
+  // duplicate listeners needed here.
 
   // Auto-sync when the connection returns: queued offline writes must reach
   // the server the moment the device regains the network. This is a one-shot
