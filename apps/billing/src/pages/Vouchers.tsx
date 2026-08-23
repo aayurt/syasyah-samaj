@@ -735,6 +735,45 @@ export default function Vouchers() {
   const partyName = (d: Document) =>
     d.party && typeof d.party === 'object' ? d.party.name : '—'
 
+  /** Calculate payment status for a sales/purchase invoice from loaded docs */
+  const getPaymentStatus = (inv: Document): { status: 'paid' | 'partial' | 'unpaid'; paid: number; outstanding: number } => {
+    const gross = Number(inv.grossTotal) || 0
+    const invParty = inv.party && typeof inv.party === 'object' ? (inv.party as { id: number }).id : inv.party
+    const invId = inv.id
+
+    // Find linked receipts for this invoice
+    const linkedPaid = docs
+      .filter((d) => {
+        if (d.status !== 'posted') return false
+        if (d.docType !== 'receipt-voucher' && d.docType !== 'payment-voucher') return false
+        const raw = (d as any).linkedInvoice
+        const lid = raw && typeof raw === 'object' ? raw.id : raw
+        return Number(lid) === invId
+      })
+      .reduce((sum, d) => sum + (Number(d.grossTotal) || 0), 0)
+
+    // Find unlinked receipts for same party (pro-rate oldest-first)
+    const unlinkedTotal = docs
+      .filter((d) => {
+        if (d.status !== 'posted') return false
+        if (d.docType !== 'receipt-voucher' && d.docType !== 'payment-voucher') return false
+        const raw = (d as any).linkedInvoice
+        const lid = raw && typeof raw === 'object' ? raw.id : raw
+        if (lid) return false
+        const dParty = d.party && typeof d.party === 'object' ? (d.party as { id: number }).id : d.party
+        return Number(dParty) === Number(invParty)
+      })
+      .reduce((sum, d) => sum + (Number(d.grossTotal) || 0), 0)
+
+    const totalPaid = linkedPaid + Math.min(unlinkedTotal, gross - linkedPaid)
+    const outstanding = Math.max(0, gross - totalPaid)
+    const pct = gross > 0 ? (totalPaid / gross) * 100 : 0
+
+    if (outstanding <= 0.01) return { status: 'paid', paid: totalPaid, outstanding: 0 }
+    if (totalPaid > 0.01) return { status: 'partial', paid: totalPaid, outstanding }
+    return { status: 'unpaid', paid: 0, outstanding }
+  }
+
   const { query, setQuery, sort, toggleSort, visible } = useSortSearch(filtered, {
     searchable: (d) =>
       [
@@ -1681,13 +1720,14 @@ export default function Vouchers() {
               <SortableTh label="Party" sortKey="party" sort={sort} onSort={toggleSort} />
               <SortableTh label="Amount" sortKey="amount" sort={sort} onSort={toggleSort} align="right" />
               <SortableTh label="Status" sortKey="status" sort={sort} onSort={toggleSort} />
+              <th className="px-4 py-2 text-center">Payment</th>
               <th className="px-4 py-2 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={9} className="px-4 py-6 text-center text-slate-400">
                   No vouchers yet.
                 </td>
               </tr>
@@ -1719,6 +1759,20 @@ export default function Vouchers() {
                 </td>
                 <td className="px-4 py-2">
                   <StatusPill status={d.status} />
+                </td>
+                <td className="px-4 py-2 text-center">
+                  {(d.docType === 'sales-invoice' || d.docType === 'purchase-invoice') && d.status === 'posted' ? (() => {
+                    const ps = getPaymentStatus(d)
+                    return (
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        ps.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                        ps.status === 'partial' ? 'bg-amber-100 text-amber-700' :
+                        'bg-slate-100 text-slate-500'
+                      }`}>
+                        {ps.status === 'paid' ? 'Paid' : ps.status === 'partial' ? `Partial (${Math.round((ps.paid / (Number(d.grossTotal) || 1)) * 100)}%)` : 'Unpaid'}
+                      </span>
+                    )
+                  })() : '—'}
                 </td>
                 <td className="px-4 py-2 text-right">
                   <div className="relative inline-block">
@@ -2040,6 +2094,108 @@ export default function Vouchers() {
                   <p className="mt-0.5 text-sm text-slate-600">{viewDoc.narration}</p>
                 </div>
               )}
+
+              {/* ── Linked Receipts (sales/purchase invoices only) ── */}
+              {viewDoc.status === 'posted' && (viewDoc.docType === 'sales-invoice' || viewDoc.docType === 'purchase-invoice') && (() => {
+                const invId = viewDoc.id
+                const invParty = viewDoc.party && typeof viewDoc.party === 'object' ? (viewDoc.party as { id: number }).id : viewDoc.party
+                const receipts = docs.filter((d) => {
+                  if (d.status !== 'posted') return false
+                  if (d.docType !== 'receipt-voucher' && d.docType !== 'payment-voucher') return false
+                  const raw = (d as any).linkedInvoice
+                  const lid = raw && typeof raw === 'object' ? raw.id : raw
+                  return Number(lid) === invId
+                })
+                const unlinkedReceipts = docs.filter((d) => {
+                  if (d.status !== 'posted') return false
+                  if (d.docType !== 'receipt-voucher' && d.docType !== 'payment-voucher') return false
+                  const raw = (d as any).linkedInvoice
+                  const lid = raw && typeof raw === 'object' ? raw.id : raw
+                  if (lid) return false
+                  const dParty = d.party && typeof d.party === 'object' ? (d.party as { id: number }).id : d.party
+                  return Number(dParty) === Number(invParty)
+                })
+                const allReceipts = [...receipts, ...unlinkedReceipts].sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+                const totalPaid = allReceipts.reduce((s, d) => s + (Number(d.grossTotal) || 0), 0)
+                const ps = getPaymentStatus(viewDoc)
+
+                return (
+                  <div className="border-t border-slate-200 px-8 py-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-slate-700">
+                        Receipts & Payments ({allReceipts.length})
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setViewDoc(null)
+                          navigate(`/vouchers/new/${viewDoc.docType === 'sales-invoice' ? 'receipt-voucher' : 'payment-voucher'}`)
+                          // Prefill will be handled by URL params or state
+                        }}
+                        className="flex items-center gap-1 rounded bg-crimson-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-crimson-700"
+                      >
+                        <span>+ Create Receipt</span>
+                      </button>
+                    </div>
+
+                    {allReceipts.length === 0 ? (
+                      <p className="text-sm text-slate-400">No receipts recorded yet.</p>
+                    ) : (
+                      <>
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                              <th className="py-2">Date</th>
+                              <th className="py-2">Number</th>
+                              <th className="py-2 text-right">Amount</th>
+                              <th className="py-2 text-center">Type</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {allReceipts.map((r) => {
+                              const raw = (r as any).linkedInvoice
+                              const lid = raw && typeof raw === 'object' ? raw.id : raw
+                              const isLinked = Number(lid) === invId
+                              return (
+                                <tr key={r.id} className="border-b border-slate-50">
+                                  <td className="py-2 text-slate-600">{formatDate(r.date)}</td>
+                                  <td className="py-2 font-mono text-slate-700">{r.number || `#${r.id}`}</td>
+                                  <td className="py-2 text-right font-mono font-medium text-slate-800">Rs. {fmt(Number(r.grossTotal) || 0)}</td>
+                                  <td className="py-2 text-center">
+                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                      isLinked ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+                                    }`}>
+                                      {isLinked ? 'Linked' : 'General'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                          <tfoot>
+                            <tr className="border-t-2 border-slate-300 font-medium">
+                              <td colSpan={2} className="py-2 text-xs uppercase text-slate-500">Total Paid</td>
+                              <td className="py-2 text-right font-mono text-slate-800">Rs. {fmt(totalPaid)}</td>
+                              <td />
+                            </tr>
+                          </tfoot>
+                        </table>
+                        <div className="mt-2 flex items-center gap-3 text-xs">
+                          <span className={`rounded-full px-2 py-0.5 font-bold ${
+                            ps.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                            ps.status === 'partial' ? 'bg-amber-100 text-amber-700' :
+                            'bg-slate-100 text-slate-500'
+                          }`}>
+                            {ps.status === 'paid' ? 'Fully Paid' : ps.status === 'partial' ? `Partial (${Math.round((ps.paid / (Number(viewDoc.grossTotal) || 1)) * 100)}%)` : 'Unpaid'}
+                          </span>
+                          <span className="text-slate-500">
+                            Outstanding: Rs. {fmt(ps.outstanding)} of Rs. {fmt(Number(viewDoc.grossTotal) || 0)}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )
+              })()}
 
               {/* ── Action Bar ─────────────────────────────── */}
               <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-8 py-4 rounded-b-xl print:hidden">
