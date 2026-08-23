@@ -1119,6 +1119,33 @@ export interface Document {
    * Sales/Purchase invoice this receipt/payment settles. Links payment to a specific invoice for outstanding tracking.
    */
   linkedInvoice?: (number | null) | Document;
+  /**
+   * Items that have been voided via credit/debit note.
+   */
+  voidedItems?:
+    | {
+        /**
+         * 0-based index into the lines[] array
+         */
+        itemIndex: number;
+        /**
+         * Quantity voided (can be less than original qty for partial void)
+         */
+        quantity: number;
+        reason?: string | null;
+        /**
+         * The credit/debit note created for this voided item
+         */
+        creditNoteId?: (number | null) | Document;
+        voidedAt?: string | null;
+        voidedBy?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Total voided amount. Subtracted from grossTotal for report net amounts.
+   */
+  voidedAmount?: number | null;
   paymentMethod?: ('cash' | 'bank') | null;
   /**
    * Override the default bank account for this voucher.
@@ -2560,6 +2587,18 @@ export interface DocumentsSelect<T extends boolean = true> {
   journalEntry?: T;
   referenceTo?: T;
   linkedInvoice?: T;
+  voidedItems?:
+    | T
+    | {
+        itemIndex?: T;
+        quantity?: T;
+        reason?: T;
+        creditNoteId?: T;
+        voidedAt?: T;
+        voidedBy?: T;
+        id?: T;
+      };
+  voidedAmount?: T;
   paymentMethod?: T;
   bankAccount?: T;
   fromAccount?: T;

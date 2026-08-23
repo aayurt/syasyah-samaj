@@ -191,6 +191,9 @@ export default function Vouchers() {
   const [menuFor, setMenuFor] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [viewDoc, setViewDoc] = useState<Document | null>(null)
+  const [voidDialogDoc, setVoidDialogDoc] = useState<Document | null>(null)
+  const [voidItems, setVoidItems] = useState<Array<{itemIndex: number; quantity: number; reason: string}>>([])
+  const [voidLoading, setVoidLoading] = useState(false)
   const [receiptSortAsc, setReceiptSortAsc] = useState(true)
   /** Outbox seq of a conflicted create being resumed into this form. */
   const resumedSeqRef = useRef<number | null>(null)
@@ -652,13 +655,43 @@ export default function Vouchers() {
   }
 
   const voidDoc = async (id: number) => {
-    if (!window.confirm('Void this document? This posts a reversal and cannot be undone.')) return
+    // Fetch the document to show in the void dialog
     try {
-      await api(`/documents/${id}/void`, { method: 'POST' })
+      const doc = await api<Document>(`/documents/${id}`, { query: { depth: 1 } })
+      setVoidDialogDoc(doc)
+      // Pre-select all items for full void
+      const lines = doc.lines || []
+      setVoidItems(lines.map((_: any, idx: number) => ({
+        itemIndex: idx,
+        quantity: 1,
+        reason: '',
+      })))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load document')
+    }
+  }
+
+  const submitPartialVoid = async () => {
+    if (!voidDialogDoc || voidItems.length === 0) return
+    setVoidLoading(true); setError('')
+    try {
+      if (voidItems.length === (voidDialogDoc.lines || []).length) {
+        // Full void
+        await api(`/documents/${voidDialogDoc.id}/void`, { method: 'POST' })
+      } else {
+        // Partial void
+        await api(`/documents/${voidDialogDoc.id}/partial-void`, {
+          method: 'POST',
+          body: JSON.stringify({ items: voidItems }),
+        })
+      }
+      setVoidDialogDoc(null)
+      setVoidItems([])
       await load()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to void document')
     }
+    setVoidLoading(false)
   }
 
   const deleteDoc = async (id: number) => {
@@ -1732,13 +1765,14 @@ export default function Vouchers() {
               <SortableTh label="Amount" sortKey="amount" sort={sort} onSort={toggleSort} align="right" />
               <SortableTh label="Status" sortKey="status" sort={sort} onSort={toggleSort} />
               <th className="px-4 py-2 text-center">Payment</th>
+              <th className="px-4 py-2 text-center">Voided</th>
               <th className="px-4 py-2 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={10} className="px-4 py-6 text-center text-slate-400">
                   No vouchers yet.
                 </td>
               </tr>
@@ -2134,6 +2168,7 @@ export default function Vouchers() {
                 const ps = getPaymentStatus(viewDoc)
 
                 return (
+                  <>
                   <div className="border-t border-slate-200 px-8 py-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-semibold text-slate-700">
@@ -2213,10 +2248,61 @@ export default function Vouchers() {
                       </>
                     )}
                   </div>
-                )
+                  </>
+                  )
               })()}
 
-              {/* ── Action Bar ─────────────────────────────── */}
+              {/* ── Voided Items Section ──────────────────── */}
+                  {viewDoc.voidedItems && viewDoc.voidedItems.length > 0 && (
+                    <div className="border-t border-slate-200 px-8 py-4 bg-red-50/50">
+                      <h3 className="text-sm font-semibold text-red-700 mb-3">
+                        Voided Items ({viewDoc.voidedItems.length})
+                      </h3>
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-red-200 text-left text-xs uppercase tracking-wide text-red-600">
+                            <th className="py-2">#</th>
+                            <th className="py-2">Item</th>
+                            <th className="py-2 text-right">Qty Voided</th>
+                            <th className="py-2 text-right">Amount</th>
+                            <th className="py-2">Reason</th>
+                            <th className="py-2">Credit/Debit Note</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {viewDoc.voidedItems.map((vi: any, idx: number) => {
+                            const line = viewDoc.lines?.[vi.itemIndex]
+                            const amt = (Number(line?.rate) || 0) * vi.quantity
+                            return (
+                              <tr key={idx} className="border-b border-red-100">
+                                <td className="py-2 text-red-600">{vi.itemIndex + 1}</td>
+                                <td className="py-2 text-red-700 line-through">{line?.description || 'Item'}</td>
+                                <td className="py-2 text-right text-red-600">{vi.quantity} / {line?.qty || 1}</td>
+                                <td className="py-2 text-right font-mono text-red-700">Rs. {fmt(amt)}</td>
+                                <td className="py-2 text-red-600 text-xs">{vi.reason || '—'}</td>
+                                <td className="py-2">
+                                  {vi.creditNoteId && (
+                                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
+                                      CN/DN linked
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                        <tfoot>
+                          <tr className="border-t-2 border-red-300 font-medium">
+                            <td colSpan={3} className="py-2 text-xs uppercase text-red-600">Total Voided</td>
+                            <td className="py-2 text-right font-mono text-red-700">Rs. {fmt(viewDoc.voidedAmount || 0)}</td>
+                            <td colSpan={2} />
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  )}
+
+                            {/* ── Action Bar ─────────────────────────────── */}
               <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-8 py-4 rounded-b-xl print:hidden">
                 <div>
                   {viewDoc.status === 'draft' && (
@@ -2249,6 +2335,138 @@ export default function Vouchers() {
           </div>
         )
       })()}
+
+      {/* ── Void Items Dialog ──────────────────────────── */}
+      {voidDialogDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 print:hidden">
+          <div className="mx-4 w-full max-w-2xl rounded-xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Void Items</h2>
+                <p className="text-sm text-slate-500">
+                  {voidDialogDoc.number || 'Draft'} — {voidDialogDoc.docType}
+                </p>
+              </div>
+              <button onClick={() => { setVoidDialogDoc(null); setVoidItems([]) }}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
+              <p className="mb-3 text-sm text-slate-600">
+                Select items to void. A credit/debit note will be created for the voided amounts.
+              </p>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs font-medium text-slate-500">
+                    <th className="w-10 py-2"></th>
+                    <th className="py-2">Item</th>
+                    <th className="w-20 py-2 text-right">Qty</th>
+                    <th className="w-24 py-2 text-right">Amount</th>
+                    <th className="w-24 py-2 text-right">Void Qty</th>
+                    <th className="w-40 py-2">Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(voidDialogDoc.lines || []).map((line: any, idx: number) => {
+                    const isSelected = voidItems.some(vi => vi.itemIndex === idx)
+                    const voidItem = voidItems.find(vi => vi.itemIndex === idx)
+                    return (
+                      <tr key={idx} className={"border-b border-slate-100 " + (isSelected ? 'bg-amber-50' : '')}>
+                        <td className="py-2">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {
+                              if (isSelected) {
+                                setVoidItems(prev => prev.filter(vi => vi.itemIndex !== idx))
+                              } else {
+                                setVoidItems(prev => [...prev, {
+                                  itemIndex: idx,
+                                  quantity: Number(line.qty) || 1,
+                                  reason: '',
+                                }])
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-slate-300"
+                          />
+                        </td>
+                        <td className="py-2 text-slate-700">{line.description || 'Item ' + (idx + 1)}</td>
+                        <td className="py-2 text-right text-slate-600">{line.qty || 1}</td>
+                        <td className="py-2 text-right text-slate-700">Rs. {fmt(Number(line.amount) || 0)}</td>
+                        <td className="py-2 text-right">
+                          {isSelected && (
+                            <input
+                              type="number"
+                              min={1}
+                              max={Number(line.qty) || 1}
+                              value={voidItem?.quantity || 1}
+                              onChange={(e) => {
+                                const qty = Math.min(Number(e.target.value) || 1, Number(line.qty) || 1)
+                                setVoidItems(prev => prev.map(vi =>
+                                  vi.itemIndex === idx ? { ...vi, quantity: qty } : vi
+                                ))
+                              }}
+                              className="w-16 rounded border border-slate-300 px-2 py-1 text-right text-sm"
+                            />
+                          )}
+                        </td>
+                        <td className="py-2">
+                          {isSelected && (
+                            <input
+                              type="text"
+                              value={voidItem?.reason || ''}
+                              onChange={(e) => {
+                                setVoidItems(prev => prev.map(vi =>
+                                  vi.itemIndex === idx ? { ...vi, reason: e.target.value } : vi
+                                ))
+                              }}
+                              placeholder="Reason for void"
+                              className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                            />
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+
+              {voidItems.length > 0 && (
+                <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-amber-800">Total Void Amount:</span>
+                    <span className="font-semibold text-amber-900">
+                      Rs. {fmt(voidItems.reduce((sum, vi) => {
+                        const line = voidDialogDoc.lines?.[vi.itemIndex]
+                        return sum + (Number(line?.rate) || 0) * vi.quantity
+                      }, 0))}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-amber-700">
+                    A {voidItems.length === (voidDialogDoc.lines || []).length ? 'full void' : 'credit/debit note'} will be created for this amount.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
+              <button onClick={() => { setVoidDialogDoc(null); setVoidItems([]) }}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                Cancel
+              </button>
+              <button
+                onClick={submitPartialVoid}
+                disabled={voidItems.length === 0 || voidLoading}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {voidLoading ? 'Voiding...' : voidItems.length === (voidDialogDoc.lines || []).length ? 'Full Void' : 'Create Credit/Debit Note & Void'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1133,28 +1133,51 @@ export const Documents: CollectionConfig = {
             )
           }
 
-          const reversalLines = (entry.lines || []).map((l: any) => ({
-            account: accId(l.account),
-            debit: toNum(l.credit) || undefined,
-            credit: toNum(l.debit) || undefined,
-            memo: l.memo || undefined,
+          // Determine credit-note vs debit-note based on doc type
+          const isSale = ['sales-invoice', 'sales-order'].includes(doc.docType)
+          const creditNoteType = isSale ? 'credit-note' : 'debit-note'
+
+          // Create credit/debit note for the full amount
+          const noteLines = (doc.lines || []).map((l: any) => ({
+            description: l.description || 'Voided item',
+            qty: toNum(l.qty) || 1,
+            rate: toNum(l.rate) || 0,
+            amount: toNum(l.amount) || round2((toNum(l.qty) || 1) * (toNum(l.rate) || 0)),
           }))
 
-          const reversal = await req.payload.create({
-            collection: 'journal-entries',
+          const creditNote = await req.payload.create({
+            collection: 'documents',
             data: {
+              docType: creditNoteType,
               date: new Date().toISOString().slice(0, 10),
-              narration: `Reversal of ${doc.number || doc.id}`,
+              party: doc.party,
               status: 'posted',
-              lines: reversalLines,
-              referenceDoc: doc.id,
+              narration: `Full void of ${doc.number || doc.id}`,
+              lines: noteLines,
+              netTotal: toNum(doc.netTotal) || 0,
+              grossTotal: toNum(doc.grossTotal) || 0,
               tenant: doc.tenant,
+              referenceTo: doc.id,
             },
-            req: { transactionID },
-          })
+            req: {
+              transactionID,
+              context: { docStatusTransition: 'post' },
+            },
+          }) as any
+
+          // Build voidedItems for all lines
+          const allLines: any[] = doc.lines || []
+          const voidedItems = allLines.map((l: any, idx: number) => ({
+            itemIndex: idx,
+            quantity: toNum(l.qty) || 1,
+            reason: 'Full void',
+            creditNoteId: creditNote.id,
+            voidedAt: new Date().toISOString(),
+            voidedBy: req.user?.email || 'system',
+          }))
 
           // Reverse the document's stock movements so voiding a sale restores
-          // stock (and vice versa for a GRN), atomic with the reversal entry.
+          // stock (and vice versa for a GRN), atomic with the credit note.
           const moves = await req.payload.find({
             collection: 'stock-movements',
             where: { doc: { equals: doc.id } },
@@ -1182,7 +1205,11 @@ export const Documents: CollectionConfig = {
           const updated = await req.payload.update({
             collection: 'documents',
             id: doc.id,
-            data: { status: 'void' },
+            data: {
+              status: 'void',
+              voidedItems,
+              voidedAmount: toNum(doc.grossTotal) || 0,
+            },
             req: {
               transactionID,
               context: { docStatusTransition: 'void' },
@@ -1195,7 +1222,7 @@ export const Documents: CollectionConfig = {
 
           return Response.json({
             doc: updated,
-            reversalEntry: reversal.id,
+            creditNote: { id: creditNote.id, number: creditNote.number, amount: toNum(doc.grossTotal) || 0 },
             reversedMovements: moves.docs.length,
           })
         } catch (err) {
@@ -1216,6 +1243,161 @@ export const Documents: CollectionConfig = {
         }
       },
     },
+    {
+      // Partial void: void specific line items by creating a credit/debit note
+      // for the voided amounts and recording which items were voided.
+      path: '/:id/partial-void',
+      method: 'post',
+      handler: async (req) => {
+        if (!isBillingReq(req)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string
+        if (!id) {
+          return Response.json({ error: 'Missing document id' }, { status: 400 })
+        }
+
+        // Parse request body
+        let body: any = {}
+        try {
+          const chunks: Buffer[] = []
+          const reader = (req as any).body?.getReader?.()
+          if (reader) {
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+              chunks.push(value)
+            }
+            body = JSON.parse(Buffer.concat(chunks).toString())
+          } else if ((req as any).json) {
+            body = await (req as any).json()
+          }
+        } catch {
+          return Response.json({ error: 'Invalid request body' }, { status: 400 })
+        }
+
+        const items: Array<{ itemIndex: number; quantity: number; reason?: string }> = body.items
+        if (!items || !Array.isArray(items) || items.length === 0) {
+          return Response.json({ error: 'items array is required' }, { status: 400 })
+        }
+
+        const transactionID = (await req.payload.db.beginTransaction()) ?? undefined
+        try {
+          const doc = (await req.payload.findByID({
+            collection: 'documents',
+            id,
+            depth: 0,
+          })) as any
+
+          if (!doc) {
+            return Response.json({ error: 'Document not found' }, { status: 404 })
+          }
+          if (doc.status !== 'posted') {
+            return Response.json({ error: 'Only posted documents can be partially voided.' }, { status: 409 })
+          }
+
+          const lines: any[] = doc.lines || []
+          let totalVoidedAmount = 0
+          const voidedItems: any[] = []
+
+          for (const item of items) {
+            const line = lines[item.itemIndex]
+            if (!line) {
+              return Response.json({ error: `Invalid itemIndex: ${item.itemIndex}` }, { status: 400 })
+            }
+            const lineQty = toNum(line.qty) || 1
+            if (item.quantity <= 0 || item.quantity > lineQty) {
+              return Response.json({ error: `Invalid quantity for item ${item.itemIndex}: must be 1-${lineQty}` }, { status: 400 })
+            }
+            const lineRate = toNum(line.rate) || 0
+            const voidedAmt = round2(item.quantity * lineRate)
+            totalVoidedAmount += voidedAmt
+            voidedItems.push({
+              itemIndex: item.itemIndex,
+              quantity: item.quantity,
+              reason: item.reason || '',
+              voidedAt: new Date().toISOString(),
+              voidedBy: req.user?.email || 'system',
+            })
+          }
+
+          // Determine credit-note vs debit-note based on doc type
+          const isSale = ['sales-invoice', 'sales-order'].includes(doc.docType)
+          const creditNoteType = isSale ? 'credit-note' : 'debit-note'
+
+          // Create credit/debit note
+          const noteLines = items.map((item) => {
+            const line = lines[item.itemIndex]
+            const rate = toNum(line.rate) || 0
+            return {
+              description: `${item.reason || 'Void'} - ${line.description || 'Item'}`,
+              qty: item.quantity,
+              rate: rate,
+              amount: round2(item.quantity * rate),
+            }
+          })
+
+          const creditNote = await req.payload.create({
+            collection: 'documents',
+            data: {
+              docType: creditNoteType,
+              date: new Date().toISOString().slice(0, 10),
+              party: doc.party,
+              status: 'posted',
+              narration: `Partial void of ${doc.number || doc.id}: ${items.map(i => i.reason || `item ${i.itemIndex + 1}`).join(', ')}`,
+              lines: noteLines,
+              netTotal: totalVoidedAmount,
+              grossTotal: totalVoidedAmount,
+              tenant: doc.tenant,
+              referenceTo: doc.id,
+            },
+            req: {
+              transactionID,
+              context: { docStatusTransition: 'post' },
+            },
+          }) as any
+
+          // Link credit note back to the original doc's voided items
+          for (let i = 0; i < voidedItems.length; i++) {
+            voidedItems[i].creditNoteId = creditNote.id
+          }
+
+          // Update original document with voided items
+          const existingVoided = doc.voidedItems || []
+          const updated = await req.payload.update({
+            collection: 'documents',
+            id: doc.id,
+            data: {
+              voidedItems: [...existingVoided, ...voidedItems],
+              voidedAmount: round2((doc.voidedAmount || 0) + totalVoidedAmount),
+              // If all items are now voided, mark as full void
+              status: totalVoidedAmount >= (doc.grossTotal || 0) ? 'void' : doc.status,
+            },
+            req: {
+              transactionID,
+              context: { docStatusTransition: 'partial-void' },
+            },
+          })
+
+          if (transactionID) {
+            await req.payload.db.commitTransaction(transactionID)
+          }
+
+          return Response.json({
+            doc: updated,
+            creditNote: { id: creditNote.id, number: creditNote.number, amount: totalVoidedAmount },
+            voidedItems,
+          })
+        } catch (err) {
+          try {
+            if (transactionID) await req.payload.db.rollbackTransaction(transactionID)
+          } catch {}
+          const raw = err instanceof Error ? err : null
+          return Response.json({ error: raw?.message || 'Partial void failed' }, { status: 400 })
+        }
+      },
+    },
+
     {
       // AR / AP aging: open positions from posted documents, bucketed by age.
       // AR side: sales invoices (+) reduced by credit notes & receipts (−).
@@ -1751,6 +1933,61 @@ export const Documents: CollectionConfig = {
         condition: (_data, { siblingData }) =>
           ['receipt-voucher', 'payment-voucher'].includes(siblingData?.docType),
       },
+    },
+
+    // -- Partial / Full Void tracking --
+    // When items are voided (via credit/debit note), the voided line
+    // indices and quantities are recorded here so reports can subtract
+    // them and the UI can show which items are voided.
+    {
+      name: 'voidedItems',
+      type: 'array',
+      admin: {
+        position: 'sidebar',
+        description: 'Items that have been voided via credit/debit note.',
+      },
+      fields: [
+        {
+          name: 'itemIndex',
+          type: 'number',
+          required: true,
+          admin: { description: '0-based index into the lines[] array' },
+        },
+        {
+          name: 'quantity',
+          type: 'number',
+          required: true,
+          admin: { description: 'Quantity voided (can be less than original qty for partial void)' },
+        },
+        {
+          name: 'reason',
+          type: 'text',
+        },
+        {
+          name: 'creditNoteId',
+          type: 'relationship',
+          relationTo: 'documents',
+          admin: { description: 'The credit/debit note created for this voided item' },
+        },
+        {
+          name: 'voidedAt',
+          type: 'date',
+        },
+        {
+          name: 'voidedBy',
+          type: 'text',
+        },
+      ],
+    },
+    {
+      name: 'voidedAmount',
+      type: 'number',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: 'Total voided amount. Subtracted from grossTotal for report net amounts.',
+      },
+      defaultValue: 0,
     },
     {
       name: 'paymentMethod',

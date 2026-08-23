@@ -160,6 +160,15 @@ export interface Document {
   discountMode?: 'pct' | 'amt'
   discountValue?: number
   tenant?: number | null
+  voidedItems?: Array<{
+    itemIndex: number
+    quantity: number
+    reason?: string
+    creditNoteId?: number | null
+    voidedAt?: string
+    voidedBy?: string
+  }>
+  voidedAmount?: number
 }
 
 export interface Item {
