@@ -478,24 +478,43 @@ function buildPostingLines(
       })
       break
     case 'credit-note':
-      // Sales Returns ← AR
-      lines.push({
-        account: resolveAccount(settings, 'returnsAccount', type, 'Sales Returns'),
-        debit: gross,
-      })
-      lines.push({
-        account: resolveAccount(settings, 'receivableAccount', type, 'Accounts Receivable'),
-        credit: gross,
-      })
+      // Reduces the amount owed. Direction depends on original doc type:
+      //   Sales-side: Dr. Sales Returns, Cr. AR
+      //   Purchase-side: Dr. AP, Cr. Purchase Returns
+      {
+        const origType = (doc as any).referenceToDocType || ''
+        const isPurchase = ['purchase-invoice', 'purchase-order', 'grn'].includes(origType)
+        if (isPurchase) {
+          lines.push({
+            account: resolveAccount(settings, 'payableAccount', type, 'Accounts Payable'),
+            debit: gross,
+          })
+          lines.push({
+            account: resolveAccount(settings, 'returnsAccount', type, 'Purchase Returns'),
+            credit: gross,
+          })
+        } else {
+          // Default: sales-side credit note
+          lines.push({
+            account: resolveAccount(settings, 'returnsAccount', type, 'Sales Returns'),
+            debit: gross,
+          })
+          lines.push({
+            account: resolveAccount(settings, 'receivableAccount', type, 'Accounts Receivable'),
+            credit: gross,
+          })
+        }
+      }
       break
     case 'debit-note':
-      // AP ← Purchase Returns
+      // A debit note from a supplier INCREASES what we owe.
+      // Dr. Expense (we incur more cost)  Cr. AP (we owe more).
       lines.push({
-        account: resolveAccount(settings, 'payableAccount', type, 'Accounts Payable'),
+        account: resolveAccount(settings, 'expenseAccount', type, 'Purchases / Expense'),
         debit: gross,
       })
       lines.push({
-        account: resolveAccount(settings, 'returnsAccount', type, 'Purchase Returns'),
+        account: resolveAccount(settings, 'payableAccount', type, 'Accounts Payable'),
         credit: gross,
       })
       break
@@ -1155,9 +1174,10 @@ export const Documents: CollectionConfig = {
             )
           }
 
-          // Determine credit-note vs debit-note based on doc type
-          const isSale = ['sales-invoice', 'sales-order'].includes(doc.docType)
-          const creditNoteType = isSale ? 'credit-note' : 'debit-note'
+          // Void always creates a CREDIT note — it reduces the balance:
+          //   Sales void: reduces AR (Dr. Returns, Cr. AR)
+          //   Purchase void: reduces AP (Dr. AP, Cr. Returns)
+          const creditNoteType = 'credit-note'
 
           // Generate a number for the credit/debit note
           const cnNumber = await nextNumber(req.payload, creditNoteType, new Date().toISOString().slice(0, 10), undefined, doc.tenant)
@@ -1184,6 +1204,7 @@ export const Documents: CollectionConfig = {
               grossTotal: toNum(doc.grossTotal) || 0,
               tenant: doc.tenant,
               referenceTo: doc.id,
+              referenceToDocType: doc.docType,
             },
             req: {
               transactionID,
@@ -1350,9 +1371,8 @@ export const Documents: CollectionConfig = {
             })
           }
 
-          // Determine credit-note vs debit-note based on doc type
-          const isSale = ['sales-invoice', 'sales-order'].includes(doc.docType)
-          const creditNoteType = isSale ? 'credit-note' : 'debit-note'
+          // Partial void always creates a credit note
+          const creditNoteType = 'credit-note'
 
           // Generate a number for the credit/debit note
           const cnNumber = await nextNumber(req.payload, creditNoteType, new Date().toISOString().slice(0, 10), undefined, doc.tenant)
@@ -1383,6 +1403,7 @@ export const Documents: CollectionConfig = {
               grossTotal: totalVoidedAmount,
               tenant: doc.tenant,
               referenceTo: doc.id,
+              referenceToDocType: doc.docType,
             },
             req: {
               transactionID,
@@ -1454,11 +1475,13 @@ export const Documents: CollectionConfig = {
           ? new Date(searchParams.get('asOf')!)
           : new Date()
         const posTypes =
-          side === 'ar' ? ['sales-invoice'] : ['purchase-invoice']
+          side === 'ar'
+            ? ['sales-invoice']
+            : ['purchase-invoice', 'debit-note']
         const negTypes =
           side === 'ar'
             ? ['credit-note', 'receipt-voucher']
-            : ['debit-note', 'payment-voucher']
+            : ['credit-note', 'payment-voucher']
 
         // Scope to the caller's illaka (forced for illaka users) or the
         // explicit tenant filter.
@@ -1484,8 +1507,19 @@ export const Documents: CollectionConfig = {
         for (const doc of res.docs as any[]) {
           const party = doc.party
           if (!party || typeof party !== 'object') continue
+          // Credit notes are shared across AR and AP negTypes. Only count
+          // a credit note on the side its original invoice belongs to.
+          if (doc.docType === 'credit-note') {
+            const refType = doc.referenceToDocType || ''
+            const isPurchaseRef = ['purchase-invoice', 'purchase-order', 'grn'].includes(refType)
+            if (side === 'ar' && isPurchaseRef) continue
+            if (side === 'ap' && !isPurchaseRef) continue
+          }
           const sign = posTypes.includes(doc.docType) ? 1 : -1
-          const amount = round2(sign * toNum(doc.grossTotal))
+          // Subtract voided amount so partially-voided documents show the
+          // remaining open balance, not the original gross.
+          const effective = round2(toNum(doc.grossTotal) - toNum(doc.voidedAmount || 0))
+          const amount = round2(sign * effective)
           if (amount === 0) continue
           const days = Math.max(
             0,
@@ -1955,6 +1989,15 @@ export const Documents: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description: 'Original document this note/challan refers to.',
+      },
+    },
+    {
+      name: 'referenceToDocType',
+      type: 'text',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: 'Doc type of the referenced document (used by aging report to classify credit notes).',
       },
     },
     {

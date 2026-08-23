@@ -1116,6 +1116,10 @@ export interface Document {
    */
   referenceTo?: (number | null) | Document;
   /**
+   * Doc type of the referenced document (used by aging report to classify credit notes).
+   */
+  referenceToDocType?: string | null;
+  /**
    * Sales/Purchase invoice this receipt/payment settles. Links payment to a specific invoice for outstanding tracking.
    */
   linkedInvoice?: (number | null) | Document;
@@ -2590,6 +2594,7 @@ export interface DocumentsSelect<T extends boolean = true> {
   cancelledAt?: T;
   journalEntry?: T;
   referenceTo?: T;
+  referenceToDocType?: T;
   linkedInvoice?: T;
   voidedItems?:
     | T
