@@ -96,9 +96,11 @@ export default function OutstandingInvoices({
         })
 
         // Build paid map from linked receipts (linkedInvoice field)
+        // Payload may return relationship as { id } object or plain number
         const paidMap = new Map<number, number>()
         for (const d of linkedDocs) {
-          const invId = (d as any).linkedInvoice
+          const raw = (d as any).linkedInvoice
+          const invId = raw && typeof raw === 'object' ? raw.id : raw
           if (invId) {
             const amt = Number(d.grossTotal) || 0
             paidMap.set(Number(invId), (paidMap.get(Number(invId)) || 0) + amt)
@@ -107,7 +109,11 @@ export default function OutstandingInvoices({
 
         // Unlinked receipts — pro-rate against oldest invoices first
         const unlinkedTotal = linkedDocs
-          .filter((d: Document) => !(d as any).linkedInvoice)
+          .filter((d: Document) => {
+            const raw = (d as any).linkedInvoice
+            const val = raw && typeof raw === 'object' ? raw.id : raw
+            return !val
+          })
           .reduce((sum: number, d: Document) => sum + (Number(d.grossTotal) || 0), 0)
 
         // Sort invoices oldest first for pro-rating
