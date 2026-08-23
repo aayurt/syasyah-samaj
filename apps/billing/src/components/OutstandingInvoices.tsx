@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Check, FileText, Search, X } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
@@ -15,6 +15,7 @@ interface Props {
 
 interface OutstandingInvoice extends Document {
   outstanding: number
+  paidAmount: number
 }
 
 /** Extract numeric party id from various API shapes: number, string, { id, name } */
@@ -75,7 +76,7 @@ export default function OutstandingInvoices({
 
         if (docs.length === 0) { setInvoices([]); setLoading(false); return }
 
-        // 2. Fetch all posted receipts/payments for this party
+        // 2. Fetch all posted receipts/payments
         const linked = await api<{ docs: Document[] }>('/documents', {
           query: {
             limit: 1000,
@@ -111,6 +112,7 @@ export default function OutstandingInvoices({
         const sorted = [...docs].sort((a, b) => (a.date || '').localeCompare(b.date || ''))
         let unlinkedRemaining = unlinkedTotal
 
+        // Show ALL invoices (including paid ones) with their status
         const results: OutstandingInvoice[] = []
         for (const inv of sorted) {
           const gross = Number(inv.grossTotal) || 0
@@ -122,10 +124,8 @@ export default function OutstandingInvoices({
             if (apply > 0) { paid += apply; unlinkedRemaining -= apply }
           }
 
-          const outstanding = gross - paid
-          if (outstanding > 0.01) {
-            results.push({ ...inv, outstanding })
-          }
+          const outstanding = Math.max(0, gross - paid)
+          results.push({ ...inv, outstanding, paidAmount: paid })
         }
         if (alive) { setInvoices(results); setLoading(false) }
       } catch {
@@ -280,12 +280,13 @@ export default function OutstandingInvoices({
 
       {!loading && invoices.length === 0 && (
         <p className="text-sm text-slate-400">
-          No outstanding {invoiceType.replace('-', ' ')}s for this party.
+          No {invoiceType.replace('-', ' ')}s found for this party.
         </p>
       )}
 
       {filtered.length > 0 && (
         <div className="space-y-2">
+          {/* General payment option */}
           <button
             type="button"
             onClick={() => onSelect(null)}
@@ -301,52 +302,68 @@ export default function OutstandingInvoices({
             <div className="text-sm text-slate-700">No specific invoice (general payment)</div>
           </button>
 
-          {filtered.map((inv) => (
-            <button
-              type="button"
-              key={inv.id}
-              onClick={() => onSelect(String(inv.id), inv.outstanding)}
-              className={`w-full flex items-center justify-between rounded-md border p-3 text-left transition-colors ${
-                selectedInvoiceId === String(inv.id) ? 'border-crimson-300 bg-crimson-50' : 'border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                  selectedInvoiceId === String(inv.id) ? 'border-crimson-600 bg-crimson-600' : 'border-slate-300'
-                }`}>
-                  {selectedInvoiceId === String(inv.id) && <Check size={12} className="text-white" />}
+          {filtered.map((inv) => {
+            const total = Number(inv.grossTotal) || 0
+            const paid = inv.paidAmount
+            const outstanding = inv.outstanding
+            const isPaid = outstanding <= 0.01
+            const isPartial = paid > 0.01 && outstanding > 0.01
+            const pct = total > 0 ? Math.round((paid / total) * 100) : 0
+
+            return (
+              <button
+                type="button"
+                key={inv.id}
+                disabled={isPaid}
+                onClick={() => !isPaid && onSelect(String(inv.id), outstanding)}
+                className={`w-full flex items-center justify-between rounded-md border p-3 text-left transition-colors ${
+                  isPaid
+                    ? 'border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed'
+                    : selectedInvoiceId === String(inv.id)
+                      ? 'border-crimson-300 bg-crimson-50'
+                      : 'border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                    selectedInvoiceId === String(inv.id) ? 'border-crimson-600 bg-crimson-600' : 'border-slate-300'
+                  }`}>
+                    {selectedInvoiceId === String(inv.id) && <Check size={12} className="text-white" />}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-slate-700">{inv.number || `#${inv.id}`}</div>
+                    <div className="text-xs text-slate-400">{inv.date?.slice(0, 10)}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm font-medium text-slate-700">{inv.number || `#${inv.id}`}</div>
-                  <div className="text-xs text-slate-400">{inv.date?.slice(0, 10)}</div>
+                <div className="text-right">
+                  <div className="flex items-center gap-2 justify-end">
+                    <div className="text-sm font-medium text-slate-800">
+                      {isPaid ? (
+                        <span className="text-emerald-600">Rs. {fmt(total)}</span>
+                      ) : (
+                        <>Rs. {fmt(outstanding)}</>
+                      )}
+                    </div>
+                    {isPaid && (
+                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Paid</span>
+                    )}
+                    {isPartial && (
+                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Partial ({pct}%)</span>
+                    )}
+                    {!isPaid && !isPartial && (
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">Unpaid</span>
+                    )}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    of Rs. {fmt(total)}
+                    {paid > 0.01 && (
+                      <span className="ml-1 text-emerald-600">· Rs. {fmt(paid)} paid</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center gap-2 justify-end">
-                  <div className="text-sm font-medium text-slate-800">Rs. {fmt(inv.outstanding)}</div>
-                  {(() => {
-                    const total = Number(inv.grossTotal) || 0
-                    const paid = total - inv.outstanding
-                    const pct = total > 0 ? Math.round((paid / total) * 100) : 0
-                    if (paid > 0.01 && inv.outstanding > 0.01) {
-                      return <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Partial ({pct}%)</span>
-                    }
-                    if (inv.outstanding <= 0.01) {
-                      return <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Paid</span>
-                    }
-                    return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">Unpaid</span>
-                  })()}
-                </div>
-                <div className="text-xs text-slate-400 mt-0.5">
-                  of Rs. {fmt(Number(inv.grossTotal) || 0)}
-                  {(() => {
-                    const paid = (Number(inv.grossTotal) || 0) - inv.outstanding
-                    return paid > 0.01 ? <span className="ml-1 text-emerald-600">· Rs. {fmt(paid)} paid</span> : null
-                  })()}
-                </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            )
+          })}
 
           {hasFilters && (
             <div className="text-center text-[11px] text-slate-400 pt-1">
