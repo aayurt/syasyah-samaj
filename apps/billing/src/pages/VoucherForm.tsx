@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Camera,
@@ -149,6 +149,7 @@ function RequiredChecklist({ items }: { items: { label: string; filled: boolean 
 export default function VoucherForm({ mode }: Props) {
   const navigate = useNavigate()
   const { id, docType: urlDocType } = useParams()
+  const [searchParams] = useSearchParams()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
@@ -188,6 +189,19 @@ export default function VoucherForm({ mode }: Props) {
   const [toAccount, setToAccount] = useState('')
   const [contraAmount, setContraAmount] = useState('')
   const [linkedInvoiceId, setLinkedInvoiceId] = useState<string | null>(null)
+
+  // Pre-fill from URL search params (e.g. from "Create Receipt" button)
+  useEffect(() => {
+    const p = searchParams.get('party')
+    const li = searchParams.get('linkedInvoice')
+    if (p) {
+      setParty(p)
+      // Find party name for display
+      const found = parties.find((x) => String(x.id) === p)
+      if (found) setPartySearch(found.name)
+    }
+    if (li) setLinkedInvoiceId(li)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [taxRate, setTaxRate] = useState('0')
   const [taxLines, setTaxLines] = useState<TaxLineDraft[]>([])
 

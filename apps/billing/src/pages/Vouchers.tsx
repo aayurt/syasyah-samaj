@@ -2127,9 +2127,12 @@ export default function Vouchers() {
                       </h3>
                       <button
                         onClick={() => {
+                          const type = viewDoc.docType === 'sales-invoice' ? 'receipt-voucher' : 'payment-voucher'
+                          const params = new URLSearchParams()
+                          if (invParty) params.set('party', String(invParty))
+                          params.set('linkedInvoice', String(invId))
                           setViewDoc(null)
-                          navigate(`/vouchers/new/${viewDoc.docType === 'sales-invoice' ? 'receipt-voucher' : 'payment-voucher'}`)
-                          // Prefill will be handled by URL params or state
+                          navigate(`/vouchers/new/${type}?${params.toString()}`)
                         }}
                         className="flex items-center gap-1 rounded bg-crimson-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-crimson-700"
                       >
