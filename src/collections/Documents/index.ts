@@ -1111,6 +1111,7 @@ export const Documents: CollectionConfig = {
             collection: 'documents',
             id,
             depth: 0,
+            overrideAccess: true,
           })) as any
           if (!doc) {
             return Response.json({ error: 'Document not found' }, { status: 404 })
@@ -1125,6 +1126,7 @@ export const Documents: CollectionConfig = {
             collection: 'journal-entries',
             id: doc.journalEntry,
             depth: 0,
+            overrideAccess: true,
           })) as any
           if (!entry) {
             return Response.json(
@@ -1242,6 +1244,7 @@ export const Documents: CollectionConfig = {
           const ve = (raw as any)?.data as
             | { errors?: { message?: string }[] }
             | undefined
+          console.error('[VOID-ERROR]', err)
           const message =
             ve?.errors?.[0]?.message || raw?.message || 'Voiding failed'
           return Response.json({ error: message }, { status: 400 })
@@ -1292,6 +1295,7 @@ export const Documents: CollectionConfig = {
             collection: 'documents',
             id,
             depth: 0,
+            overrideAccess: true,
           })) as any
 
           if (!doc) {
