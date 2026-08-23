@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, FileText, Search, X } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
@@ -15,6 +15,14 @@ interface Props {
 
 interface OutstandingInvoice extends Document {
   outstanding: number
+}
+
+/** Extract numeric party id from various API shapes: number, string, { id, name } */
+function getPartyId(p: unknown): string | null {
+  if (p == null) return null
+  if (typeof p === 'number' || typeof p === 'string') return String(p)
+  if (typeof p === 'object' && 'id' in p) return String((p as { id: unknown }).id)
+  return null
 }
 
 export default function OutstandingInvoices({
@@ -34,51 +42,62 @@ export default function OutstandingInvoices({
   const tenantQuery = useTenantQuery()
   const invoiceType = docType === 'receipt-voucher' ? 'sales-invoice' : 'purchase-invoice'
 
+  // Stabilize tenantQuery as a JSON string for the useEffect dependency
+  const tqKey = useMemo(() => JSON.stringify(tenantQuery), [tenantQuery])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableTenantQuery = useMemo(() => JSON.parse(tqKey), [tqKey])
+
   useEffect(() => {
     if (!partyId) { setInvoices([]); return }
     let alive = true
     setLoading(true)
 
-    // Fetch ALL invoices for this party — use client-side filtering
-    // (API where clause doesn't work reliably for compound filters)
-    api<{ docs: Document[] }>('/documents', {
-      query: {
-        limit: 500,
-        depth: 0,
-        sort: '-date',
-        where: JSON.stringify({ status: { equals: 'posted' } }),
-        ...tenantQuery,
-      },
-    })
-      .then(async (res) => {
+    const fetchAll = async () => {
+      try {
+        // 1. Fetch all posted documents
+        const res = await api<{ docs: Document[] }>('/documents', {
+          query: {
+            limit: 500,
+            depth: 0,
+            sort: '-date',
+            where: JSON.stringify({ status: { equals: 'posted' } }),
+            ...stableTenantQuery,
+          },
+        })
         if (!alive) return
+
         // Client-side filter: correct docType + correct party
-        const docs = (res.docs || []).filter(
-          (d) => d.docType === invoiceType && String((d as any).party) === String(partyId)
-        )
+        const docs = (res.docs || []).filter((d) => {
+          if (d.docType !== invoiceType) return false
+          const dPartyId = getPartyId((d as any).party)
+          return dPartyId === String(partyId)
+        })
+
         if (docs.length === 0) { setInvoices([]); setLoading(false); return }
 
-        // Fetch ALL receipts/payments — client-side filter later
+        // 2. Fetch all posted receipts/payments for this party
         const linked = await api<{ docs: Document[] }>('/documents', {
           query: {
             limit: 1000,
             depth: 0,
             where: JSON.stringify({ status: { equals: 'posted' } }),
-            ...tenantQuery,
+            ...stableTenantQuery,
           },
         }).catch(() => ({ docs: [] as Document[] }))
 
         // Client-side filter: only this docType + this party
-        const linkedDocs = (linked.docs || []).filter(
-          (d: Document) => d.docType === docType && String((d as any).party) === String(partyId)
-        )
+        const linkedDocs = (linked.docs || []).filter((d: Document) => {
+          if (d.docType !== docType) return false
+          const dPartyId = getPartyId((d as any).party)
+          return dPartyId === String(partyId)
+        })
 
         // 1. Count linked receipts per invoice
         const paidMap = new Map<number, number>()
         for (const d of linkedDocs) {
           const invId = (d as any).linkedInvoice
           if (invId) {
-            const amt = d.grossTotal || 0
+            const amt = Number(d.grossTotal) || 0
             paidMap.set(Number(invId), (paidMap.get(Number(invId)) || 0) + amt)
           }
         }
@@ -86,7 +105,7 @@ export default function OutstandingInvoices({
         // 2. Unlinked receipts for this party — pro-rate against oldest invoices first
         const unlinkedTotal = linkedDocs
           .filter((d: Document) => !(d as any).linkedInvoice)
-          .reduce((sum: number, d: Document) => sum + (d.grossTotal || 0), 0)
+          .reduce((sum: number, d: Document) => sum + (Number(d.grossTotal) || 0), 0)
 
         // Sort invoices oldest first for pro-rating
         const sorted = [...docs].sort((a, b) => (a.date || '').localeCompare(b.date || ''))
@@ -94,7 +113,7 @@ export default function OutstandingInvoices({
 
         const results: OutstandingInvoice[] = []
         for (const inv of sorted) {
-          const gross = inv.grossTotal || 0
+          const gross = Number(inv.grossTotal) || 0
           let paid = paidMap.get(inv.id) || 0
 
           // Apply unlinked receipts oldest-first
@@ -109,11 +128,14 @@ export default function OutstandingInvoices({
           }
         }
         if (alive) { setInvoices(results); setLoading(false) }
-      })
-      .catch(() => { if (alive) setLoading(false) })
+      } catch {
+        if (alive) setLoading(false)
+      }
+    }
 
+    fetchAll()
     return () => { alive = false }
-  }, [partyId, invoiceType, docType]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [partyId, invoiceType, docType, tqKey, stableTenantQuery]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Client-side search + date filtering
   const filtered = useMemo(() => {
@@ -303,7 +325,7 @@ export default function OutstandingInvoices({
                 <div className="flex items-center gap-2 justify-end">
                   <div className="text-sm font-medium text-slate-800">Rs. {fmt(inv.outstanding)}</div>
                   {(() => {
-                    const total = inv.grossTotal || 0
+                    const total = Number(inv.grossTotal) || 0
                     const paid = total - inv.outstanding
                     const pct = total > 0 ? Math.round((paid / total) * 100) : 0
                     if (paid > 0.01 && inv.outstanding > 0.01) {
@@ -316,9 +338,9 @@ export default function OutstandingInvoices({
                   })()}
                 </div>
                 <div className="text-xs text-slate-400 mt-0.5">
-                  of Rs. {fmt(inv.grossTotal || 0)}
+                  of Rs. {fmt(Number(inv.grossTotal) || 0)}
                   {(() => {
-                    const paid = (inv.grossTotal || 0) - inv.outstanding
+                    const paid = (Number(inv.grossTotal) || 0) - inv.outstanding
                     return paid > 0.01 ? <span className="ml-1 text-emerald-600">· Rs. {fmt(paid)} paid</span> : null
                   })()}
                 </div>
@@ -337,10 +359,10 @@ export default function OutstandingInvoices({
       {!loading && selectedInv && (
         <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
           <span className="font-medium">Remaining after payment:</span>{' '}
-          Rs. {fmt(selectedInv.outstanding)} of Rs. {fmt(selectedInv.grossTotal || 0)}
-          {selectedInv.outstanding < (selectedInv.grossTotal || 0) && (
+          Rs. {fmt(selectedInv.outstanding)} of Rs. {fmt(Number(selectedInv.grossTotal) || 0)}
+          {selectedInv.outstanding < (Number(selectedInv.grossTotal) || 0) && (
             <span className="ml-2 text-emerald-600">
-              (Rs. {fmt((selectedInv.grossTotal || 0) - selectedInv.outstanding)} already paid)
+              (Rs. {fmt((Number(selectedInv.grossTotal) || 0) - selectedInv.outstanding)} already paid)
             </span>
           )}
         </div>
