@@ -26,6 +26,25 @@ function getPartyId(p: unknown): string | null {
   return null
 }
 
+/**
+ * Build a Payload where clause that includes BOTH tenant + status filters
+ * in a single `and` array, avoiding the bug where `api()` sends
+ * `where=<json>` and `where[tenant][equals]=<id>` as separate params
+ * (the latter overwrites the former).
+ */
+function buildWhere(tenantId: number | string | undefined, extra?: Record<string, unknown>) {
+  const conditions: Record<string, unknown>[] = [
+    { status: { equals: 'posted' } },
+  ]
+  if (tenantId) {
+    conditions.push({ tenant: { equals: Number(tenantId) } })
+  }
+  if (extra) {
+    conditions.push(extra)
+  }
+  return JSON.stringify(conditions.length === 1 ? conditions[0] : { and: conditions })
+}
+
 export default function OutstandingInvoices({
   partyId,
   docType,
@@ -47,6 +66,7 @@ export default function OutstandingInvoices({
   const tqKey = useMemo(() => JSON.stringify(tenantQuery), [tenantQuery])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableTenantQuery = useMemo(() => JSON.parse(tqKey), [tqKey])
+  const tenantId = stableTenantQuery.tenant
 
   useEffect(() => {
     if (!partyId) { setInvoices([]); return }
@@ -55,14 +75,16 @@ export default function OutstandingInvoices({
 
     const fetchAll = async () => {
       try {
+        // Build where clause with tenant + status in a SINGLE where param
+        const whereStr = buildWhere(tenantId)
+
         // 1. Fetch all posted documents
         const res = await api<{ docs: Document[] }>('/documents', {
           query: {
             limit: 500,
             depth: 0,
             sort: '-date',
-            where: JSON.stringify({ status: { equals: 'posted' } }),
-            ...stableTenantQuery,
+            where: whereStr,
           },
         })
         if (!alive) return
@@ -81,8 +103,7 @@ export default function OutstandingInvoices({
           query: {
             limit: 1000,
             depth: 0,
-            where: JSON.stringify({ status: { equals: 'posted' } }),
-            ...stableTenantQuery,
+            where: whereStr,
           },
         }).catch(() => ({ docs: [] as Document[] }))
 
@@ -135,7 +156,7 @@ export default function OutstandingInvoices({
 
     fetchAll()
     return () => { alive = false }
-  }, [partyId, invoiceType, docType, tqKey, stableTenantQuery]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [partyId, invoiceType, docType, tqKey, tenantId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Client-side search + date filtering
   const filtered = useMemo(() => {
