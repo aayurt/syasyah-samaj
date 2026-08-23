@@ -1,89 +1,371 @@
 import { useEffect, useState } from 'react'
-import { IndexedDb } from './indexedDb'
-import { MemoryDb } from './memoryDb'
-import { SyncEngine } from './syncEngine'
-import type { OfflineDb, OutboxEntry, SyncState } from './types'
+import { SyncEngine as NewSyncEngine } from '../sync/SyncEngine'
+import { IndexedDbAdapter } from '../sync/adapters/IndexedDbAdapter'
+import type { SyncState } from '../sync/SyncEngine'
+import type { OutboxEntry, SyncState as OldSyncState } from './types'
+
+/**
+ * Compatibility wrapper: uses the new SyncEngine + StorageAdapter under the
+ * hood but exposes the old getEngine()/useSyncState() API so existing call
+ * sites continue to work unchanged.
+ */
 
 const isTauri = () =>
   typeof window !== 'undefined' && '__TAURI__' in window
 
-let engine: SyncEngine | null = null
+let engine: CompatibilityEngine | null = null
 
-export function getEngine(): SyncEngine {
+/** Get or create the singleton engine. */
+export function getEngine(): CompatibilityEngine {
   if (!engine) {
-    engine = new SyncEngine(new LazyDb())
+    engine = new CompatibilityEngine()
   }
   return engine
 }
 
 /**
- * Resolves the SQLite adapter inside Tauri and the in-memory fallback
- * elsewhere, so browsers and tests never load the plugin module.
+ * Wraps the new SyncEngine and provides the old SyncEngine's public API
+ * so existing code (SyncBanner, Vouchers, api.ts, auth.ts) keeps working.
  */
-class LazyDb implements OfflineDb {
-  private inner: Promise<OfflineDb> | null = null
+class CompatibilityEngine {
+  private inner: NewSyncEngine | null = null
+  private adapter: IndexedDbAdapter | null = null
+  private initPromise: Promise<void> | null = null
 
-  private resolve(): Promise<OfflineDb> {
-    if (!this.inner) {
-      // Tauri: persistent SQLite. Browser: persistent IndexedDB. Node/tests:
-      // in-memory (no IndexedDB available).
-      this.inner = isTauri()
-        ? import('./sqliteDb').then((m) => new m.SqliteDb())
-        : typeof indexedDB !== 'undefined'
-          ? Promise.resolve(new IndexedDb())
-          : Promise.resolve(new MemoryDb())
+  private async ensure(): Promise<NewSyncEngine> {
+    if (this.inner) return this.inner
+    if (this.initPromise) {
+      await this.initPromise
+      return this.inner!
     }
-    return this.inner
+    this.initPromise = (async () => {
+      this.adapter = new IndexedDbAdapter()
+      await this.adapter.ready()
+      this.inner = new NewSyncEngine(this.adapter)
+      await this.inner.init()
+    })()
+    await this.initPromise
+    return this.inner!
   }
 
-  async ready() {
-    await this.resolve()
+  // ── SyncState ─────────────────────────────────────────────────
+
+  getState(): OldSyncState {
+    if (!this.inner) {
+      return {
+        online: true,
+        pending: 0,
+        conflicts: 0,
+        lastSyncAt: null,
+        banners: [],
+        cacheVersion: 0,
+        reportsStale: false,
+        lastReportSyncAt: null,
+        syncingCount: 0,
+      }
+    }
+    const s = this.inner.getState()
+    return {
+      online: s.online,
+      pending: s.pending,
+      conflicts: s.conflicts,
+      lastSyncAt: s.lastSyncAt,
+      banners: [],
+      cacheVersion: this._cacheVersion,
+      reportsStale: false,
+      lastReportSyncAt: null,
+      syncingCount: s.syncing ? 1 : 0,
+    }
   }
-  async getKey(key: string): Promise<string | null> {
-    return (await this.resolve()).getKey(key)
+
+  private _cacheVersion = 0
+
+  setOnline(online: boolean): void {
+    if (this.inner) this.inner.setOnline(online)
   }
-  async setKey(key: string, value: string): Promise<void> {
-    return (await this.resolve()).setKey(key, value)
+
+  subscribe(fn: (s: OldSyncState) => void): () => void {
+    // Wrap the new engine's subscribe to emit old-state shape
+    let lastState = this.getState()
+    const unsub = (() => {
+      // Polling subscribe — the new engine doesn't expose the old state shape,
+      // so we poll every 2s and emit on change. This is a temporary shim.
+      const timer = setInterval(() => {
+        const next = this.getState()
+        if (
+          next.online !== lastState.online ||
+          next.pending !== lastState.pending ||
+          next.conflicts !== lastState.conflicts ||
+          next.cacheVersion !== lastState.cacheVersion ||
+          next.syncingCount !== lastState.syncingCount
+        ) {
+          lastState = next
+          fn(next)
+        }
+      }, 2000)
+      return () => clearInterval(timer)
+    })()
+    return unsub
   }
-  async deleteKey(key: string): Promise<void> {
-    return (await this.resolve()).deleteKey(key)
+
+  // ── Lifecycle ─────────────────────────────────────────────────
+
+  async init(): Promise<void> {
+    await this.ensure()
   }
-  async enqueue(entry: Omit<OutboxEntry, 'seq'>): Promise<void> {
-    return (await this.resolve()).enqueue(entry)
+
+  // ── Queue operations ──────────────────────────────────────────
+
+  newLocalId(): string {
+    const rnd =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID().slice(0, 8)
+        : Math.random().toString(36).slice(2, 10)
+    return `local-${rnd}`
   }
-  async pending(): Promise<OutboxEntry[]> {
-    return (await this.resolve()).pending()
+
+  async offlineRequest(
+    method: string,
+    path: string,
+    body: unknown,
+  ): Promise<unknown> {
+    const engine = await this.ensure()
+    // Extract collection from path
+    const clean = path.split('?')[0].replace(/^\/+|\/+$/g, '')
+    const parts = clean.split('/')
+    const collection = parts[0] || ''
+    const id = parts[1] && /^\d+$/.test(parts[1]) ? Number(parts[1]) : undefined
+
+    const result = await engine.offlineWrite(
+      method,
+      collection,
+      id,
+      body as Record<string, unknown>,
+    )
+    this._cacheVersion++
+    return { doc: { id: result.id }, queued: result.queued }
   }
+
+  // ── Sync ──────────────────────────────────────────────────────
+
+  async syncAll(): Promise<void> {
+    const engine = await this.ensure()
+    await engine.syncAll()
+    this._cacheVersion++
+  }
+
+  async flush(): Promise<{ pushed: number; conflicts: number }> {
+    const engine = await this.ensure()
+    const result = await engine.syncAll()
+    this._cacheVersion++
+    return {
+      pushed: result?.applied?.length ?? 0,
+      conflicts: result?.conflicts?.length ?? 0,
+    }
+  }
+
+  // ── Outbox management ─────────────────────────────────────────
+
   async pendingCount(): Promise<number> {
-    return (await this.resolve()).pendingCount()
+    const engine = await this.ensure()
+    return engine.getState().pending
   }
-  async remove(seq: number): Promise<void> {
-    return (await this.resolve()).remove(seq)
+
+  async getEntry(seq: number): Promise<OutboxEntry | null> {
+    const engine = await this.ensure()
+    const entry = await engine.getEntry(seq)
+    if (!entry) return null
+    return {
+      seq: entry.seq ?? 0,
+      method: entry.op === 'create' ? 'POST' : entry.op === 'update' ? 'PATCH' : 'DELETE',
+      path: `/${entry.collection}/${entry.id ?? ''}`,
+      body: entry.data,
+      queuedAt: entry.queuedAt,
+      localId: entry.localId,
+      conflict: entry.conflict,
+    }
   }
-  async markConflict(seq: number, message: string): Promise<void> {
-    return (await this.resolve()).markConflict(seq, message)
+
+  async listConflicts(): Promise<OutboxEntry[]> {
+    const engine = await this.ensure()
+    const entries = await engine.getConflicts()
+    return entries.map((e) => ({
+      seq: e.seq ?? 0,
+      method: e.op === 'create' ? 'POST' : e.op === 'update' ? 'PATCH' : 'DELETE',
+      path: `/${e.collection}/${e.id ?? ''}`,
+      body: e.data,
+      queuedAt: e.queuedAt,
+      localId: e.localId,
+      conflict: e.conflict,
+    }))
   }
-  async unmarkConflict(seq: number): Promise<void> {
-    return (await this.resolve()).unmarkConflict(seq)
+
+  async discard(seq: number): Promise<void> {
+    const engine = await this.ensure()
+    await engine.discard(seq)
+    this._cacheVersion++
   }
-  async cacheUpsert(collection: string, doc: Record<string, unknown>): Promise<void> {
-    return (await this.resolve()).cacheUpsert(collection, doc)
+
+  async retry(seq: number): Promise<void> {
+    const engine = await this.ensure()
+    await engine.retry(seq)
+    this._cacheVersion++
   }
-  async cacheList(collection: string): Promise<Record<string, unknown>[]> {
-    return (await this.resolve()).cacheList(collection)
+
+  async fetchServerVersion(
+    path: string,
+  ): Promise<Record<string, unknown> | null> {
+    // Use the old approach: fetch directly from the API
+    try {
+      const res = await fetch(path, { credentials: 'include' })
+      if (!res.ok) return null
+      const data = await res.json()
+      return data?.doc ?? data ?? null
+    } catch {
+      return null
+    }
   }
-  async cacheGet(collection: string, id: string | number): Promise<Record<string, unknown> | null> {
-    return (await this.resolve()).cacheGet(collection, id)
+
+  async forceApply(
+    entry: OutboxEntry,
+    mergedBody: unknown,
+  ): Promise<{ status: string; message?: string }> {
+    try {
+      const res = await fetch(entry.path, {
+        method: entry.method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mergedBody),
+        credentials: 'include',
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        return { status: 'conflict', message: data?.error || `HTTP ${res.status}` }
+      }
+      const engine = await this.ensure()
+      await engine.discard(entry.seq)
+      this._cacheVersion++
+      return { status: 'pushed' }
+    } catch (err) {
+      return { status: 'conflict', message: err instanceof Error ? err.message : String(err) }
+    }
   }
-  async clearCache(collection: string): Promise<void> {
-    return (await this.resolve()).clearCache(collection)
+
+  async updateEntry(seq: number, newBody: unknown): Promise<void> {
+    const engine = await this.ensure()
+    await engine.updateEntry(seq, newBody as Record<string, unknown>)
+  }
+
+  // ── KV passthroughs ───────────────────────────────────────────
+
+  async getKey(key: string): Promise<string | null> {
+    const engine = await this.ensure()
+    // Access the adapter directly for KV operations
+    return this.adapter!.getKey(key)
+  }
+
+  async setKey(key: string, value: string): Promise<void> {
+    await this.ensure()
+    await this.adapter!.setKey(key, value)
+  }
+
+  async deleteKey(key: string): Promise<void> {
+    await this.ensure()
+    await this.adapter!.deleteKey(key)
+  }
+
+  // ── Report cache ──────────────────────────────────────────────
+
+  async readReport(key: string): Promise<{ payload: unknown; syncedAt: number } | null> {
+    const raw = await this.getKey(key)
+    if (!raw) return null
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+
+  async writeReport(key: string, payload: unknown): Promise<void> {
+    await this.setKey(key, JSON.stringify({ payload, syncedAt: Date.now() }))
+  }
+
+  markReportsSynced(): void {
+    // No-op — the new engine handles this differently
+  }
+
+  markReportsStale(): void {
+    // No-op — the new engine handles this differently
+  }
+
+  // ── Pull / cache operations ───────────────────────────────────
+
+  async pull(collection: string, tenant?: string): Promise<number> {
+    // Use the old approach: fetch from API and write to cache
+    try {
+      const params = new URLSearchParams({ limit: '1000', depth: '1', sort: 'updatedAt' })
+      if (tenant) {
+        params.append('tenant', tenant)
+        params.append('where[tenant][equals]', tenant)
+      }
+      const cursor = await this.getKey(`cursor:${tenant ? `${tenant}:` : ''}${collection}`)
+      if (cursor) params.append('where[updatedAt][greater_than]', cursor)
+
+      const res = await fetch(`/api/${collection}?${params}`, { credentials: 'include' })
+      if (!res.ok) return 0
+      const data = await res.json()
+      const docs = data.docs || []
+      for (const doc of docs) {
+        await this.adapter!.upsert(collection, doc)
+      }
+      this._cacheVersion++
+      return docs.length
+    } catch {
+      return 0
+    }
+  }
+
+  async readCollection(
+    slug: string,
+    tenant?: string,
+  ): Promise<{ docs: Record<string, unknown>[]; totalDocs: number } | null> {
+    const pulled = await this.getKey(`pulled:${tenant ? `${tenant}:` : ''}${slug}`)
+    if (!pulled) return null
+    const docs = await this.adapter!.list(tenant ? `${tenant}:${slug}` : slug)
+    return { docs, totalDocs: docs.length }
+  }
+
+  async readDoc(slug: string, id: string): Promise<Record<string, unknown> | null> {
+    return this.adapter!.get(slug, id)
+  }
+
+  async invalidate(collection: string, tenant?: string): Promise<void> {
+    await this.adapter!.clearCollection(tenant ? `${tenant}:${collection}` : collection)
+    await this.deleteKey(`cursor:${tenant ? `${tenant}:` : ''}${collection}`)
+    await this.deleteKey(`pulled:${tenant ? `${tenant}:` : ''}${collection}`)
+  }
+
+  async warmCache(
+    collection: string,
+    docs: Record<string, unknown>[],
+    tenant?: string,
+  ): Promise<void> {
+    const key = tenant ? `${tenant}:${collection}` : collection
+    await this.setKey(`pulled:${key}`, '1')
+    for (const doc of docs) {
+      await this.adapter!.upsert(key, doc)
+    }
+    this._cacheVersion++
+  }
+
+  async warmReports(): Promise<void> {
+    // No-op — reports are fetched on demand
   }
 }
 
 /** React hook reflecting the engine's sync state. */
-export function useSyncState(): SyncState {
+export function useSyncState(): OldSyncState {
   const e = getEngine()
-  const [state, setState] = useState<SyncState>(() => e.getState())
+  const [state, setState] = useState<OldSyncState>(() => e.getState())
 
   useEffect(() => {
     void e.init()

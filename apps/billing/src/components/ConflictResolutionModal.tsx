@@ -84,7 +84,7 @@ export default function ConflictResolutionModal({ entry, onClose, onResolved }: 
       if (result.status === 'pushed') {
         onResolved()
       } else {
-        setError(result.message)
+        setError(result.message ?? 'Unknown error')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to apply')
