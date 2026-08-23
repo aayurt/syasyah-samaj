@@ -817,7 +817,7 @@ export default function Vouchers() {
         <h1 className="text-lg font-semibold text-slate-900">Vouchers</h1>
         <button
           data-tour="new-voucher"
-          onClick={() => navigate('/vouchers/new')}
+          onClick={() => navigate(typeFilter ? `/vouchers/new/${typeFilter}` : '/vouchers/new')}
           className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           <Plus size={14} />
