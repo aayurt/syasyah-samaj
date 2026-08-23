@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownLeft,
@@ -171,9 +172,18 @@ export default function Vouchers() {
   const [form, setForm] = useState<FormState>(emptyForm())
   const [saving, setSaving] = useState(false)
   const [nextNumber, setNextNumber] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || '')
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
   const [loading, setLoading] = useState(true)
+
+  // Sync type/status filters to URL search params
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams)
+    if (typeFilter) params.set('type', typeFilter); else params.delete('type')
+    if (statusFilter) params.set('status', statusFilter); else params.delete('status')
+    setSearchParams(params, { replace: true })
+  }, [typeFilter, statusFilter]) // eslint-disable-line react-hooks/exhaustive-deps
   const { formatDate } = useCalendar()
   const [printDoc, setPrintDoc] = useState<Document | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
