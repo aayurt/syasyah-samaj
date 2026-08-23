@@ -181,6 +181,7 @@ export default function Vouchers() {
   const [menuFor, setMenuFor] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [viewDoc, setViewDoc] = useState<Document | null>(null)
+  const [receiptSortAsc, setReceiptSortAsc] = useState(true)
   /** Outbox seq of a conflicted create being resumed into this form. */
   const resumedSeqRef = useRef<number | null>(null)
   // TDS toggle state (separate from tax lines for cleaner UX)
@@ -2115,7 +2116,10 @@ export default function Vouchers() {
                   const dParty = d.party && typeof d.party === 'object' ? (d.party as { id: number }).id : d.party
                   return Number(dParty) === Number(invParty)
                 })
-                const allReceipts = [...receipts, ...unlinkedReceipts].sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+                const allReceipts = [...receipts, ...unlinkedReceipts].sort((a, b) => {
+                  const cmp = (a.date || '').localeCompare(b.date || '')
+                  return receiptSortAsc ? cmp : -cmp
+                })
                 const totalPaid = allReceipts.reduce((s, d) => s + (Number(d.grossTotal) || 0), 0)
                 const ps = getPaymentStatus(viewDoc)
 
@@ -2147,7 +2151,9 @@ export default function Vouchers() {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-                              <th className="py-2">Date</th>
+                              <th className="py-2 cursor-pointer select-none hover:text-slate-700" onClick={() => setReceiptSortAsc(!receiptSortAsc)}>
+                                Date {receiptSortAsc ? '↑' : '↓'}
+                              </th>
                               <th className="py-2">Number</th>
                               <th className="py-2 text-right">Amount</th>
                               <th className="py-2 text-center">Type</th>
