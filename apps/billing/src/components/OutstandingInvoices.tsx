@@ -26,25 +26,6 @@ function getPartyId(p: unknown): string | null {
   return null
 }
 
-/**
- * Build a Payload where clause that includes BOTH tenant + status filters
- * in a single `and` array, avoiding the bug where `api()` sends
- * `where=<json>` and `where[tenant][equals]=<id>` as separate params
- * (the latter overwrites the former).
- */
-function buildWhere(tenantId: number | string | undefined, extra?: Record<string, unknown>) {
-  const conditions: Record<string, unknown>[] = [
-    { status: { equals: 'posted' } },
-  ]
-  if (tenantId) {
-    conditions.push({ tenant: { equals: Number(tenantId) } })
-  }
-  if (extra) {
-    conditions.push(extra)
-  }
-  return JSON.stringify(conditions.length === 1 ? conditions[0] : { and: conditions })
-}
-
 export default function OutstandingInvoices({
   partyId,
   docType,
@@ -66,7 +47,6 @@ export default function OutstandingInvoices({
   const tqKey = useMemo(() => JSON.stringify(tenantQuery), [tenantQuery])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableTenantQuery = useMemo(() => JSON.parse(tqKey), [tqKey])
-  const tenantId = stableTenantQuery.tenant
 
   useEffect(() => {
     if (!partyId) { setInvoices([]); return }
@@ -75,22 +55,20 @@ export default function OutstandingInvoices({
 
     const fetchAll = async () => {
       try {
-        // Build where clause with tenant + status in a SINGLE where param
-        const whereStr = buildWhere(tenantId)
-
-        // 1. Fetch all posted documents
+        // Fetch documents — simple where clause, filter the rest client-side
         const res = await api<{ docs: Document[] }>('/documents', {
           query: {
             limit: 500,
             depth: 0,
             sort: '-date',
-            where: whereStr,
+            ...stableTenantQuery,
           },
         })
         if (!alive) return
 
-        // Client-side filter: correct docType + correct party
+        // Client-side filter: posted only + correct docType + correct party
         const docs = (res.docs || []).filter((d) => {
+          if (d.status !== 'posted') return false
           if (d.docType !== invoiceType) return false
           const dPartyId = getPartyId((d as any).party)
           return dPartyId === String(partyId)
@@ -98,23 +76,24 @@ export default function OutstandingInvoices({
 
         if (docs.length === 0) { setInvoices([]); setLoading(false); return }
 
-        // 2. Fetch all posted receipts/payments
+        // Fetch receipts/payments
         const linked = await api<{ docs: Document[] }>('/documents', {
           query: {
             limit: 1000,
             depth: 0,
-            where: whereStr,
+            ...stableTenantQuery,
           },
         }).catch(() => ({ docs: [] as Document[] }))
 
-        // Client-side filter: only this docType + this party
+        // Client-side filter: posted only + correct docType + correct party
         const linkedDocs = (linked.docs || []).filter((d: Document) => {
+          if (d.status !== 'posted') return false
           if (d.docType !== docType) return false
           const dPartyId = getPartyId((d as any).party)
           return dPartyId === String(partyId)
         })
 
-        // 1. Count linked receipts per invoice
+        // Build paid map from linked receipts (linkedInvoice field)
         const paidMap = new Map<number, number>()
         for (const d of linkedDocs) {
           const invId = (d as any).linkedInvoice
@@ -124,7 +103,7 @@ export default function OutstandingInvoices({
           }
         }
 
-        // 2. Unlinked receipts for this party — pro-rate against oldest invoices first
+        // Unlinked receipts — pro-rate against oldest invoices first
         const unlinkedTotal = linkedDocs
           .filter((d: Document) => !(d as any).linkedInvoice)
           .reduce((sum: number, d: Document) => sum + (Number(d.grossTotal) || 0), 0)
@@ -133,7 +112,7 @@ export default function OutstandingInvoices({
         const sorted = [...docs].sort((a, b) => (a.date || '').localeCompare(b.date || ''))
         let unlinkedRemaining = unlinkedTotal
 
-        // Show ALL invoices (including paid ones) with their status
+        // Build results with outstanding amounts
         const results: OutstandingInvoice[] = []
         for (const inv of sorted) {
           const gross = Number(inv.grossTotal) || 0
@@ -156,7 +135,7 @@ export default function OutstandingInvoices({
 
     fetchAll()
     return () => { alive = false }
-  }, [partyId, invoiceType, docType, tqKey, tenantId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [partyId, invoiceType, docType, tqKey, stableTenantQuery]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Client-side search + date filtering
   const filtered = useMemo(() => {
