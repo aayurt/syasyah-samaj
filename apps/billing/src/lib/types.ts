@@ -171,6 +171,20 @@ export interface Document {
   voidedAmount?: number
 }
 
+
+
+/** Effective amount of a document after subtracting voided items.
+ *  Used by reports so partially-voided invoices don't inflate totals. */
+export function effectiveAmount(d: Document): number {
+  return (Number(d.grossTotal) || 0) - (Number(d.voidedAmount) || 0)
+}
+
+/** Effective net amount (for tax reports that use netTotal). */
+export function effectiveNet(d: Document): number {
+  const base = Number(d.netTotal) || Number(d.grossTotal) || 0
+  return base - (Number(d.voidedAmount) || 0)
+}
+
 export interface Item {
   id: number
   code?: string

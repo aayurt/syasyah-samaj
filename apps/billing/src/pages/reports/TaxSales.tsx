@@ -8,7 +8,7 @@ import { useCalendar } from '../../lib/calendar'
 import { useTenant, useTenantQuery } from '../../lib/tenant'
 import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
-import type { Document, Party, TaxType } from '../../lib/types'
+import { effectiveNet, type Document, type Party, type TaxType } from '../../lib/types'
 
 interface TaxEntry {
   docId: number
@@ -65,7 +65,7 @@ export default function TaxSales() {
           if (!tt) continue
           if (tt.nature === 'withholding') continue // skip TDS for tax-sales
           const rate = Number(tl.rate) || Number(tt.rate) || 0
-          const lineSum = Number(doc.netTotal) || Number(doc.grossTotal) || 0
+          const lineSum = effectiveNet(doc)
           const taxAmt = (lineSum * rate) / 100
           rows.push({
             docId: doc.id, date: doc.date || '', number: doc.number || null,

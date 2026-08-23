@@ -9,7 +9,7 @@ import { useTenant, useTenantQuery } from '../../lib/tenant'
 import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
 import SearchBox from '../../components/SearchBox'
-import { DOC_TYPE_LABELS, type Document, type Party } from '../../lib/types'
+import { DOC_TYPE_LABELS, effectiveAmount, type Document, type Party } from '../../lib/types'
 
 interface PartyDoc extends Document {
   partyName?: string
@@ -57,7 +57,7 @@ export default function PartyStatement() {
     return docs.map((d) => {
       // For sales: debit the customer (positive = they owe us)
       // For purchase: credit the vendor (positive = we owe them)
-      const amt = Number(d.grossTotal) || 0
+      const amt = effectiveAmount(d)
       if (d.docType === 'sales-invoice' || d.docType === 'receipt-voucher') bal += amt
       else if (d.docType === 'purchase-invoice' || d.docType === 'payment-voucher') bal -= amt
       else if (d.docType === 'credit-note') bal -= amt
@@ -73,18 +73,18 @@ export default function PartyStatement() {
     }), [running, query])
 
   const party = parties.find((p) => String(p.id) === selectedParty)
-  const totalDebit = docs.filter((d) => ['sales-invoice', 'debit-note'].includes(d.docType)).reduce((s, d) => s + (Number(d.grossTotal) || 0), 0)
-  const totalCredit = docs.filter((d) => ['purchase-invoice', 'credit-note', 'receipt-voucher', 'payment-voucher'].includes(d.docType)).reduce((s, d) => s + (Number(d.grossTotal) || 0), 0)
+  const totalDebit = docs.filter((d) => ['sales-invoice', 'debit-note'].includes(d.docType)).reduce((s, d) => s + effectiveAmount(d), 0)
+  const totalCredit = docs.filter((d) => ['purchase-invoice', 'credit-note', 'receipt-voucher', 'payment-voucher'].includes(d.docType)).reduce((s, d) => s + effectiveAmount(d), 0)
 
   const csv = () => downloadCsv(`${party?.name || 'party'}-statement.csv`,
     ['Date', 'Type', 'Number', 'Narration', 'Amount', 'Running Balance'],
-    filtered.map((d) => [formatDate(d.date), DOC_TYPE_LABELS[d.docType] || d.docType, d.number || '', d.narration || '', d.grossTotal || 0, d.runningBalance]))
+    filtered.map((d) => [formatDate(d.date), DOC_TYPE_LABELS[d.docType] || d.docType, d.number || '', d.narration || '', effectiveAmount(d), d.runningBalance]))
 
   const pdf = () => exportReportPdf({
     filename: `${party?.name || 'party'}-statement.pdf`, title: `Party Statement — ${party?.name || ''}`,
     meta: [['Total Debit', fmt(totalDebit)], ['Total Credit', fmt(totalCredit)], ['Balance', fmt(running[running.length - 1]?.runningBalance || 0)]],
     tables: [{ columns: ['Date', 'Type', 'Number', 'Narration', 'Amount', 'Balance'],
-      rows: filtered.map((d) => [formatDate(d.date), DOC_TYPE_LABELS[d.docType] || d.docType, d.number || '', d.narration || '', Number(d.grossTotal) || 0, d.runningBalance]) }],
+      rows: filtered.map((d) => [formatDate(d.date), DOC_TYPE_LABELS[d.docType] || d.docType, d.number || '', d.narration || '', effectiveAmount(d), d.runningBalance]) }],
   })
 
   return (
@@ -157,7 +157,7 @@ export default function PartyStatement() {
                     <td className="px-4 py-2 text-slate-600">{DOC_TYPE_LABELS[d.docType] || d.docType}</td>
                     <td className="px-4 py-2 font-mono text-slate-700">{d.number || '—'}</td>
                     <td className="px-4 py-2 text-slate-800">{d.narration || '—'}</td>
-                    <td className="px-4 py-2 text-right font-mono text-slate-800">{fmt(Number(d.grossTotal) || 0)}</td>
+                    <td className="px-4 py-2 text-right font-mono text-slate-800">{fmt(effectiveAmount(d))}</td>
                     <td className="px-4 py-2 text-right font-mono font-medium text-slate-800">{fmt(d.runningBalance)}</td>
                   </tr>
                 ))}

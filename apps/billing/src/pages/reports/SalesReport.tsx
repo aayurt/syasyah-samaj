@@ -11,6 +11,7 @@ import DataStatus from '../../components/DataStatus'
 import SearchBox from '../../components/SearchBox'
 import { StatusPill } from '../Dashboard'
 import type { Document, Party } from '../../lib/types'
+import { effectiveAmount } from '../../lib/types'
 
 type StatusFilter = 'all' | 'draft' | 'posted' | 'void'
 
@@ -52,7 +53,7 @@ function computePayments(
   for (const inv of invoices) {
     const invParty = inv.party && typeof inv.party === 'object' ? (inv.party as Party).id : (inv.party as number || null)
     const invDate = inv.date || ''
-    const invAmount = Number(inv.grossTotal) || 0
+    const invAmount = effectiveAmount(inv)
     const partyReceipts = receiptsByParty.get(invParty) || []
     // Match receipts dated on or after the invoice, up to invoice amount
     let remaining = invAmount
@@ -144,8 +145,8 @@ export default function SalesReport() {
 
   const rows: Row[] = useMemo(() => {
     const all = [
-      ...invoices.map((d) => ({ doc: d, partyName: partyName(d), amount: Number(d.grossTotal) || 0, received: paymentMap.get(d.id) || 0, balance: (Number(d.grossTotal) || 0) - (paymentMap.get(d.id) || 0), type: 'sale' as const })),
-      ...creditNotes.map((d) => ({ doc: d, partyName: partyName(d), amount: Number(d.grossTotal) || 0, received: 0, balance: 0, type: 'return' as const })),
+      ...invoices.map((d) => ({ doc: d, partyName: partyName(d), amount: effectiveAmount(d), received: paymentMap.get(d.id) || 0, balance: effectiveAmount(d) - (paymentMap.get(d.id) || 0), type: 'sale' as const })),
+      ...creditNotes.map((d) => ({ doc: d, partyName: partyName(d), amount: effectiveAmount(d), received: 0, balance: 0, type: 'return' as const })),
     ]
     return all.filter((r) => {
       if (statusFilter !== 'all' && r.doc.status !== statusFilter) return false
@@ -157,7 +158,7 @@ export default function SalesReport() {
     })
   }, [invoices, creditNotes, paymentMap, statusFilter, query, parties])
 
-  const totalSales = invoices.reduce((s, d) => s + (Number(d.grossTotal) || 0), 0)
+  const totalSales = invoices.reduce((s, d) => s + effectiveAmount(d), 0)
   const totalReceived = invoices.reduce((s, d) => s + (paymentMap.get(d.id) || 0), 0)
   const totalUnpaid = totalSales - totalReceived
 

@@ -4,7 +4,7 @@ import { api, fmt } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
 import { useTenantQuery } from '../lib/tenant'
 import { adToBsString, bsToAdString } from '../lib/nepaliDate'
-import type { Document } from '../lib/types'
+import { effectiveAmount, type Document } from '../lib/types'
 
 interface Props {
   partyId: string
@@ -123,7 +123,7 @@ export default function OutstandingInvoices({
         // Build results with outstanding amounts
         const results: OutstandingInvoice[] = []
         for (const inv of sorted) {
-          const gross = Number(inv.grossTotal) || 0
+          const gross = effectiveAmount(inv)
           let paid = paidMap.get(inv.id) || 0
 
           // Apply unlinked receipts oldest-first
@@ -311,7 +311,7 @@ export default function OutstandingInvoices({
           </button>
 
           {filtered.map((inv) => {
-            const total = Number(inv.grossTotal) || 0
+            const total = effectiveAmount(inv)
             const paid = inv.paidAmount
             const outstanding = inv.outstanding
             const isPaid = outstanding <= 0.01

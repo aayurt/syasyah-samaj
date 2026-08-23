@@ -24,6 +24,7 @@ import {
   type Account,
   type BillingSettings,
   type DocType,
+  effectiveAmount,
   type Document,
   type DocumentLine,
   type Item,
@@ -781,7 +782,7 @@ export default function Vouchers() {
 
   /** Calculate payment status for a sales/purchase invoice from loaded docs */
   const getPaymentStatus = (inv: Document): { status: 'paid' | 'partial' | 'unpaid'; paid: number; outstanding: number } => {
-    const gross = Number(inv.grossTotal) || 0
+    const gross = effectiveAmount(inv)
     const invParty = inv.party && typeof inv.party === 'object' ? (inv.party as { id: number }).id : inv.party
     const invId = inv.id
 
@@ -1800,7 +1801,7 @@ export default function Vouchers() {
                 </td>
                 <td className="px-4 py-2 text-slate-700">{partyName(d)}</td>
                 <td className="px-4 py-2 text-right font-mono text-slate-800">
-                  {fmt(Number(d.grossTotal) || 0)}
+                  {fmt(effectiveAmount(d))}
                 </td>
                 <td className="px-4 py-2">
                   <StatusPill status={d.status} />
@@ -1814,7 +1815,7 @@ export default function Vouchers() {
                         ps.status === 'partial' ? 'bg-amber-100 text-amber-700' :
                         'bg-slate-100 text-slate-500'
                       }`}>
-                        {ps.status === 'paid' ? 'Paid' : ps.status === 'partial' ? `Partial (${Math.round((ps.paid / (Number(d.grossTotal) || 1)) * 100)}%)` : 'Unpaid'}
+                        {ps.status === 'paid' ? 'Paid' : ps.status === 'partial' ? `Partial (${Math.round((ps.paid / (effectiveAmount(d) || 1)) * 100)}%)` : 'Unpaid'}
                       </span>
                     )
                   })() : '—'}
@@ -2239,10 +2240,10 @@ export default function Vouchers() {
                             ps.status === 'partial' ? 'bg-amber-100 text-amber-700' :
                             'bg-slate-100 text-slate-500'
                           }`}>
-                            {ps.status === 'paid' ? 'Fully Paid' : ps.status === 'partial' ? `Partial (${Math.round((ps.paid / (Number(viewDoc.grossTotal) || 1)) * 100)}%)` : 'Unpaid'}
+                            {ps.status === 'paid' ? 'Fully Paid' : ps.status === 'partial' ? `Partial (${Math.round((ps.paid / (effectiveAmount(viewDoc) || 1)) * 100)}%)` : 'Unpaid'}
                           </span>
                           <span className="text-slate-500">
-                            Outstanding: Rs. {fmt(ps.outstanding)} of Rs. {fmt(Number(viewDoc.grossTotal) || 0)}
+                            Outstanding: Rs. {fmt(ps.outstanding)} of Rs. {fmt(effectiveAmount(viewDoc))}
                           </span>
                         </div>
                       </>
