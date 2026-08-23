@@ -1104,6 +1104,26 @@ export const Documents: CollectionConfig = {
         if (!id) {
           return Response.json({ error: 'Missing document id' }, { status: 400 })
         }
+        // Parse optional request body for the reason
+        let reason = 'Full void'
+        try {
+          const chunks: Buffer[] = []
+          const reader = (req as any).body?.getReader?.()
+          if (reader) {
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+              chunks.push(value)
+            }
+            const parsed = JSON.parse(Buffer.concat(chunks).toString())
+            if (parsed.reason) reason = parsed.reason
+          } else if ((req as any).json) {
+            const parsed = await (req as any).json()
+            if (parsed.reason) reason = parsed.reason
+          }
+        } catch {
+          // No body or invalid JSON — use default reason
+        }
         const transactionID =
           (await req.payload.db.beginTransaction()) ?? undefined
         try {
@@ -1158,7 +1178,7 @@ export const Documents: CollectionConfig = {
               date: new Date().toISOString().slice(0, 10),
               party: doc.party,
               status: 'posted',
-              narration: `Full void of ${doc.number || doc.id}`,
+              narration: `${reason} — ${doc.number || doc.id}`,
               lines: noteLines,
               netTotal: toNum(doc.netTotal) || 0,
               grossTotal: toNum(doc.grossTotal) || 0,
@@ -1176,7 +1196,7 @@ export const Documents: CollectionConfig = {
           const voidedItems = allLines.map((l: any, idx: number) => ({
             itemIndex: idx,
             quantity: toNum(l.qty) || 1,
-            reason: 'Full void',
+            reason: reason,
             creditNoteId: creditNote.id,
             noteNumber: cnNumber,
             voidedAt: new Date().toISOString(),

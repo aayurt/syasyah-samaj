@@ -678,7 +678,8 @@ export default function Vouchers() {
     try {
       if (voidItems.length === (voidDialogDoc.lines || []).length) {
         // Full void
-        await api(`/documents/${voidDialogDoc.id}/void`, { method: 'POST' })
+        const combinedReason = voidItems.map(vi => vi.reason).filter(Boolean).join('; ') || 'Full void'
+        await api(`/documents/${voidDialogDoc.id}/void`, { method: 'POST', body: JSON.stringify({ reason: combinedReason }) })
       } else {
         // Partial void
         await api(`/documents/${voidDialogDoc.id}/partial-void`, {
