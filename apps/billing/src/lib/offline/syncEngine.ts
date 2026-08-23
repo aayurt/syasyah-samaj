@@ -566,6 +566,70 @@ export class SyncEngine {
     return entries.filter((e) => e.conflict)
   }
 
+  /** Fetch the current server version of a document for conflict comparison. */
+  async fetchServerVersion(
+    path: string,
+  ): Promise<Record<string, unknown> | null> {
+    const { slug, id } = parsePath(path)
+    if (!slug || !id) return null
+    try {
+      const res = await this.fetchWithTimeout(
+        `${API_BASE}/api/${slug}/${id}?depth=1`,
+        { credentials: 'include' },
+        10_000,
+      )
+      if (!res.ok) return null
+      const data = await res.json()
+      return data?.doc ?? data ?? null
+    } catch {
+      return null
+    }
+  }
+
+  /** Force-apply a merged body to the server, bypassing the conflict check.
+   * Used when the user resolves a conflict by choosing or merging values. */
+  async forceApply(
+    entry: OutboxEntry,
+    mergedBody: unknown,
+  ): Promise<{ status: 'pushed' } | { status: 'conflict'; message: string }> {
+    const { slug, id } = parsePath(entry.path)
+    const path = this.rewrite(entry.path, new Map())
+    const body = this.rewriteBody(mergedBody, new Map())
+    const targetId = id ? this.rewrite(id, new Map()) : null
+    const url = targetId
+      ? `${API_BASE}/api${path}`
+      : `${API_BASE}/api${path}`
+    const res = await fetch(url, {
+      method: entry.method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      credentials: 'include',
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      const msg = data?.errors?.[0]?.message || data?.message || `HTTP ${res.status}`
+      return { status: 'conflict', message: msg }
+    }
+    // Success — remove from outbox
+    await this.db.remove(entry.seq)
+    await this.refreshCounts()
+    return { status: 'pushed' }
+  }
+
+  /** Update a queued entry's body (for merge edits) and clear conflict flag. */
+  async updateEntry(
+    seq: number,
+    newBody: unknown,
+  ): Promise<void> {
+    const entry = await this.getEntry(seq)
+    if (!entry) return
+    // Remove old, re-enqueue with updated body
+    await this.db.remove(seq)
+    const { conflict: _c, ...rest } = entry
+    await this.db.enqueue({ ...rest, body: newBody })
+    await this.refreshCounts()
+  }
+
   /** Full manual/background sync: flush queued writes, pull collections,
    * warm the core reports. Shared by the header button and the banner.
    * Re-entrant calls (e.g. the 30s loop firing while a slow pull is still

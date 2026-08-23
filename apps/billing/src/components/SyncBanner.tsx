@@ -13,6 +13,7 @@ import { useCalendar } from '../lib/calendar'
 import { getEngine, fmt, useSyncState } from '../lib/api'
 import type { OutboxEntry } from '../lib/offline/types'
 import { DOC_TYPE_LABELS } from '../lib/types'
+import ConflictResolutionModal from './ConflictResolutionModal'
 
 /** Human-readable label for a queued write's collection. */
 const COLLECTION_LABELS: Record<string, string> = {
@@ -164,6 +165,7 @@ export default function SyncBanner() {
   const [syncing, setSyncing] = useState(false)
   const [conflicts, setConflicts] = useState<OutboxEntry[]>([])
   const [viewEntry, setViewEntry] = useState<OutboxEntry | null>(null)
+  const [resolveEntry, setResolveEntry] = useState<OutboxEntry | null>(null)
   const wasOnline = useRef(state.online)
 
   const syncNow = async () => {
@@ -248,12 +250,12 @@ export default function SyncBanner() {
         </span>
         <span className="flex items-center gap-1">
           <button
-            onClick={() => setViewEntry(c)}
-            title="View the queued draft's data"
+            onClick={() => setResolveEntry(c)}
+            title="Compare your version with the server and resolve"
             className="flex items-center gap-1 rounded border border-red-300 bg-white px-2 py-0.5 font-medium hover:bg-red-100"
           >
             <Eye size={11} />
-            View
+            Resolve
           </button>
           {canEdit(c) && (
             <button
@@ -418,6 +420,16 @@ export default function SyncBanner() {
             </div>
           </div>
         </div>
+      )}
+      {resolveEntry && (
+        <ConflictResolutionModal
+          entry={resolveEntry}
+          onClose={() => setResolveEntry(null)}
+          onResolved={() => {
+            setResolveEntry(null)
+            void loadConflicts()
+          }}
+        />
       )}
     </>
   )

@@ -55,6 +55,17 @@ export default function SyncStatus() {
         {syncing ? 'Syncing…' : `${state.pending} to sync`}
       </button>
     )
+  } else if (state.syncingCount > 0) {
+    // Background sync in progress (periodic or pull)
+    pill = (
+      <span
+        className="flex items-center gap-1.5 rounded border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-600"
+        title="Background sync in progress"
+      >
+        <RefreshCw size={13} className="animate-spin" />
+        Refreshing…
+      </span>
+    )
   } else {
     pill = (
       <span
