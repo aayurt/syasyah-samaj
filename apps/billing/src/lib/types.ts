@@ -165,6 +165,7 @@ export interface Document {
     quantity: number
     reason?: string
     creditNoteId?: number | null
+    noteNumber?: string
     voidedAt?: string
     voidedBy?: string
   }>

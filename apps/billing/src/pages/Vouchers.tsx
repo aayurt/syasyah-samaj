@@ -2293,11 +2293,15 @@ export default function Vouchers() {
                                 <td className="py-2 text-right font-mono text-red-700">Rs. {fmt(amt)}</td>
                                 <td className="py-2 text-red-600 text-xs">{vi.reason || '—'}</td>
                                 <td className="py-2">
-                                  {vi.creditNoteId && (
-                                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
-                                      CN/DN linked
+                                  {vi.noteNumber ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                                      {vi.noteNumber}
                                     </span>
-                                  )}
+                                  ) : vi.creditNoteId ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
+                                      CN/DN #{vi.creditNoteId}
+                                    </span>
+                                  ) : '—'}
                                 </td>
                               </tr>
                             )

@@ -1137,6 +1137,10 @@ export interface Document {
          * The credit/debit note created for this voided item
          */
         creditNoteId?: (number | null) | Document;
+        /**
+         * The CN/DN document number (e.g. CN-2026-0001)
+         */
+        noteNumber?: string | null;
         voidedAt?: string | null;
         voidedBy?: string | null;
         id?: string | null;
@@ -2594,6 +2598,7 @@ export interface DocumentsSelect<T extends boolean = true> {
         quantity?: T;
         reason?: T;
         creditNoteId?: T;
+        noteNumber?: T;
         voidedAt?: T;
         voidedBy?: T;
         id?: T;

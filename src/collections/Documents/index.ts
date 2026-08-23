@@ -1137,6 +1137,9 @@ export const Documents: CollectionConfig = {
           const isSale = ['sales-invoice', 'sales-order'].includes(doc.docType)
           const creditNoteType = isSale ? 'credit-note' : 'debit-note'
 
+          // Generate a number for the credit/debit note
+          const cnNumber = await nextNumber(req.payload, creditNoteType, new Date().toISOString().slice(0, 10), undefined, doc.tenant)
+
           // Create credit/debit note for the full amount
           const noteLines = (doc.lines || []).map((l: any) => ({
             description: l.description || 'Voided item',
@@ -1149,6 +1152,7 @@ export const Documents: CollectionConfig = {
             collection: 'documents',
             data: {
               docType: creditNoteType,
+              number: cnNumber,
               date: new Date().toISOString().slice(0, 10),
               party: doc.party,
               status: 'posted',
@@ -1172,6 +1176,7 @@ export const Documents: CollectionConfig = {
             quantity: toNum(l.qty) || 1,
             reason: 'Full void',
             creditNoteId: creditNote.id,
+            noteNumber: cnNumber,
             voidedAt: new Date().toISOString(),
             voidedBy: req.user?.email || 'system',
           }))
@@ -1325,6 +1330,9 @@ export const Documents: CollectionConfig = {
           const isSale = ['sales-invoice', 'sales-order'].includes(doc.docType)
           const creditNoteType = isSale ? 'credit-note' : 'debit-note'
 
+          // Generate a number for the credit/debit note
+          const cnNumber = await nextNumber(req.payload, creditNoteType, new Date().toISOString().slice(0, 10), undefined, doc.tenant)
+
           // Create credit/debit note
           const noteLines = items.map((item) => {
             const line = lines[item.itemIndex]
@@ -1341,6 +1349,7 @@ export const Documents: CollectionConfig = {
             collection: 'documents',
             data: {
               docType: creditNoteType,
+              number: cnNumber,
               date: new Date().toISOString().slice(0, 10),
               party: doc.party,
               status: 'posted',
@@ -1360,6 +1369,7 @@ export const Documents: CollectionConfig = {
           // Link credit note back to the original doc's voided items
           for (let i = 0; i < voidedItems.length; i++) {
             voidedItems[i].creditNoteId = creditNote.id
+            voidedItems[i].noteNumber = cnNumber
           }
 
           // Update original document with voided items
@@ -1968,6 +1978,11 @@ export const Documents: CollectionConfig = {
           type: 'relationship',
           relationTo: 'documents',
           admin: { description: 'The credit/debit note created for this voided item' },
+        },
+        {
+          name: 'noteNumber',
+          type: 'text',
+          admin: { description: 'The CN/DN document number (e.g. CN-2026-0001)' },
         },
         {
           name: 'voidedAt',
