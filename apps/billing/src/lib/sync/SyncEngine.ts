@@ -1,0 +1,428 @@
+import type { StorageAdapter, SyncOperation } from './StorageAdapter'
+
+/**
+ * SyncResult: the response from POST /api/sync
+ */
+export interface SyncResult {
+  serverTime: string
+  applied: Array<{
+    index: number
+    localId?: string
+    serverId?: number
+    status: string
+  }>
+  conflicts: Array<{
+    index: number
+    reason: string
+  }>
+  changes: Array<{
+    op: string
+    collection: string
+    data: Record<string, unknown>
+  }>
+}
+
+/**
+ * SyncState: current state of the sync engine for UI display
+ */
+export interface SyncState {
+  online: boolean
+  pending: number
+  conflicts: number
+  lastSyncAt: string | null
+  syncing: boolean
+}
+
+/**
+ * SyncEngine: shared sync logic for both Web (IndexedDB) and Tauri (SQLite).
+ * Only the StorageAdapter differs between platforms.
+ */
+export class SyncEngine {
+  private online = true
+  private syncing = false
+  private lastSyncAt: string | null = null
+  private listeners = new Set<(state: SyncState) => void>()
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null
+  private syncTimer: ReturnType<typeof setInterval> | null = null
+  private consecutiveFailures = 0
+
+  constructor(
+    private storage: StorageAdapter,
+    private apiBase: string = '',
+  ) {}
+
+  // ── Lifecycle ─────────────────────────────────────────────────
+
+  async init(): Promise<void> {
+    await this.storage.ready()
+    this.lastSyncAt = await this.storage.getKey('lastSyncAt')
+    this.startHeartbeat()
+    this.startPeriodicSync()
+    this.emit()
+  }
+
+  destroy(): void {
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer)
+    if (this.syncTimer) clearInterval(this.syncTimer)
+  }
+
+  // ── State ─────────────────────────────────────────────────────
+
+  getState(): SyncState {
+    return {
+      online: this.online,
+      pending: this.pendingHint,
+      conflicts: this.conflictsHint,
+      lastSyncAt: this.lastSyncAt,
+      syncing: this.syncing,
+    }
+  }
+
+  private pendingHint = 0
+  private conflictsHint = 0
+
+  private async refreshCounts(): Promise<void> {
+    try {
+      const all = await this.storage.getAll()
+      this.pendingHint = all.filter((e) => !e.conflict).length
+      this.conflictsHint = all.filter((e) => e.conflict).length
+      this.emit()
+    } catch {
+      // storage unavailable — keep previous hints
+    }
+  }
+
+  subscribe(fn: (state: SyncState) => void): () => void {
+    this.listeners.add(fn)
+    return () => this.listeners.delete(fn)
+  }
+
+  private emit() {
+    const state = this.getState()
+    for (const fn of this.listeners) {
+      try {
+        fn(state)
+      } catch {
+        // throwing listener must not break others
+      }
+    }
+  }
+
+  setOnline(online: boolean) {
+    if (this.online === online) return
+    this.online = online
+    this.emit()
+  }
+
+  // ── Heartbeat (online detection) ──────────────────────────────
+
+  private startHeartbeat() {
+    if (this.heartbeatTimer) return
+    this.heartbeatTimer = setInterval(() => {
+      void this.heartbeat()
+    }, 30_000)
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => this.setOnline(true))
+      window.addEventListener('offline', () => {
+        this.consecutiveFailures++
+        if (this.consecutiveFailures >= 2) this.setOnline(false)
+      })
+    }
+  }
+
+  private async heartbeat() {
+    try {
+      const res = await fetch(`${this.apiBase}/api/globals/billing-settings?depth=0&limit=1`, {
+        credentials: 'include',
+        signal: AbortSignal.timeout(10_000),
+      })
+      if (res.ok) {
+        this.consecutiveFailures = 0
+        if (!this.online) this.setOnline(true)
+      } else {
+        this.consecutiveFailures++
+        if (this.consecutiveFailures >= 2) this.setOnline(false)
+      }
+    } catch {
+      this.consecutiveFailures++
+      if (this.consecutiveFailures >= 2) this.setOnline(false)
+    }
+  }
+
+  // ── Periodic sync ─────────────────────────────────────────────
+
+  private startPeriodicSync() {
+    if (this.syncTimer) return
+    this.syncTimer = setInterval(() => {
+      if (this.online && !this.syncing) {
+        void this.syncAll()
+      }
+    }, 60_000)
+  }
+
+  // ── Queue operations ──────────────────────────────────────────
+
+  newLocalId(): string {
+    const rnd =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID().slice(0, 8)
+        : Math.random().toString(36).slice(2, 10)
+    return `local-${rnd}`
+  }
+
+  /**
+   * Queue a write for later sync. Returns a local ID for creates.
+   */
+  async queue(
+    op: Omit<SyncOperation, 'queuedAt'>,
+  ): Promise<{ localId?: string }> {
+    const entry: SyncOperation = {
+      ...op,
+      queuedAt: new Date().toISOString(),
+    }
+
+    // Assign local ID for creates
+    if (op.op === 'create' && !op.localId) {
+      entry.localId = this.newLocalId()
+    }
+
+    await this.storage.enqueue(entry)
+    await this.refreshCounts()
+
+    return { localId: entry.localId }
+  }
+
+  /**
+   * Queue an offline write with optimistic cache update.
+   * The UI sees the change immediately while offline.
+   */
+  async offlineWrite(
+    method: string,
+    collection: string,
+    id: number | string | undefined,
+    body: Record<string, unknown>,
+  ): Promise<{ id?: string | number; queued: boolean }> {
+    const op = method === 'DELETE' ? 'delete' : id ? 'update' : 'create'
+
+    const entry: SyncOperation = {
+      op: op as 'create' | 'update' | 'delete',
+      collection,
+      id,
+      data: body,
+      queuedAt: new Date().toISOString(),
+    }
+
+    if (op === 'create') {
+      entry.localId = this.newLocalId()
+    }
+
+    await this.storage.enqueue(entry)
+
+    // Optimistic cache update
+    if (op === 'create' && entry.localId) {
+      await this.storage.upsert(collection, {
+        ...body,
+        id: entry.localId,
+        _pendingSync: true,
+      })
+    } else if (op === 'update' && id) {
+      const existing = await this.storage.get(collection, id)
+      if (existing) {
+        await this.storage.upsert(collection, {
+          ...existing,
+          ...body,
+          _pendingSync: true,
+        })
+      }
+    } else if (op === 'delete' && id) {
+      await this.storage.remove(collection, id)
+    }
+
+    await this.refreshCounts()
+    return { id: entry.localId, queued: true }
+  }
+
+  // ── Sync (push + pull) ────────────────────────────────────────
+
+  /**
+   * Flush all pending operations to the server and pull changes.
+   * Single HTTP round-trip for batch operations.
+   */
+  async syncAll(): Promise<SyncResult | null> {
+    if (this.syncing) return null
+    this.syncing = true
+    this.emit()
+
+    try {
+      const result = await this.flush()
+      return result
+    } finally {
+      this.syncing = false
+      this.emit()
+    }
+  }
+
+  /**
+   * Push all pending operations to the server in a single batch.
+   */
+  private async flush(): Promise<SyncResult> {
+    const pending = await this.storage.getPending()
+
+    const body = {
+      lastSyncAt: this.lastSyncAt,
+      operations: pending.map((p) => ({
+        op: p.op,
+        collection: p.collection,
+        id: p.id,
+        localId: p.localId,
+        data: p.data,
+      })),
+    }
+
+    let res: Response
+    try {
+      res = await fetch(`${this.apiBase}/api/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(30_000),
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // Network error — stay offline, retry later
+        this.setOnline(false)
+        return {
+          serverTime: new Date().toISOString(),
+          applied: [],
+          conflicts: [],
+          changes: [],
+        }
+      }
+      throw err
+    }
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data?.error || `Sync failed: HTTP ${res.status}`)
+    }
+
+    const result: SyncResult = await res.json()
+
+    // ── Process applied operations ────────────────────────────────
+
+    for (const applied of result.applied) {
+      const entry = pending[applied.index]
+      if (!entry) continue
+
+      // Map local ID → server ID for creates
+      if (applied.localId && applied.serverId) {
+        await this.storage.mapLocalToServer(applied.localId, applied.serverId)
+
+        // Update the cache: replace local ID with server ID
+        const localDoc = await this.storage.get(entry.collection, applied.localId)
+        if (localDoc) {
+          await this.storage.remove(entry.collection, applied.localId)
+          await this.storage.upsert(entry.collection, {
+            ...localDoc,
+            id: applied.serverId,
+            _pendingSync: false,
+          })
+        }
+      }
+
+      // Remove from outbox
+      if (entry.seq !== undefined) {
+        await this.storage.removePending(entry.seq)
+      }
+    }
+
+    // ── Process conflicts ────────────────────────────────────────
+
+    for (const conflict of result.conflicts) {
+      const entry = pending[conflict.index]
+      if (!entry || entry.seq === undefined) continue
+
+      await this.storage.markConflict(entry.seq, conflict.reason)
+    }
+
+    // ── Apply server changes to local cache ─────────────────────
+
+    for (const change of result.changes) {
+      if (change.data?.id) {
+        await this.storage.upsert(change.collection, change.data)
+      }
+    }
+
+    // ── Update sync cursor ──────────────────────────────────────
+
+    this.lastSyncAt = result.serverTime
+    await this.storage.setKey('lastSyncAt', result.serverTime)
+
+    await this.refreshCounts()
+
+    return result
+  }
+
+  // ── Conflict management ───────────────────────────────────────
+
+  /** Remove a conflicted entry from the outbox */
+  async discard(seq: number): Promise<void> {
+    await this.storage.removePending(seq)
+    await this.refreshCounts()
+  }
+
+  /** Clear conflict flag so the entry retries on next flush */
+  async retry(seq: number): Promise<void> {
+    await this.storage.unmarkConflict(seq)
+    await this.refreshCounts()
+  }
+
+  /** Get all conflicted entries */
+  async getConflicts(): Promise<SyncOperation[]> {
+    const all = await this.storage.getAll()
+    return all.filter((e) => e.conflict)
+  }
+
+  /** Get a single entry by seq */
+  async getEntry(seq: number): Promise<SyncOperation | null> {
+    return this.storage.getEntry(seq)
+  }
+
+  /** Replace an entry's body (for merge edits) and clear conflict */
+  async updateEntry(seq: number, newBody: Record<string, unknown>): Promise<void> {
+    const entry = await this.storage.getEntry(seq)
+    if (!entry) return
+    await this.storage.removePending(seq)
+    const { conflict: _, ...rest } = entry
+    await this.storage.enqueue({ ...rest, data: newBody })
+    await this.refreshCounts()
+  }
+
+  // ── Cache reads ───────────────────────────────────────────────
+
+  /** Read a full collection from local cache */
+  async readCollection(slug: string): Promise<Record<string, unknown>[] | null> {
+    const pulled = await this.storage.getKey(`pulled:${slug}`)
+    if (!pulled) return null
+    return this.storage.list(slug)
+  }
+
+  /** Read a single document from local cache */
+  async readDoc(slug: string, id: number | string): Promise<Record<string, unknown> | null> {
+    return this.storage.get(slug, id)
+  }
+
+  /** Mark a collection as pulled (cache is populated) */
+  async markPulled(slug: string): Promise<void> {
+    await this.storage.setKey(`pulled:${slug}`, '1')
+  }
+
+  /** Invalidate a collection's cache so next read hits the server */
+  async invalidate(slug: string): Promise<void> {
+    await this.storage.clearCollection(slug)
+    await this.storage.deleteKey(`pulled:${slug}`)
+    await this.storage.deleteKey(`cursor:${slug}`)
+  }
+}

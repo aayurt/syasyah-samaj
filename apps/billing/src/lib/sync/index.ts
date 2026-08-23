@@ -1,0 +1,5 @@
+export { SyncEngine } from './SyncEngine'
+export type { SyncResult, SyncState } from './SyncEngine'
+export type { StorageAdapter, SyncOperation } from './StorageAdapter'
+export { IndexedDbAdapter } from './adapters/IndexedDbAdapter'
+export { SqliteAdapter } from './adapters/SqliteAdapter'
