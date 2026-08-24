@@ -47,6 +47,7 @@ import Tour from './components/Tour'
 import UpdatePrompt from './components/UpdatePrompt'
 import ErrorBoundary from './components/ErrorBoundary'
 import { TenantProvider } from './lib/tenant'
+import { useBackgroundSync } from './lib/BackgroundSync'
 import { CalendarProvider } from './lib/calendar'
 import { api } from './lib/api'
 import type { BillingSettings } from './lib/types'
@@ -141,6 +142,7 @@ export default function App() {
 }
 
 function Shell({ email }: { email: string }) {
+  useBackgroundSync()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('sidebar-collapsed') === '1',

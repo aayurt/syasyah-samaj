@@ -317,6 +317,17 @@ class CompatibilityEngine {
       for (const doc of docs) {
         await this.adapter!.upsert(collection, doc)
       }
+      // Update cursor so next pull is incremental (only new/changed docs)
+      if (docs.length > 0) {
+        const latest = docs
+          .map((d: Record<string, unknown>) => d.updatedAt as string)
+          .filter(Boolean)
+          .sort()
+          .pop()
+        if (latest) {
+          await this.setKey(`cursor:${tenant ? `${tenant}:` : ''}${collection}`, latest)
+        }
+      }
       this._cacheVersion++
       return docs.length
     } catch {
