@@ -191,6 +191,7 @@ export default function Vouchers() {
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
   const [menuFor, setMenuFor] = useState<number | null>(null)
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 })
   const [editingId, setEditingId] = useState<number | null>(null)
   const [viewDoc, setViewDoc] = useState<Document | null>(null)
   const [voidDialogDoc, setVoidDialogDoc] = useState<Document | null>(null)
@@ -1837,7 +1838,12 @@ export default function Vouchers() {
                 <td className="px-4 py-2 text-right">
                   <div className="relative inline-block">
                     <button
-                      onClick={() => setMenuFor(menuFor === d.id ? null : d.id)}
+                      onClick={(e) => {
+                        if (menuFor === d.id) { setMenuFor(null); return }
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                        setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+                        setMenuFor(d.id)
+                      }}
                       className="rounded border border-slate-200 p-1 text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                       aria-label="Actions"
                       aria-expanded={menuFor === d.id}
@@ -1850,7 +1856,7 @@ export default function Vouchers() {
                           className="fixed inset-0 z-10"
                           onClick={() => setMenuFor(null)}
                         />
-                        <div className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                        <div className="fixed z-50 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg" style={{ top: menuPos.top, right: menuPos.right }}>
                           <button
                             onClick={() => {
                               setMenuFor(null)
