@@ -225,6 +225,26 @@ export async function api<T = unknown>(
       const result = await engine.offlineRequest(method, path, options.body || {})
       engine.setOnline(true)
       crudToast(method, path)
+      // Also warm the tenant-scoped cache so the list page reads it
+      // immediately (offlineWrite stores in plain collection, but
+      // readCollection reads from tenant-scoped collection).
+      if (slug && segments.length <= 2 && tenant) {
+        try {
+          const queuedId = (result as Record<string, unknown>)?.doc as Record<string, unknown> | undefined
+          const docId = queuedId?.id as string | undefined
+          if (method === 'POST' && docId) {
+            // Store the full body (with local ID) in the tenant-scoped cache
+            const body = options.body as Record<string, unknown> | undefined
+            await engine.warmCache(slug, [{ ...body, id: docId }], tenant)
+          } else if (method === 'PATCH' && id) {
+            const existing = await engine.readDoc(slug, String(id))
+            const body = options.body as Record<string, unknown> | undefined
+            if (existing) await engine.warmCache(slug, [{ ...existing, ...body }], tenant)
+          } else if (method === 'DELETE' && id) {
+            await engine.invalidate(slug, tenant)
+          }
+        } catch { /* best-effort */ }
+      }
       return result as T
     } catch {
       // Queue failed — fall through to direct fetch
