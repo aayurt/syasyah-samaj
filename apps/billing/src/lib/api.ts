@@ -219,10 +219,10 @@ export async function api<T = unknown>(
   const isWrite = method !== 'GET' && !path.startsWith('/globals/')
   const isStandardCrud = isWrite && slug && segments.length <= 2 && !/\/[a-z-]+$/.test(path)
 
-  if (isWrite && options.body) {
+  if (isWrite) {
     // Queue the write to the outbox for batch sync
     try {
-      const result = await engine.offlineRequest(method, path, options.body)
+      const result = await engine.offlineRequest(method, path, options.body || {})
       engine.setOnline(true)
       crudToast(method, path)
       return result as T
