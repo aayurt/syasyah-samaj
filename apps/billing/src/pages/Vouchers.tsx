@@ -1908,11 +1908,11 @@ export default function Vouchers() {
                               <button
                                 onClick={async () => {
                                   setMenuFor(null)
-                                  if (!window.confirm('Reopen this posted voucher? The journal entry and number will be cleared.')) return
+                                  if (!window.confirm('Reopen this voucher? This will delete the journal entry and clear the voucher number. You can then edit and re-post it.')) return
                                   try {
                                     await api(`/documents/${d.id}/reopen`, { method: 'POST' })
-                                    pushToast('success', 'Voucher reopened')
-                                    load()
+                                    pushToast('success', 'Voucher reopened — edit and re-post when ready')
+                                    navigate(`/vouchers/edit/${d.id}`)
                                   } catch (err) {
                                     pushToast('error', 'Reopen failed', err instanceof Error ? err.message : String(err))
                                   }
@@ -2364,12 +2364,12 @@ export default function Vouchers() {
                       </button>
                       <button
                         onClick={async () => {
-                          if (!window.confirm('Reopen this posted voucher? The journal entry and number will be cleared.')) return
+                          if (!window.confirm('Reopen this voucher? This will delete the journal entry and clear the voucher number. You can then edit and re-post it.')) return
                           try {
                             await api(`/documents/${viewDoc.id}/reopen`, { method: 'POST' })
-                            pushToast('success', 'Voucher reopened')
+                            pushToast('success', 'Voucher reopened — edit and re-post when ready')
                             setViewDoc(null)
-                            load()
+                            navigate(`/vouchers/edit/${viewDoc.id}`)
                           } catch (err) {
                             pushToast('error', 'Reopen failed', err instanceof Error ? err.message : String(err))
                           }
