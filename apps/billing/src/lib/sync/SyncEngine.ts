@@ -264,14 +264,32 @@ export class SyncEngine {
   }
 
   /**
-   * Push all pending operations to the server in a single batch.
+   * Push all pending operations to the server. Standard CRUD ops are
+   * batched via POST /api/sync. Custom endpoints (/:id/post, /:id/void, etc.)
+   * are sent as individual fetches since they have server-side business logic.
    */
   private async flush(): Promise<SyncResult> {
     const pending = await this.storage.getPending()
 
+    // Split: standard CRUD vs custom endpoints
+    const STANDARD_RE = /^\/[a-z][-a-z]*$/ // /documents, /parties, etc.
+    const crudOps: typeof pending = []
+    const customOps: typeof pending = []
+    for (const p of pending) {
+      // Custom endpoints have paths like /documents/123/post — the collection
+      // field stores the full path for custom ops.
+      const path = `/${p.collection}${p.id ? `/${p.id}` : ''}`
+      if (STANDARD_RE.test(path)) {
+        crudOps.push(p)
+      } else {
+        customOps.push(p)
+      }
+    }
+
+    // 1. Batch standard CRUD via sync endpoint
     const body = {
       lastSyncAt: this.lastSyncAt,
-      operations: pending.map((p) => ({
+      operations: crudOps.map((p) => ({
         op: p.op,
         collection: p.collection,
         id: p.id,
@@ -291,7 +309,6 @@ export class SyncEngine {
       })
     } catch (err) {
       if (err instanceof TypeError) {
-        // Network error — stay offline, retry later
         this.setOnline(false)
         return {
           serverTime: new Date().toISOString(),
@@ -310,10 +327,10 @@ export class SyncEngine {
 
     const result: SyncResult = await res.json()
 
-    // ── Process applied operations ────────────────────────────────
+    // ── Process applied CRUD operations ─────────────────────────
 
     for (const applied of result.applied) {
-      const entry = pending[applied.index]
+      const entry = crudOps[applied.index]
       if (!entry) continue
 
       // Map local ID → server ID for creates
@@ -341,10 +358,44 @@ export class SyncEngine {
     // ── Process conflicts ────────────────────────────────────────
 
     for (const conflict of result.conflicts) {
-      const entry = pending[conflict.index]
+      const entry = crudOps[conflict.index]
       if (!entry || entry.seq === undefined) continue
 
       await this.storage.markConflict(entry.seq, conflict.reason)
+    }
+
+    // ── Flush custom endpoints (/:id/post, /:id/void, etc.) ────
+    // These have server-side business logic and can't be batched.
+    for (const entry of customOps) {
+      try {
+        // Map local ID → server ID if needed
+        let serverId: string | number | undefined = entry.id
+        if (entry.localId && typeof entry.id === 'string' && entry.id.startsWith('local-')) {
+          const mapped = await this.storage.getServerId(entry.localId)
+          if (mapped != null) serverId = mapped
+        }
+        const path = `/${entry.collection}${serverId ? `/${serverId}` : ''}`
+        const fetchRes = await fetch(`${this.apiBase}/api${path}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(entry.data || {}),
+          signal: AbortSignal.timeout(15_000),
+        })
+        if (fetchRes.ok) {
+          // Remove from outbox on success
+          if (entry.seq != null) {
+            await this.storage.removePending(entry.seq)
+          }
+        } else {
+          const errData = await fetchRes.json().catch(() => ({}))
+          if (entry.seq != null) {
+            await this.storage.markConflict(entry.seq, errData?.error || `HTTP ${fetchRes.status}`)
+          }
+        }
+      } catch {
+        // Network error — keep in outbox for retry
+      }
     }
 
     // ── Apply server changes to local cache ─────────────────────

@@ -52,8 +52,6 @@ function crudToast(method: string, path: string, error?: string): void {
 interface ApiOptions extends Omit<RequestInit, 'body'> {
   query?: Record<string, string | number | undefined>
   body?: unknown
-  /** Skip the outbox queue — send directly to the server. */
-  _skipQueue?: boolean
 }
 
 async function doFetch<T>(path: string, options: ApiOptions): Promise<T> {
@@ -215,27 +213,13 @@ export async function api<T = unknown>(
   }
 
   // ── Standard CRUD writes: queue to outbox, batch via POST /api/sync ──
-  // Custom endpoints (/:id/post, /:id/void, /:id/reopen, etc.) still go
-  // through individual fetch because they have server-side business logic.
-  const lastSeg = segments[segments.length - 1]
-  const isCustomEndpoint = (
-    // Custom action endpoints (/:id/action)
-    (segments.length >= 2 && (
-      lastSeg === 'post' ||
-      lastSeg === 'void' ||
-      lastSeg === 'reopen' ||
-      lastSeg === 'partial-void' ||
-      lastSeg === 'confirm' ||
-      lastSeg === 'pay-fee' ||
-      lastSeg === 'stock-levels' ||
-      lastSeg === 'number'
-    )) ||
-    // Singleton globals — not standard CRUD
-    path.startsWith('/globals/')
-  )
-  const isStandardWrite = method !== 'GET' && !isCustomEndpoint && slug && segments.length <= 2
+  // All writes go to the outbox for batch sync. Custom endpoints (/:id/post,
+  // /:id/void, etc.) are queued as custom ops — the sync engine sends them
+  // to the server directly (not through Payload's collection endpoints).
+  const isWrite = method !== 'GET' && !path.startsWith('/globals/')
+  const isStandardCrud = isWrite && slug && segments.length <= 2 && !/\/[a-z-]+$/.test(path)
 
-  if (isStandardWrite && options.body && !options._skipQueue) {
+  if (isWrite && options.body) {
     // Queue the write to the outbox for batch sync
     try {
       const result = await engine.offlineRequest(method, path, options.body)

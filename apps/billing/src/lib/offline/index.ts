@@ -130,9 +130,27 @@ class CompatibilityEngine {
     body: unknown,
   ): Promise<unknown> {
     const engine = await this.ensure()
-    // Extract collection from path
     const clean = path.split('?')[0].replace(/^\/+|\/+$/g, '')
     const parts = clean.split('/')
+
+    // Detect custom endpoints: /collection/id/action (3+ segments)
+    // e.g., /documents/123/post, /documents/123/void
+    const isCustomEndpoint = parts.length >= 3
+
+    if (isCustomEndpoint) {
+      // Queue as a custom op — the sync engine sends it as an individual
+      // fetch during flush, not through the batch sync endpoint.
+      const customPath = parts.join('/') // e.g., 'documents/123/post'
+      await engine.queue({
+        op: 'create' as const, // custom ops are always POST
+        collection: customPath,
+        data: body as Record<string, unknown>,
+      })
+      this._cacheVersion++
+      return { doc: { id: customPath }, queued: true }
+    }
+
+    // Standard CRUD: /collection or /collection/id
     const collection = parts[0] || ''
     const id = parts[1] && /^\d+$/.test(parts[1]) ? Number(parts[1]) : undefined
 
