@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Download, Plus, Trash2 } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
-import { useSortSearch } from '../lib/useSortSearch'
+import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import ActionMenu from '../components/ActionMenu'
 import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
+import { useSearchParams } from 'react-router-dom'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Account, JournalEntry } from '../lib/types'
 import { StatusPill } from './Dashboard'
@@ -146,6 +147,21 @@ export default function Journal() {
   const entryLines = (e: JournalEntry) =>
     Array.isArray(e.lines) ? e.lines : []
 
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlSortKey = searchParams.get('sort') || 'date'
+  const urlSortDir = (searchParams.get('dir') as 'asc' | 'desc') || 'desc'
+  const urlQuery = searchParams.get('q') || ''
+
+  const syncToUrl = useCallback((_q: string, s: SortState) => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev)
+      if (_q) params.set('q', _q); else params.delete('q')
+      if (s.key && s.key !== 'date') params.set('sort', s.key); else params.delete('sort')
+      if (s.key && s.dir !== 'desc') params.set('dir', s.dir); else params.delete('dir')
+      return params
+    }, { replace: true })
+  }, [setSearchParams])
+
   const { query, setQuery, sort, toggleSort, visible } = useSortSearch(filtered, {
     searchable: (e) => `${e.narration || ''} ${e.status}`,
     valueOf: (e, key) => {
@@ -162,6 +178,9 @@ export default function Journal() {
       }
     },
     defaultSort: { key: 'date', dir: 'desc' },
+    initialQuery: urlQuery,
+    initialSort: { key: urlSortKey, dir: urlSortDir },
+    onChange: syncToUrl,
   })
 
   return (

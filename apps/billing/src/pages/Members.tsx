@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { CreditCard, Download } from 'lucide-react'
 import { api, useSyncState, fmt } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
+import { useSearchParams } from 'react-router-dom'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
-import { useSortSearch } from '../lib/useSortSearch'
+import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import SearchBox from '../components/SearchBox'
 
 type Member = {
@@ -39,6 +40,21 @@ export default function Members() {
       .finally(() => setLoading(false))
   }, [cacheVersion, tenantId])
 
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlSortKey = searchParams.get('sort') || 'fullName'
+  const urlSortDir = (searchParams.get('dir') as 'asc' | 'desc') || 'asc'
+  const urlQuery = searchParams.get('q') || ''
+
+  const syncToUrl = useCallback((_q: string, s: SortState) => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev)
+      if (_q) params.set('q', _q); else params.delete('q')
+      if (s.key && s.key !== 'fullName') params.set('sort', s.key); else params.delete('sort')
+      if (s.key && s.dir !== 'asc') params.set('dir', s.dir); else params.delete('dir')
+      return params
+    }, { replace: true })
+  }, [setSearchParams])
+
   const { visible, setQuery, toggleSort, sort, query } = useSortSearch<Member>(members, {
     searchable: (m) => `${m.fullName || ''} ${m.email || ''} ${m.membershipType?.name || ''}`,
     valueOf: (m, key) => {
@@ -51,6 +67,9 @@ export default function Members() {
         default: return (m as unknown as Record<string, unknown>)[key] as string | number | undefined
       }
     },
+    initialQuery: urlQuery,
+    initialSort: { key: urlSortKey, dir: urlSortDir },
+    onChange: syncToUrl,
   })
   const filtered = visible
 

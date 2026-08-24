@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Download, Plus, Trash2, TriangleAlert } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
-import { useSortSearch } from '../lib/useSortSearch'
+import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import ActionMenu from '../components/ActionMenu'
 import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
+import { useSearchParams } from 'react-router-dom'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Item, StockLedgerRow, StockLevel } from '../lib/types'
 
@@ -65,6 +66,21 @@ export default function Items() {
   const levelFor = (itemId: number) =>
     levels.find((l) => l.item.id === itemId)
 
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlSortKey = searchParams.get('sort') || 'name'
+  const urlSortDir = (searchParams.get('dir') as 'asc' | 'desc') || 'asc'
+  const urlQuery = searchParams.get('q') || ''
+
+  const syncToUrl = useCallback((_q: string, s: SortState) => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev)
+      if (_q) params.set('q', _q); else params.delete('q')
+      if (s.key && s.key !== 'name') params.set('sort', s.key); else params.delete('sort')
+      if (s.key && s.dir !== 'asc') params.set('dir', s.dir); else params.delete('dir')
+      return params
+    }, { replace: true })
+  }, [setSearchParams])
+
   const { query, setQuery, sort, toggleSort, visible } = useSortSearch(items, {
     searchable: (it) => `${it.name} ${it.code || ''} ${it.unit || ''}`,
     valueOf: (it, key) => {
@@ -89,6 +105,9 @@ export default function Items() {
       }
     },
     defaultSort: { key: 'name', dir: 'asc' },
+    initialQuery: urlQuery,
+    initialSort: { key: urlSortKey, dir: urlSortDir },
+    onChange: syncToUrl,
   })
 
   const create = async (e: React.FormEvent) => {
