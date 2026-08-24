@@ -50,11 +50,13 @@ export function formatDate(
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return '—'
 
+  // Date portion
+  let formatted: string
   if (calendarType === 'BS') {
     const bs = toBS(d)
     const monthNames = BS_MONTHS
     const monthShort = BS_MONTHS_SHORT
-    return dateFormat
+    formatted = dateFormat
       .replace('YYYY', String(bs.year))
       .replace('YY', String(bs.year).slice(-2))
       .replace('MMMM', monthNames[bs.month])
@@ -63,20 +65,19 @@ export function formatDate(
       .replace('M', String(bs.month + 1))
       .replace('DD', String(bs.date).padStart(2, '0'))
       .replace('D', String(bs.date))
+  } else {
+    formatted = dateFormat
+      .replace('YYYY', String(d.getFullYear()))
+      .replace('YY', String(d.getFullYear()).slice(-2))
+      .replace('MMMM', AD_MONTHS[d.getMonth()])
+      .replace('MMM', AD_MONTHS_SHORT[d.getMonth()])
+      .replace('MM', String(d.getMonth() + 1).padStart(2, '0'))
+      .replace('M', String(d.getMonth() + 1))
+      .replace('DD', String(d.getDate()).padStart(2, '0'))
+      .replace('D', String(d.getDate()))
   }
 
-  // AD format
-  let formatted = dateFormat
-    .replace('YYYY', String(d.getFullYear()))
-    .replace('YY', String(d.getFullYear()).slice(-2))
-    .replace('MMMM', AD_MONTHS[d.getMonth()])
-    .replace('MMM', AD_MONTHS_SHORT[d.getMonth()])
-    .replace('MM', String(d.getMonth() + 1).padStart(2, '0'))
-    .replace('M', String(d.getMonth() + 1))
-    .replace('DD', String(d.getDate()).padStart(2, '0'))
-    .replace('D', String(d.getDate()))
-
-  // Time
+  // Time (applies to both BS and AD)
   const hours = d.getHours()
   if (timeFormat === '12h') {
     const h12 = hours % 12 || 12
