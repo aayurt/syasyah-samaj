@@ -37,7 +37,7 @@ export default function Login() {
         onSubmit={submit}
         className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-8 shadow-sm"
       >
-        <h1 className="text-xl font-semibold text-slate-900">Syasha धुकू</h1>
+        <h1 className="text-xl font-semibold text-slate-900">स्यस्यः धुकू</h1>
         <p className="mt-1 text-sm text-slate-500">
           Sign in with your admin account
         </p>

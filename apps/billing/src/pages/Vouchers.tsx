@@ -2039,7 +2039,7 @@ export default function Vouchers() {
                 const isSimplified = simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold
                 return (
                   <div className="border-b border-slate-200 bg-slate-50 px-8 py-5 text-center rounded-t-xl print:bg-white print:rounded-none">
-                    <h1 className="text-xl font-bold tracking-tight text-slate-900">Syasha धुकू</h1>
+                    <h1 className="text-xl font-bold tracking-tight text-slate-900">स्यस्यः धुकू</h1>
                     <p className="mt-0.5 text-xs text-slate-400">
                       {isSimplified ? 'Tax Invoice (VAT Inclusive)' : 'Tax Invoice / Voucher'}
                     </p>

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Syasha धुकू",
+  "productName": "स्यस्यः धुकू",
   "version": "0.1.0",
   "identifier": "com.afno.billing",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Syasha धुकू",
+        "title": "स्यस्यः धुकू",
         "width": 1280,
         "height": 800,
         "minWidth": 960,
