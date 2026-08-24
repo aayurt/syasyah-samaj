@@ -371,23 +371,47 @@ export class SyncEngine {
         // The collection field stores the full path for custom endpoints,
         // e.g., 'documents/local-0170b4e3/post'. Parse it and replace
         // the local ID with the mapped server ID.
-        const collParts = entry.collection.split('/')
-        // collParts: ['documents', 'local-0170b4e3', 'post']
-        const collName = collParts[0]
-        const localOrServerId = collParts[1]
-        const action = collParts[2] // e.g., 'post', 'void', 'reopen'
+        // Custom ops now store collection as the collection name,
+        // id as the raw local/server ID, and action in data._action.
+        // Legacy format: collection = 'documents/local-xxx/post' (fallback).
+        let collName: string
+        let rawId: string | undefined
+        let action: string | undefined
+        if (entry.id != null && entry.data?._action) {
+          // New format: collection, id, _action are separate
+          collName = entry.collection
+          rawId = String(entry.id)
+          action = String(entry.data._action)
+        } else {
+          // Legacy format: collection = 'collection/id/action'
+          const collParts = entry.collection.split('/')
+          collName = collParts[0]
+          rawId = collParts[1]
+          action = collParts[2]
+        }
 
-        let resolvedId: string | number | undefined = localOrServerId
-        if (localOrServerId && localOrServerId.startsWith('local-')) {
-          const mapped = await this.storage.getServerId(localOrServerId)
+        if (!rawId || rawId === 'undefined') {
+          if (entry.seq != null) {
+            await this.storage.markConflict(entry.seq, 'Cannot resolve document ID')
+          }
+          continue
+        }
+
+        // Resolve local ID → server ID
+        let resolvedId: string | number = rawId
+        if (rawId.startsWith('local-')) {
+          const mapped = await this.storage.getServerId(rawId)
           if (mapped != null) resolvedId = mapped
         }
+
         const path = `/${collName}/${resolvedId}${action ? `/${action}` : ''}`
+        // Strip _action from the body sent to the server
+        const { _action: _, ...bodyData } = (entry.data || {}) as Record<string, unknown>
         const fetchRes = await fetch(`${this.apiBase}/api${path}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify(entry.data || {}),
+          body: JSON.stringify(bodyData),
           signal: AbortSignal.timeout(15_000),
         })
         if (fetchRes.ok) {

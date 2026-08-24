@@ -140,14 +140,19 @@ class CompatibilityEngine {
     if (isCustomEndpoint) {
       // Queue as a custom op — the sync engine sends it as an individual
       // fetch during flush, not through the batch sync endpoint.
-      const customPath = parts.join('/') // e.g., 'documents/123/post'
+      const collName = parts[0]
+      const rawId = parts[1] // may be local-xxx or a numeric server ID
+      const action = parts[2] // e.g., 'post', 'void', 'reopen'
+      // Store the raw ID so the flush handler can resolve local→server.
       await engine.queue({
         op: 'create' as const, // custom ops are always POST
-        collection: customPath,
-        data: body as Record<string, unknown>,
+        collection: collName,
+        id: rawId,
+        data: { _action: action, ...(body as Record<string, unknown>) },
       })
       this._cacheVersion++
-      return { doc: { id: customPath }, queued: true }
+      // Return the resolved path for the caller (for optimistic UI)
+      return { doc: { id: rawId }, queued: true }
     }
 
     // Standard CRUD: /collection or /collection/id
