@@ -1452,6 +1452,99 @@ export const Documents: CollectionConfig = {
         }
       },
     },
+    {
+      // Reopen a posted document: deletes the associated journal entry and
+      // stock movements, then sets status back to draft. The document can
+      // then be edited and re-posted. Only posted (not void) docs can be
+      // reopened.
+      path: '/:id/reopen',
+      method: 'post',
+      handler: async (req) => {
+        if (!isBillingReq(req)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string
+        if (!id) {
+          return Response.json({ error: 'Missing document id' }, { status: 400 })
+        }
+        const transactionID =
+          (await req.payload.db.beginTransaction()) ?? undefined
+        try {
+          const doc = (await req.payload.findByID({
+            collection: 'documents',
+            id,
+            depth: 0,
+            overrideAccess: true,
+          })) as any
+          if (!doc) {
+            return Response.json({ error: 'Document not found' }, { status: 404 })
+          }
+          if (doc.status !== 'posted') {
+            return Response.json(
+              { error: 'Only posted documents can be reopened.' },
+              { status: 409 },
+            )
+          }
+
+          // 1. Delete the associated journal entry
+          if (doc.journalEntry) {
+            await req.payload.delete({
+              collection: 'journal-entries',
+              id: doc.journalEntry,
+              overrideAccess: true,
+              req: { transactionID },
+            })
+          }
+
+          // 2. Reverse stock movements (delete them)
+          const moves = await req.payload.find({
+            collection: 'stock-movements',
+            where: { doc: { equals: doc.id } },
+            limit: 1000,
+            depth: 0,
+          })
+          for (const m of moves.docs as any[]) {
+            await req.payload.delete({
+              collection: 'stock-movements',
+              id: m.id,
+              overrideAccess: true,
+              req: { transactionID },
+            })
+          }
+
+          // 3. Set status back to draft, clear posting artifacts
+          const updated = await req.payload.update({
+            collection: 'documents',
+            id: doc.id,
+            data: {
+              status: 'draft',
+              journalEntry: null,
+              number: '',
+              postedAt: null,
+              voidedItems: [],
+              voidedAmount: 0,
+            },
+            overrideAccess: true,
+            req: {
+              transactionID,
+              context: { docStatusTransition: 'draft' },
+            },
+          })
+
+          if (transactionID) {
+            await req.payload.db.commitTransaction(transactionID)
+          }
+
+          return Response.json({ doc: updated })
+        } catch (err) {
+          try {
+            if (transactionID) await req.payload.db.rollbackTransaction(transactionID)
+          } catch {}
+          const raw = err instanceof Error ? err : null
+          return Response.json({ error: raw?.message || 'Reopen failed' }, { status: 400 })
+        }
+      },
+    },
 
     {
       // AR / AP aging: open positions from posted documents, bucketed by age.
@@ -1759,14 +1852,17 @@ export const Documents: CollectionConfig = {
         const orderFlag = (req as any)?.context?.docOrderTransition
         const orderStatus = (data as any)?.orderStatus
 
-        // Posted documents are immutable except voiding; voided are final.
+        // Posted documents are immutable except voiding or reopening;
+        // voided are final.
         if (operation === 'update' && (doc?.status === 'posted' || doc?.status === 'void')) {
           const allowed =
-            doc.status === 'posted' ? nextStatus === 'void' : false
+            doc.status === 'posted'
+              ? nextStatus === 'void' || nextStatus === 'draft'
+              : false
           if (!allowed) {
             throw vErr(
               doc.status === 'posted'
-                ? 'Posted documents cannot be edited. Void the document to reverse it.'
+                ? 'Posted documents cannot be edited. Void or reopen the document to change it.'
                 : 'Voided documents are final and cannot be modified.',
             )
           }

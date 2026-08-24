@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react'
 import { api, fmt, getEngine, list, useSyncState } from '../lib/api'
+import { pushToast } from '../lib/toast'
 import { useSortSearch } from '../lib/useSortSearch'
 import type { OutboxEntry } from '../lib/offline/types'
 import {
@@ -1894,15 +1895,33 @@ export default function Vouchers() {
                             </button>
                           )}
                           {d.status === 'posted' && (
-                            <button
-                              onClick={() => {
-                                setMenuFor(null)
-                                voidDoc(d.id)
-                              }}
-                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
-                            >
-                              Void
-                            </button>
+                            <>
+                              <button
+                                onClick={() => {
+                                  setMenuFor(null)
+                                  voidDoc(d.id)
+                                }}
+                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
+                              >
+                                Void
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setMenuFor(null)
+                                  if (!window.confirm('Reopen this posted voucher? The journal entry and number will be cleared.')) return
+                                  try {
+                                    await api(`/documents/${d.id}/reopen`, { method: 'POST' })
+                                    pushToast('success', 'Voucher reopened')
+                                    load()
+                                  } catch (err) {
+                                    pushToast('error', 'Reopen failed', err instanceof Error ? err.message : String(err))
+                                  }
+                                }}
+                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-amber-600 hover:bg-amber-50"
+                              >
+                                Reopen
+                              </button>
+                            </>
                           )}
                         </div>
                       </>
@@ -2338,10 +2357,28 @@ export default function Vouchers() {
                 </div>
                 <div className="flex gap-2">
                   {viewDoc.status === 'posted' && (
-                    <button onClick={() => setPrintDoc(viewDoc)}
-                      className="flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                      <Printer size={14} /> Print
-                    </button>
+                    <>
+                      <button onClick={() => setPrintDoc(viewDoc)}
+                        className="flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        <Printer size={14} /> Print
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm('Reopen this posted voucher? The journal entry and number will be cleared.')) return
+                          try {
+                            await api(`/documents/${viewDoc.id}/reopen`, { method: 'POST' })
+                            pushToast('success', 'Voucher reopened')
+                            setViewDoc(null)
+                            load()
+                          } catch (err) {
+                            pushToast('error', 'Reopen failed', err instanceof Error ? err.message : String(err))
+                          }
+                        }}
+                        className="flex items-center gap-1.5 rounded border border-amber-300 px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-50"
+                      >
+                        Reopen
+                      </button>
+                    </>
                   )}
                   <button onClick={() => setViewDoc(null)}
                     className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700">
