@@ -57,12 +57,7 @@ function Section({
             <div className="text-xs text-slate-400 truncate">{subtitle}</div>
           )}
         </div>
-        {saved && (
-          <span className="mr-2 text-xs text-emerald-600">✓ Saved</span>
-        )}
-        {hasChanges && !saved && (
-          <span className="mr-2 text-xs text-amber-500">Unsaved</span>
-        )}
+
         <ChevronDown
           size={16}
           className={`shrink-0 text-slate-400 transition-transform duration-200 ${
@@ -73,9 +68,15 @@ function Section({
       {open && (
         <div className="border-t border-slate-100 px-4 pb-4 pt-3">
           {children}
-          {(hasChanges || saved) && onSave && (
+          {onSave && (
             <div className="mt-4 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
-              {onCancel && (
+              <div className="mr-auto flex items-center gap-2">
+                {saved && <span className="text-sm text-emerald-600">✓ Saved</span>}
+                {hasChanges && !saved && (
+                  <span className="text-sm text-amber-500">Unsaved changes</span>
+                )}
+              </div>
+              {onCancel && hasChanges && (
                 <button
                   type="button"
                   onClick={onCancel}
@@ -87,8 +88,8 @@ function Section({
               <button
                 type="button"
                 onClick={onSave}
-                disabled={saving}
-                className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+                disabled={saving || !hasChanges}
+                className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {saving ? 'Saving…' : 'Save'}
               </button>
