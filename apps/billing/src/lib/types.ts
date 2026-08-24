@@ -138,6 +138,8 @@ export interface Document {
   docType: DocType
   number?: string
   date: string
+  createdAt?: string
+  updatedAt?: string
   party?: number | Party | null
   narration?: string
   status: DocumentStatus

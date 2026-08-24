@@ -1764,6 +1764,7 @@ export default function Vouchers() {
                 />
               </th>
               <SortableTh label="Date" sortKey="date" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Updated" sortKey="updatedAt" sort={sort} onSort={toggleSort} />
               <SortableTh label="Number" sortKey="number" sort={sort} onSort={toggleSort} />
               <SortableTh label="Type" sortKey="type" sort={sort} onSort={toggleSort} />
               <SortableTh label="Party" sortKey="party" sort={sort} onSort={toggleSort} />
@@ -1777,7 +1778,7 @@ export default function Vouchers() {
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={11} className="px-4 py-6 text-center text-slate-400">
                   No vouchers yet.
                 </td>
               </tr>
@@ -1794,6 +1795,9 @@ export default function Vouchers() {
                 </td>
                 <td className="px-4 py-2 text-slate-600">
                   {formatDate(d.date)}
+                </td>
+                <td className="px-4 py-2 text-xs text-slate-400">
+                  {d.updatedAt ? formatDate(d.updatedAt) : '—'}
                 </td>
                 <td className="px-4 py-2 font-mono text-slate-700">
                   {d.number || (
