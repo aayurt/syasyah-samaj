@@ -286,7 +286,7 @@ function Shell({ email }: { email: string }) {
           </div>
         </nav>
       </aside>
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-y-hidden">
         <div className="print:hidden">
           <ConnectingBanner />
           <SyncBanner />
