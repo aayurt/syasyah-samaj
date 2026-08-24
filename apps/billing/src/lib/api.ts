@@ -216,15 +216,20 @@ export async function api<T = unknown>(
   // Custom endpoints (/:id/post, /:id/void, /:id/reopen, etc.) still go
   // through individual fetch because they have server-side business logic.
   const lastSeg = segments[segments.length - 1]
-  const isCustomEndpoint = segments.length >= 2 && (
-    lastSeg === 'post' ||
-    lastSeg === 'void' ||
-    lastSeg === 'reopen' ||
-    lastSeg === 'partial-void' ||
-    lastSeg === 'confirm' ||
-    lastSeg === 'pay-fee' ||
-    lastSeg === 'stock-levels' ||
-    lastSeg === 'number'
+  const isCustomEndpoint = (
+    // Custom action endpoints (/:id/action)
+    (segments.length >= 2 && (
+      lastSeg === 'post' ||
+      lastSeg === 'void' ||
+      lastSeg === 'reopen' ||
+      lastSeg === 'partial-void' ||
+      lastSeg === 'confirm' ||
+      lastSeg === 'pay-fee' ||
+      lastSeg === 'stock-levels' ||
+      lastSeg === 'number'
+    )) ||
+    // Singleton globals — not standard CRUD
+    path.startsWith('/globals/')
   )
   const isStandardWrite = method !== 'GET' && !isCustomEndpoint && slug && segments.length <= 2
 
@@ -234,9 +239,6 @@ export async function api<T = unknown>(
       const result = await engine.offlineRequest(method, path, options.body)
       engine.setOnline(true)
       crudToast(method, path)
-      if (path === '/globals/billing-settings') {
-        try { localStorage.removeItem(GS_KEY) } catch { /* ignore */ }
-      }
       return result as T
     } catch {
       // Queue failed — fall through to direct fetch
@@ -270,9 +272,9 @@ export async function api<T = unknown>(
     }
     if (method !== 'GET') {
       crudToast(method, path)
-      // Invalidate globals cache so next read fetches fresh
+      // Update globals cache with fresh data (don't invalidate)
       if (path === '/globals/billing-settings') {
-        try { localStorage.removeItem(GS_KEY) } catch { /* ignore */ }
+        try { writeGlobalsCache(res) } catch { /* ignore */ }
       }
     }
     // Warm the read cache only for plain collection lists — never for
