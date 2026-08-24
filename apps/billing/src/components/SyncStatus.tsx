@@ -2,21 +2,37 @@ import { useState } from 'react'
 import { Cloud, CloudOff, RefreshCw } from 'lucide-react'
 import { getEngine, useSyncState } from '../lib/api'
 
+const PULL_COLLECTIONS = [
+  'documents', 'parties', 'gl-accounts', 'items',
+  'membership-types', 'members', 'journal-entries',
+]
+
 /**
  * Compact sync status shown in the header: Synced / n to sync / Offline,
  * plus a manual "sync now" button that flushes queued writes, pulls fresh
- * data, and warms the reports on demand.
+ * data for all collections, and shows clear visual feedback.
  */
 export default function SyncStatus() {
   const state = useSyncState()
   const [syncing, setSyncing] = useState(false)
+  const [pullProgress, setPullProgress] = useState('')
 
   const syncNow = async () => {
     setSyncing(true)
+    setPullProgress('Flushing…')
     try {
-      await getEngine().syncAll()
+      const engine = getEngine()
+      // 1. Push any queued changes
+      await engine.syncAll()
+      // 2. Pull fresh data for every collection
+      for (const col of PULL_COLLECTIONS) {
+        setPullProgress(`Pulling ${col}…`)
+        await engine.pull(col)
+      }
+      setPullProgress('Done')
     } finally {
       setSyncing(false)
+      setPullProgress('')
     }
   }
 
@@ -51,8 +67,8 @@ export default function SyncStatus() {
         title="Changes waiting to sync. Click to sync now."
         className="flex items-center gap-1.5 rounded border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 hover:bg-sky-100 disabled:opacity-50"
       >
-        <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
-        {syncing ? 'Syncing…' : `${state.pending} to sync`}
+        <RefreshCw size={13} className="animate-spin" />
+        {pullProgress || (state.pending > 0 ? `${state.pending} to sync` : 'Syncing…')}
       </button>
     )
   } else if (state.syncingCount > 0) {
@@ -89,7 +105,7 @@ export default function SyncStatus() {
         className="flex items-center gap-1.5 rounded border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50"
       >
         <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
-        {syncing ? 'Syncing…' : 'Resync'}
+        {syncing ? (pullProgress || 'Syncing…') : 'Resync'}
       </button>
     </span>
   )
