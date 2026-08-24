@@ -315,6 +315,12 @@ export interface BillingSettings {
   simplifiedInvoiceThreshold?: number
   membershipFeeAccount?: number | Account | null
   donationAccount?: number | Account | null
+  companyName?: string
+  companyPan?: string
+  companyContact?: string
+  companyEmail?: string
+  companyAddress?: string
+  companyLogo?: string
 }
 
 export type AgingBucket = '0-30' | '31-60' | '61-90' | '90+'

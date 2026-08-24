@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Hash, HelpCircle, LogOut, RotateCcw, Settings2 } from 'lucide-react'
+import { Building2, Calendar, Hash, HelpCircle, LogOut, RotateCcw, Settings2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { authClient, clearCachedSession } from '../lib/auth'
 import { formatDate } from '../lib/nepaliDate'
@@ -36,6 +36,13 @@ export default function Settings() {
   const [bankRecEnabled, setBankRecEnabled] = useState(false)
   const [simplifiedInvEnabled, setSimplifiedInvEnabled] = useState(true)
   const [simplifiedInvThreshold, setSimplifiedInvThreshold] = useState('5000')
+  const [companyName, setCompanyName] = useState('')
+  const [companyPan, setCompanyPan] = useState('')
+  const [companyContact, setCompanyContact] = useState('')
+  const [companyEmail, setCompanyEmail] = useState('')
+  const [companyAddress, setCompanyAddress] = useState('')
+  const [companyLogo, setCompanyLogo] = useState('')
+  const [companySaved, setCompanySaved] = useState(false)
   const loaded = useRef(false)
   // Track last-saved feature values for dirty detection
   const savedFeatures = useRef({ bankRec: false, simplifiedInv: true, threshold: '5000' })
@@ -66,6 +73,12 @@ export default function Settings() {
       setBankRecEnabled(res.bankReconciliationEnabled || false)
       setSimplifiedInvEnabled(res.simplifiedInvoiceEnabled !== false)
       setSimplifiedInvThreshold(String(res.simplifiedInvoiceThreshold || 5000))
+      setCompanyName(res.companyName || '')
+      setCompanyPan(res.companyPan || '')
+      setCompanyContact(res.companyContact || '')
+      setCompanyEmail(res.companyEmail || '')
+      setCompanyAddress(res.companyAddress || '')
+      setCompanyLogo(res.companyLogo || '')
       savedFeatures.current = {
         bankRec: res.bankReconciliationEnabled || false,
         simplifiedInv: res.simplifiedInvoiceEnabled !== false,
@@ -152,6 +165,31 @@ export default function Settings() {
       await api('/globals/billing-settings', { method: 'POST', body })
     } catch {
       // offline — cache is authoritative, server will catch up on next sync
+    }
+  }
+
+  const persistCompany = async () => {
+    const body = {
+      companyName,
+      companyPan,
+      companyContact,
+      companyEmail,
+      companyAddress,
+      companyLogo,
+    }
+    // Cache-first
+    try {
+      const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
+      const data = { ...(cached.data || {}), ...body }
+      localStorage.setItem('billing.settingsCache', JSON.stringify({ data, ts: Date.now() }))
+    } catch { /* ignore */ }
+    window.dispatchEvent(new Event('billing-settings-changed'))
+    setCompanySaved(true)
+    setTimeout(() => setCompanySaved(false), 2000)
+    try {
+      await api('/globals/billing-settings', { method: 'POST', body })
+    } catch {
+      // offline — cache is authoritative
     }
   }
 
@@ -287,6 +325,102 @@ export default function Settings() {
             Save
           </button>
           {calSaved && <span className="text-sm text-emerald-600">✓ Saved</span>}
+        </div>
+      </div>
+
+      {/* ── Company Profile ──────────────────────────────────── */}
+      <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <Building2 size={16} className="text-slate-500" />
+          <div>
+            <div className="text-sm font-medium text-slate-700">Company Profile</div>
+            <div className="text-xs text-slate-400">
+              Name, PAN, and contact — shown on invoices and reports
+            </div>
+          </div>
+          {companySaved && <span className="ml-auto text-xs text-emerald-600">✓ Saved</span>}
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label className="text-sm text-slate-600">Company Name</label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="e.g. Syasyah Samaj"
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-slate-600">PAN Number</label>
+            <input
+              type="text"
+              value={companyPan}
+              onChange={(e) => setCompanyPan(e.target.value)}
+              placeholder="e.g. 123456789"
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm font-mono outline-none focus:border-slate-500"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-slate-600">Contact Number</label>
+            <input
+              type="tel"
+              value={companyContact}
+              onChange={(e) => setCompanyContact(e.target.value)}
+              placeholder="e.g. +977-1-4567890"
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-slate-600">Email</label>
+            <input
+              type="email"
+              value={companyEmail}
+              onChange={(e) => setCompanyEmail(e.target.value)}
+              placeholder="e.g. info@syasyahsamaj.com"
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-slate-600">Logo URL</label>
+            <input
+              type="text"
+              value={companyLogo}
+              onChange={(e) => setCompanyLogo(e.target.value)}
+              placeholder="https://example.com/logo.png"
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-sm text-slate-600">Address</label>
+            <textarea
+              value={companyAddress}
+              onChange={(e) => setCompanyAddress(e.target.value)}
+              rows={2}
+              placeholder="Registered address"
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            />
+          </div>
+        </div>
+        {companyLogo && (
+          <div className="mt-3 flex items-center gap-3">
+            <div className="text-xs text-slate-400">Preview:</div>
+            <img
+              src={companyLogo}
+              alt="Company logo"
+              className="h-10 w-auto rounded border border-slate-200 bg-white object-contain p-1"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            />
+          </div>
+        )}
+        <div className="mt-4 flex items-center justify-end border-t border-slate-100 pt-3">
+          <button
+            type="button"
+            onClick={() => void persistCompany()}
+            className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
+          >
+            Save
+          </button>
         </div>
       </div>
 

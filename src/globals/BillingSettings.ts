@@ -108,6 +108,42 @@ export const BillingSettings: GlobalConfig = {
       ],
     },
     {
+      type: 'group',
+      label: 'Company Profile',
+      fields: [
+        {
+          name: 'companyName',
+          type: 'text',
+          admin: { description: 'Company or organization name shown on invoices and reports.' },
+        },
+        {
+          name: 'companyPan',
+          type: 'text',
+          admin: { description: 'PAN (Permanent Account Number) for tax documents.' },
+        },
+        {
+          name: 'companyContact',
+          type: 'text',
+          admin: { description: 'Primary contact phone number.' },
+        },
+        {
+          name: 'companyEmail',
+          type: 'email',
+          admin: { description: 'Company email address.' },
+        },
+        {
+          name: 'companyAddress',
+          type: 'textarea',
+          admin: { description: 'Registered address.' },
+        },
+        {
+          name: 'companyLogo',
+          type: 'text',
+          admin: { description: 'URL or path to the company logo image.' },
+        },
+      ],
+    },
+    {
       type: 'collapsible',
       label: 'Default accounts',
       admin: {

@@ -3366,6 +3366,30 @@ export interface BillingSetting {
    */
   simplifiedInvoiceThreshold?: number | null;
   /**
+   * Company or organization name shown on invoices and reports.
+   */
+  companyName?: string | null;
+  /**
+   * PAN (Permanent Account Number) for tax documents.
+   */
+  companyPan?: string | null;
+  /**
+   * Primary contact phone number.
+   */
+  companyContact?: string | null;
+  /**
+   * Company email address.
+   */
+  companyEmail?: string | null;
+  /**
+   * Registered address.
+   */
+  companyAddress?: string | null;
+  /**
+   * URL or path to the company logo image.
+   */
+  companyLogo?: string | null;
+  /**
    * Accounts Receivable (sales invoices, receipts).
    */
   receivableAccount?: (number | null) | GlAccount;
@@ -3491,6 +3515,12 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   bankReconciliationEnabled?: T;
   simplifiedInvoiceEnabled?: T;
   simplifiedInvoiceThreshold?: T;
+  companyName?: T;
+  companyPan?: T;
+  companyContact?: T;
+  companyEmail?: T;
+  companyAddress?: T;
+  companyLogo?: T;
   receivableAccount?: T;
   payableAccount?: T;
   revenueAccount?: T;
