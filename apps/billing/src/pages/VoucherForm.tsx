@@ -520,7 +520,13 @@ export default function VoucherForm({ mode }: Props) {
         await api(`/documents/${id}`, { method: 'PATCH', body: buildBody() })
         if (post) await api(`/documents/${id}/post`, { method: 'POST' })
       } else {
-        const created = await api<{ doc: Document }>('/documents', { method: 'POST', body: buildBody() })
+        // When posting immediately, bypass the outbox so the document gets
+        // a real server ID (local IDs can't be used with /:id/post).
+        const created = await api<{ doc: Document }>('/documents', {
+          method: 'POST',
+          body: buildBody(),
+          _skipQueue: post,
+        })
         if (post) await api(`/documents/${created.doc.id}/post`, { method: 'POST' })
       }
       navigate('/vouchers')

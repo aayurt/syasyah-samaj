@@ -566,6 +566,7 @@ export default function Vouchers() {
         const created = await api<{ doc: Document }>('/documents', {
           method: 'POST',
           body: buildBody(),
+          _skipQueue: post,
         })
         if (post) {
           await api(`/documents/${created.doc.id}/post`, { method: 'POST' })

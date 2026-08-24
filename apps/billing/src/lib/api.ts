@@ -52,6 +52,8 @@ function crudToast(method: string, path: string, error?: string): void {
 interface ApiOptions extends Omit<RequestInit, 'body'> {
   query?: Record<string, string | number | undefined>
   body?: unknown
+  /** Skip the outbox queue — send directly to the server. */
+  _skipQueue?: boolean
 }
 
 async function doFetch<T>(path: string, options: ApiOptions): Promise<T> {
@@ -233,7 +235,7 @@ export async function api<T = unknown>(
   )
   const isStandardWrite = method !== 'GET' && !isCustomEndpoint && slug && segments.length <= 2
 
-  if (isStandardWrite && options.body) {
+  if (isStandardWrite && options.body && !options._skipQueue) {
     // Queue the write to the outbox for batch sync
     try {
       const result = await engine.offlineRequest(method, path, options.body)
