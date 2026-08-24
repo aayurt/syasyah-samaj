@@ -186,7 +186,7 @@ export default function Vouchers() {
     if (statusFilter) params.set('status', statusFilter); else params.delete('status')
     setSearchParams(params, { replace: true })
   }, [typeFilter, statusFilter]) // eslint-disable-line react-hooks/exhaustive-deps
-  const { formatDate } = useCalendar()
+  const { formatDate, formatDateTime } = useCalendar()
   const [printDoc, setPrintDoc] = useState<Document | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
@@ -1797,7 +1797,7 @@ export default function Vouchers() {
                   {formatDate(d.date)}
                 </td>
                 <td className="px-4 py-2 text-xs text-slate-400">
-                  {d.updatedAt ? formatDate(d.updatedAt) : '—'}
+                  {d.updatedAt ? formatDateTime(d.updatedAt) : '—'}
                 </td>
                 <td className="px-4 py-2 font-mono text-slate-700">
                   {d.number || (
