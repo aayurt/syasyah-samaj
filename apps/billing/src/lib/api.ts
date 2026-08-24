@@ -191,7 +191,10 @@ export async function api<T = unknown>(
     if (cached) {
       // Serve from cache, but refresh in background
       doFetch<T>(path, options).then((fresh) => {
-        writeGlobalsCache(fresh)
+        // Merge: keep any local-only fields (e.g. company profile) the server
+        // may not yet have, then overlay fresh server data on top.
+        const merged = { ...(cached as Record<string, unknown>), ...(fresh as Record<string, unknown>) }
+        writeGlobalsCache(merged)
       }).catch(() => { /* stale cache is fine */ })
       return cached as unknown as T
     }
@@ -278,9 +281,13 @@ export async function api<T = unknown>(
     }
     if (method !== 'GET') {
       crudToast(method, path)
-      // Update globals cache with fresh data (don't invalidate)
+      // Update globals cache with fresh data (merge to preserve local-only fields)
       if (path === '/globals/billing-settings') {
-        try { writeGlobalsCache(res) } catch { /* ignore */ }
+        try {
+          const prev = readGlobalsCache()
+          const merged = { ...(prev || {}), ...(res as Record<string, unknown>) }
+          writeGlobalsCache(merged)
+        } catch { /* ignore */ }
       }
     }
     // Warm the read cache only for plain collection lists — never for
