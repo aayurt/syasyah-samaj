@@ -191,9 +191,13 @@ export async function api<T = unknown>(
     if (cached) {
       // Serve from cache, but refresh in background
       doFetch<T>(path, options).then((fresh) => {
-        // Merge: keep any local-only fields (e.g. company profile) the server
-        // may not yet have, then overlay fresh server data on top.
-        const merged = { ...(cached as Record<string, unknown>), ...(fresh as Record<string, unknown>) }
+        // Merge: server nulls must NOT overwrite locally-saved values.
+        const freshObj = fresh as Record<string, unknown>
+        const cachedObj = cached as Record<string, unknown>
+        const merged: Record<string, unknown> = { ...cachedObj }
+        for (const [k, v] of Object.entries(freshObj)) {
+          if (v != null) merged[k] = v
+        }
         writeGlobalsCache(merged)
       }).catch(() => { /* stale cache is fine */ })
       return cached as unknown as T
@@ -285,7 +289,11 @@ export async function api<T = unknown>(
       if (path === '/globals/billing-settings') {
         try {
           const prev = readGlobalsCache()
-          const merged = { ...(prev || {}), ...(res as Record<string, unknown>) }
+          const resObj = res as Record<string, unknown>
+          const merged: Record<string, unknown> = { ...(prev || {}) }
+          for (const [k, v] of Object.entries(resObj)) {
+            if (v != null) merged[k] = v
+          }
           writeGlobalsCache(merged)
         } catch { /* ignore */ }
       }
