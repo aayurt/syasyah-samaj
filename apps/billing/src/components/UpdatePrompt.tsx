@@ -68,7 +68,7 @@ export default function UpdatePrompt() {
   return (
     <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg border border-crimson-200 bg-white px-4 py-3 shadow-lg">
       <p className="text-sm text-slate-700">
-        A new version of Syasya Accounting is available.
+        A new version of Syasha धुकू is available.
       </p>
       <button
         onClick={reload}

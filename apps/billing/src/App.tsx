@@ -211,7 +211,7 @@ function Shell({ email }: { email: string }) {
         >
           {!collapsed && (
             <div className="truncate text-lg font-semibold tracking-tight text-white">
-              Syasya Accounting
+              Syasha धुकू
             </div>
           )}
           <button

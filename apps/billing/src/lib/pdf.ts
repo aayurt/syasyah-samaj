@@ -2,7 +2,7 @@ import { jsPDF } from 'jspdf'
 import type { Document, DocumentLine, Party } from './types'
 import { fmt } from './api'
 
-const ORG = 'Syasya Accounting'
+const ORG = 'Syasha धुकू'
 const M = 48 // left/right margin (pt)
 const PAGE_H = 842 // A4 height (pt)
 const PAGE_W = 595 // A4 width (pt)

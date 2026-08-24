@@ -1280,7 +1280,7 @@ export default function VoucherForm({ mode }: Props) {
           const isSimplified = simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold
           return (
             <div className="border-b border-slate-200 bg-slate-50 px-6 py-4 text-center">
-              <h1 className="text-lg font-bold tracking-tight text-slate-900">Syasya Samaj</h1>
+              <h1 className="text-lg font-bold tracking-tight text-slate-900">Syasha धुकू</h1>
               <p className="text-[10px] uppercase tracking-widest text-slate-400">
                 {isSimplified ? 'Tax Invoice (VAT Inclusive)' : 'Tax Invoice / Voucher'}
               </p>
