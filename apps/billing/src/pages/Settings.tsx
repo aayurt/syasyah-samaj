@@ -29,7 +29,6 @@ function Section({
   saved,
   onSave,
   onCancel,
-  saving,
 }: {
   title: string
   subtitle?: string
