@@ -559,6 +559,7 @@ export default function Vouchers() {
         await api(`/documents/${editingId}`, {
           method: 'PATCH',
           body: buildBody(),
+          query: tenantQuery,
         })
         if (post) {
           await api(`/documents/${editingId}/post`, { method: 'POST' })
@@ -567,6 +568,7 @@ export default function Vouchers() {
         const created = await api<{ doc: Document }>('/documents', {
           method: 'POST',
           body: buildBody(),
+          query: tenantQuery,
         })
         if (post) {
           await api(`/documents/${created.doc.id}/post`, { method: 'POST' })
