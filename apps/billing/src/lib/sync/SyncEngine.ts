@@ -368,13 +368,21 @@ export class SyncEngine {
     // These have server-side business logic and can't be batched.
     for (const entry of customOps) {
       try {
-        // Map local ID → server ID if needed
-        let serverId: string | number | undefined = entry.id
-        if (entry.localId && typeof entry.id === 'string' && entry.id.startsWith('local-')) {
-          const mapped = await this.storage.getServerId(entry.localId)
-          if (mapped != null) serverId = mapped
+        // The collection field stores the full path for custom endpoints,
+        // e.g., 'documents/local-0170b4e3/post'. Parse it and replace
+        // the local ID with the mapped server ID.
+        const collParts = entry.collection.split('/')
+        // collParts: ['documents', 'local-0170b4e3', 'post']
+        const collName = collParts[0]
+        const localOrServerId = collParts[1]
+        const action = collParts[2] // e.g., 'post', 'void', 'reopen'
+
+        let resolvedId: string | number | undefined = localOrServerId
+        if (localOrServerId && localOrServerId.startsWith('local-')) {
+          const mapped = await this.storage.getServerId(localOrServerId)
+          if (mapped != null) resolvedId = mapped
         }
-        const path = `/${entry.collection}${serverId ? `/${serverId}` : ''}`
+        const path = `/${collName}/${resolvedId}${action ? `/${action}` : ''}`
         const fetchRes = await fetch(`${this.apiBase}/api${path}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
