@@ -41,7 +41,6 @@ function Section({
   saved?: boolean
   onSave?: () => void
   onCancel?: () => void
-  saving?: boolean
 }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white">
@@ -88,10 +87,10 @@ function Section({
               <button
                 type="button"
                 onClick={onSave}
-                disabled={saving || !hasChanges}
+                disabled={!hasChanges}
                 className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {saving ? 'Saving…' : 'Save'}
+                Save
               </button>
             </div>
           )}
@@ -144,7 +143,7 @@ export default function Settings() {
     dateFormat !== savedCalendar.current.dateFormat ||
     timeFormat !== savedCalendar.current.timeFormat
   const [calSaved, setCalSaved] = useState(false)
-  const [calSaving, setCalSaving] = useState(false)
+
 
   // ── Company state ──
   const [companyName, setCompanyName] = useState('')
@@ -162,7 +161,7 @@ export default function Settings() {
     companyAddress !== savedCompany.current.address ||
     companyLogo !== savedCompany.current.logo
   const [companySaved, setCompanySaved] = useState(false)
-  const [companySaving, setCompanySaving] = useState(false)
+
 
   // ── Fiscal state ──
   const [fiscalYearStart, setFiscalYearStart] = useState('')
@@ -172,7 +171,7 @@ export default function Settings() {
     fiscalYearStart !== savedFiscal.current.fy ||
     freezeDate !== savedFiscal.current.freeze
   const [fiscalSaved, setFiscalSaved] = useState(false)
-  const [fiscalSaving, setFiscalSaving] = useState(false)
+
 
   // ── Feature toggles ──
   const [bankRecEnabled, setBankRecEnabled] = useState(false)
@@ -184,7 +183,7 @@ export default function Settings() {
     simplifiedInvEnabled !== savedFeatures.current.simplifiedInv ||
     simplifiedInvThreshold !== savedFeatures.current.threshold
   const [featuresSaved, setFeaturesSaved] = useState(false)
-  const [featuresSaving, setFeaturesSaving] = useState(false)
+
 
   // ── Doc sequences ──
   const [sequences, setSequences] = useState<{ key: string; lastNumber: number; id?: number }[]>([])
@@ -260,8 +259,7 @@ export default function Settings() {
   }, [])
 
   /* ── Persist helpers ── */
-  const persistCalendar = async () => {
-    setCalSaving(true)
+  const persistCalendar = () => {
     const body = { calendarType, dateFormat, timeFormat }
     try {
       const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
@@ -272,13 +270,11 @@ export default function Settings() {
       window.dispatchEvent(new Event('billing-settings-changed'))
       updateCalendar({ calendarType, dateFormat, timeFormat })
     } catch { /* ignore */ }
-    try {
-      await api('/globals/billing-settings', { method: 'POST', body })
-      savedCalendar.current = { calendarType, dateFormat, timeFormat }
-      setCalSaved(true)
-      setTimeout(() => setCalSaved(false), 2000)
-    } catch { /* offline */ }
-    setCalSaving(false)
+    savedCalendar.current = { calendarType, dateFormat, timeFormat }
+    setCalSaved(true)
+    setTimeout(() => setCalSaved(false), 2000)
+    // Fire-and-forget: sync to server in background
+    api('/globals/billing-settings', { method: 'POST', body }).catch(() => {})
   }
 
   const cancelCalendar = () => {
@@ -287,8 +283,7 @@ export default function Settings() {
     setTimeFormat(savedCalendar.current.timeFormat as '12h' | '24h')
   }
 
-  const persistCompany = async () => {
-    setCompanySaving(true)
+  const persistCompany = () => {
     const body = { companyName, companyPan, companyContact, companyEmail, companyAddress, companyLogo }
     try {
       const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
@@ -298,20 +293,18 @@ export default function Settings() {
       )
       window.dispatchEvent(new Event('billing-settings-changed'))
     } catch { /* ignore */ }
-    try {
-      await api('/globals/billing-settings', { method: 'POST', body })
-      savedCompany.current = {
-        name: companyName,
-        pan: companyPan,
-        contact: companyContact,
-        email: companyEmail,
-        address: companyAddress,
-        logo: companyLogo,
-      }
-      setCompanySaved(true)
-      setTimeout(() => setCompanySaved(false), 2000)
-    } catch { /* offline */ }
-    setCompanySaving(false)
+    savedCompany.current = {
+      name: companyName,
+      pan: companyPan,
+      contact: companyContact,
+      email: companyEmail,
+      address: companyAddress,
+      logo: companyLogo,
+    }
+    setCompanySaved(true)
+    setTimeout(() => setCompanySaved(false), 2000)
+    // Fire-and-forget: sync to server in background
+    api('/globals/billing-settings', { method: 'POST', body }).catch(() => {})
   }
 
   const cancelCompany = () => {
@@ -324,8 +317,7 @@ export default function Settings() {
     setCompanyLogo(s.logo)
   }
 
-  const persistFiscal = async () => {
-    setFiscalSaving(true)
+  const persistFiscal = () => {
     const body = { fiscalYearStart: fiscalYearStart || null, freezeDate: freezeDate || null }
     try {
       const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
@@ -334,13 +326,11 @@ export default function Settings() {
         JSON.stringify({ data: { ...(cached.data || {}), ...body }, ts: Date.now() }),
       )
     } catch { /* ignore */ }
-    try {
-      await api('/globals/billing-settings', { method: 'POST', body })
-      savedFiscal.current = { fy: fiscalYearStart, freeze: freezeDate }
-      setFiscalSaved(true)
-      setTimeout(() => setFiscalSaved(false), 2000)
-    } catch { /* offline */ }
-    setFiscalSaving(false)
+    savedFiscal.current = { fy: fiscalYearStart, freeze: freezeDate }
+    setFiscalSaved(true)
+    setTimeout(() => setFiscalSaved(false), 2000)
+    // Fire-and-forget: sync to server in background
+    api('/globals/billing-settings', { method: 'POST', body }).catch(() => {})
   }
 
   const cancelFiscal = () => {
@@ -348,8 +338,7 @@ export default function Settings() {
     setFreezeDate(savedFiscal.current.freeze)
   }
 
-  const persistFeatures = async () => {
-    setFeaturesSaving(true)
+  const persistFeatures = () => {
     const body = {
       bankReconciliationEnabled: bankRecEnabled,
       simplifiedInvoiceEnabled: simplifiedInvEnabled,
@@ -363,13 +352,11 @@ export default function Settings() {
       )
       window.dispatchEvent(new Event('billing-settings-changed'))
     } catch { /* ignore */ }
-    try {
-      await api('/globals/billing-settings', { method: 'POST', body })
-      savedFeatures.current = { bankRec: bankRecEnabled, simplifiedInv: simplifiedInvEnabled, threshold: simplifiedInvThreshold }
-      setFeaturesSaved(true)
-      setTimeout(() => setFeaturesSaved(false), 2000)
-    } catch { /* offline */ }
-    setFeaturesSaving(false)
+    savedFeatures.current = { bankRec: bankRecEnabled, simplifiedInv: simplifiedInvEnabled, threshold: simplifiedInvThreshold }
+    setFeaturesSaved(true)
+    setTimeout(() => setFeaturesSaved(false), 2000)
+    // Fire-and-forget: sync to server in background
+    api('/globals/billing-settings', { method: 'POST', body }).catch(() => {})
   }
 
   const cancelFeatures = () => {
@@ -406,7 +393,6 @@ export default function Settings() {
         saved={calSaved}
         onSave={() => void persistCalendar()}
         onCancel={cancelCalendar}
-        saving={calSaving}
       >
         <div className="flex items-center gap-3 mb-4">
           <span className="text-sm text-slate-600">Calendar type</span>
@@ -481,7 +467,6 @@ export default function Settings() {
         saved={companySaved}
         onSave={() => void persistCompany()}
         onCancel={cancelCompany}
-        saving={companySaving}
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -573,7 +558,6 @@ export default function Settings() {
         saved={fiscalSaved}
         onSave={() => void persistFiscal()}
         onCancel={cancelFiscal}
-        saving={fiscalSaving}
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -618,7 +602,6 @@ export default function Settings() {
         saved={featuresSaved}
         onSave={() => void persistFeatures()}
         onCancel={cancelFeatures}
-        saving={featuresSaving}
       >
         <div className="space-y-4">
           {/* Bank Reconciliation */}
