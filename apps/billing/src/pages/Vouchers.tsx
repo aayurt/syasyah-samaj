@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { api, fmt, getEngine, list, useSyncState } from '../lib/api'
 import { pushToast } from '../lib/toast'
-import { useSortSearch } from '../lib/useSortSearch'
+import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import type { OutboxEntry } from '../lib/offline/types'
 import {
   DOC_TYPE_LABELS,
@@ -825,6 +825,21 @@ export default function Vouchers() {
     return { status: 'unpaid', paid: 0, outstanding }
   }
 
+  // Parse initial sort/search from URL params
+  const urlSortKey = searchParams.get('sort') || 'date'
+  const urlSortDir = (searchParams.get('dir') as 'asc' | 'desc') || 'desc'
+  const urlQuery = searchParams.get('q') || ''
+
+  const syncToUrl = useCallback((q: string, s: SortState) => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev)
+      if (q) params.set('q', q); else params.delete('q')
+      if (s.key && s.key !== 'date') params.set('sort', s.key); else params.delete('sort')
+      if (s.key && s.dir !== 'desc') params.set('dir', s.dir); else params.delete('dir')
+      return params
+    }, { replace: true })
+  }, [setSearchParams])
+
   const { query, setQuery, sort, toggleSort, visible } = useSortSearch(filtered, {
     searchable: (d) =>
       [
@@ -849,6 +864,9 @@ export default function Vouchers() {
       }
     },
     defaultSort: { key: 'date', dir: 'desc' },
+    initialQuery: urlQuery,
+    initialSort: { key: urlSortKey, dir: urlSortDir },
+    onChange: syncToUrl,
   })
 
   return (

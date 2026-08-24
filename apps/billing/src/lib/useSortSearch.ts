@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 export interface SortState {
   key: string
@@ -11,6 +11,12 @@ interface UseSortSearchOptions<T> {
   /** Extracts a sortable value for a column key. */
   valueOf: (row: T, key: string) => string | number | null | undefined
   defaultSort?: SortState
+  /** Initial query from URL params. */
+  initialQuery?: string
+  /** Initial sort from URL params. */
+  initialSort?: SortState
+  /** Called when query or sort changes (for syncing to URL params). */
+  onChange?: (query: string, sort: SortState) => void
 }
 
 /**
@@ -28,17 +34,25 @@ export function useSortSearch<T>(
   toggleSort: (key: string) => void
   visible: T[]
 } {
-  const [query, setQuery] = useState('')
-  const [sort, setSort] = useState<SortState>(
-    opts.defaultSort ?? { key: '', dir: 'asc' },
+  const [query, _setQuery] = useState(opts.initialQuery ?? '')
+  const [sort, _setSort] = useState<SortState>(
+    opts.initialSort ?? opts.defaultSort ?? { key: '', dir: 'asc' },
   )
 
-  const toggleSort = (key: string) =>
-    setSort((s) =>
-      s.key === key
-        ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' }
-        : { key, dir: 'asc' },
-    )
+  const setQuery = useCallback((q: string) => {
+    _setQuery(q)
+    opts.onChange?.(q, sort)
+  }, [opts.onChange, sort])
+
+  const toggleSort = useCallback((key: string) => {
+    _setSort((s) => {
+      const next = s.key === key
+        ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } as SortState
+        : { key, dir: 'asc' } as SortState
+      opts.onChange?.(query, next)
+      return next
+    })
+  }, [opts.onChange, query])
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
