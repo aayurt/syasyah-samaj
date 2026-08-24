@@ -206,14 +206,28 @@ export default function Vouchers() {
   const [tdsTypeId, setTdsTypeId] = useState('')
   const [tdsAmountManual, setTdsAmountManual] = useState('')
   const [simplifiedInv, setSimplifiedInv] = useState({ enabled: true, threshold: 5000 })
+  const [companyProfile, setCompanyProfile] = useState<{
+    companyName?: string; companyPan?: string; companyContact?: string
+    companyEmail?: string; companyAddress?: string; companyLogo?: string
+  }>({})
 
-  // Load simplified invoice setting
+  // Load billing settings (simplified invoice + company profile)
   useEffect(() => {
     api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
-      .then((s) => setSimplifiedInv({
-        enabled: s.simplifiedInvoiceEnabled !== false,
-        threshold: s.simplifiedInvoiceThreshold || 5000,
-      }))
+      .then((s) => {
+        setSimplifiedInv({
+          enabled: s.simplifiedInvoiceEnabled !== false,
+          threshold: s.simplifiedInvoiceThreshold || 5000,
+        })
+        setCompanyProfile({
+          companyName: s.companyName,
+          companyPan: s.companyPan,
+          companyContact: s.companyContact,
+          companyEmail: s.companyEmail,
+          companyAddress: s.companyAddress,
+          companyLogo: s.companyLogo,
+        })
+      })
       .catch(() => {})
   }, [])
 
@@ -1973,6 +1987,12 @@ export default function Vouchers() {
             doc={printDoc}
             accounts={accounts}
             partyName={partyName(printDoc)}
+            orgName={companyProfile.companyName}
+            orgAddress={companyProfile.companyAddress}
+            orgPan={companyProfile.companyPan}
+            orgContact={companyProfile.companyContact}
+            orgEmail={companyProfile.companyEmail}
+            orgLogo={companyProfile.companyLogo}
           />
         </div>
       )}
