@@ -2,15 +2,10 @@ import { useState } from 'react'
 import { Cloud, CloudOff, RefreshCw } from 'lucide-react'
 import { getEngine, useSyncState } from '../lib/api'
 
-const PULL_COLLECTIONS = [
-  'documents', 'parties', 'gl-accounts', 'items',
-  'membership-types', 'members', 'journal-entries',
-]
-
 /**
  * Compact sync status shown in the header: Synced / n to sync / Offline,
- * plus a manual "sync now" button that flushes queued writes, pulls fresh
- * data for all collections, and shows clear visual feedback.
+ * plus a manual "sync now" button that uses the single POST /api/sync
+ * endpoint to push queued writes and pull all changes in one request.
  */
 export default function SyncStatus() {
   const state = useSyncState()
@@ -19,16 +14,11 @@ export default function SyncStatus() {
 
   const syncNow = async () => {
     setSyncing(true)
-    setPullProgress('Flushing…')
+    setPullProgress('Syncing…')
     try {
       const engine = getEngine()
-      // 1. Push any queued changes
-      await engine.syncAll()
-      // 2. Pull fresh data for every collection
-      for (const col of PULL_COLLECTIONS) {
-        setPullProgress(`Pulling ${col}…`)
-        await engine.pull(col)
-      }
+      // Single endpoint: pushes outbox + pulls all changes
+      await engine.pull()
       setPullProgress('Done')
     } finally {
       setSyncing(false)

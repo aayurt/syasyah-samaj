@@ -212,6 +212,37 @@ export async function api<T = unknown>(
     }
   }
 
+  // ── Standard CRUD writes: queue to outbox, batch via POST /api/sync ──
+  // Custom endpoints (/:id/post, /:id/void, /:id/reopen, etc.) still go
+  // through individual fetch because they have server-side business logic.
+  const lastSeg = segments[segments.length - 1]
+  const isCustomEndpoint = segments.length >= 2 && (
+    lastSeg === 'post' ||
+    lastSeg === 'void' ||
+    lastSeg === 'reopen' ||
+    lastSeg === 'partial-void' ||
+    lastSeg === 'confirm' ||
+    lastSeg === 'pay-fee' ||
+    lastSeg === 'stock-levels' ||
+    lastSeg === 'number'
+  )
+  const isStandardWrite = method !== 'GET' && !isCustomEndpoint && slug && segments.length <= 2
+
+  if (isStandardWrite && options.body) {
+    // Queue the write to the outbox for batch sync
+    try {
+      const result = await engine.offlineRequest(method, path, options.body)
+      engine.setOnline(true)
+      crudToast(method, path)
+      if (path === '/globals/billing-settings') {
+        try { localStorage.removeItem(GS_KEY) } catch { /* ignore */ }
+      }
+      return result as T
+    } catch {
+      // Queue failed — fall through to direct fetch
+    }
+  }
+
   try {
     const res = await doFetch<T>(path, options)
     engine.setOnline(true)

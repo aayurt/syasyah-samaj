@@ -148,12 +148,6 @@ class CompatibilityEngine {
 
   // ── Sync ──────────────────────────────────────────────────────
 
-  async syncAll(): Promise<void> {
-    const engine = await this.ensure()
-    await engine.syncAll()
-    this._cacheVersion++
-  }
-
   async flush(): Promise<{ pushed: number; conflicts: number }> {
     const engine = await this.ensure()
     const result = await engine.syncAll()
@@ -299,37 +293,52 @@ class CompatibilityEngine {
 
   // ── Pull / cache operations ───────────────────────────────────
 
-  async pull(collection: string, tenant?: string): Promise<number> {
-    // Use the old approach: fetch from API and write to cache
-    try {
-      const params = new URLSearchParams({ limit: '1000', depth: '1', sort: 'updatedAt' })
-      if (tenant) {
-        params.append('tenant', tenant)
-        params.append('where[tenant][equals]', tenant)
-      }
-      const cursor = await this.getKey(`cursor:${tenant ? `${tenant}:` : ''}${collection}`)
-      if (cursor) params.append('where[updatedAt][greater_than]', cursor)
+  /**
+   * Pull changes from the server via POST /api/sync.
+   * Single request: sends pending ops + fetches all changes since lastSyncAt.
+   * Applies changes to IndexedDB and bumps cacheVersion.
+   */
+  async syncAll(): Promise<void> {
+    const engine = await this.ensure()
+    await engine.syncAll()
+    this._cacheVersion++
+  }
 
-      const res = await fetch(`/api/${collection}?${params}`, { credentials: 'include' })
+  /**
+   * Pull only: single POST /api/sync with no outgoing ops.
+   * Returns the number of changed documents.
+   */
+  async pull(tenant?: string): Promise<number> {
+    try {
+      const lastSyncAt = await this.getKey('lastSyncAt')
+      const body: Record<string, unknown> = {
+        lastSyncAt: lastSyncAt || undefined,
+        operations: [],
+      }
+      const res = await fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      })
       if (!res.ok) return 0
       const data = await res.json()
-      const docs = data.docs || []
-      for (const doc of docs) {
-        await this.adapter!.upsert(collection, doc)
-      }
-      // Update cursor so next pull is incremental (only new/changed docs)
-      if (docs.length > 0) {
-        const latest = docs
-          .map((d: Record<string, unknown>) => d.updatedAt as string)
-          .filter(Boolean)
-          .sort()
-          .pop()
-        if (latest) {
-          await this.setKey(`cursor:${tenant ? `${tenant}:` : ''}${collection}`, latest)
+      // Apply server changes to local cache
+      const changes = data.changes || []
+      for (const change of changes) {
+        if (change.data?.id) {
+          const col = change.collection
+          await this.adapter!.upsert(col, change.data)
+          // Mark collection as pulled
+          await this.setKey(`pulled:${col}`, '1')
         }
       }
-      this._cacheVersion++
-      return docs.length
+      // Update sync cursor
+      if (data.serverTime) {
+        await this.setKey('lastSyncAt', data.serverTime)
+      }
+      if (changes.length > 0) this._cacheVersion++
+      return changes.length
     } catch {
       return 0
     }
