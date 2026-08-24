@@ -247,7 +247,7 @@ export default function Settings() {
   const loadSequences = async () => {
     try {
       const res = await api<{ docs: { key: string; lastNumber: number; id?: number }[] }>(
-        'doc-sequences',
+        '/doc-sequences',
         { query: { limit: 100, sort: 'key' } },
       )
       setSequences(res.docs || [])
@@ -772,7 +772,7 @@ export default function Settings() {
                 if (!window.confirm(`Reset ${resetKey} to ${val}? The next voucher will use ${val + 1}.`)) return
                 setResetting(true)
                 try {
-                  await api(`doc-sequences/${sequences.find((s) => s.key === resetKey)?.id}`, {
+                  await api(`/doc-sequences/${sequences.find((s) => s.key === resetKey)?.id}`, {
                     method: 'PATCH',
                     body: { lastNumber: val },
                   })
