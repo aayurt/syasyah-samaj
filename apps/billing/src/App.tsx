@@ -38,6 +38,7 @@ import AuditLog from './pages/AuditLog'
 import Members from './pages/Members'
 import MembershipTypes from './pages/MembershipTypes'
 import SyncBanner from './components/SyncBanner'
+import ConnectingBanner from './components/ConnectingBanner'
 import SyncStatus from './components/SyncStatus'
 import CommandPalette from './components/CommandPalette'
 import IllakaSwitcher from './components/IllakaSwitcher'
@@ -287,6 +288,7 @@ function Shell({ email }: { email: string }) {
       </aside>
       <div className="flex flex-1 flex-col overflow-hidden">
         <div className="print:hidden">
+          <ConnectingBanner />
           <SyncBanner />
         </div>
         <header className="print:hidden flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
