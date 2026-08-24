@@ -82,7 +82,7 @@ export default function PurchaseReport() {
   const [debitNotes, setDebitNotes] = useState<Document[]>([])
   const [payments, setPayments] = useState<Document[]>([])
   const [parties, setParties] = useState<Party[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
@@ -90,7 +90,6 @@ export default function PurchaseReport() {
   const [query, setQuery] = useState('')
 
   const load = useCallback(async () => {
-    setLoading(true); setError('')
     try {
       const q: Record<string, string | number> = { sort: '-date', depth: 1, ...tenantQuery }
       if (from && to) {
@@ -208,7 +207,7 @@ export default function PurchaseReport() {
         </div>
       </div>
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {loading ? <ReportSkeleton sections={1} /> : (
+      {loading && invoices.length === 0 ? <ReportSkeleton sections={1} /> : (
         <>
           <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
             {kpis.map((k) => (

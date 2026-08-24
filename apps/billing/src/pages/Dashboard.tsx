@@ -142,7 +142,7 @@ export default function Dashboard() {
 
   // Trend data (12 months of P&L)
   const [trend, setTrend] = useState<Map<string, MonthData>>(new Map())
-  const [trendLoading, setTrendLoading] = useState(true)
+  const [trendLoading, setTrendLoading] = useState(false)
 
   // Outstanding dues (AR + AP)
   const [arData, setArData] = useState<AgingResponse | null>(null)

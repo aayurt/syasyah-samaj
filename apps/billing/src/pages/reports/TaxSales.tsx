@@ -28,13 +28,12 @@ export default function TaxSales() {
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
   const [entries, setEntries] = useState<TaxEntry[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
   const load = useCallback(async () => {
-    setLoading(true); setError('')
     try {
       const q: Record<string, string | number> = { sort: '-date', depth: 1, ...tenantQuery }
       if (from && to) {
@@ -118,7 +117,7 @@ export default function TaxSales() {
         <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500" />
       </div>
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {loading ? <ReportSkeleton sections={1} /> : (
+      {loading && entries.length === 0 ? <ReportSkeleton sections={1} /> : (
         <>
           <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-3">
             <div className="rounded-lg border border-slate-200 bg-white p-4">

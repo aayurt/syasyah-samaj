@@ -29,13 +29,12 @@ export default function BankStatement() {
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
   const [rows, setRows] = useState<Row[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
   const load = useCallback(async () => {
-    setLoading(true); setError('')
     try {
       const [accts, entries] = await Promise.all([
         list<Account>('gl-accounts', { depth: 0, ...tenantQuery }),
@@ -104,7 +103,7 @@ export default function BankStatement() {
         </div>
       </div>
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {loading ? <ReportSkeleton sections={1} /> : (
+      {loading && rows.length === 0 ? <ReportSkeleton sections={1} /> : (
         <>
           <div className="mt-4 grid grid-cols-3 gap-4">
             <div className="rounded-lg border border-slate-200 bg-white p-4">

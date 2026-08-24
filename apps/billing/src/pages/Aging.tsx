@@ -15,7 +15,7 @@ export default function Aging() {
   const [side, setSide] = useState<'ar' | 'ap'>('ar')
   const [data, setData] = useState<AgingResponse | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()

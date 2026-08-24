@@ -14,11 +14,10 @@ export default function LowStockSummary() {
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const [items, setItems] = useState<(Item & { stock?: StockLevel })[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
-    setLoading(true); setError('')
     try {
       const [i, s] = await Promise.all([
         list<Item>('items', { depth: 0, sort: 'name', ...tenantQuery }),
@@ -63,7 +62,7 @@ export default function LowStockSummary() {
       </div>
       <div className="mt-2"><DataStatus /></div>
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {loading ? <ReportSkeleton sections={1} /> : (
+      {loading && items.length === 0 ? <ReportSkeleton sections={1} /> : (
         <>
           {items.length > 0 && (
             <div className="mt-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">

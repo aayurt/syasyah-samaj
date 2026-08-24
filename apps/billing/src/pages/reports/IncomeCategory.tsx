@@ -30,14 +30,13 @@ export default function IncomeCategory() {
   const { formatDate } = useCalendar()
   const [categories, setCategories] = useState<GroupedCategory[]>([])
   const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
-    setLoading(true); setError('')
     try {
       const q = { from: from || undefined, to: to || undefined, ...tenantQuery }
       const [pnl, groups, accts] = await Promise.all([
@@ -102,7 +101,7 @@ export default function IncomeCategory() {
         </div>
       </div>
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {loading ? <ReportSkeleton sections={2} /> : (
+      {loading && categories.length === 0 ? <ReportSkeleton sections={2} /> : (
         <>
           <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
             <div className="text-xs uppercase tracking-wide text-slate-500">Total Income</div>

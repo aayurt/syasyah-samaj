@@ -11,7 +11,6 @@ export default function Login() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
     setError('')
     try {
       const { data, error: signInError } = await authClient.signIn.email({

@@ -30,10 +30,11 @@ export default function TrialBalance() {
   const [ledger, setLedger] = useState<LedgerRow[] | null>(null)
   const [ledgerName, setLedgerName] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const { formatDate } = useCalendar()
 
   const load = async () => {
+    setLoading(true)
     try {
       const [tb, a] = await Promise.all([
         api<{
@@ -152,7 +153,7 @@ export default function TrialBalance() {
         </p>
       )}
 
-      {loading ? (
+      {loading && rows.length === 0 ? (
         <ReportSkeleton />
       ) : (
         <>

@@ -26,7 +26,7 @@ export default function Daybooks() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [data, setData] = useState<DaybookResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [voucher, setVoucher] = useState<Document | null>(null)
   const { formatDate } = useCalendar()
@@ -47,8 +47,8 @@ export default function Daybooks() {
 
   useEffect(() => {
     let alive = true
-    setData(null)
     setLoading(true)
+    setData(null)
     setError('')
     api<DaybookResponse>('/journal-entries/daybook', {
       query: {

@@ -74,7 +74,7 @@ export default function AuditLog() {
   const { formatDate } = useCalendar()
   const [logs, setLogs] = useState<AuditLogEntry[]>([])
   const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
@@ -83,7 +83,7 @@ export default function AuditLog() {
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
   const load = useCallback(async () => {
-    setLoading(true); setError('')
+    setLoading(true)
     try {
       const q: Record<string, string | number | undefined> = { depth: 0, sort: '-createdAt', limit: 200, ...tenantQuery }
       const where: Record<string, Record<string, string>> = {}
@@ -154,7 +154,7 @@ export default function AuditLog() {
 
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      {loading ? <ReportSkeleton /> : (
+      {loading && logs.length === 0 ? <ReportSkeleton /> : (
         <>
           <div className="mt-4 rounded-lg border border-slate-200 bg-white">
             <div className="border-b border-slate-200 px-4 py-3 text-sm text-slate-500">

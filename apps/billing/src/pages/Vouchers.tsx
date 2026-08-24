@@ -176,7 +176,7 @@ export default function Vouchers() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || '')
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   // Sync type/status filters to URL search params
   useEffect(() => {
@@ -216,6 +216,7 @@ export default function Vouchers() {
   }, [])
 
   const load = async () => {
+    setLoading(true)
     try {
       const [d, p, a, it, tx] = await Promise.all([
         list<Document>('documents', { depth: 1, sort: '-date', ...tenantQuery }),
@@ -1651,7 +1652,7 @@ export default function Vouchers() {
       )}
 
       {/* Filters */}
-      {loading ? (
+      {loading && docs.length === 0 ? (
         <TableSkeleton rows={7} />
       ) : (
         <>

@@ -46,10 +46,11 @@ export default function Journal() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [filter, setFilter] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const { formatDate } = useCalendar()
 
   const load = async () => {
+    setLoading(true)
     try {
       const [e, a] = await Promise.all([
         list<JournalEntry>('journal-entries', {
@@ -387,7 +388,7 @@ export default function Journal() {
         </form>
       )}
 
-      {loading ? (
+      {loading && entries.length === 0 ? (
         <TableSkeleton />
       ) : (
         <>

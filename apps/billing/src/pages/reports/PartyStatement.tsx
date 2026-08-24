@@ -38,7 +38,6 @@ export default function PartyStatement() {
 
   const loadDocs = useCallback(async () => {
     if (!selectedParty) { setDocs([]); return }
-    setLoading(true); setError('')
     try {
       const res = await list<Document>('documents', {
         depth: 1, sort: 'date', ...tenantQuery,
@@ -116,7 +115,7 @@ export default function PartyStatement() {
 
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      {loading ? <ReportSkeleton sections={1} /> : selectedParty && (
+      {loading && docs.length === 0 ? <ReportSkeleton sections={1} /> : selectedParty && (
         <>
           <div className="mt-4 grid grid-cols-3 gap-4">
             <div className="rounded-lg border border-slate-200 bg-white p-4">

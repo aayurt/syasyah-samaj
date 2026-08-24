@@ -42,13 +42,12 @@ export default function StockQuantity() {
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
   const [rows, setRows] = useState<StockRow[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
   const load = useCallback(async () => {
-    setLoading(true); setError('')
     try {
       const [items, stockLevels, movements] = await Promise.all([
         list<Item>('items', { depth: 0, sort: 'name', ...tenantQuery }),
@@ -136,7 +135,7 @@ export default function StockQuantity() {
         </div>
       </div>
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {loading ? <ReportSkeleton sections={1} /> : (
+      {loading && rows.length === 0 ? <ReportSkeleton sections={1} /> : (
         <>
           <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-5">
             {[

@@ -55,7 +55,7 @@ export default function BankReconciliation() {
   const [selectedAccount, setSelectedAccount] = useState('')
   const [statements, setStatements] = useState<BankStatement[]>([])
   const [selectedStatement, setSelectedStatement] = useState<BankStatement | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   // Import
@@ -91,6 +91,7 @@ export default function BankReconciliation() {
 
   /* ── Load statements for selected account ───────────────────── */
   const loadStatements = useCallback(async () => {
+    setLoading(true)
     if (!selectedAccount) {
       setStatements([])
       return

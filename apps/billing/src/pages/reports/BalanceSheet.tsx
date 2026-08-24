@@ -37,14 +37,13 @@ export default function BalanceSheet() {
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
   const [data, setData] = useState<BsResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['assets', 'liabilities', 'equity']))
 
   const load = useCallback(async () => {
-    setLoading(true); setError('')
     try {
       const q: any = { ...tenantQuery }
       if (from) q.from = from
@@ -161,7 +160,7 @@ export default function BalanceSheet() {
         </div>
       </div>
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {loading ? <ReportSkeleton sections={3} /> : data && (
+      {loading && !data ? <ReportSkeleton sections={3} /> : data && (
         <>
           {/* Balance check banner */}
           <div className={`mt-4 rounded-lg border px-4 py-3 text-sm font-medium ${data.balanced ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>

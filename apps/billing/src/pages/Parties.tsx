@@ -38,9 +38,10 @@ export default function Parties() {
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   const load = async () => {
+    setLoading(true)
     try {
       const res = await list<Party>('parties', { depth: 0, sort: 'name', ...tenantQuery })
       setParties(res.docs)
@@ -244,7 +245,7 @@ export default function Parties() {
         </form>
       )}
 
-      {loading ? (
+      {loading && parties.length === 0 ? (
         <TableSkeleton />
       ) : (
         <>

@@ -38,9 +38,10 @@ export default function Items() {
     rows: StockLedgerRow[]
     closing: { onHand: number; avgCost: number; value: number }
   } | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   const load = async () => {
+    setLoading(true)
     try {
       const [i, l] = await Promise.all([
         list<Item>('items', { depth: 0, sort: 'name', ...tenantQuery }),
@@ -294,7 +295,7 @@ export default function Items() {
         <DataStatus />
       </div>
 
-      {loading ? (
+      {loading && items.length === 0 ? (
         <TableSkeleton rows={7} />
       ) : (
         <>

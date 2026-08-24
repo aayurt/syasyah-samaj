@@ -35,7 +35,7 @@ export default function Accounts() {
   const tenantQuery = useTenantQuery()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [groups, setGroups] = useState<AccountGroup[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)

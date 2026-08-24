@@ -19,7 +19,7 @@ const emptyForm = { name: '', fee: '', periodMonths: '12', description: '' }
 export default function MembershipTypes() {
   const { cacheVersion } = useSyncState()
   const [types, setTypes] = useState<MembershipType[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [editing, setEditing] = useState<number | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -162,7 +162,7 @@ export default function MembershipTypes() {
         </form>
       )}
 
-      {loading ? (
+      {loading && types.length === 0 ? (
         <div className="py-12 text-center text-sm text-slate-400">Loading…</div>
       ) : filtered.length === 0 ? (
         <div className="py-12 text-center text-sm text-slate-400">

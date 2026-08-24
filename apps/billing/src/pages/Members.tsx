@@ -26,7 +26,7 @@ export default function Members() {
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const [members, setMembers] = useState<Member[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [paying, setPaying] = useState<number | null>(null)
 
   useEffect(() => {
@@ -96,7 +96,7 @@ export default function Members() {
         </div>
       </div>
       <DataStatus />
-      {loading ? (
+      {loading && members.length === 0 ? (
         <TableSkeleton rows={6} />
       ) : filtered.length === 0 ? (
         <div className="py-12 text-center text-sm text-slate-400">
