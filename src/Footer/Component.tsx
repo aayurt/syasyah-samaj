@@ -17,7 +17,7 @@ export async function Footer({ locale }: { locale?: string }) {
   const navItems = footerData?.navItems || []
 
   return (
-    <footer className="mt-auto border-t border-border bg-white dark:bg-card text-white">
+    <footer className="mt-auto border-t border-border bg-gray-900 dark:bg-card text-white">
       <div className="container py-8 gap-8 flex flex-col md:flex-row md:justify-between">
         <Link className="flex items-center" href="/">
           <Logo />
@@ -32,8 +32,8 @@ export async function Footer({ locale }: { locale?: string }) {
           </nav>
         </div>
       </div>
-      <div className="container border-t border-gray-200 dark:border-gray-800 mt-6 py-2">
-        <div className="flex flex-col md:flex-row justify-center items-center gap-4 text-sm text-gray-500">
+      <div className="container border-t border-gray-700 dark:border-gray-800 mt-6 py-2">
+        <div className="flex flex-col md:flex-row justify-center items-center gap-4 text-sm text-gray-400">
           <p>{t('copyright')}</p>
         </div>
       </div>
