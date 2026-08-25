@@ -11,7 +11,7 @@ import {
   ToggleLeft,
   Wallet,
 } from 'lucide-react'
-import { api } from '../lib/api'
+import { api, protectGlobalsFields } from '../lib/api'
 import { authClient, clearCachedSession } from '../lib/auth'
 import { formatDate } from '../lib/nepaliDate'
 import { useCalendar } from '../lib/calendar'
@@ -268,6 +268,7 @@ export default function Settings() {
       )
       window.dispatchEvent(new Event('billing-settings-changed'))
       updateCalendar({ calendarType, dateFormat, timeFormat })
+      protectGlobalsFields(['calendarType', 'dateFormat', 'timeFormat'])
     } catch { /* ignore */ }
     savedCalendar.current = { calendarType, dateFormat, timeFormat }
     setCalSaved(true)
@@ -291,6 +292,7 @@ export default function Settings() {
         JSON.stringify({ data: { ...(cached.data || {}), ...body }, ts: Date.now() }),
       )
       window.dispatchEvent(new Event('billing-settings-changed'))
+      protectGlobalsFields(Object.keys(body))
     } catch { /* ignore */ }
     savedCompany.current = {
       name: companyName,
@@ -324,6 +326,7 @@ export default function Settings() {
         'billing.settingsCache',
         JSON.stringify({ data: { ...(cached.data || {}), ...body }, ts: Date.now() }),
       )
+      protectGlobalsFields(Object.keys(body))
     } catch { /* ignore */ }
     savedFiscal.current = { fy: fiscalYearStart, freeze: freezeDate }
     setFiscalSaved(true)
@@ -350,6 +353,7 @@ export default function Settings() {
         JSON.stringify({ data: { ...(cached.data || {}), ...body }, ts: Date.now() }),
       )
       window.dispatchEvent(new Event('billing-settings-changed'))
+      protectGlobalsFields(Object.keys(body))
     } catch { /* ignore */ }
     savedFeatures.current = { bankRec: bankRecEnabled, simplifiedInv: simplifiedInvEnabled, threshold: simplifiedInvThreshold }
     setFeaturesSaved(true)

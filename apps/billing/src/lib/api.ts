@@ -141,6 +141,10 @@ function sortCached(
 /* ── Global settings localStorage cache ─────────────────────────────── */
 const GS_KEY = 'billing.settingsCache'
 const GS_TTL = 5 * 60 * 1000 // 5 minutes
+// Fields that were written locally and must NOT be overwritten by background
+// server refreshes until the POST confirms the server has the new values.
+const GS_PROTECT_KEY = 'billing.settingsProtectedFields'
+const GS_PROTECT_TTL = 30_000 // 30 seconds protection window
 
 function readGlobalsCache(): Record<string, unknown> | null {
   try {
@@ -155,6 +159,31 @@ function writeGlobalsCache(data: unknown): void {
   try {
     localStorage.setItem(GS_KEY, JSON.stringify({ data, ts: Date.now() }))
   } catch { /* quota exceeded — ignore */ }
+}
+
+/** Mark fields as locally-written so background merges skip them. */
+export function protectGlobalsFields(fields: string[]): void {
+  try {
+    localStorage.setItem(GS_PROTECT_KEY, JSON.stringify({ fields, ts: Date.now() }))
+  } catch { /* ignore */ }
+}
+
+/** Clear protected fields (called after POST success confirms server has new values). */
+function clearProtectedFields(): void {
+  try { localStorage.removeItem(GS_PROTECT_KEY) } catch { /* ignore */ }
+}
+
+function getProtectedFields(): Set<string> {
+  try {
+    const raw = localStorage.getItem(GS_PROTECT_KEY)
+    if (!raw) return new Set()
+    const { fields, ts } = JSON.parse(raw)
+    if (Date.now() - ts > GS_PROTECT_TTL) {
+      clearProtectedFields()
+      return new Set()
+    }
+    return new Set(fields)
+  } catch { return new Set() }
 }
 
 /**
@@ -192,11 +221,14 @@ export async function api<T = unknown>(
       // Serve from cache, but refresh in background
       doFetch<T>(path, options).then((fresh) => {
         // Merge: server nulls must NOT overwrite locally-saved values.
+        // Also skip fields protected by local writes (prevent race where
+        // background refresh fires after a save but before POST syncs).
         const freshObj = fresh as Record<string, unknown>
         const cachedObj = cached as Record<string, unknown>
+        const protectedFields = getProtectedFields()
         const merged: Record<string, unknown> = { ...cachedObj }
         for (const [k, v] of Object.entries(freshObj)) {
-          if (v != null) merged[k] = v
+          if (v != null && !protectedFields.has(k)) merged[k] = v
         }
         writeGlobalsCache(merged)
       }).catch(() => { /* stale cache is fine */ })
@@ -295,6 +327,7 @@ export async function api<T = unknown>(
             if (v != null) merged[k] = v
           }
           writeGlobalsCache(merged)
+          clearProtectedFields() // POST confirmed — server has new values
         } catch { /* ignore */ }
       }
     }
