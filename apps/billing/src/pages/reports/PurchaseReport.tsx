@@ -12,6 +12,7 @@ import SearchBox from '../../components/SearchBox'
 import { StatusPill } from '../Dashboard'
 import type { Document, Party } from '../../lib/types'
 import { effectiveAmount } from '../../lib/types'
+import NepaliDateInput from '../../components/NepaliDateInput'
 
 type StatusFilter = 'all' | 'draft' | 'posted' | 'void'
 
@@ -154,10 +155,11 @@ export default function PurchaseReport() {
   const totalPaid = invoices.reduce((s, d) => s + (paymentMap.get(d.id) || 0), 0)
   const totalUnpaid = totalPurchases - totalPaid
 
+  const drillTo = (type: string) => `/vouchers?type=${type}${from ? `&from=${from}` : ''}${to ? `&to=${to}` : ''}`
   const kpis = [
-    { label: 'Total Entries', value: String(invoices.length), sub: `${debitNotes.length} return${debitNotes.length !== 1 ? 's' : ''}` },
-    { label: 'Total Purchases', value: fmt(totalPurchases) },
-    { label: 'Paid', value: fmt(totalPaid) },
+    { label: 'Total Entries', value: String(invoices.length), sub: `${debitNotes.length} return${debitNotes.length !== 1 ? 's' : ''}`, href: drillTo('purchase-invoice') },
+    { label: 'Total Purchases', value: fmt(totalPurchases), href: drillTo('purchase-invoice') },
+    { label: 'Paid', value: fmt(totalPaid), href: `/vouchers?type=payment-voucher${from ? `&from=${from}` : ''}${to ? `&to=${to}` : ''}` },
     { label: 'Unpaid', value: fmt(totalUnpaid), alert: totalUnpaid > 0 },
   ]
 
@@ -196,9 +198,9 @@ export default function PurchaseReport() {
           <option value="void">Void</option>
         </select>
         <div className="flex items-center gap-2">
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500" />
+          <NepaliDateInput compact value={from} onChange={(v) => setFrom(v)} />
           <span className="text-xs text-slate-400">to</span>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500" />
+          <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
         </div>
         <div className="flex gap-1">
           {QUICK_RANGES.map((r) => (
@@ -210,7 +212,13 @@ export default function PurchaseReport() {
       {loading && invoices.length === 0 ? <ReportSkeleton sections={1} /> : (
         <>
           <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {kpis.map((k) => (
+            {kpis.map((k) => k.href ? (
+              <button key={k.label} onClick={() => navigate(k.href!)} className="rounded-lg border border-slate-200 bg-white p-4 text-left transition-colors hover:border-crimson-200 hover:bg-crimson-50/30">
+                <div className="text-xs uppercase tracking-wide text-slate-500">{k.label}</div>
+                <div className={`mt-1 font-mono text-lg font-semibold ${k.alert ? 'text-red-600' : 'text-amber-700'}`}>{k.value}</div>
+                <div className="mt-0.5 text-[10px] text-crimson-500">Click to view →</div>
+              </button>
+            ) : (
               <div key={k.label} className="rounded-lg border border-slate-200 bg-white p-4">
                 <div className="text-xs uppercase tracking-wide text-slate-500">{k.label}</div>
                 <div className={`mt-1 font-mono text-lg font-semibold ${k.alert ? 'text-red-600' : 'text-amber-700'}`}>{k.value}</div>

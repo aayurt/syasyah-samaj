@@ -129,12 +129,25 @@ export function todayBS(): string {
 }
 
 /**
- * Convert BS year/month/date to an AD Date object.
- * Uses the library's BS→AD conversion by parsing a BS string.
+ * Convert BS year/month/date to an AD Date.
+ * `bsMonth` is 0-based (0 = Baisakh). Uses toJsDate() — the library works
+ * in UTC internally, so this roundtrips exactly with toBS() on ISO strings.
  */
 export function toAD(bsYear: number, bsMonth: number, bsDate: number): Date {
-  const bs = new NepaliDate(`${bsYear}/${String(bsMonth + 1).padStart(2, '0')}/${String(bsDate).padStart(2, '0')}`)
-  return new Date(bs.toString())
+  const bs = new NepaliDate(
+    `${bsYear}/${String(bsMonth + 1).padStart(2, '0')}/${String(bsDate).padStart(2, '0')}`,
+  )
+  return bs.toJsDate()
+}
+
+/** Number of days in a BS month (0-based month), derived from real calendar
+ * data by diffing the first days of adjacent months. */
+export function bsMonthLength(bsYear: number, bsMonth: number): number {
+  const nextMonth = bsMonth === 11 ? 0 : bsMonth + 1
+  const nextYear = bsMonth === 11 ? bsYear + 1 : bsYear
+  const a = toAD(bsYear, bsMonth, 1)
+  const b = toAD(nextYear, nextMonth, 1)
+  return Math.round((b.getTime() - a.getTime()) / 86_400_000)
 }
 
 /**

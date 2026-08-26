@@ -6,6 +6,7 @@ import { downloadCsv } from '../lib/csv'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Account } from '../lib/types'
+import NepaliDateInput from '../components/NepaliDateInput'
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -70,6 +71,8 @@ export default function BankReconciliation() {
   // Reconcile
   const [reconciling, setReconciling] = useState(false)
   const [reconcileResult, setReconcileResult] = useState<ReconcileResult | null>(null)
+  const [creatingVouchers, setCreatingVouchers] = useState(false)
+  const [voucherResult, setVoucherResult] = useState<{ vouchers: { id: number; type: string; amount: number; number: string }[]; totalAmount: number } | null>(null)
 
   /* ── Load bank accounts ─────────────────────────────────────── */
   useEffect(() => {
@@ -146,6 +149,25 @@ export default function BankReconciliation() {
       setError(err instanceof Error ? err.message : 'Import failed')
     } finally {
       setImporting(false)
+    }
+  }
+
+  /* ── Create vouchers from unmatched rows ───────────────────── */
+  const handleCreateVouchers = async (stmtId: number, unmatched: { date: string; description: string; reference: string; amount: number }[]) => {
+    if (!unmatched.length) return
+    if (!confirm(`Create ${unmatched.length} voucher(s) from unmatched bank statement rows?`)) return
+    setCreatingVouchers(true); setError(''); setVoucherResult(null)
+    try {
+      const res = await api<{ vouchers: { id: number; type: string; amount: number; number: string }[]; totalAmount: number }>(
+        `bank-statements/${stmtId}/create-vouchers`,
+        { method: 'POST', body: { rows: unmatched } },
+      )
+      setVoucherResult(res)
+      await loadStatements()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create vouchers')
+    } finally {
+      setCreatingVouchers(false)
     }
   }
 
@@ -269,21 +291,11 @@ export default function BankReconciliation() {
               </label>
               <label className="text-xs text-slate-600">
                 Period Start
-                <input
-                  type="date"
-                  value={periodStart}
-                  onChange={(e) => setPeriodStart(e.target.value)}
-                  className="mt-1 block w-full rounded border border-slate-300 px-2 min-h-[36px] py-1.5 text-sm outline-none focus:border-slate-500"
-                />
+                <NepaliDateInput compact value={periodStart} onChange={(v) => setPeriodStart(v)} />
               </label>
               <label className="text-xs text-slate-600">
                 Period End
-                <input
-                  type="date"
-                  value={periodEnd}
-                  onChange={(e) => setPeriodEnd(e.target.value)}
-                  className="mt-1 block w-full rounded border border-slate-300 px-2 min-h-[36px] py-1.5 text-sm outline-none focus:border-slate-500"
-                />
+                <NepaliDateInput compact value={periodEnd} onChange={(v) => setPeriodEnd(v)} />
               </label>
             </div>
             <div className="mt-3 flex items-center gap-3">
@@ -531,9 +543,18 @@ export default function BankReconciliation() {
               {/* Unmatched items */}
               {reconcileResult.unmatched.length > 0 && (
                 <div className="mt-4">
-                  <h4 className="text-xs font-medium text-slate-500 mb-2">
-                    Unmatched Statement Rows (need manual review)
-                  </h4>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-medium text-slate-500">
+                      Unmatched Statement Rows ({reconcileResult.unmatched.length} rows)
+                    </h4>
+                    <button
+                      onClick={() => handleCreateVouchers(selectedStatement!.id, reconcileResult.unmatched)}
+                      disabled={creatingVouchers}
+                      className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
+                    >
+                      {creatingVouchers ? 'Creating…' : `Create ${reconcileResult.unmatched.length} Voucher(s)`}
+                    </button>
+                  </div>
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -573,6 +594,55 @@ export default function BankReconciliation() {
                   ✓ All statement rows matched — reconciliation complete!
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── Voucher creation result ──────────────────────────── */}
+          {voucherResult && (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+              <h3 className="text-sm font-medium text-slate-700 mb-3">
+                Vouchers Created
+              </h3>
+              <div className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700 mb-3">
+                ✓ Created {voucherResult.vouchers.length} voucher(s) totaling {fmt(voucherResult.totalAmount)}
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="px-3 py-2">Number</th>
+                    <th className="px-3 py-2">Type</th>
+                    <th className="px-3 py-2 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {voucherResult.vouchers.map((v) => (
+                    <tr key={v.id} className="border-b border-slate-50 last:border-0">
+                      <td className="px-3 py-2 font-medium text-slate-800">
+                        <button
+                          onClick={() => navigate(`/vouchers/edit/${v.id}`)}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {v.number}
+                        </button>
+                      </td>
+                      <td className="px-3 py-2 text-slate-600">
+                        {v.type === 'receipt-voucher' ? 'Receipt' : 'Payment'}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono text-slate-800">
+                        {fmt(v.amount)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="mt-3">
+                <button
+                  onClick={() => navigate('/vouchers')}
+                  className="text-sm text-slate-600 hover:text-slate-800 hover:underline"
+                >
+                  → View all vouchers
+                </button>
+              </div>
             </div>
           )}
         </>

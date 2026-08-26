@@ -14,6 +14,7 @@ import { assignTenant } from '@/utilities/tenantScope'
 import { paginate, parsePagination } from '@/utilities/pagination'
 
 const DOC_TYPES = [
+  { label: 'Sales Quote', value: 'sales-quote' },
   { label: 'Sales Order', value: 'sales-order' },
   { label: 'Sales Invoice', value: 'sales-invoice' },
   { label: 'Purchase Order', value: 'purchase-order' },
@@ -32,6 +33,7 @@ const DOC_TYPES = [
 ]
 
 const DOC_PREFIXES: Record<string, string> = {
+  'sales-quote': 'SQ',
   'sales-order': 'SO',
   'sales-invoice': 'SI',
   'purchase-order': 'PO',
@@ -54,7 +56,7 @@ const ITEM_LINE_TYPES = DOC_TYPES.map((t) => t.value).filter(
 )
 
 function isOrderType(t: string | null | undefined): boolean {
-  return t === 'sales-order' || t === 'purchase-order'
+  return t === 'sales-order' || t === 'purchase-order' || t === 'sales-quote'
 }
 
 function vErr(message: string): ValidationError {
@@ -865,6 +867,132 @@ export const Documents: CollectionConfig = {
           const status =
             raw?.message?.includes('not found') ? 404 : 400
           return Response.json({ error: message }, { status })
+        }
+      },
+    },
+    {
+      // Copy a sales quote to a new draft sales invoice (Manager.io
+      // "Copy to → New Sales Invoice"). The quote remains as its own record;
+      // the invoice gets sourceQuote for traceability so you can see which
+      // quotes converted. Lines are copied verbatim via raw SQL because the
+      // Payload local API cannot flatten array fields before hooks.
+      path: '/:id/copy-to-invoice',
+      method: 'post',
+      handler: async (req) => {
+        if (!isBillingReq(req)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string
+        if (!id) {
+          return Response.json({ error: 'Missing document id' }, { status: 400 })
+        }
+        try {
+          const quote = (await req.payload.findByID({
+            collection: 'documents',
+            id,
+            depth: 1,
+          })) as any
+          if (!quote) {
+            return Response.json({ error: 'Document not found' }, { status: 404 })
+          }
+          if (quote.docType !== 'sales-quote') {
+            return Response.json(
+              { error: 'Only sales quotes can be copied to an invoice.' },
+              { status: 409 },
+            )
+          }
+          if (quote.orderStatus === 'cancelled') {
+            return Response.json(
+              { error: 'This quote was cancelled — it cannot be invoiced.' },
+              { status: 409 },
+            )
+          }
+          const lines = Array.isArray(quote.lines) ? quote.lines : []
+          if (lines.length === 0) {
+            return Response.json(
+              { error: 'The quote has no line items to invoice.' },
+              { status: 400 },
+            )
+          }
+          const partyId = accId(quote.party)
+          const taxRate = toNum(quote.taxRate)
+          const netTotal = round2(lines.reduce((s: number, l: any) => s + toNum(l.amount), 0))
+          const taxTotal = round2((netTotal * taxRate) / 100)
+          const grossTotal = round2(netTotal + taxTotal)
+
+          const pool = (req.payload.db as any).pool
+          const txn = await req.payload.db.beginTransaction()
+          const txId = txn ?? undefined
+          try {
+            const inserted = await pool.query(
+              `INSERT INTO documents
+                 (doc_type, date, party_id, narration, status, tax_rate,
+                  net_total, tax_total, gross_total, tenant_id, source_quote_id,
+                  created_at, updated_at)
+               VALUES ('sales-invoice', $1, $2, $3, 'draft', $4, $5, $6, $7, $8, $9, now(), now())
+               RETURNING id`,
+              [
+                new Date().toISOString().slice(0, 10),
+                partyId,
+                quote.narration || null,
+                taxRate,
+                netTotal,
+                taxTotal,
+                grossTotal,
+                typeof quote.tenant === 'object' ? quote.tenant?.id : quote.tenant,
+                Number(id),
+              ],
+            )
+            const docId: number = inserted.rows[0].id
+            let order = 0
+            for (const l of lines) {
+              await pool.query(
+                `INSERT INTO documents_lines
+                   (_order, _parent_id, id, description, qty, rate, amount, item_id)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                [
+                  order++,
+                  docId,
+                  `line-${docId}-${order}`,
+                  l.description || null,
+                  toNum(l.qty),
+                  toNum(l.rate),
+                  toNum(l.amount),
+                  l.item ? accId(l.item) : null,
+                ],
+              )
+            }
+            if (txId) await req.payload.db.commitTransaction(txId)
+            // Best-effort audit trail
+            try {
+              await req.payload.create({
+                collection: 'audit-logs',
+                overrideAccess: true,
+                data: {
+                  action: 'create',
+                  entityType: 'documents',
+                  entityId: String(docId),
+                  entityLabel: `Invoice from ${DOC_PREFIXES['sales-quote']}-${id}`,
+                  tenant: typeof quote.tenant === 'object' ? quote.tenant?.id : quote.tenant,
+                  userName: (req.user as any)?.email || 'system',
+                  userRole: (req.user as any)?.role || '',
+                  after: { sourceQuote: Number(id), netTotal, grossTotal },
+                },
+              } as any)
+            } catch { /* best-effort */ }
+            return Response.json({
+              message: 'Draft invoice created from quote',
+              invoiceId: docId,
+              netTotal,
+              taxTotal,
+              grossTotal,
+            })
+          } catch (err) {
+            try { if (txId) await req.payload.db.rollbackTransaction(txId) } catch { /* */ }
+            throw err
+          }
+        } catch (err) {
+          return Response.json({ error: (err as Error).message || 'Copy failed' }, { status: 400 })
         }
       },
     },
@@ -2105,6 +2233,21 @@ export const Documents: CollectionConfig = {
         description: 'Sales/Purchase invoice this receipt/payment settles. Links payment to a specific invoice for outstanding tracking.',
         condition: (_data, { siblingData }) =>
           ['receipt-voucher', 'payment-voucher'].includes(siblingData?.docType),
+      },
+    },
+    {
+      name: 'sourceQuote',
+      type: 'relationship',
+      relationTo: 'documents',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: 'Sales quote this invoice was created from (traceability for quote → invoice conversion).',
+        condition: (_data, { siblingData }) => siblingData?.docType === 'sales-invoice',
+      },
+      access: {
+        create: () => false,
+        update: () => false,
       },
     },
 

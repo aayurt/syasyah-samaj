@@ -9,6 +9,7 @@ import { useTenant, useTenantQuery } from '../../lib/tenant'
 import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
 import { effectiveNet, type Document, type Party, type TaxType } from '../../lib/types'
+import NepaliDateInput from '../../components/NepaliDateInput'
 
 interface TaxEntry {
   docId: number
@@ -111,9 +112,9 @@ export default function TaxPurchase() {
       </div>
       <div className="mt-2"><DataStatus /></div>
       <div className="mt-4 flex items-center gap-3">
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500" />
+        <NepaliDateInput compact value={from} onChange={(v) => setFrom(v)} />
         <span className="text-xs text-slate-400">to</span>
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500" />
+        <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
       </div>
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {loading && entries.length === 0 ? <ReportSkeleton sections={1} /> : (

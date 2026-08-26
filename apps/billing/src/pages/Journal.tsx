@@ -1,3 +1,4 @@
+import NepaliDateInput from '../components/NepaliDateInput'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Download, Plus, Trash2 } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
@@ -231,16 +232,12 @@ export default function Journal() {
           className="mt-4 rounded-lg border border-slate-200 bg-white p-4"
         >
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <label className="text-sm text-slate-700">
-              Date
-              <input
-                type="date"
-                required
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              />
-            </label>
+            <NepaliDateInput
+              label="Date"
+              required
+              value={form.date}
+              onChange={(v) => setForm({ ...form, date: v })}
+            />
             <label className="col-span-2 text-sm text-slate-700 md:col-span-3">
               Narration
               <input

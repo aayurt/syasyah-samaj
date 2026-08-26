@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
+  ArrowLeftRight,
   BarChart3,
   BookOpenText,
   Boxes,
@@ -35,6 +36,7 @@ import Daybooks from './pages/Daybooks'
 import BankReconciliation from './pages/BankReconciliation'
 import Settings from './pages/Settings'
 import AuditLog from './pages/AuditLog'
+import Transfers from './pages/Transfers'
 import Members from './pages/Members'
 import MembershipTypes from './pages/MembershipTypes'
 import SyncBanner from './components/SyncBanner'
@@ -62,6 +64,7 @@ const navGroups: { title?: string; items: NavItem[] }[] = [
     items: [
       { to: '/vouchers', label: 'Vouchers', icon: FileText },
       { to: '/journal', label: 'Journal', icon: BookOpenText },
+      { to: '/transfers', label: 'Transfers', icon: ArrowLeftRight },
     ],
   },
   {
@@ -345,6 +348,7 @@ function Shell({ email }: { email: string }) {
             <Route path="/reports/balance-sheet" element={<BalanceSheet />} />
             <Route path="/reports/pnl" element={<ProfitLoss />} />
             <Route path="/audit" element={<AuditLog />} />
+            <Route path="/transfers" element={<Transfers />} />
             {features.bankReconciliationEnabled && <Route path="/bank-reconciliation" element={<BankReconciliation />} />}
             <Route path="/daybooks" element={<Daybooks />} />
             <Route path="/members" element={<Members />} />

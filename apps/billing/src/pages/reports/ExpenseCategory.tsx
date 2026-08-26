@@ -9,6 +9,7 @@ import { useTenant, useTenantQuery } from '../../lib/tenant'
 import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
 import type { Account, AccountGroup, PnlResponse, PnlRow } from '../../lib/types'
+import NepaliDateInput from '../../components/NepaliDateInput'
 
 const QUICK_RANGES = [
   { label: 'This Month', from: () => monthStart(0), to: () => monthEnd(0) },
@@ -114,9 +115,9 @@ export default function ExpenseCategory() {
       </div>
       <div className="mt-2"><DataStatus /></div>
       <div className="mt-4 flex items-center gap-3">
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500" />
+        <NepaliDateInput compact value={from} onChange={(v) => setFrom(v)} />
         <span className="text-xs text-slate-400">to</span>
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500" />
+        <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
         <div className="flex gap-1">
           {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{r.label}</button>))}
         </div>

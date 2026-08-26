@@ -13,6 +13,7 @@ import * as migration_20260818_p6_fixed_assets from './20260818_p6_fixed_assets'
 import * as migration_20260819_p1_transfers_audit from './20260819_p1_transfers_audit';
 import * as migration_20260824_void_items from './20260824_void_items';
 import * as migration_20260819_p2_tally_vouchers_tax from './20260819_p2_tally_vouchers_tax';
+import * as migration_20260826_sales_quotes from './20260826_sales_quotes';
 
 export const migrations = [
   {
@@ -84,5 +85,10 @@ export const migrations = [
     up: migration_20260824_void_items.up,
     down: migration_20260824_void_items.down,
     name: '20260824_void_items'
+  },
+  {
+    up: migration_20260826_sales_quotes.up,
+    down: migration_20260826_sales_quotes.down,
+    name: '20260826_sales_quotes'
   },
 ];

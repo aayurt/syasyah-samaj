@@ -16,6 +16,7 @@ import { authClient, clearCachedSession } from '../lib/auth'
 import { formatDate } from '../lib/nepaliDate'
 import { useCalendar } from '../lib/calendar'
 import type { Account, BillingSettings } from '../lib/types'
+import NepaliDateInput from '../components/NepaliDateInput'
 
 /* ─── Accordion wrapper ────────────────────────────────────── */
 function Section({
@@ -565,24 +566,14 @@ export default function Settings() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm text-slate-600">Fiscal year start</label>
-            <input
-              type="date"
-              value={fiscalYearStart}
-              onChange={(e) => setFiscalYearStart(e.target.value)}
-              className={inputCls}
-            />
+            <NepaliDateInput compact value={fiscalYearStart} onChange={(v) => setFiscalYearStart(v)} />
             <span className="mt-1 block text-xs text-slate-400">
               Used for voucher numbering. Empty = calendar year.
             </span>
           </div>
           <div>
             <label className="text-sm text-slate-600">Freeze date</label>
-            <input
-              type="date"
-              value={freezeDate}
-              onChange={(e) => setFreezeDate(e.target.value)}
-              className={inputCls}
-            />
+            <NepaliDateInput compact value={freezeDate} onChange={(v) => setFreezeDate(v)} />
             <span className="mt-1 block text-xs text-slate-400">
               No entry posted before this date. Empty = no freeze.
             </span>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Download, FileText, Printer } from 'lucide-react'
+import { Download, FileText, Printer, FileSearch } from 'lucide-react'
 import { api } from '../lib/api'
+import { useNavigate } from 'react-router-dom'
 import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { ReportSkeleton } from '../components/Skeleton'
@@ -12,6 +13,7 @@ import type { AgingResponse, AgingRow } from '../lib/types'
 const BUCKETS = ['0-30', '31-60', '61-90', '90+'] as const
 
 export default function Aging() {
+  const navigate = useNavigate()
   const [side, setSide] = useState<'ar' | 'ap'>('ar')
   const [data, setData] = useState<AgingResponse | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
@@ -177,14 +179,23 @@ export default function Aging() {
                 }`}
               >
                 <td className="px-4 py-2">
-                  <button
-                    onClick={() =>
-                      setSelected(selected === p.party.id ? null : p.party.id)
-                    }
-                    className="text-left font-medium text-slate-800 hover:text-blue-700 hover:underline"
-                  >
-                    {p.party.name}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        setSelected(selected === p.party.id ? null : p.party.id)
+                      }
+                      className="text-left font-medium text-slate-800 hover:text-blue-700 hover:underline"
+                    >
+                      {p.party.name}
+                    </button>
+                    <button
+                      onClick={() => navigate(`/reports/party-statement?party=${p.party.id}`)}
+                      title="View full statement"
+                      className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-crimson-600"
+                    >
+                      <FileSearch size={13} />
+                    </button>
+                  </div>
                 </td>
                 {BUCKETS.map((b) => (
                   <td

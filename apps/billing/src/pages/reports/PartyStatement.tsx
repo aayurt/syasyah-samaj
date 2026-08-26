@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Download, FileText, Printer } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api, fmt, list } from '../../lib/api'
 import { downloadCsv } from '../../lib/csv'
 import { exportReportPdf } from '../../lib/pdf'
@@ -17,11 +17,12 @@ interface PartyDoc extends Document {
 
 export default function PartyStatement() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
   const [parties, setParties] = useState<Party[]>([])
-  const [selectedParty, setSelectedParty] = useState('')
+  const [selectedParty, setSelectedParty] = useState(searchParams.get('party') || '')
   const [docs, setDocs] = useState<PartyDoc[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

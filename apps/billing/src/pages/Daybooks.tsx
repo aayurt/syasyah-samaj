@@ -9,6 +9,7 @@ import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { DOC_TYPE_LABELS } from '../lib/types'
 import type { DaybookResponse, DaybookType, Document } from '../lib/types'
+import NepaliDateInput from '../components/NepaliDateInput'
 
 const TYPES: { value: DaybookType; label: string }[] = [
   { value: 'all', label: 'All Vouchers' },
@@ -181,21 +182,11 @@ export default function Daybooks() {
         <span className="ml-auto flex items-center gap-3">
           <label className="text-sm text-slate-700">
             From
-            <input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="ml-2 rounded border border-slate-300 px-2 py-1 text-sm outline-none focus:border-slate-500"
-            />
+            <NepaliDateInput compact value={from} onChange={(v) => setFrom(v)} />
           </label>
           <label className="text-sm text-slate-700">
             To
-            <input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="ml-2 rounded border border-slate-300 px-2 py-1 text-sm outline-none focus:border-slate-500"
-            />
+            <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
           </label>
         </span>
       </div>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ArrowLeft, Download, FileText, Printer } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import LedgerModal from '../../components/LedgerModal'
 import { api, fmt } from '../../lib/api'
 import { downloadCsv } from '../../lib/csv'
 import { exportReportPdf } from '../../lib/pdf'
@@ -8,6 +9,7 @@ import { useCalendar } from '../../lib/calendar'
 import { useTenant, useTenantQuery } from '../../lib/tenant'
 import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
+import NepaliDateInput from '../../components/NepaliDateInput'
 
 interface BsRow {
   account: { id: number | null; code?: string; name: string }
@@ -39,6 +41,7 @@ export default function BalanceSheet() {
   const [data, setData] = useState<BsResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [ledgerAccount, setLedgerAccount] = useState<{ id: string; name: string } | null>(null)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['assets', 'liabilities', 'equity']))
@@ -107,7 +110,7 @@ export default function BalanceSheet() {
     })
   }
 
-  const Section = ({ title, rows, total, sectionKey }: { title: string; rows: BsRow[]; total: number; sectionKey: string }) => (
+  const Section = ({ title, rows, total, sectionKey, onAccountClick }: { title: string; rows: BsRow[]; total: number; sectionKey: string; onAccountClick?: (id: string, name: string) => void }) => (
     <div className="rounded-lg border border-slate-200 bg-white">
       <button onClick={() => toggle(sectionKey)} className="flex w-full items-center justify-between px-4 py-3 text-left">
         <div className="flex items-center gap-2">
@@ -127,7 +130,15 @@ export default function BalanceSheet() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.account.id ?? r.account.name} className="border-b border-slate-50 last:border-0">
-                <td className="px-4 py-2 text-slate-700">{r.account.code ? `${r.account.code} · ` : ''}{r.account.name}</td>
+                <td className="px-4 py-2">
+                  {r.account.id && onAccountClick ? (
+                    <button onClick={() => onAccountClick(String(r.account.id), `${r.account.code ? `${r.account.code} · ` : ''}${r.account.name}`)} className="text-left text-slate-700 hover:text-blue-700 hover:underline">
+                      {r.account.code ? `${r.account.code} · ` : ''}{r.account.name}
+                    </button>
+                  ) : (
+                    <span className="text-slate-700">{r.account.code ? `${r.account.code} · ` : ''}{r.account.name}</span>
+                  )}
+                </td>
                 <td className="px-4 py-2 text-right font-mono text-slate-800">{fmt(r.balance)}</td>
               </tr>
             ))}
@@ -152,9 +163,9 @@ export default function BalanceSheet() {
       </div>
       <div className="mt-2"><DataStatus /></div>
       <div className="mt-4 flex items-center gap-3">
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500" />
+        <NepaliDateInput compact value={from} onChange={(v) => setFrom(v)} />
         <span className="text-xs text-slate-400">to</span>
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500" />
+        <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
         <div className="flex gap-1">
           {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{r.label}</button>))}
         </div>
@@ -185,9 +196,9 @@ export default function BalanceSheet() {
 
           {/* Sections */}
           <div className="mt-4 space-y-3">
-            <Section title="Assets" rows={data.assets} total={data.totals.assets} sectionKey="assets" />
-            <Section title="Liabilities" rows={data.liabilities} total={data.totals.liabilities} sectionKey="liabilities" />
-            <Section title="Equity" rows={data.equity} total={data.totals.equity} sectionKey="equity" />
+            <Section title="Assets" rows={data.assets} total={data.totals.assets} sectionKey="assets" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
+            <Section title="Liabilities" rows={data.liabilities} total={data.totals.liabilities} sectionKey="liabilities" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
+            <Section title="Equity" rows={data.equity} total={data.totals.equity} sectionKey="equity" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
           </div>
 
           {/* Grand totals */}
@@ -202,6 +213,14 @@ export default function BalanceSheet() {
             </div>
           </div>
         </>
+      )}
+
+      {ledgerAccount && (
+        <LedgerModal
+          accountId={ledgerAccount.id}
+          accountName={ledgerAccount.name}
+          onClose={() => setLedgerAccount(null)}
+        />
       )}
     </div>
   )

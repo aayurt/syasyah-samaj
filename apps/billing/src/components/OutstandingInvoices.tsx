@@ -1,9 +1,10 @@
+import NepaliDateInput from './NepaliDateInput'
 import { useEffect, useMemo, useState } from 'react'
 import { Check, FileText, Search, X } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
 import { useTenantQuery } from '../lib/tenant'
-import { adToBsString, bsToAdString } from '../lib/nepaliDate'
+import { bsToAdString } from '../lib/nepaliDate'
 import { effectiveAmount, type Document } from '../lib/types'
 
 interface Props {
@@ -162,8 +163,9 @@ export default function OutstandingInvoices({
       result = result.filter((inv) => {
         const d = (inv.date || '').slice(0, 10)
         if (!d) return false
-        const afterFrom = !dateFrom || d >= (calendarType === 'BS' ? bsToAdString(dateFrom) : dateFrom)
-        const beforeTo = !dateTo || d <= (calendarType === 'BS' ? bsToAdString(dateTo) : dateTo)
+        // NepaliDateInput always stores AD internally, so compare directly.
+        const afterFrom = !dateFrom || d >= dateFrom
+        const beforeTo = !dateTo || d <= dateTo
         return filterMode === 'and' ? (afterFrom && beforeTo) : (afterFrom || beforeTo)
       })
     }
@@ -230,26 +232,20 @@ export default function OutstandingInvoices({
             <div className="flex flex-wrap items-end gap-3 rounded-md border border-slate-100 bg-slate-50 p-3">
               <div>
                 <label className="text-[11px] font-medium text-slate-500">From</label>
-                <input
-                  type="date"
-                  value={calendarType === 'BS' && dateFrom ? adToBsString(dateFrom) : dateFrom}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    setDateFrom(calendarType === 'BS' && v ? bsToAdString(v) : v)
-                  }}
-                  className="mt-0.5 block w-36 rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-slate-400"
+                <NepaliDateInput
+                  compact
+                  value={dateFrom}
+                  onChange={(v) => setDateFrom(v)}
+                  className="mt-0.5"
                 />
               </div>
               <div>
                 <label className="text-[11px] font-medium text-slate-500">To</label>
-                <input
-                  type="date"
-                  value={calendarType === 'BS' && dateTo ? adToBsString(dateTo) : dateTo}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    setDateTo(calendarType === 'BS' && v ? bsToAdString(v) : v)
-                  }}
-                  className="mt-0.5 block w-36 rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-slate-400"
+                <NepaliDateInput
+                  compact
+                  value={dateTo}
+                  onChange={(v) => setDateTo(v)}
+                  className="mt-0.5"
                 />
               </div>
               {(dateFrom || dateTo) && (

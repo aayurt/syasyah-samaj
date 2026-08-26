@@ -309,6 +309,117 @@ export const BankStatements: CollectionConfig = {
         }
       },
     },
+    {
+      // Create receipt/payment vouchers from unmatched statement rows.
+      // Positive amounts become receipt-vouchers, negative become payment-vouchers.
+      // Each voucher is auto-posted immediately.
+      path: '/:id/create-vouchers',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user || !isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string
+        if (!id) {
+          return Response.json({ error: 'Missing statement id' }, { status: 400 })
+        }
+        try {
+          const statement = (await req.payload.findByID({
+            collection: 'bank-statements',
+            id,
+            depth: 0,
+          })) as any
+          if (!statement) {
+            return Response.json({ error: 'Statement not found' }, { status: 404 })
+          }
+          const bankAccountId = Number(
+            statement.account && typeof statement.account === 'object'
+              ? statement.account.id
+              : statement.account,
+          )
+          const tenant = statement.tenant
+            ? typeof statement.tenant === 'object'
+              ? statement.tenant.id
+              : statement.tenant
+            : undefined
+
+          const body = (await req.json!()) as {
+            rows: { date: string; description?: string; reference?: string; amount: number }[]
+          }
+          if (!Array.isArray(body.rows) || body.rows.length === 0) {
+            return Response.json({ error: 'Provide rows to create vouchers for.' }, { status: 400 })
+          }
+
+          // Get billing settings for cash/bank account mapping
+          const settings = (await req.payload.findGlobal({
+            slug: 'billing-settings',
+          })) as any
+
+          const pool = (req.payload.db as any).pool
+          const created: { id: number; type: string; amount: number; number: string }[] = []
+
+          for (const row of body.rows) {
+            const amt = Math.abs(round2(toNum(row.amount)))
+            if (amt <= 0) continue
+
+            const isDeposit = row.amount > 0
+            const docType = isDeposit ? 'receipt-voucher' : 'payment-voucher'
+            const narration = row.description || `${isDeposit ? 'Bank deposit' : 'Bank withdrawal'} - ${row.reference || 'N/A'}`
+
+            // Create document via raw SQL (Payload local API has issues with array fields)
+            const docResult = await pool.query(
+              `INSERT INTO documents
+                 (doc_type, date, narration, status, payment_method, bank_account_id,
+                  net_total, tax_total, gross_total, tenant_id, created_at, updated_at)
+               VALUES ($1, $2, $3, 'draft', 'bank', $4, $5, 0, $5, $6, now(), now())
+               RETURNING id`,
+              [docType, row.date, narration, bankAccountId, amt, tenant],
+            )
+            const docId: number = docResult.rows[0].id
+
+            // Create line item
+            await pool.query(
+              `INSERT INTO documents_lines
+                 (_order, _parent_id, id, description, qty, rate, amount)
+               VALUES (0, $1, $2, $3, 1, $4, $4)`,
+              [docId, `line-${docId}-0`, narration, amt],
+            )
+
+            // Auto-post the voucher using the existing postDocument function
+            try {
+              // Import postDocument dynamically to avoid circular dependency
+              const { postDocument } = await import('@/collections/Documents')
+              const posted = await postDocument(req.payload, docId, {
+                request: req,
+              })
+              created.push({
+                id: docId,
+                type: docType,
+                amount: amt,
+                number: posted.number || `V-${docId}`,
+              })
+            } catch (postErr) {
+              // If posting fails, still count as created (draft)
+              created.push({
+                id: docId,
+                type: docType,
+                amount: amt,
+                number: `Draft-${docId}`,
+              })
+            }
+          }
+
+          return Response.json({
+            message: `Created ${created.length} voucher(s) from bank statement`,
+            vouchers: created,
+            totalAmount: round2(created.reduce((s, v) => s + v.amount, 0)),
+          })
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to create vouchers'
+          return Response.json({ error: message }, { status: 400 })
+        }
+      },
+    },
   ],
   hooks: {
     beforeValidate: [assignTenant],

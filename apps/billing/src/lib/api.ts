@@ -52,6 +52,10 @@ function crudToast(method: string, path: string, error?: string): void {
 interface ApiOptions extends Omit<RequestInit, 'body'> {
   query?: Record<string, string | number | undefined>
   body?: unknown
+  /** Skip the offline outbox and hit the server immediately. Use for
+   * atomic server-side transactions (e.g. cross-illaka transfers) where
+   * queuing a partial replay would be wrong. */
+  immediate?: boolean
 }
 
 async function doFetch<T>(path: string, options: ApiOptions): Promise<T> {
@@ -239,7 +243,7 @@ export async function api<T = unknown>(
   // Cache-first: a warm collection list renders immediately. Fresh data is
   // pulled on demand via the resync button — reads never trigger a network
   // fetch on their own.
-  if (plainList) {
+  if (plainList && !options.immediate) {
     const cached = await engine.readCollection(slug, tenant)
     if (cached) {
       return {
@@ -255,7 +259,7 @@ export async function api<T = unknown>(
   // All writes go to the outbox for batch sync. Custom endpoints (/:id/post,
   // /:id/void, etc.) are queued as custom ops — the sync engine sends them
   // to the server directly (not through Payload's collection endpoints).
-  const isWrite = method !== 'GET' && !path.startsWith('/globals/')
+  const isWrite = method !== 'GET' && !path.startsWith('/globals/') && !options.immediate
   const isStandardCrud = isWrite && slug && segments.length <= 2 && !/\/[a-z-]+$/.test(path)
 
   if (isWrite) {

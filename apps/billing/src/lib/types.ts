@@ -4,6 +4,7 @@ export type EntryStatus = 'draft' | 'posted' | 'void'
 export type DocumentStatus = 'draft' | 'posted' | 'void'
 
 export type DocType =
+  | 'sales-quote'
   | 'sales-invoice'
   | 'purchase-invoice'
   | 'payment-voucher'
@@ -17,6 +18,7 @@ export type DocType =
   | 'contra'
 
 export const DOC_TYPE_LABELS: Record<string, string> = {
+  'sales-quote': 'Sales Quote',
   'sales-invoice': 'Sales Entry',
   'purchase-invoice': 'Purchase Entry',
   'payment-voucher': 'Payment Entry',

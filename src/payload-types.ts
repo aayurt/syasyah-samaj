@@ -1071,6 +1071,7 @@ export interface JournalEntry {
 export interface Document {
   id: number;
   docType:
+    | 'sales-quote'
     | 'sales-order'
     | 'sales-invoice'
     | 'purchase-order'

@@ -58,6 +58,7 @@ const INVENTORY_TYPES = ['sales-invoice', 'delivery-challan', 'grn']
 const CASH_TYPES = ['payment-voucher', 'receipt-voucher']
 
 const DOC_TYPE_META: Record<string, { icon: string; activeClasses: string; inactiveClasses: string; textClasses: string; shortLabel: string }> = {
+  'sales-quote':       { icon: '📋', activeClasses: 'border-indigo-500 bg-indigo-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-indigo-700', shortLabel: 'Quote' },
   'sales-invoice':     { icon: '🛒', activeClasses: 'border-crimson-500 bg-crimson-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-crimson-700', shortLabel: 'Sales' },
   'purchase-invoice':  { icon: '📦', activeClasses: 'border-blue-500 bg-blue-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-blue-700', shortLabel: 'Purchase' },
   'payment-voucher':   { icon: '💸', activeClasses: 'border-amber-500 bg-amber-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-amber-700', shortLabel: 'Payment' },
@@ -333,7 +334,7 @@ export default function VoucherForm({ mode }: Props) {
 
   /* ── Derived ────────────────────────────────────────────────── */
   const meta = DOC_TYPE_LABELS[docType] || docType
-  const isItem = ['sales-invoice', 'purchase-invoice',
+  const isItem = ['sales-quote', 'sales-invoice', 'purchase-invoice',
     'credit-note', 'debit-note', 'petty-cash-voucher', 'grn', 'delivery-challan'].includes(docType)
   const isContra = docType === 'contra'
   const isJournal = docType === 'journal-voucher'
@@ -1465,12 +1466,12 @@ export default function VoucherForm({ mode }: Props) {
           <div className="flex gap-2">
             <button type="button" onClick={() => submit(false)} disabled={saving}
               className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-              {saving ? 'Saving…' : 'Save Draft'}
+              {saving ? 'Saving…' : docType === 'sales-quote' ? 'Save Quote' : 'Save Draft'}
             </button>
-            <button type="button" onClick={() => submit(true)} disabled={saving || !allRequiredFilled}
-              title={!allRequiredFilled ? 'Fill all required fields first' : undefined}
+            <button type="button" onClick={() => submit(true)} disabled={saving || !allRequiredFilled || docType === 'sales-quote'}
+              title={docType === 'sales-quote' ? 'Quotes are non-posting — copy to an invoice when accepted' : !allRequiredFilled ? 'Fill all required fields first' : undefined}
               className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
-              Save & Post
+              {docType === 'sales-quote' ? 'Non-posting' : 'Save & Post'}
             </button>
           </div>
         </div>

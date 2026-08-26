@@ -8,7 +8,9 @@ import { useCalendar } from '../../lib/calendar'
 import { useTenant, useTenantQuery } from '../../lib/tenant'
 import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
+import LedgerModal from '../../components/LedgerModal'
 import type { PnlResponse, PnlRow } from '../../lib/types'
+import NepaliDateInput from '../../components/NepaliDateInput'
 
 const QUICK_RANGES = [
   { label: 'This Month', from: () => monthStart(0), to: () => monthEnd(0) },
@@ -27,6 +29,7 @@ export default function ProfitLoss() {
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
   const [data, setData] = useState<PnlResponse | null>(null)
+  const [ledgerAccount, setLedgerAccount] = useState<{ id: string; name: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [from, setFrom] = useState('')
@@ -84,7 +87,7 @@ export default function ProfitLoss() {
     })
   }
 
-  const RowList = ({ title, rows, total, color }: { title: string; rows: PnlRow[]; total: number; color: string }) => (
+  const RowList = ({ title, rows, total, color, onAccountClick }: { title: string; rows: PnlRow[]; total: number; color: string; onAccountClick?: (id: string, name: string) => void }) => (
     <div className="rounded-lg border border-slate-200 bg-white">
       <div className="flex items-center justify-between px-4 py-3">
         <span className="text-sm font-semibold text-slate-800">{title}</span>
@@ -101,7 +104,15 @@ export default function ProfitLoss() {
           <tbody>
             {rows.sort((a, b) => b.amount - a.amount).map((r) => (
               <tr key={r.account.id ?? r.account.name} className="border-b border-slate-50 last:border-0">
-                <td className="px-4 py-2 text-slate-700">{r.account.code ? `${r.account.code} · ` : ''}{r.account.name}</td>
+                <td className="px-4 py-2">
+                  {r.account.id && onAccountClick ? (
+                    <button onClick={() => onAccountClick(String(r.account.id), `${r.account.code ? `${r.account.code} · ` : ''}${r.account.name}`)} className="text-left text-slate-700 hover:text-blue-700 hover:underline">
+                      {r.account.code ? `${r.account.code} · ` : ''}{r.account.name}
+                    </button>
+                  ) : (
+                    <span className="text-slate-700">{r.account.code ? `${r.account.code} · ` : ''}{r.account.name}</span>
+                  )}
+                </td>
                 <td className="px-4 py-2 text-right font-mono text-slate-800">{fmt(r.amount)}</td>
               </tr>
             ))}
@@ -128,9 +139,9 @@ export default function ProfitLoss() {
       </div>
       <div className="mt-2"><DataStatus /></div>
       <div className="mt-4 flex items-center gap-3">
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500" />
+        <NepaliDateInput compact value={from} onChange={(v) => setFrom(v)} />
         <span className="text-xs text-slate-400">to</span>
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500" />
+        <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
         <div className="flex gap-1">
           {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{r.label}</button>))}
         </div>
@@ -165,12 +176,12 @@ export default function ProfitLoss() {
 
           {/* Income */}
           <div className="mt-4">
-            <RowList title="Income" rows={data.income} total={data.totals.income} color="text-emerald-700" />
+            <RowList title="Income" rows={data.income} total={data.totals.income} color="text-emerald-700" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
           </div>
 
           {/* Expenses */}
           <div className="mt-4">
-            <RowList title="Expenses" rows={data.expense} total={data.totals.expense} color="text-red-600" />
+            <RowList title="Expenses" rows={data.expense} total={data.totals.expense} color="text-red-600" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
           </div>
 
           {/* Final summary */}
@@ -191,6 +202,14 @@ export default function ProfitLoss() {
             </div>
           </div>
         </>
+      )}
+
+      {ledgerAccount && (
+        <LedgerModal
+          accountId={ledgerAccount.id}
+          accountName={ledgerAccount.name}
+          onClose={() => setLedgerAccount(null)}
+        />
       )}
     </div>
   )

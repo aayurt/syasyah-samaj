@@ -44,6 +44,7 @@ export class SyncEngine {
   private listeners = new Set<(state: SyncState) => void>()
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
   private syncTimer: ReturnType<typeof setInterval> | null = null
+  private flushTimer: ReturnType<typeof setTimeout> | null = null
   private consecutiveFailures = 0
 
   constructor(
@@ -58,6 +59,17 @@ export class SyncEngine {
     this.lastSyncAt = await this.storage.getKey('lastSyncAt')
     this.startHeartbeat()
     this.startPeriodicSync()
+    // Returning to the tab is a strong signal the user wants fresh data:
+    // flush queued writes and pull server changes (guarded by `syncing`).
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && this.online) {
+          void this.syncAll().catch(() => {
+            // offline — entries stay queued, heartbeat will retry
+          })
+        }
+      })
+    }
     this.emit()
   }
 
@@ -112,6 +124,25 @@ export class SyncEngine {
     if (this.online === online) return
     this.online = online
     this.emit()
+    // Coming back online — push anything that queued while we were away.
+    if (online) this.scheduleFlush(500)
+  }
+
+  /**
+   * Debounced auto-flush: shortly after any write, push the outbox to the
+   * server when we're online. Keeps the offline-first UX (writes resolve
+   * instantly from the local cache) while making the server sync nearly
+   * immediate in the normal online case — instead of waiting for the
+   * periodic sync. Offline callers are ignored: entries stay queued and
+   * the online transition (or manual resync) flushes them later.
+   */
+  scheduleFlush(delayMs = 1500) {
+    if (!this.online) return
+    if (this.flushTimer) clearTimeout(this.flushTimer)
+    this.flushTimer = setTimeout(() => {
+      this.flushTimer = null
+      if (!this.syncing) void this.syncAll().catch(() => { /* stay queued */ })
+    }, delayMs)
   }
 
   // ── Heartbeat (online detection) ──────────────────────────────
@@ -190,6 +221,9 @@ export class SyncEngine {
     await this.storage.enqueue(entry)
     await this.refreshCounts()
 
+    // Online: sync to the server within seconds, not at the next periodic
+    // sync. Debounced so a burst of writes results in one round-trip.
+    this.scheduleFlush()
     return { localId: entry.localId }
   }
 
@@ -240,6 +274,8 @@ export class SyncEngine {
     }
 
     await this.refreshCounts()
+    // Online: sync to the server within seconds (see scheduleFlush).
+    this.scheduleFlush()
     return { id: entry.localId, queued: true }
   }
 
@@ -267,8 +303,23 @@ export class SyncEngine {
    * Push all pending operations to the server. Standard CRUD ops are
    * batched via POST /api/sync. Custom endpoints (/:id/post, /:id/void, etc.)
    * are sent as individual fetches since they have server-side business logic.
+   *
+   * Multi-tab safe: the Web Locks API ensures only one tab replays the
+   * shared IndexedDB outbox at a time — without this, two tabs could push
+   * the same entry twice (double-posted vouchers).
    */
   private async flush(): Promise<SyncResult> {
+    const locks = (navigator as Navigator & {
+      locks?: {
+        request: (name: string, cb: () => Promise<SyncResult>) => Promise<SyncResult>
+      }
+    }).locks
+    // Browsers without Web Locks flush directly — same behavior as before.
+    if (!locks) return this.doFlush()
+    return locks.request('syasya-outbox-flush', () => this.doFlush())
+  }
+
+  private async doFlush(): Promise<SyncResult> {
     const pending = await this.storage.getPending()
 
     // Split: standard CRUD vs custom endpoints

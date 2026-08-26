@@ -1,3 +1,4 @@
+import NepaliDateInput from '../components/NepaliDateInput'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
@@ -177,6 +178,8 @@ export default function Vouchers() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || '')
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
+  const [dateFrom, setDateFrom] = useState(searchParams.get('from') || '')
+  const [dateTo, setDateTo] = useState(searchParams.get('to') || '')
   const [loading, setLoading] = useState(false)
 
   // Sync type/status filters to URL search params
@@ -184,8 +187,10 @@ export default function Vouchers() {
     const params = new URLSearchParams(searchParams)
     if (typeFilter) params.set('type', typeFilter); else params.delete('type')
     if (statusFilter) params.set('status', statusFilter); else params.delete('status')
+    if (dateFrom) params.set('from', dateFrom); else params.delete('from')
+    if (dateTo) params.set('to', dateTo); else params.delete('to')
     setSearchParams(params, { replace: true })
-  }, [typeFilter, statusFilter]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [typeFilter, statusFilter, dateFrom, dateTo]) // eslint-disable-line react-hooks/exhaustive-deps
   const { formatDate, formatDateTime } = useCalendar()
   const [printDoc, setPrintDoc] = useState<Document | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -794,7 +799,9 @@ export default function Vouchers() {
   const filtered = docs.filter(
     (d) =>
       (!typeFilter || d.docType === typeFilter) &&
-      (!statusFilter || d.status === statusFilter),
+      (!statusFilter || d.status === statusFilter) &&
+      (!dateFrom || (d.date && d.date >= dateFrom)) &&
+      (!dateTo || (d.date && d.date <= dateTo + 'T23:59:59')),
   )
 
   const partyName = (d: Document) =>
@@ -958,16 +965,12 @@ export default function Vouchers() {
                 ))}
               </select>
             </label>
-            <label className="text-sm text-slate-700">
-              Date
-              <input
-                type="date"
-                required
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              />
-            </label>
+            <NepaliDateInput
+              label="Date"
+              required
+              value={form.date}
+              onChange={(v) => setForm({ ...form, date: v })}
+            />
             {meta.needsParty && (
               <label className="text-sm text-slate-700">
                 Party
@@ -1739,6 +1742,22 @@ export default function Vouchers() {
             </button>
           ))}
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs uppercase tracking-wide text-slate-500">
+            Date
+          </span>
+          <NepaliDateInput compact value={dateFrom} onChange={setDateFrom} />
+          <span className="text-xs text-slate-400">to</span>
+          <NepaliDateInput compact value={dateTo} onChange={setDateTo} />
+          {(dateFrom || dateTo) && (
+            <button
+              onClick={() => { setDateFrom(''); setDateTo('') }}
+              className="rounded px-2 py-1 text-xs font-medium text-crimson-600 hover:bg-crimson-50"
+            >
+              clear dates
+            </button>
+          )}
+        </div>
         <div className="flex items-center justify-between gap-3 pt-1">
           <span className="text-xs text-slate-400">
             {visible.length} of {filtered.length}
@@ -2429,6 +2448,26 @@ export default function Vouchers() {
                         Reopen
                       </button>
                     </>
+                  )}
+                  {viewDoc.docType === 'sales-quote' && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await api<{ invoiceId: number; grossTotal: number }>(
+                            `/documents/${viewDoc.id}/copy-to-invoice`,
+                            { method: 'POST', immediate: true }, // server-side copy; needs the created id back
+                          )
+                          pushToast('success', 'Invoice created from quote', `Draft sales invoice #${res.invoiceId} — review and post it.`)
+                          setViewDoc(null)
+                          navigate(`/vouchers/edit/${res.invoiceId}`)
+                        } catch (err) {
+                          pushToast('error', 'Copy failed', err instanceof Error ? err.message : String(err))
+                        }
+                      }}
+                      className="flex items-center gap-1.5 rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+                    >
+                      <FileText size={14} /> Copy to Invoice
+                    </button>
                   )}
                   <button onClick={() => setViewDoc(null)}
                     className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700">
