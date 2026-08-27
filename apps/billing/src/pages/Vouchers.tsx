@@ -12,6 +12,7 @@ import {
   Pencil,
   Plus,
   Printer,
+  RefreshCw,
   Trash2,
   ToggleLeft,
   ToggleRight,
@@ -528,6 +529,11 @@ export default function Vouchers() {
         amount: l.amount !== '' ? Number(l.amount) : undefined,
       }))
       base.taxRate = parseFloat(form.taxRate) || 0
+      // Pre-supply totals so the server hook can skip recomputation
+      // (Payload 3.x REST API doesn't flatten array data before hooks).
+      base.netTotal = totals.net
+      base.taxTotal = totals.tax
+      base.grossTotal = totals.gross
     } else if (isContra) {
       base.fromAccount = form.fromAccount ? Number(form.fromAccount) : undefined
       base.toAccount = form.toAccount ? Number(form.toAccount) : undefined
@@ -543,6 +549,12 @@ export default function Vouchers() {
         credit: l.credit ? parseFloat(l.credit) : undefined,
         memo: l.memo || undefined,
       }))
+      // Pre-supply totals for journal vouchers so the server hook skips
+      // recomputation (Payload 3.x REST API doesn't flatten array data before hooks).
+      base.netTotal = jTotals.debit
+      base.grossTotal = jTotals.debit
+      base.taxTotal = 0
+      base.taxRate = 0
     }
     // Merge manual tax lines + TDS toggle
     const allTaxLines = [...form.taxLines]
@@ -579,18 +591,22 @@ export default function Vouchers() {
           method: 'PATCH',
           body: buildBody(),
           query: tenantQuery,
+          immediate: true,
         })
         if (post) {
-          await api(`/documents/${editingId}/post`, { method: 'POST' })
+          await api(`/documents/${editingId}/post`, { method: 'POST', immediate: true })
         }
       } else {
-        const created = await api<{ doc: Document }>('/documents', {
+        const created = await api<Document | { doc: Document }>('/documents', {
           method: 'POST',
           body: buildBody(),
           query: tenantQuery,
+          immediate: true,
         })
+        // Payload REST API returns doc directly; offline outbox returns { doc: { id } }
+        const docId = 'doc' in created ? (created as { doc: Document }).doc.id : (created as Document).id
         if (post) {
-          await api(`/documents/${created.doc.id}/post`, { method: 'POST' })
+          await api(`/documents/${docId}/post`, { method: 'POST', immediate: true })
         }
       }
       const date = form.date
@@ -1865,7 +1881,15 @@ export default function Vouchers() {
                   {fmt(effectiveAmount(d))}
                 </td>
                 <td className="px-4 py-2">
-                  <StatusPill status={d.status} />
+                  <span className="inline-flex items-center gap-1.5">
+                    <StatusPill status={d.status} />
+                    {'_pendingSync' in d && (d as { _pendingSync?: boolean })._pendingSync && (
+                      <span title="Pending sync to server" className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                        <RefreshCw size={10} className="animate-spin" />
+                        sync
+                      </span>
+                    )}
+                  </span>
                 </td>
                 <td className="px-4 py-2 text-center">
                   {(d.docType === 'sales-invoice' || d.docType === 'purchase-invoice') && d.status === 'posted' ? (() => {

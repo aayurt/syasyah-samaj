@@ -316,6 +316,8 @@ export interface BillingSettings {
   cogsAccount?: number | Account | null
   returnsAccount?: number | Account | null
   accruedPayableAccount?: number | Account | null
+  depreciationAccount?: number | Account | null
+  accumulatedDepreciationAccount?: number | Account | null
   bankReconciliationEnabled?: boolean
   simplifiedInvoiceEnabled?: boolean
   simplifiedInvoiceThreshold?: number
@@ -327,6 +329,7 @@ export interface BillingSettings {
   companyEmail?: string
   companyAddress?: string
   companyLogo?: string
+  defAccountOrder?: string[]
 }
 
 export type ClaimStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'reimbursed'

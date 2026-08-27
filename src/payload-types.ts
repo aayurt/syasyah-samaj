@@ -3655,6 +3655,18 @@ export interface BillingSetting {
    * Accumulated depreciation contra-asset (asset management).
    */
   accumulatedDepreciationAccount?: (number | null) | GlAccount;
+  /**
+   * User-defined order of default account posting roles in the Settings UI.
+   */
+  defAccountOrder?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -3739,6 +3751,7 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   accruedPayableAccount?: T;
   depreciationAccount?: T;
   accumulatedDepreciationAccount?: T;
+  defAccountOrder?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

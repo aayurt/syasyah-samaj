@@ -4,6 +4,7 @@ import { api, fmt } from '../lib/api'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
 import type { ExpenseClaim, Party, Account } from '../lib/types'
+import SearchSelect from '../components/SearchSelect'
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-slate-100 text-slate-600',
@@ -169,13 +170,14 @@ export default function ExpenseClaims() {
         <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
           <DollarSign size={16} className="text-amber-600" />
           <span className="text-sm text-amber-800">{billableCount} billable claim(s) ready to invoice</span>
-          <select value={billingParty} onChange={(e) => setBillingParty(e.target.value)}
-            className="ml-auto h-[34px] rounded border border-amber-300 px-2 text-sm outline-none">
-            <option value="">Select customer…</option>
-            {parties.filter((p) => p.type === 'customer' || p.type === 'both').map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
+          <div className="ml-auto w-48">
+            <SearchSelect
+              value={billingParty}
+              onChange={setBillingParty}
+              placeholder="Select customer…"
+              options={parties.filter((p) => p.type === 'customer' || p.type === 'both').map((p) => ({ value: p.id, label: p.name }))}
+            />
+          </div>
           <button onClick={handleBillToCustomer} disabled={!billingParty || actionId === 'bill'}
             className="rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50">
             {actionId === 'bill' ? 'Creating…' : 'Create Invoice'}
@@ -221,13 +223,12 @@ export default function ExpenseClaims() {
           {billable && (
             <div className="mt-2">
               <label className="mb-1 block text-xs font-medium text-slate-500">Customer</label>
-              <select value={partyId} onChange={(e) => setPartyId(e.target.value)}
-                className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500">
-                <option value="">Select customer…</option>
-                {parties.filter((p) => p.type === 'customer' || p.type === 'both').map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
+              <SearchSelect
+                value={partyId}
+                onChange={setPartyId}
+                placeholder="Select customer…"
+                options={parties.filter((p) => p.type === 'customer' || p.type === 'both').map((p) => ({ value: p.id, label: p.name }))}
+              />
             </div>
           )}
 
@@ -244,13 +245,18 @@ export default function ExpenseClaims() {
                     placeholder="Description" className="flex-1 rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-crimson-500" />
                   <input type="number" min={0} step={0.01} value={line.amount} onChange={(e) => updateLine(i, 'amount', e.target.value)}
                     placeholder="Amount" className="w-28 rounded border border-slate-300 px-3 py-2 text-sm text-right outline-none focus:border-crimson-500" />
-                  <select value={line.accountId} onChange={(e) => updateLine(i, 'accountId', e.target.value)}
-                    className="w-48 rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-crimson-500">
-                    <option value="">Expense account…</option>
-                    {accounts.filter((a) => a.type === 'expense').map((a) => (
-                      <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ''}{a.name}</option>
-                    ))}
-                  </select>
+                  <div className="w-48">
+                    <SearchSelect
+                      value={line.accountId}
+                      onChange={(v) => updateLine(i, 'accountId', v)}
+                      placeholder="Expense account…"
+                      options={accounts.filter((a) => a.type === 'expense').map((a) => ({
+                        value: a.id,
+                        label: a.name,
+                        sublabel: a.code ? String(a.code) : undefined,
+                      }))}
+                    />
+                  </div>
                   {lines.length > 1 && (
                     <button type="button" onClick={() => removeLine(i)} className="text-slate-400 hover:text-red-500">
                       <Trash2 size={14} />

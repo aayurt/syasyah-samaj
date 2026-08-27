@@ -323,17 +323,16 @@ export class SyncEngine {
     const pending = await this.storage.getPending()
 
     // Split: standard CRUD vs custom endpoints
-    const STANDARD_RE = /^\/[a-z][-a-z]*$/ // /documents, /parties, etc.
+    // Standard CRUD: creates (op=create, no id), updates (op=update, has id), deletes (op=delete, has id)
+    // Custom endpoints: create ops WITH an id AND _action in data (e.g. /documents/:id/post)
     const crudOps: typeof pending = []
     const customOps: typeof pending = []
     for (const p of pending) {
-      // Custom endpoints have paths like /documents/123/post — the collection
-      // field stores the full path for custom ops.
-      const path = `/${p.collection}${p.id ? `/${p.id}` : ''}`
-      if (STANDARD_RE.test(path)) {
-        crudOps.push(p)
-      } else {
+      const isCustomCreate = p.op === 'create' && p.id && p.data?._action
+      if (isCustomCreate) {
         customOps.push(p)
+      } else {
+        crudOps.push(p)
       }
     }
 

@@ -248,5 +248,12 @@ export const BillingSettings: GlobalConfig = {
         },
       ],
     },
+    {
+      name: 'defAccountOrder',
+      type: 'json',
+      admin: {
+        description: 'User-defined order of default account posting roles in the Settings UI.',
+      },
+    },
   ],
 }

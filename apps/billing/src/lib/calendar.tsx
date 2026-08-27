@@ -79,8 +79,10 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
   )
 
   const fmtDateTime = useCallback(
-    (d: string | null | undefined) =>
-      rawFormatDate(d, cal.calendarType, cal.dateFormat + ' HH:mm', cal.timeFormat),
+    (d: string | null | undefined) => {
+      const suffix = cal.timeFormat === '12h' ? ' HH:mm A' : ' HH:mm'
+      return rawFormatDate(d, cal.calendarType, cal.dateFormat + suffix, cal.timeFormat)
+    },
     [cal.calendarType, cal.dateFormat, cal.timeFormat],
   )
 

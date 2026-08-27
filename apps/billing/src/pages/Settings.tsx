@@ -5,6 +5,7 @@ import {
   Calendar,
   ChevronDown,
   FolderTree,
+  GripVertical,
   Hash,
   HelpCircle,
   LogOut,
@@ -20,6 +21,8 @@ import { formatDate } from '../lib/nepaliDate'
 import { useCalendar } from '../lib/calendar'
 import type { Account, AccountGroup, AccountType, BillingSettings } from '../lib/types'
 import NepaliDateInput from '../components/NepaliDateInput'
+import AccountSelect from '../components/AccountSelect'
+import SearchSelect from '../components/SearchSelect'
 
 /* ─── Accordion wrapper ────────────────────────────────────── */
 function Section({
@@ -117,6 +120,8 @@ const ACCOUNT_FIELDS: { key: keyof BillingSettings; label: string }[] = [
   { key: 'cogsAccount', label: 'Cost of Goods Sold' },
   { key: 'returnsAccount', label: 'Sales / Purchase Returns' },
   { key: 'accruedPayableAccount', label: 'Accrued Payables' },
+  { key: 'depreciationAccount', label: 'Depreciation Expense' },
+  { key: 'accumulatedDepreciationAccount', label: 'Accumulated Depreciation' },
 ]
 
 const inputCls =
@@ -199,7 +204,9 @@ export default function Settings() {
   // ── Default account assignments (editable) ──
   const [defAccounts, setDefAccounts] = useState<Record<string, string>>({})
   const savedDefAccounts = useRef<Record<string, string>>({})
-  const defAccountsDirty = JSON.stringify(defAccounts) !== JSON.stringify(savedDefAccounts.current)
+  const [defAccountOrder, setDefAccountOrder] = useState<string[]>(ACCOUNT_FIELDS.map((f) => f.key))
+  const savedDefAccountOrder = useRef<string[]>(ACCOUNT_FIELDS.map((f) => f.key))
+  const defAccountsDirty = JSON.stringify(defAccounts) !== JSON.stringify(savedDefAccounts.current) || JSON.stringify(defAccountOrder) !== JSON.stringify(savedDefAccountOrder.current)
   const [defAccountsSaved, setDefAccountsSaved] = useState(false)
 
   // ── Doc sequences ──
@@ -262,6 +269,12 @@ export default function Settings() {
       }
       setDefAccounts(da)
       savedDefAccounts.current = { ...da }
+      // Restore saved order if present
+      const savedOrder = res.defAccountOrder as string[] | undefined
+      if (savedOrder && Array.isArray(savedOrder)) {
+        setDefAccountOrder(savedOrder)
+        savedDefAccountOrder.current = [...savedOrder]
+      }
 
       loaded.current = true
     } catch (err: unknown) {
@@ -411,9 +424,11 @@ export default function Settings() {
 
   // ── Default account assignments ──
   const persistDefAccounts = () => {
-    const body: Record<string, string | null> = {}
-    for (const [key, val] of Object.entries(defAccounts)) {
-      body[key] = val || null
+    // Build body with proper types: numbers for relationships, null to clear
+    const body: Record<string, unknown> = { defAccountOrder: defAccountOrder }
+    for (const f of ACCOUNT_FIELDS) {
+      const val = defAccounts[f.key]
+      body[f.key] = val ? Number(val) : null
     }
     try {
       const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
@@ -425,6 +440,7 @@ export default function Settings() {
       protectGlobalsFields(Object.keys(body))
     } catch { /* ignore */ }
     savedDefAccounts.current = { ...defAccounts }
+    savedDefAccountOrder.current = [...defAccountOrder]
     setDefAccountsSaved(true)
     setTimeout(() => setDefAccountsSaved(false), 2000)
     api('/globals/billing-settings', { method: 'POST', body }).catch(() => {})
@@ -432,6 +448,36 @@ export default function Settings() {
 
   const cancelDefAccounts = () => {
     setDefAccounts({ ...savedDefAccounts.current })
+    setDefAccountOrder([...savedDefAccountOrder.current])
+  }
+
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [overIdx, setOverIdx] = useState<number | null>(null)
+
+  const onDragStart = (idx: number) => {
+    setDragIdx(idx)
+  }
+
+  const onDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault()
+    setOverIdx(idx)
+  }
+
+  const onDragEnd = () => {
+    if (dragIdx !== null && overIdx !== null && dragIdx !== overIdx) {
+      setDefAccountOrder((prev) => {
+        const next = [...prev]
+        const [moved] = next.splice(dragIdx, 1)
+        next.splice(overIdx, 0, moved)
+        return next
+      })
+    }
+    setDragIdx(null)
+    setOverIdx(null)
+  }
+
+  const onDragLeave = () => {
+    setOverIdx(null)
   }
 
   // ── Chart of Accounts CRUD ──
@@ -524,19 +570,21 @@ export default function Settings() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm text-slate-600">Date Format</label>
-            <select
-              value={dateFormat}
-              onChange={(e) => setDateFormat(e.target.value)}
-              className={inputCls}
-            >
-              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-              <option value="YYYY/MM/DD">YYYY/MM/DD</option>
-              <option value="DD MMMM YYYY">DD MMMM YYYY (15 Asar 2083)</option>
-              <option value="MMMM DD, YYYY">MMMM DD, YYYY</option>
-              <option value="DD MMM YYYY">DD MMM YYYY</option>
-            </select>
+            <div className="mt-1">
+              <SearchSelect
+                value={dateFormat}
+                onChange={setDateFormat}
+                options={[
+                  { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
+                  { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
+                  { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+                  { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD' },
+                  { value: 'DD MMMM YYYY', label: 'DD MMMM YYYY', sublabel: '15 Asar 2083' },
+                  { value: 'MMMM DD, YYYY', label: 'MMMM DD, YYYY' },
+                  { value: 'DD MMM YYYY', label: 'DD MMM YYYY' },
+                ]}
+              />
+            </div>
             <div className="mt-2 rounded bg-slate-50 px-3 py-2 text-sm text-slate-700">
               <span className="text-xs text-slate-400">Preview: </span>
               <span className="font-medium">
@@ -546,14 +594,16 @@ export default function Settings() {
           </div>
           <div>
             <label className="text-sm text-slate-600">Time Format</label>
-            <select
-              value={timeFormat}
-              onChange={(e) => setTimeFormat(e.target.value as '12h' | '24h')}
-              className={inputCls}
-            >
-              <option value="12h">12-hour (1:30 PM)</option>
-              <option value="24h">24-hour (13:30)</option>
-            </select>
+            <div className="mt-1">
+              <SearchSelect
+                value={timeFormat}
+                onChange={(v) => setTimeFormat(v as '12h' | '24h')}
+                options={[
+                  { value: '12h', label: '12-hour', sublabel: '1:30 PM' },
+                  { value: '24h', label: '24-hour', sublabel: '13:30' },
+                ]}
+              />
+            </div>
             <div className="mt-2 rounded bg-slate-50 px-3 py-2 text-sm text-slate-700">
               <span className="text-xs text-slate-400">Preview: </span>
               <span className="font-medium">
@@ -667,18 +717,18 @@ export default function Settings() {
         onSave={() => void persistFiscal()}
         onCancel={cancelFiscal}
       >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label className="text-sm text-slate-600">Fiscal year start</label>
+            <label className="mb-1.5 block text-sm text-slate-600">Fiscal year start</label>
             <NepaliDateInput compact value={fiscalYearStart} onChange={(v) => setFiscalYearStart(v)} />
-            <span className="mt-1 block text-xs text-slate-400">
+            <span className="mt-1.5 block text-xs text-slate-400">
               Used for voucher numbering. Empty = calendar year.
             </span>
           </div>
           <div>
-            <label className="text-sm text-slate-600">Freeze date</label>
+            <label className="mb-1.5 block text-sm text-slate-600">Freeze date</label>
             <NepaliDateInput compact value={freezeDate} onChange={(v) => setFreezeDate(v)} />
-            <span className="mt-1 block text-xs text-slate-400">
+            <span className="mt-1.5 block text-xs text-slate-400">
               No entry posted before this date. Empty = no freeze.
             </span>
           </div>
@@ -762,7 +812,7 @@ export default function Settings() {
       {/* ── 5. Default Account Assignments (editable) ────────── */}
       <Section
         title="Default Accounts"
-        subtitle="Map GL accounts to posting roles"
+        subtitle="Map GL accounts to posting roles — drag to reorder"
         icon={Wallet}
         open={!!openSections.accounts}
         onToggle={() => toggle('accounts')}
@@ -771,25 +821,54 @@ export default function Settings() {
         onSave={() => void persistDefAccounts()}
         onCancel={cancelDefAccounts}
       >
-        <div className="space-y-2">
-          {ACCOUNT_FIELDS.map((f) => (
-            <div key={f.key} className="flex items-center gap-3">
-              <label className="w-48 shrink-0 text-sm text-slate-600">{f.label}</label>
-              <select
-                value={defAccounts[f.key] || ''}
-                onChange={(e) => setDefAccounts((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                className="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500 h-[36px]"
+        <div className="space-y-1">
+          {defAccountOrder.map((key, idx) => {
+            const f = ACCOUNT_FIELDS.find((af) => af.key === key)
+            if (!f) return null
+            const isDragging = dragIdx === idx
+            const isOver = overIdx === idx && dragIdx !== null && dragIdx !== idx
+            return (
+              <div
+                key={f.key}
+                draggable
+                onDragStart={() => onDragStart(idx)}
+                onDragOver={(e) => onDragOver(e, idx)}
+                onDragEnd={onDragEnd}
+                onDragLeave={onDragLeave}
+                className={`group flex items-center gap-2 rounded-md px-2 py-1.5 transition-all ${
+                  isDragging
+                    ? 'opacity-40 scale-[0.98] bg-crimson-50 ring-1 ring-crimson-200'
+                    : isOver
+                      ? 'bg-crimson-50 ring-1 ring-crimson-300 ring-dashed -my-0.5'
+                      : 'hover:bg-slate-50'
+                }`
+                }
               >
-                <option value="">— select account —</option>
-                {coaAccounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ''}{a.name}</option>
-                ))}
-              </select>
-            </div>
-          ))}
+                {/* Drag handle */}
+                <div className="shrink-0 cursor-grab text-slate-300 transition-colors hover:text-slate-500 active:cursor-grabbing">
+                  <GripVertical size={14} />
+                </div>
+
+                {/* Role label */}
+                <label className="w-48 shrink-0 text-sm font-medium text-slate-600">
+                  {f.label}
+                </label>
+
+                {/* Custom account select */}
+                <div className="flex-1">
+                  <AccountSelect
+                    accounts={coaAccounts}
+                    value={defAccounts[f.key] || ''}
+                    onChange={(v) => setDefAccounts((prev) => ({ ...prev, [f.key]: v }))}
+                  />
+                </div>
+              </div>
+            )
+          })}
         </div>
         <p className="mt-3 text-xs text-slate-400">
           These defaults are used when posting vouchers. Missing accounts block posting until configured.
+          Drag rows to reorder posting roles.
         </p>
       </Section>
 
@@ -822,27 +901,36 @@ export default function Settings() {
                 placeholder="Account name" className="rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500" />
               <input value={coaForm.code} onChange={(e) => setCoaForm({ ...coaForm, code: e.target.value })}
                 placeholder="Code" className="rounded border border-slate-300 px-3 py-1.5 text-sm font-mono outline-none focus:border-slate-500" />
-              <select value={coaForm.type} onChange={(e) => setCoaForm({ ...coaForm, type: e.target.value as AccountType })}
-                className="rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500">
-                <option value="asset">Asset</option>
-                <option value="liability">Liability</option>
-                <option value="equity">Equity</option>
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-              </select>
-              <select value={coaForm.class} onChange={(e) => setCoaForm({ ...coaForm, class: e.target.value })}
-                className="rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500">
-                <option value="other">Other</option>
-                <option value="cash">Cash</option>
-                <option value="bank">Bank</option>
-              </select>
+              <SearchSelect
+                value={coaForm.type}
+                onChange={(v) => setCoaForm({ ...coaForm, type: v as AccountType })}
+                options={[
+                  { value: 'asset', label: 'Asset' },
+                  { value: 'liability', label: 'Liability' },
+                  { value: 'equity', label: 'Equity' },
+                  { value: 'income', label: 'Income' },
+                  { value: 'expense', label: 'Expense' },
+                ]}
+              />
+              <SearchSelect
+                value={coaForm.class}
+                onChange={(v) => setCoaForm({ ...coaForm, class: v })}
+                options={[
+                  { value: 'other', label: 'Other' },
+                  { value: 'cash', label: 'Cash' },
+                  { value: 'bank', label: 'Bank' },
+                ]}
+              />
             </div>
             <div className="mt-2 flex items-end gap-2">
-              <select value={coaForm.group} onChange={(e) => setCoaForm({ ...coaForm, group: e.target.value })}
-                className="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500">
-                <option value="">— no group —</option>
-                {coaGroups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-              </select>
+              <div className="flex-1">
+                <SearchSelect
+                  value={coaForm.group}
+                  onChange={(v) => setCoaForm({ ...coaForm, group: v })}
+                  placeholder="— no group —"
+                  options={coaGroups.map((g) => ({ value: g.id, label: g.name }))}
+                />
+              </div>
               <input type="number" step="0.01" value={coaForm.openingBalance} onChange={(e) => setCoaForm({ ...coaForm, openingBalance: e.target.value })}
                 placeholder="Opening balance" className="w-32 rounded border border-slate-300 px-3 py-1.5 text-sm font-mono outline-none focus:border-slate-500" />
               <button type="submit" disabled={coaSaving}

@@ -118,7 +118,7 @@ export default function NepaliDateInput({
   // ── Compact variant: single-line, for filter bars ────────────────────
   if (compact) {
     return (
-      <div className={`inline-flex items-center gap-1 ${className}`}>
+      <div className={`inline-flex items-center gap-2 ${className}`}>
         {inputMode === 'BS' ? (
           <input
             type="text"

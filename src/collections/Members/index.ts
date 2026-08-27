@@ -7,6 +7,7 @@ import {
   scopedRead,
   scopedUpdate,
 } from '@/access/tenantScoped'
+import { assignTenant } from '@/utilities/tenantScope'
 import { postDocument } from '@/collections/Documents'
 
 export const Members: CollectionConfig = {
@@ -16,6 +17,9 @@ export const Members: CollectionConfig = {
     delete: scopedDelete,
     read: scopedRead,
     update: scopedUpdate,
+  },
+  hooks: {
+    beforeValidate: [assignTenant],
   },
   admin: {
     useAsTitle: 'fullName',

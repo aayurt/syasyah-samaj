@@ -227,7 +227,11 @@ async function processOperation(
         if (existing?.updatedAt && (op.data as any).updatedAt) {
           const serverTime = new Date(existing.updatedAt as string).getTime()
           const clientTime = new Date((op.data as any).updatedAt as string).getTime()
-          if (serverTime > clientTime) {
+          // Allow a 5-second tolerance to absorb clock skew between client
+          // and server machines. Without this, a slightly-fast client clock
+          // would cause every update to be rejected as a conflict.
+          const SKEW_TOLERANCE_MS = 5_000
+          if (serverTime > clientTime + SKEW_TOLERANCE_MS) {
             throw new Error(
               'Conflict: server version is newer. Discard this change to keep the server version.',
             )

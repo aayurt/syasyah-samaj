@@ -45,15 +45,37 @@ export function formatDate(
   calendarType: 'AD' | 'BS',
   dateFormat: string,
   timeFormat: '12h' | '24h' = '12h',
+  utc = false,
 ): string {
   if (!dateStr) return '—'
-  const d = new Date(dateStr)
+
+  // Ensure timestamps (contain T) are always parsed as UTC so they
+  // display in the user's local timezone. Plain date strings like
+  // "2026-08-27" (no T) are left as-is for BS calendar conversion.
+  const isTimestamp = dateStr.includes('T')
+  let d: Date
+  if (isTimestamp && !/[Zz+-]\d{2}/.test(dateStr)) {
+    // Timestamp without timezone suffix — append Z so the browser
+    // interprets it as UTC, not as the local timezone.
+    d = new Date(dateStr + 'Z')
+  } else {
+    d = new Date(dateStr)
+  }
   if (isNaN(d.getTime())) return '—'
+
+  // Use UTC methods when utc=true to avoid timezone drift on server timestamps
+  const yr   = utc ? d.getUTCFullYear()    : d.getFullYear()
+  const mo   = utc ? d.getUTCMonth()       : d.getMonth()
+  const dy   = utc ? d.getUTCDate()        : d.getDate()
+  const hrs  = utc ? d.getUTCHours()       : d.getHours()
+  const mins = utc ? d.getUTCMinutes()     : d.getMinutes()
 
   // Date portion
   let formatted: string
   if (calendarType === 'BS') {
-    const bs = toBS(d)
+    // For BS display, convert the UTC date to BS
+    const utcDate = new Date(Date.UTC(yr, mo, dy))
+    const bs = toBS(utcDate)
     const monthNames = BS_MONTHS
     const monthShort = BS_MONTHS_SHORT
     formatted = dateFormat
@@ -67,31 +89,30 @@ export function formatDate(
       .replace('D', String(bs.date))
   } else {
     formatted = dateFormat
-      .replace('YYYY', String(d.getFullYear()))
-      .replace('YY', String(d.getFullYear()).slice(-2))
-      .replace('MMMM', AD_MONTHS[d.getMonth()])
-      .replace('MMM', AD_MONTHS_SHORT[d.getMonth()])
-      .replace('MM', String(d.getMonth() + 1).padStart(2, '0'))
-      .replace('M', String(d.getMonth() + 1))
-      .replace('DD', String(d.getDate()).padStart(2, '0'))
-      .replace('D', String(d.getDate()))
+      .replace('YYYY', String(yr))
+      .replace('YY', String(yr).slice(-2))
+      .replace('MMMM', AD_MONTHS[mo])
+      .replace('MMM', AD_MONTHS_SHORT[mo])
+      .replace('MM', String(mo + 1).padStart(2, '0'))
+      .replace('M', String(mo + 1))
+      .replace('DD', String(dy).padStart(2, '0'))
+      .replace('D', String(dy))
   }
 
   // Time (applies to both BS and AD)
-  const hours = d.getHours()
   if (timeFormat === '12h') {
-    const h12 = hours % 12 || 12
-    const ampm = hours >= 12 ? 'PM' : 'AM'
+    const h12 = hrs % 12 || 12
+    const ampm = hrs >= 12 ? 'PM' : 'AM'
     formatted = formatted
       .replace('HH', String(h12).padStart(2, '0'))
       .replace('H', String(h12))
-      .replace('mm', String(d.getMinutes()).padStart(2, '0'))
+      .replace('mm', String(mins).padStart(2, '0'))
       .replace('A', ampm)
   } else {
     formatted = formatted
-      .replace('HH', String(hours).padStart(2, '0'))
-      .replace('H', String(hours))
-      .replace('mm', String(d.getMinutes()).padStart(2, '0'))
+      .replace('HH', String(hrs).padStart(2, '0'))
+      .replace('H', String(hrs))
+      .replace('mm', String(mins).padStart(2, '0'))
       .replace('A', '')
   }
 
@@ -104,20 +125,29 @@ export function formatDate(
 export function formatTime(
   dateStr: string | null | undefined,
   timeFormat: '12h' | '24h' = '12h',
+  utc = false,
 ): string {
   if (!dateStr) return '—'
-  const d = new Date(dateStr)
+  // Same timezone-aware parsing as formatDate
+  const isTimestamp = dateStr.includes('T')
+  let d: Date
+  if (isTimestamp && !/[Zz+-]\d{2}/.test(dateStr)) {
+    d = new Date(dateStr + 'Z')
+  } else {
+    d = new Date(dateStr)
+  }
   if (isNaN(d.getTime())) return '—'
 
-  const hours = d.getHours()
-  const mins = String(d.getMinutes()).padStart(2, '0')
+  const hours = utc ? d.getUTCHours()   : d.getHours()
+  const mins  = utc ? d.getUTCMinutes() : d.getMinutes()
+  const m = String(mins).padStart(2, '0')
 
   if (timeFormat === '12h') {
     const h12 = hours % 12 || 12
     const ampm = hours >= 12 ? 'PM' : 'AM'
-    return `${h12}:${mins} ${ampm}`
+    return `${h12}:${m} ${ampm}`
   }
-  return `${String(hours).padStart(2, '0')}:${mins}`
+  return `${String(hours).padStart(2, '0')}:${m}`
 }
 
 /**

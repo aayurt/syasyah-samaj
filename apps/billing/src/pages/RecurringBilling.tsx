@@ -5,6 +5,7 @@ import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
 import type { RecurringSchedule, RecurringFrequency, DocType, Party } from '../lib/types'
+import SearchSelect from '../components/SearchSelect'
 
 const FREQ_OPTIONS: { value: RecurringFrequency; label: string }[] = [
   { value: 'weekly', label: 'Weekly' },
@@ -215,17 +216,19 @@ export default function RecurringBilling() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Document Type</label>
-              <select value={docType} onChange={(e) => setDocType(e.target.value as DocType)}
-                className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500">
-                {DOCTYPES.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-              </select>
+              <SearchSelect
+                value={docType}
+                onChange={(v) => setDocType(v as DocType)}
+                options={DOCTYPES.map((d) => ({ value: d.value, label: d.label }))}
+              />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Frequency</label>
-              <select value={frequency} onChange={(e) => setFrequency(e.target.value as RecurringFrequency)}
-                className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500">
-                {FREQ_OPTIONS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-              </select>
+              <SearchSelect
+                value={frequency}
+                onChange={(v) => setFrequency(v as RecurringFrequency)}
+                options={FREQ_OPTIONS.map((f) => ({ value: f.value, label: f.label }))}
+              />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Day of Month</label>
@@ -234,11 +237,12 @@ export default function RecurringBilling() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Party</label>
-              <select value={partyId} onChange={(e) => setPartyId(e.target.value)}
-                className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500">
-                <option value="">Select party…</option>
-                {parties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+              <SearchSelect
+                value={partyId}
+                onChange={setPartyId}
+                placeholder="Select party…"
+                options={parties.map((p) => ({ value: p.id, label: p.name }))}
+              />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Start Date</label>
