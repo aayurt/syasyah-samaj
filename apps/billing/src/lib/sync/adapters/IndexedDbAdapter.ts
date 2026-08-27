@@ -159,13 +159,27 @@ export class IndexedDbAdapter implements StorageAdapter {
 
   async list(collection: string): Promise<Record<string, unknown>[]> {
     const { store, done } = await this.store('cache')
-    const all = await reqResult(
-      store.getAll() as IDBRequest<{ collection: string; json: string }[]>,
+    // Since the key path is [collection, id], records are sorted by collection
+    // first. Use a cursor to scan only the matching prefix — avoids loading
+    // every cached document into memory.
+    const results: Record<string, unknown>[] = []
+    const range = IDBKeyRange.bound(
+      [collection, ''],
+      [collection, '￿'],
     )
+    const req = store.openCursor(range)
+    await new Promise<void>((resolve, reject) => {
+      req.onsuccess = () => {
+        const cursor = req.result
+        if (!cursor) return resolve()
+        const rec = cursor.value as { json: string }
+        results.push(JSON.parse(rec.json))
+        cursor.continue()
+      }
+      req.onerror = () => reject(req.error)
+    })
     await done
-    return all
-      .filter((r) => r.collection === collection)
-      .map((r) => JSON.parse(r.json))
+    return results
   }
 
   async remove(collection: string, id: number | string): Promise<void> {

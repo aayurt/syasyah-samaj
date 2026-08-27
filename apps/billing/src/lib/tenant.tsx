@@ -104,6 +104,15 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, id)
   }
 
+  // Keep the sync engine's cache key mapper in sync with the current tenant.
+  useEffect(() => {
+    try {
+      import('./api').then(({ getEngine }) => {
+        getEngine().setTenant(tenantId)
+      })
+    } catch { /* ignore */ }
+  }, [tenantId])
+
   return (
     <TenantContext.Provider
       value={{

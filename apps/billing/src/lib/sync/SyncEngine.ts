@@ -47,10 +47,18 @@ export class SyncEngine {
   private flushTimer: ReturnType<typeof setTimeout> | null = null
   private consecutiveFailures = 0
 
+  /** Maps a plain collection name (from server) to the local cache key.
+   *  Defaults to identity (plain name). The wrapper overrides this to
+   *  add tenant-scoping, e.g. `documents` → `C00:documents`. */
+  private _cacheKey: (collection: string) => string = (c) => c
+
   constructor(
     private storage: StorageAdapter,
     private apiBase: string = '',
-  ) {}
+    cacheKey?: (collection: string) => string,
+  ) {
+    if (cacheKey) this._cacheKey = cacheKey
+  }
 
   // ── Lifecycle ─────────────────────────────────────────────────
 
@@ -484,7 +492,7 @@ export class SyncEngine {
 
     for (const change of result.changes) {
       if (change.data?.id) {
-        await this.storage.upsert(change.collection, change.data)
+        await this.storage.upsert(this._cacheKey(change.collection), change.data)
       }
     }
 

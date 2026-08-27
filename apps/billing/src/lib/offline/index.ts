@@ -31,6 +31,14 @@ class CompatibilityEngine {
   private inner: NewSyncEngine | null = null
   private adapter: IndexedDbAdapter | null = null
   private initPromise: Promise<void> | null = null
+  /** Current tenant ID — set by the React provider via setTenant().
+   *  The SyncEngine uses this to scope cache keys (e.g. C00:documents). */
+  private _tenant: string = ''
+
+  /** Called by TenantProvider when the tenant changes. */
+  setTenant(tenant: string) {
+    this._tenant = tenant
+  }
 
   private async ensure(): Promise<NewSyncEngine> {
     if (this.inner) return this.inner
@@ -41,7 +49,9 @@ class CompatibilityEngine {
     this.initPromise = (async () => {
       this.adapter = new IndexedDbAdapter()
       await this.adapter.ready()
-      this.inner = new NewSyncEngine(this.adapter)
+      this.inner = new NewSyncEngine(this.adapter, '', (collection) => {
+        return this._tenant ? `${this._tenant}:${collection}` : collection
+      })
       await this.inner.init()
     })()
     await this.initPromise
