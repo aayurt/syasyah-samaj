@@ -5,6 +5,7 @@ import {
   BarChart3,
   BookOpenText,
   Boxes,
+  CalendarClock,
   Clock3,
   CreditCard,
   FileText,
@@ -13,6 +14,7 @@ import {
   LayoutDashboard,
   NotebookText,
   PanelLeftClose,
+  Receipt,
   Search,
   PanelLeftOpen,
   Scale,
@@ -39,6 +41,8 @@ import AuditLog from './pages/AuditLog'
 import Transfers from './pages/Transfers'
 import Members from './pages/Members'
 import MembershipTypes from './pages/MembershipTypes'
+import RecurringBilling from './pages/RecurringBilling'
+import ExpenseClaims from './pages/ExpenseClaims'
 import SyncBanner from './components/SyncBanner'
 import ConnectingBanner from './components/ConnectingBanner'
 import SyncStatus from './components/SyncStatus'
@@ -74,6 +78,8 @@ const navGroups: { title?: string; items: NavItem[] }[] = [
       { to: '/parties', label: 'Parties', icon: Users },
       { to: '/members', label: 'Members', icon: Users },
       { to: '/membership-types', label: 'Membership Types', icon: Users },
+      { to: '/recurring-billing', label: 'Recurring Billing', icon: CalendarClock },
+      { to: '/expense-claims', label: 'Expense Claims', icon: Receipt },
     ],
   },
   {
@@ -353,6 +359,8 @@ function Shell({ email }: { email: string }) {
             <Route path="/daybooks" element={<Daybooks />} />
             <Route path="/members" element={<Members />} />
             <Route path="/membership-types" element={<MembershipTypes />} />
+            <Route path="/recurring-billing" element={<RecurringBilling />} />
+            <Route path="/expense-claims" element={<ExpenseClaims />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

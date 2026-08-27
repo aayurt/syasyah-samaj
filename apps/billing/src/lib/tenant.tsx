@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { authClient } from './auth'
 import { api } from './api'
 
@@ -127,5 +127,8 @@ export function useTenant() {
 /** Returns the tenant query parameter to pass to all API calls. */
 export function useTenantQuery(): Record<string, string | number | undefined> {
   const { tenantId } = useTenant()
-  return tenantId ? { tenant: tenantId } : {}
+  return useMemo(
+    () => (tenantId ? { tenant: tenantId } : {}),
+    [tenantId],
+  )
 }

@@ -16,6 +16,8 @@ export type DocType =
   | 'delivery-challan'
   | 'journal-voucher'
   | 'contra'
+  | 'membership-receipt'
+  | 'donation-receipt'
 
 export const DOC_TYPE_LABELS: Record<string, string> = {
   'sales-quote': 'Sales Quote',
@@ -30,6 +32,8 @@ export const DOC_TYPE_LABELS: Record<string, string> = {
   'delivery-challan': 'Delivery Challan',
   'journal-voucher': 'Journal Entry',
   contra: 'Contra Entry',
+  'membership-receipt': 'Membership Receipt',
+  'donation-receipt': 'Donation Receipt',
 }
 
 export interface AccountGroup {
@@ -323,6 +327,65 @@ export interface BillingSettings {
   companyEmail?: string
   companyAddress?: string
   companyLogo?: string
+}
+
+export type ClaimStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'reimbursed'
+
+export interface ExpenseClaim {
+  id: number
+  claimNumber: string
+  claimant: string
+  date: string
+  status: ClaimStatus
+  lines: Array<{
+    id?: string
+    description: string
+    amount: number
+    account?: number | Account | null
+  }>
+  totalAmount: number
+  billable: boolean
+  party?: number | Party | null
+  billedInvoiceId?: number
+  submittedAt?: string
+  approvedAt?: string
+  approvedBy?: string
+  rejectedAt?: string
+  rejectionReason?: string
+  reimbursedAt?: string
+  journalEntry?: number
+  paymentJournalEntry?: number
+  tenant?: number | null
+}
+
+export type RecurringFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly'
+export type RecurringStatus = 'active' | 'paused' | 'completed'
+
+export interface RecurringSchedule {
+  id: number
+  name: string
+  docType: DocType
+  frequency: RecurringFrequency
+  dayOfMonth?: number
+  party: number | Party | null
+  lines: Array<{
+    id?: string
+    description: string
+    qty?: number
+    rate: number
+    amount?: number
+    item?: number | Item | null
+  }>
+  taxRate?: number
+  narration?: string
+  startDate: string
+  endDate?: string
+  nextRunDate: string
+  lastRunDate?: string
+  lastDocId?: number
+  status: RecurringStatus
+  generatedCount: number
+  tenant?: number | null
 }
 
 export type AgingBucket = '0-30' | '31-60' | '61-90' | '90+'

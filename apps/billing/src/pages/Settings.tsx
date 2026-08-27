@@ -4,18 +4,21 @@ import {
   Building2,
   Calendar,
   ChevronDown,
+  FolderTree,
   Hash,
   HelpCircle,
   LogOut,
+  Plus,
   RotateCcw,
   ToggleLeft,
+  Trash2,
   Wallet,
 } from 'lucide-react'
 import { api, protectGlobalsFields } from '../lib/api'
 import { authClient, clearCachedSession } from '../lib/auth'
 import { formatDate } from '../lib/nepaliDate'
 import { useCalendar } from '../lib/calendar'
-import type { Account, BillingSettings } from '../lib/types'
+import type { Account, AccountGroup, AccountType, BillingSettings } from '../lib/types'
 import NepaliDateInput from '../components/NepaliDateInput'
 
 /* ─── Accordion wrapper ────────────────────────────────────── */
@@ -185,6 +188,20 @@ export default function Settings() {
   const [featuresSaved, setFeaturesSaved] = useState(false)
 
 
+  // ── Chart of Accounts ──
+  const [coaAccounts, setCoaAccounts] = useState<Account[]>([])
+  const [coaGroups, setCoaGroups] = useState<AccountGroup[]>([])
+  const [coaLoading, setCoaLoading] = useState(false)
+  const [coaForm, setCoaForm] = useState({ name: '', code: '', type: 'asset' as AccountType, class: 'other', group: '', openingBalance: '' })
+  const [coaSaving, setCoaSaving] = useState(false)
+  const [showCoaForm, setShowCoaForm] = useState(false)
+
+  // ── Default account assignments (editable) ──
+  const [defAccounts, setDefAccounts] = useState<Record<string, string>>({})
+  const savedDefAccounts = useRef<Record<string, string>>({})
+  const defAccountsDirty = JSON.stringify(defAccounts) !== JSON.stringify(savedDefAccounts.current)
+  const [defAccountsSaved, setDefAccountsSaved] = useState(false)
+
   // ── Doc sequences ──
   const [sequences, setSequences] = useState<{ key: string; lastNumber: number; id?: number }[]>([])
   const [resetKey, setResetKey] = useState('')
@@ -237,6 +254,15 @@ export default function Settings() {
       setSimplifiedInvThreshold(st)
       savedFeatures.current = { bankRec: br, simplifiedInv: si, threshold: st }
 
+      // Default account assignments
+      const da: Record<string, string> = {}
+      for (const f of ACCOUNT_FIELDS) {
+        const v = res[f.key]
+        da[f.key] = v && typeof v === 'object' ? String((v as any).id) : v ? String(v) : ''
+      }
+      setDefAccounts(da)
+      savedDefAccounts.current = { ...da }
+
       loaded.current = true
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load settings')
@@ -253,9 +279,22 @@ export default function Settings() {
     } catch { /* non-critical */ }
   }
 
+  const loadCoa = async () => {
+    setCoaLoading(true)
+    try {
+      const [a, g] = await Promise.all([
+        api<{ docs: Account[] }>('/gl-accounts', { query: { depth: 1, sort: 'name', limit: 500 } }),
+        api<{ docs: AccountGroup[] }>('/account-groups', { query: { depth: 0, sort: 'name', limit: 100 } }),
+      ])
+      setCoaAccounts(a.docs || [])
+      setCoaGroups(g.docs || [])
+    } catch { /* non-critical */ } finally { setCoaLoading(false) }
+  }
+
   useEffect(() => {
     load()
     loadSequences()
+    loadCoa()
   }, [])
 
   /* ── Persist helpers ── */
@@ -368,6 +407,71 @@ export default function Settings() {
     setBankRecEnabled(s.bankRec)
     setSimplifiedInvEnabled(s.simplifiedInv)
     setSimplifiedInvThreshold(s.threshold)
+  }
+
+  // ── Default account assignments ──
+  const persistDefAccounts = () => {
+    const body: Record<string, string | null> = {}
+    for (const [key, val] of Object.entries(defAccounts)) {
+      body[key] = val || null
+    }
+    try {
+      const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
+      localStorage.setItem(
+        'billing.settingsCache',
+        JSON.stringify({ data: { ...(cached.data || {}), ...body }, ts: Date.now() }),
+      )
+      window.dispatchEvent(new Event('billing-settings-changed'))
+      protectGlobalsFields(Object.keys(body))
+    } catch { /* ignore */ }
+    savedDefAccounts.current = { ...defAccounts }
+    setDefAccountsSaved(true)
+    setTimeout(() => setDefAccountsSaved(false), 2000)
+    api('/globals/billing-settings', { method: 'POST', body }).catch(() => {})
+  }
+
+  const cancelDefAccounts = () => {
+    setDefAccounts({ ...savedDefAccounts.current })
+  }
+
+  // ── Chart of Accounts CRUD ──
+  const createCoaAccount = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCoaSaving(true)
+    try {
+      await api('/gl-accounts', {
+        method: 'POST',
+        body: {
+          name: coaForm.name,
+          code: coaForm.code || undefined,
+          type: coaForm.type,
+          class: coaForm.class,
+          group: coaForm.group ? Number(coaForm.group) : undefined,
+          openingBalance: coaForm.openingBalance ? Number(coaForm.openingBalance) : 0,
+        },
+      })
+      setCoaForm({ name: '', code: '', type: 'asset', class: 'other', group: '', openingBalance: '' })
+      setShowCoaForm(false)
+      await loadCoa()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create account')
+    }
+    setCoaSaving(false)
+  }
+
+  const removeCoaAccount = async (id: number) => {
+    if (!window.confirm('Delete this account?')) return
+    try {
+      await api(`/gl-accounts/${id}`, { method: 'DELETE' })
+      await loadCoa()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete account')
+    }
+  }
+
+  const coaGroupName = (a: Account) => {
+    const g = a.group && typeof a.group === 'object' ? a.group : coaGroups.find((x) => x.id === a.group)
+    return g ? g.name : '—'
   }
 
   const accountName = (v: BillingSettings[keyof BillingSettings]) =>
@@ -655,30 +759,137 @@ export default function Settings() {
         </div>
       </Section>
 
-      {/* ── 5. Default Accounts (read-only) ───────────────────── */}
+      {/* ── 5. Default Account Assignments (editable) ────────── */}
       <Section
         title="Default Accounts"
-        subtitle="Managed in Payload admin"
+        subtitle="Map GL accounts to posting roles"
         icon={Wallet}
         open={!!openSections.accounts}
         onToggle={() => toggle('accounts')}
+        hasChanges={defAccountsDirty}
+        saved={defAccountsSaved}
+        onSave={() => void persistDefAccounts()}
+        onCancel={cancelDefAccounts}
       >
-        <table className="w-full text-sm">
-          <tbody>
-            {ACCOUNT_FIELDS.map((f) => (
-              <tr key={f.key} className="border-b border-slate-50 last:border-0">
-                <td className="px-3 py-2 text-slate-600">{f.label}</td>
-                <td className="px-3 py-2 text-right font-medium text-slate-800">
-                  {settings ? accountName(settings[f.key]) : '—'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="space-y-2">
+          {ACCOUNT_FIELDS.map((f) => (
+            <div key={f.key} className="flex items-center gap-3">
+              <label className="w-48 shrink-0 text-sm text-slate-600">{f.label}</label>
+              <select
+                value={defAccounts[f.key] || ''}
+                onChange={(e) => setDefAccounts((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                className="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500 h-[36px]"
+              >
+                <option value="">— select account —</option>
+                {coaAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ''}{a.name}</option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
         <p className="mt-3 text-xs text-slate-400">
-          Default accounts are configured in the Payload admin (Billing → Billing Settings). Missing
-          accounts block posting until configured.
+          These defaults are used when posting vouchers. Missing accounts block posting until configured.
         </p>
+      </Section>
+
+      {/* ── 5b. Chart of Accounts ─────────────────────────────── */}
+      <Section
+        title="Chart of Accounts"
+        subtitle={`${coaAccounts.length} accounts · ${coaGroups.length} groups`}
+        icon={FolderTree}
+        open={!!openSections.coa}
+        onToggle={() => toggle('coa')}
+      >
+        {/* Create form */}
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-xs text-slate-400">
+            {coaLoading ? 'Loading…' : `${coaAccounts.length} accounts`}
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowCoaForm(!showCoaForm)}
+            className="flex items-center gap-1 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            <Plus size={12} /> New Account
+          </button>
+        </div>
+
+        {showCoaForm && (
+          <form onSubmit={createCoaAccount} className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+              <input required value={coaForm.name} onChange={(e) => setCoaForm({ ...coaForm, name: e.target.value })}
+                placeholder="Account name" className="rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500" />
+              <input value={coaForm.code} onChange={(e) => setCoaForm({ ...coaForm, code: e.target.value })}
+                placeholder="Code" className="rounded border border-slate-300 px-3 py-1.5 text-sm font-mono outline-none focus:border-slate-500" />
+              <select value={coaForm.type} onChange={(e) => setCoaForm({ ...coaForm, type: e.target.value as AccountType })}
+                className="rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500">
+                <option value="asset">Asset</option>
+                <option value="liability">Liability</option>
+                <option value="equity">Equity</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+              <select value={coaForm.class} onChange={(e) => setCoaForm({ ...coaForm, class: e.target.value })}
+                className="rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500">
+                <option value="other">Other</option>
+                <option value="cash">Cash</option>
+                <option value="bank">Bank</option>
+              </select>
+            </div>
+            <div className="mt-2 flex items-end gap-2">
+              <select value={coaForm.group} onChange={(e) => setCoaForm({ ...coaForm, group: e.target.value })}
+                className="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500">
+                <option value="">— no group —</option>
+                {coaGroups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+              <input type="number" step="0.01" value={coaForm.openingBalance} onChange={(e) => setCoaForm({ ...coaForm, openingBalance: e.target.value })}
+                placeholder="Opening balance" className="w-32 rounded border border-slate-300 px-3 py-1.5 text-sm font-mono outline-none focus:border-slate-500" />
+              <button type="submit" disabled={coaSaving}
+                className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
+                {coaSaving ? 'Saving…' : 'Save'}</button>
+              <button type="button" onClick={() => setShowCoaForm(false)} className="text-xs text-slate-400 hover:text-slate-700">Cancel</button>
+            </div>
+          </form>
+        )}
+
+        {/* Accounts grouped by type */}
+        {(['asset', 'liability', 'equity', 'income', 'expense'] as AccountType[]).map((type) => {
+          const rows = coaAccounts.filter((a) => a.type === type)
+          if (rows.length === 0) return null
+          const labels: Record<string, string> = { asset: 'Assets', liability: 'Liabilities', equity: 'Equity', income: 'Income', expense: 'Expenses' }
+          return (
+            <div key={type} className="mb-3">
+              <div className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+                {labels[type]} <span className="text-slate-400">({rows.length})</span>
+              </div>
+              <table className="w-full text-sm">
+                <tbody>
+                  {rows.map((a) => (
+                    <tr key={a.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50">
+                      <td className="px-3 py-1.5 font-mono text-xs text-slate-500 w-20">{a.code || '—'}</td>
+                      <td className="px-3 py-1.5 text-slate-800">{a.name}</td>
+                      <td className="px-3 py-1.5 text-xs text-slate-400">{coaGroupName(a)}</td>
+                      <td className="px-3 py-1.5 text-xs text-slate-400 capitalize">{a.class || 'other'}</td>
+                      <td className="px-3 py-1.5 text-right">
+                        <button onClick={() => removeCoaAccount(a.id)} title="Delete"
+                          className="rounded p-1 text-slate-300 hover:bg-red-50 hover:text-red-500">
+                          <Trash2 size={12} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        })}
+
+        {coaAccounts.length === 0 && !coaLoading && (
+          <p className="py-6 text-center text-sm text-slate-400">
+            No accounts yet. Add your first account above.
+          </p>
+        )}
       </Section>
 
       {/* ── 6. Voucher Numbering ─────────────────────────────── */}

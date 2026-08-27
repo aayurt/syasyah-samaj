@@ -14,6 +14,8 @@ import * as migration_20260819_p1_transfers_audit from './20260819_p1_transfers_
 import * as migration_20260824_void_items from './20260824_void_items';
 import * as migration_20260819_p2_tally_vouchers_tax from './20260819_p2_tally_vouchers_tax';
 import * as migration_20260826_sales_quotes from './20260826_sales_quotes';
+import * as migration_20260826_recurring_billing from './20260826_recurring_billing';
+import * as migration_20260826_expense_claims from './20260826_expense_claims';
 
 export const migrations = [
   {
@@ -90,5 +92,15 @@ export const migrations = [
     up: migration_20260826_sales_quotes.up,
     down: migration_20260826_sales_quotes.down,
     name: '20260826_sales_quotes'
+  },
+  {
+    up: migration_20260826_recurring_billing.up,
+    down: migration_20260826_recurring_billing.down,
+    name: '20260826_recurring_billing'
+  },
+  {
+    up: migration_20260826_expense_claims.up,
+    down: migration_20260826_expense_claims.down,
+    name: '20260826_expense_claims'
   },
 ];

@@ -95,6 +95,8 @@ export interface Config {
     'bank-statements': BankStatement;
     'fixed-assets': FixedAsset;
     'audit-logs': AuditLog;
+    'recurring-schedules': RecurringSchedule;
+    'expense-claims': ExpenseClaim;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -139,6 +141,8 @@ export interface Config {
     'bank-statements': BankStatementsSelect<false> | BankStatementsSelect<true>;
     'fixed-assets': FixedAssetsSelect<false> | FixedAssetsSelect<true>;
     'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
+    'recurring-schedules': RecurringSchedulesSelect<false> | RecurringSchedulesSelect<true>;
+    'expense-claims': ExpenseClaimsSelect<false> | ExpenseClaimsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -1125,6 +1129,10 @@ export interface Document {
    */
   linkedInvoice?: (number | null) | Document;
   /**
+   * Sales quote this invoice was created from (traceability for quote → invoice conversion).
+   */
+  sourceQuote?: (number | null) | Document;
+  /**
    * Items that have been voided via credit/debit note.
    */
   voidedItems?:
@@ -1694,6 +1702,124 @@ export interface AuditLog {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recurring-schedules".
+ */
+export interface RecurringSchedule {
+  id: number;
+  /**
+   * A descriptive name for this schedule (e.g. "Monthly rent invoice")
+   */
+  name: string;
+  docType: 'sales-invoice' | 'purchase-invoice' | 'membership-receipt' | 'donation-receipt';
+  frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+  /**
+   * Day of month to generate (1-31). For monthly/quarterly/yearly. If the month has fewer days, uses the last day.
+   */
+  dayOfMonth?: number | null;
+  party: number | Party;
+  lines: {
+    description: string;
+    qty?: number | null;
+    rate: number;
+    amount?: number | null;
+    item?: (number | null) | Item;
+    id?: string | null;
+  }[];
+  /**
+   * Tax rate in % (e.g. 13 for 13% VAT)
+   */
+  taxRate?: number | null;
+  narration?: string | null;
+  /**
+   * First possible generation date (YYYY-MM-DD)
+   */
+  startDate: string;
+  /**
+   * Stop generating after this date (optional)
+   */
+  endDate?: string | null;
+  /**
+   * When the next invoice will be generated
+   */
+  nextRunDate: string;
+  /**
+   * When the last invoice was generated
+   */
+  lastRunDate?: string | null;
+  /**
+   * ID of the last generated document
+   */
+  lastDocId?: number | null;
+  status: 'active' | 'paused' | 'completed';
+  generatedCount?: number | null;
+  tenant?: (number | null) | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "expense-claims".
+ */
+export interface ExpenseClaim {
+  id: number;
+  /**
+   * Auto-generated claim number
+   */
+  claimNumber: string;
+  /**
+   * Name or employee ID of the person submitting the claim
+   */
+  claimant: string;
+  /**
+   * Claim date (YYYY-MM-DD)
+   */
+  date: string;
+  status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'reimbursed';
+  lines: {
+    description: string;
+    amount: number;
+    /**
+     * GL expense account (defaults to global Expense)
+     */
+    account?: (number | null) | GlAccount;
+    id?: string | null;
+  }[];
+  /**
+   * Auto-computed from lines
+   */
+  totalAmount?: number | null;
+  /**
+   * Mark as billable to a customer
+   */
+  billable?: boolean | null;
+  /**
+   * Customer to bill (required if billable)
+   */
+  party?: (number | null) | Party;
+  /**
+   * ID of the sales invoice this was billed on (auto-set)
+   */
+  billedInvoiceId?: number | null;
+  submittedAt?: string | null;
+  approvedAt?: string | null;
+  approvedBy?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
+  reimbursedAt?: string | null;
+  /**
+   * Approval journal entry
+   */
+  journalEntry?: number | null;
+  /**
+   * Reimbursement journal entry
+   */
+  paymentJournalEntry?: number | null;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -2089,6 +2215,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'audit-logs';
         value: number | AuditLog;
+      } | null)
+    | ({
+        relationTo: 'recurring-schedules';
+        value: number | RecurringSchedule;
+      } | null)
+    | ({
+        relationTo: 'expense-claims';
+        value: number | ExpenseClaim;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -2597,6 +2731,7 @@ export interface DocumentsSelect<T extends boolean = true> {
   referenceTo?: T;
   referenceToDocType?: T;
   linkedInvoice?: T;
+  sourceQuote?: T;
   voidedItems?:
     | T
     | {
@@ -2931,6 +3066,72 @@ export interface AuditLogsSelect<T extends boolean = true> {
   before?: T;
   after?: T;
   meta?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recurring-schedules_select".
+ */
+export interface RecurringSchedulesSelect<T extends boolean = true> {
+  name?: T;
+  docType?: T;
+  frequency?: T;
+  dayOfMonth?: T;
+  party?: T;
+  lines?:
+    | T
+    | {
+        description?: T;
+        qty?: T;
+        rate?: T;
+        amount?: T;
+        item?: T;
+        id?: T;
+      };
+  taxRate?: T;
+  narration?: T;
+  startDate?: T;
+  endDate?: T;
+  nextRunDate?: T;
+  lastRunDate?: T;
+  lastDocId?: T;
+  status?: T;
+  generatedCount?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "expense-claims_select".
+ */
+export interface ExpenseClaimsSelect<T extends boolean = true> {
+  claimNumber?: T;
+  claimant?: T;
+  date?: T;
+  status?: T;
+  lines?:
+    | T
+    | {
+        description?: T;
+        amount?: T;
+        account?: T;
+        id?: T;
+      };
+  totalAmount?: T;
+  billable?: T;
+  party?: T;
+  billedInvoiceId?: T;
+  submittedAt?: T;
+  approvedAt?: T;
+  approvedBy?: T;
+  rejectedAt?: T;
+  rejectionReason?: T;
+  reimbursedAt?: T;
+  journalEntry?: T;
+  paymentJournalEntry?: T;
+  tenant?: T;
   updatedAt?: T;
   createdAt?: T;
 }
