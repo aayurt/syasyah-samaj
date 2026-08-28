@@ -38,6 +38,23 @@ export function toBS(date: string | Date): { year: number; month: number; date: 
 }
 
 /**
+ * Parse a date string, ensuring timestamps are treated as UTC so they
+ * display in the user's local timezone. Plain date strings like
+ * "2026-08-27" (no T) are left as-is for BS calendar conversion.
+ */
+function parseDate(dateStr: string): Date | null {
+  const isTimestamp = dateStr.includes('T')
+  let d: Date
+  if (isTimestamp && !/[Zz]|[+-]\d{2}/.test(dateStr)) {
+    // Timestamp without timezone suffix — append Z so browser interprets as UTC.
+    d = new Date(dateStr + 'Z')
+  } else {
+    d = new Date(dateStr)
+  }
+  return isNaN(d.getTime()) ? null : d
+}
+
+/**
  * Format a date according to the calendar setting
  */
 export function formatDate(
@@ -45,30 +62,19 @@ export function formatDate(
   calendarType: 'AD' | 'BS',
   dateFormat: string,
   timeFormat: '12h' | '24h' = '12h',
-  utc = false,
 ): string {
   if (!dateStr) return '—'
 
-  // Ensure timestamps (contain T) are always parsed as UTC so they
-  // display in the user's local timezone. Plain date strings like
-  // "2026-08-27" (no T) are left as-is for BS calendar conversion.
-  const isTimestamp = dateStr.includes('T')
-  let d: Date
-  if (isTimestamp && !/[Zz+-]\d{2}/.test(dateStr)) {
-    // Timestamp without timezone suffix — append Z so the browser
-    // interprets it as UTC, not as the local timezone.
-    d = new Date(dateStr + 'Z')
-  } else {
-    d = new Date(dateStr)
-  }
-  if (isNaN(d.getTime())) return '—'
+  const d = parseDate(dateStr)
+  if (!d) return '—'
 
-  // Use UTC methods when utc=true to avoid timezone drift on server timestamps
-  const yr   = utc ? d.getUTCFullYear()    : d.getFullYear()
-  const mo   = utc ? d.getUTCMonth()       : d.getMonth()
-  const dy   = utc ? d.getUTCDate()        : d.getDate()
-  const hrs  = utc ? d.getUTCHours()       : d.getHours()
-  const mins = utc ? d.getUTCMinutes()     : d.getMinutes()
+  // Use local-time methods — timestamps with Z are parsed as UTC above,
+  // so getHours() etc. automatically convert to the user's timezone.
+  const yr   = d.getFullYear()
+  const mo   = d.getMonth()
+  const dy   = d.getDate()
+  const hrs  = d.getHours()
+  const mins = d.getMinutes()
 
   // Date portion
   let formatted: string
@@ -125,21 +131,14 @@ export function formatDate(
 export function formatTime(
   dateStr: string | null | undefined,
   timeFormat: '12h' | '24h' = '12h',
-  utc = false,
 ): string {
   if (!dateStr) return '—'
-  // Same timezone-aware parsing as formatDate
-  const isTimestamp = dateStr.includes('T')
-  let d: Date
-  if (isTimestamp && !/[Zz+-]\d{2}/.test(dateStr)) {
-    d = new Date(dateStr + 'Z')
-  } else {
-    d = new Date(dateStr)
-  }
-  if (isNaN(d.getTime())) return '—'
 
-  const hours = utc ? d.getUTCHours()   : d.getHours()
-  const mins  = utc ? d.getUTCMinutes() : d.getMinutes()
+  const d = parseDate(dateStr)
+  if (!d) return '—'
+
+  const hours = d.getHours()
+  const mins  = d.getMinutes()
   const m = String(mins).padStart(2, '0')
 
   if (timeFormat === '12h') {

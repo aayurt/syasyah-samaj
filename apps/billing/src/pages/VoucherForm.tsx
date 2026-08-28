@@ -518,20 +518,19 @@ export default function VoucherForm({ mode }: Props) {
     setSaving(true); setError('')
     try {
       if (mode === 'edit' && id) {
-        await api(`/documents/${id}`, { method: 'PATCH', body: buildBody(), query: tenantQuery })
-        if (post) await api(`/documents/${id}/post`, { method: 'POST' })
+        await api(`/documents/${id}`, { method: 'PATCH', body: buildBody(), query: tenantQuery, immediate: true })
+        if (post) await api(`/documents/${id}/post`, { method: 'POST', immediate: true })
       } else {
-        // Always queue to outbox — UI updates instantly from optimistic cache.
-        const created = await api<{ doc: Document }>('/documents', {
+        // Go directly to server so the response has the real server ID.
+        const created = await api<Document | { doc: Document }>('/documents', {
           method: 'POST',
           body: buildBody(),
           query: tenantQuery,
+          immediate: true,
         })
-        // If posting, queue a post op with the local ID. The sync engine
-        // maps local→server IDs before flushing, so by the time the post
-        // op is sent, the server already has the document.
-        if (post && created.doc?.id) {
-          await api(`/documents/${created.doc.id}/post`, { method: 'POST' })
+        const docId = 'doc' in created ? (created as { doc: Document }).doc.id : (created as Document).id
+        if (post && docId) {
+          await api(`/documents/${docId}/post`, { method: 'POST', immediate: true })
         }
       }
       navigate('/vouchers')
