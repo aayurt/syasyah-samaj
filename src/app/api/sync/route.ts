@@ -38,6 +38,7 @@ const ALLOWED_COLLECTIONS = new Set([
   'membership-types',
   'recurring-schedules',
   'expense-claims',
+  'fiscal-years',
   'tenants',
   'audit-logs',
 ])
@@ -167,6 +168,7 @@ export async function POST(req: NextRequest) {
       'membership-types',
       'recurring-schedules',
       'expense-claims',
+      'fiscal-years',
     ]
 
     for (const slug of changeCollections) {

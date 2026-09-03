@@ -48,6 +48,7 @@ import ConnectingBanner from './components/ConnectingBanner'
 import SyncStatus from './components/SyncStatus'
 import CommandPalette from './components/CommandPalette'
 import IllakaSwitcher from './components/IllakaSwitcher'
+import FiscalYearSwitcher from './components/FiscalYearSwitcher'
 import RefreshingBar from './components/RefreshingBar'
 import Toaster from './components/Toaster'
 import Tour from './components/Tour'
@@ -56,6 +57,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { TenantProvider } from './lib/tenant'
 import { useBackgroundSync } from './lib/BackgroundSync'
 import { CalendarProvider } from './lib/calendar'
+import { FiscalYearProvider } from './lib/fiscalYear'
 import { api } from './lib/api'
 import type { BillingSettings } from './lib/types'
 
@@ -145,7 +147,9 @@ export default function App() {
   return (
     <TenantProvider>
       <CalendarProvider>
-        <Shell email={session.user.email} />
+        <FiscalYearProvider>
+          <Shell email={session.user.email} />
+        </FiscalYearProvider>
       </CalendarProvider>
     </TenantProvider>
   )
@@ -304,6 +308,7 @@ function Shell({ email }: { email: string }) {
           <div className="text-sm text-slate-500">{email}</div>
           <div className="flex items-center gap-3">
             <IllakaSwitcher />
+            <FiscalYearSwitcher />
             <span data-tour="sync">
               <SyncStatus />
             </span>

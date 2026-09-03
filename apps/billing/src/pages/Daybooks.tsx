@@ -7,6 +7,7 @@ import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useFiscalYear } from '../lib/fiscalYear'
 import { DOC_TYPE_LABELS } from '../lib/types'
 import type { DaybookResponse, DaybookType, Document } from '../lib/types'
 import NepaliDateInput from '../components/NepaliDateInput'
@@ -33,6 +34,7 @@ export default function Daybooks() {
   const { formatDate } = useCalendar()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
+  const { selectedYear } = useFiscalYear()
 
   const openVoucher = async (docId: number | string | null | undefined) => {
     if (!docId) return
@@ -46,6 +48,10 @@ export default function Daybooks() {
     }
   }
 
+  // Fiscal year range defaults when no manual from/to are set.
+  const fyFrom = !from && selectedYear?.startDate ? String(selectedYear.startDate).slice(0, 10) : from
+  const fyTo = !to && selectedYear?.endDate ? String(selectedYear.endDate).slice(0, 10) : to
+
   useEffect(() => {
     let alive = true
     setLoading(true)
@@ -54,8 +60,8 @@ export default function Daybooks() {
     api<DaybookResponse>('/journal-entries/daybook', {
       query: {
         type,
-        from: from || undefined,
-        to: to || undefined,
+        from: fyFrom || undefined,
+        to: fyTo || undefined,
         ...tenantQuery,
       },
     })

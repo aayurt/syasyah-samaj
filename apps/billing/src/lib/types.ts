@@ -298,10 +298,21 @@ export interface DaybookResponse {
   closingBalance: number
 }
 
+export interface FiscalYear {
+  id: number
+  label?: string | null
+  startDate?: string | null
+  endDate?: string | null
+  status?: 'active' | 'closed' | null
+  isActive?: boolean | null
+  tenant?: number | { id: number } | null
+}
+
 export interface BillingSettings {
   calendarType?: 'AD' | 'BS'
   dateFormat?: string
   timeFormat?: '12h' | '24h'
+  activeFiscalYear?: number | FiscalYear | null
   fiscalYearStart?: string
   freezeDate?: string
   receivableAccount?: number | Account | null

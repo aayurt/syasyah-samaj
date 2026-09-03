@@ -744,14 +744,60 @@ export const JournalEntries: CollectionConfig = {
         }
         return data
       },
-      // Period freeze: no posted entry may carry a date before the freeze
-      // date. Runs on every create/update (the engine's postings go through
-      // the same hook, so vouchers are covered too).
+      // Period freeze / closed year: no posted entry may carry a date before
+      // the active fiscal year's start (or legacy freeze date), and entries
+      // dated inside a closed fiscal year are rejected entirely. Runs on
+      // every create/update (the engine's postings go through the same hook,
+      // so vouchers are covered too).
       async ({ data, req }) => {
         const d = data as any
         if (d?.status !== 'posted' || !d?.date) return data
         const settings = await getBillingSettings(req.payload)
-        const freeze = settings?.freezeDate
+
+        // Closed-year check: resolve the fiscal year containing the entry
+        // date (scoped to the entry's tenant) and refuse posting if closed.
+        const tenantId = d.tenant && typeof d.tenant === 'object'
+          ? (d.tenant as { id: unknown }).id
+          : d.tenant || undefined
+        try {
+          const where: any = {
+            startDate: { less_than_equal: new Date(d.date).toISOString() },
+            endDate: { greater_than_equal: new Date(d.date).toISOString() },
+          }
+          if (tenantId) where.tenant = { equals: tenantId }
+          const fyRes = await req.payload.find({
+            collection: 'fiscal-years',
+            where,
+            limit: 1,
+            depth: 0,
+          })
+          const fy = fyRes.docs?.[0] as any
+          if (fy?.status === 'closed') {
+            throw vErr(
+              `The fiscal year ${fy.label || ''} is closed — no entries may be posted in this period.`,
+            )
+          }
+        } catch (err: any) {
+          if (err?.data?.errors?.[0]?.message) throw err
+          // no fiscal years configured — fall through to legacy freeze
+        }
+
+        // Legacy freeze: activeFiscalYear.startDate (or the legacy
+        // freezeDate) is the earliest date that may be posted.
+        let freeze: string | undefined
+        const ref = settings?.activeFiscalYear
+        if (ref != null) {
+          const fyId = ref && typeof ref === 'object' ? (ref as { id: unknown }).id : ref
+          try {
+            const fy = (await req.payload.findByID({
+              collection: 'fiscal-years',
+              id: Number(fyId),
+              depth: 0,
+            })) as any
+            if (fy) freeze = fy.startDate || undefined
+          } catch { /* ignore */ }
+        }
+        if (!freeze) freeze = settings?.freezeDate
         if (freeze && new Date(d.date) < new Date(freeze)) {
           throw vErr(
             `Entries cannot be posted before the freeze date (${String(freeze).slice(0, 10)}).`,

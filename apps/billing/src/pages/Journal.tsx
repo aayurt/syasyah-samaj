@@ -12,6 +12,7 @@ import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
 import { useSearchParams } from 'react-router-dom'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useFiscalYear } from '../lib/fiscalYear'
 import type { Account, JournalEntry } from '../lib/types'
 import { StatusPill } from './Dashboard'
 
@@ -41,6 +42,7 @@ export default function Journal() {
   const { cacheVersion } = useSyncState()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
+  const { selectedYear } = useFiscalYear()
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
   const [error, setError] = useState('')
@@ -141,8 +143,13 @@ export default function Journal() {
     }
   }
 
+  const fyFrom = selectedYear?.startDate ? String(selectedYear.startDate).slice(0, 10) : ''
+  const fyTo = selectedYear?.endDate ? String(selectedYear.endDate).slice(0, 10) : ''
   const filtered = entries.filter(
-    (e) => !filter || e.status === filter,
+    (e) =>
+      (!filter || e.status === filter) &&
+      (!fyFrom || (e.date && e.date >= fyFrom)) &&
+      (!fyTo || (e.date && e.date <= fyTo + 'T23:59:59')),
   )
 
   const entryLines = (e: JournalEntry) =>
@@ -375,7 +382,7 @@ export default function Journal() {
             <button
               type="button"
               onClick={() => submit('draft')}
-              disabled={saving}
+              disabled={saving || selectedYear?.status === 'closed'}
               className="rounded border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
               {saving ? 'Saving…' : 'Save draft'}
@@ -383,7 +390,7 @@ export default function Journal() {
             <button
               type="button"
               onClick={() => submit('posted')}
-              disabled={saving || Math.abs(totals.diff) >= 0.001}
+              disabled={saving || Math.abs(totals.diff) >= 0.001 || selectedYear?.status === 'closed'}
               className="rounded bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
               title={
                 Math.abs(totals.diff) >= 0.001

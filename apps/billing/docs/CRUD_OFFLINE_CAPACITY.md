@@ -338,41 +338,12 @@ These operations legitimately require the server and cannot be queued offline:
 
 ## Recommended Fixes
 
-### Priority 1 — Add Missing Collections to Sync
+### ✅ Done — Missing Collections Added to Sync
 
-```typescript
-// src/app/api/sync/route.ts
+`recurring-schedules`, `expense-claims`, `members`, `membership-types` and `fiscal-years` are all in `ALLOWED_COLLECTIONS` + `changeCollections` (see `src/app/api/sync/route.ts`). Offline creates queue locally and flush on reconnect; other users' changes are pulled.
 
-const ALLOWED_COLLECTIONS = new Set([
-  // ... existing
-  'recurring-schedules',
-  'expense-claims',
-])
+### Future Work
 
-const changeCollections = [
-  // ... existing
-  'recurring-schedules',
-  'expense-claims',
-  'members',          // currently push-only
-  'membership-types',  // currently push-only
-]
-```
-
-### Priority 2 — Keep Expense Claim Approve/Reject as Server-First
-
-```typescript
-// ExpenseClaims.tsx
-// approve/reject post journal entries on server — must be immediate
-await api(`/expense-claims/${id}/approve`, {
-  method: 'POST',
-  body,
-  immediate: true,  // server-side journal posting
-})
-```
-
-### Priority 3 — Real-time Sync for Members
-
-Currently `members` has no pull — other users' changes aren't seen. Options:
-1. Add to `changeCollections` (pull on reconnect)
-2. Add Server-Sent Events / WebSocket for real-time push
-3. Periodic background refresh (simplest)
+1. **Billing Settings real-time sync** — settings changes from other users need a pull or real-time event (localStorage cache only today).
+2. **Expense claim approve/reject** — these post journal entries server-side. If offline creates are ever allowed to auto-approve, keep those two actions as `immediate: true`.
+3. **Real-time member sync** — optional Server-Sent Events / WebSocket if pull-on-reconnect isn't fast enough.

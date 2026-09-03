@@ -162,6 +162,28 @@ const settings = await api('/globals/billing-settings', {
     accruedPayableAccount: accountIds['Accrued Payables'],
   },
 })
+// Create a working fiscal year (Manager.io-style) and point settings at it.
+try {
+  const fyRes = await api('/fiscal-years', {
+    method: 'POST',
+    body: {
+      label: '2083-84',
+      startDate: '2026-07-16',
+      endDate: '2027-07-15',
+      status: 'active',
+      isActive: true,
+    },
+  })
+  const fyId = fyRes && (fyRes.id || (fyRes.doc && fyRes.doc.id))
+  if (fyId) {
+    await api('/globals/billing-settings', {
+      method: 'POST',
+      body: { activeFiscalYear: fyId },
+    })
+  }
+} catch (e) {
+  console.log('    ! fiscal year seeding skipped:', e && e.message ? e.message : e)
+}
 console.log(
   `    ✓ ${createdCount['account-groups'] || 0} new groups, ${createdCount['gl-accounts'] || 0} new accounts, billing-settings wired (fiscal year 2026-07-16)`,
 )

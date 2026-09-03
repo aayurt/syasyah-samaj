@@ -15,6 +15,7 @@ import { api, fmt, list, useSyncState } from '../lib/api'
 import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useFiscalYear } from '../lib/fiscalYear'
 import type {
   Account,
   AgingParty,
@@ -129,6 +130,7 @@ export default function Dashboard() {
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
+  const { selectedYear } = useFiscalYear()
 
   // Core data
   const [stats, setStats] = useState<{
@@ -174,7 +176,13 @@ export default function Dashboard() {
         posted: entries.docs.filter((e) => e.status === 'posted').length,
         trial: tb ?? undefined,
       })
-      setRecent(entries.docs.slice(0, 8))
+      // Recent entries constrained to the selected fiscal year.
+      const fyFrom = selectedYear?.startDate ? String(selectedYear.startDate).slice(0, 10) : ''
+      const fyTo = selectedYear?.endDate ? String(selectedYear.endDate).slice(0, 10) : ''
+      const inYear = (e: JournalEntry) =>
+        (!fyFrom || (e.date && e.date >= fyFrom)) &&
+        (!fyTo || (e.date && e.date <= fyTo + 'T23:59:59'))
+      setRecent(entries.docs.filter(inYear).slice(0, 8))
 
       // Trend: fetch P&L for each of last 12 months
       setTrendLoading(true)

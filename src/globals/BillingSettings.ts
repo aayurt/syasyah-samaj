@@ -59,11 +59,23 @@ export const BillingSettings: GlobalConfig = {
       ],
     },
     {
+      name: 'activeFiscalYear',
+      type: 'relationship',
+      relationTo: 'fiscal-years',
+      admin: {
+        description:
+          'The working fiscal year — drives voucher numbering and the period freeze. Manage years under Fiscal Years → Billing Settings → Fiscal Years.',
+      },
+    },
+    // Legacy fields — kept for backward compatibility (existing deployments
+    // and the pre-fiscal-years code path). New code resolves the fiscal year
+    // from activeFiscalYear and falls back to these.
+    {
       name: 'fiscalYearStart',
       type: 'date',
       admin: {
         description:
-          'Month and day the fiscal year begins (e.g. 2026-07-16). Unset = calendar year.',
+          '[Legacy] Month and day the fiscal year begins (e.g. 2026-07-16). Unset = calendar year.',
       },
     },
     {
@@ -71,7 +83,7 @@ export const BillingSettings: GlobalConfig = {
       type: 'date',
       admin: {
         description:
-          'No entries may be posted with a date before this date (period close). Unset = no freeze.',
+          '[Legacy] No entries may be posted with a date before this date (period close). Unset = no freeze.',
       },
     },
     {

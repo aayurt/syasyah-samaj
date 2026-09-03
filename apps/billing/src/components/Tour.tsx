@@ -56,7 +56,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     route: '/settings',
     title: 'Settings',
-    body: 'Set your fiscal year start and a freeze date. Once set, nothing can be posted into the frozen period — drafts are safe, posting is blocked.',
+    body: 'Manage fiscal years: each period has a start/end date and is Active (editable) or Closed (read-only). Set the working year, and closed periods block new postings.',
     target: '[data-tour="settings"]',
     placement: 'top',
   },

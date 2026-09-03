@@ -3,23 +3,30 @@ import { useNavigate } from 'react-router-dom'
 import {
   Building2,
   Calendar,
+  Check,
   ChevronDown,
   FolderTree,
   GripVertical,
   Hash,
   HelpCircle,
+  Lock,
   LogOut,
   Plus,
   RotateCcw,
   ToggleLeft,
   Trash2,
+  Unlock,
   Wallet,
+  X,
 } from 'lucide-react'
 import { api, protectGlobalsFields } from '../lib/api'
 import { authClient, clearCachedSession } from '../lib/auth'
-import { formatDate } from '../lib/nepaliDate'
+import { adToBsString, formatDate } from '../lib/nepaliDate'
 import { useCalendar } from '../lib/calendar'
-import type { Account, AccountGroup, AccountType, BillingSettings } from '../lib/types'
+import { useFiscalYear } from '../lib/fiscalYear'
+import { useTenant } from '../lib/tenant'
+import { pushToast } from '../lib/toast'
+import type { Account, AccountGroup, AccountType, BillingSettings, FiscalYear } from '../lib/types'
 import NepaliDateInput from '../components/NepaliDateInput'
 import AccountSelect from '../components/AccountSelect'
 import SearchSelect from '../components/SearchSelect'
@@ -133,6 +140,7 @@ export default function Settings() {
   const loaded = useRef(false)
   const navigate = useNavigate()
   const { update: updateCalendar } = useCalendar()
+  const { tenantId } = useTenant()
 
   // Accordion open state
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -171,14 +179,24 @@ export default function Settings() {
   const [companySaved, setCompanySaved] = useState(false)
 
 
-  // ── Fiscal state ──
-  const [fiscalYearStart, setFiscalYearStart] = useState('')
-  const [freezeDate, setFreezeDate] = useState('')
-  const savedFiscal = useRef({ fy: '', freeze: '' })
-  const fiscalDirty =
-    fiscalYearStart !== savedFiscal.current.fy ||
-    freezeDate !== savedFiscal.current.freeze
-  const [fiscalSaved, setFiscalSaved] = useState(false)
+  // ── Fiscal year state (managed as a list, Manager.io-style) ──
+  const {
+    years: fiscalYears,
+    selectedYear: selectedFiscalYear,
+    activeYear: activeFiscalYear,
+    selectYear: selectFiscalYear,
+    loading: fiscalLoading,
+    refresh: refreshFiscalYears,
+  } = useFiscalYear()
+  const [fyModalOpen, setFyModalOpen] = useState(false)
+  const [fySaving, setFySaving] = useState(false)
+  const [fyForm, setFyForm] = useState({
+    label: '',
+    startDate: '',
+    endDate: '',
+    status: 'active' as 'active' | 'closed',
+    makeActive: false,
+  })
 
 
   // ── Feature toggles ──
@@ -246,12 +264,6 @@ export default function Settings() {
       setCompanyAddress(ca)
       setCompanyLogo(cl)
       savedCompany.current = { name: cn, pan: cp, contact: cc, email: ce, address: ca, logo: cl }
-
-      const fy = res.fiscalYearStart?.slice(0, 10) || ''
-      const fr = res.freezeDate?.slice(0, 10) || ''
-      setFiscalYearStart(fy)
-      setFreezeDate(fr)
-      savedFiscal.current = { fy, freeze: fr }
 
       const br = res.bankReconciliationEnabled || false
       const si = res.simplifiedInvoiceEnabled !== false
@@ -371,26 +383,105 @@ export default function Settings() {
     setCompanyLogo(s.logo)
   }
 
-  const persistFiscal = () => {
-    const body = { fiscalYearStart: fiscalYearStart || null, freezeDate: freezeDate || null }
-    try {
-      const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
-      localStorage.setItem(
-        'billing.settingsCache',
-        JSON.stringify({ data: { ...(cached.data || {}), ...body }, ts: Date.now() }),
-      )
-      protectGlobalsFields(Object.keys(body))
-    } catch { /* ignore */ }
-    savedFiscal.current = { fy: fiscalYearStart, freeze: freezeDate }
-    setFiscalSaved(true)
-    setTimeout(() => setFiscalSaved(false), 2000)
-    // Fire-and-forget: sync to server in background
-    api('/globals/billing-settings', { method: 'POST', body }).catch(() => {})
+  // ── Fiscal year actions ──
+  const fyClose = (year: FiscalYear) => {
+    api(`/fiscal-years/${year.id}`, {
+      method: 'PATCH',
+      body: { status: 'closed' },
+    })
+      .then(() => {
+        pushToast('success', 'Fiscal year closed', `${year.label} — entries are now read-only.`)
+        void refreshFiscalYears()
+      })
+      .catch((err) => pushToast('error', 'Failed to close year', err instanceof Error ? err.message : String(err)))
   }
 
-  const cancelFiscal = () => {
-    setFiscalYearStart(savedFiscal.current.fy)
-    setFreezeDate(savedFiscal.current.freeze)
+  const fyReopen = (year: FiscalYear) => {
+    api(`/fiscal-years/${year.id}`, {
+      method: 'PATCH',
+      body: { status: 'active' },
+    })
+      .then(() => {
+        pushToast('success', 'Fiscal year reopened', `${year.label} — entries are editable again.`)
+        void refreshFiscalYears()
+      })
+      .catch((err) => pushToast('error', 'Failed to reopen year', err instanceof Error ? err.message : String(err)))
+  }
+
+  const fySetActive = (year: FiscalYear) => {
+    api(`/fiscal-years/${year.id}`, {
+      method: 'PATCH',
+      body: { isActive: true },
+    })
+      .then(async () => {
+        // Also point billing-settings at the new working year so numbering
+        // and the period freeze follow the selection.
+        await api('/globals/billing-settings', {
+          method: 'POST',
+          body: { activeFiscalYear: year.id },
+        }).catch(() => {})
+        selectFiscalYear(year.id)
+        pushToast('success', 'Working year set', `${year.label} is now the active fiscal year.`)
+        void refreshFiscalYears()
+      })
+      .catch((err) => pushToast('error', 'Failed to set working year', err instanceof Error ? err.message : String(err)))
+  }
+
+  const fyDelete = (year: FiscalYear) => {
+    api(`/fiscal-years/${year.id}`, { method: 'DELETE' })
+      .then(() => {
+        pushToast('success', 'Fiscal year deleted', String(year.label || year.id))
+        void refreshFiscalYears()
+      })
+      .catch((err) => pushToast('error', 'Failed to delete year', err instanceof Error ? err.message : String(err)))
+  }
+
+  const fyCreate = async () => {
+    if (!fyForm.startDate || !fyForm.endDate) {
+      pushToast('error', 'Missing dates', 'Both start and end date are required.')
+      return
+    }
+    setFySaving(true)
+    try {
+      // Auto-generate a BS label (e.g. "2083-84") from the AD start date when
+      // the user left the label blank.
+      let label = fyForm.label.trim()
+      if (!label && fyForm.startDate) {
+        const bs = adToBsString(fyForm.startDate)
+        const bsYear = Number(bs.slice(0, 4)) || 0
+        if (bsYear) label = `${bsYear}-${String((bsYear + 1) % 100).padStart(2, '0')}`
+      }
+      const body: Record<string, unknown> = {
+        label: label || undefined,
+        startDate: fyForm.startDate,
+        endDate: fyForm.endDate,
+        status: fyForm.status,
+        isActive: fyForm.makeActive,
+      }
+      if (tenantId) body.tenant = Number(tenantId)
+      await api('/fiscal-years', { method: 'POST', body })
+      pushToast('success', 'Fiscal year created', fyForm.label || fyForm.startDate)
+      if (fyForm.makeActive) {
+        // fetch the created year to learn its id, then point settings at it
+        const res = await api<{ docs: FiscalYear[] }>('/fiscal-years', {
+          query: { limit: 1, depth: 0, sort: '-startDate', where: JSON.stringify({ startDate: { equals: fyForm.startDate } }) },
+        })
+        const created = res.docs?.[0]
+        if (created) {
+          await api('/globals/billing-settings', {
+            method: 'POST',
+            body: { activeFiscalYear: created.id },
+          }).catch(() => {})
+        }
+      }
+      setFyModalOpen(false)
+      setFyForm({ label: '', startDate: '', endDate: '', status: 'active', makeActive: false })
+      void refreshFiscalYears()
+    } catch (err) {
+      pushToast('error', 'Failed to create fiscal year', err instanceof Error ? err.message : String(err))
+    } finally {
+      setFySaving(false)
+    }
   }
 
   const persistFeatures = () => {
@@ -705,35 +796,212 @@ export default function Settings() {
       <Section
         title="Fiscal Settings"
         subtitle={
-          fiscalYearStart
-            ? `FY start: ${fiscalYearStart}${freezeDate ? ` • Freeze: ${freezeDate}` : ''}`
-            : 'Fiscal year and period freeze'
+          selectedFiscalYear
+            ? `Working year: ${selectedFiscalYear.label || selectedFiscalYear.startDate}${selectedFiscalYear.status === 'closed' ? ' (closed)' : ''}`
+            : 'Fiscal years and period freeze'
         }
         icon={Wallet}
         open={!!openSections.fiscal}
         onToggle={() => toggle('fiscal')}
-        hasChanges={fiscalDirty}
-        saved={fiscalSaved}
-        onSave={() => void persistFiscal()}
-        onCancel={cancelFiscal}
       >
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-sm text-slate-600">Fiscal year start</label>
-            <NepaliDateInput compact value={fiscalYearStart} onChange={(v) => setFiscalYearStart(v)} />
-            <span className="mt-1.5 block text-xs text-slate-400">
-              Used for voucher numbering. Empty = calendar year.
-            </span>
+        <div className="p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-700">Fiscal Years</p>
+              <p className="text-xs text-slate-400">
+                Active years are editable · Closed years are read-only · The working year drives voucher numbering.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFyModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-md bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
+            >
+              <Plus size={14} /> Add Year
+            </button>
           </div>
-          <div>
-            <label className="mb-1.5 block text-sm text-slate-600">Freeze date</label>
-            <NepaliDateInput compact value={freezeDate} onChange={(v) => setFreezeDate(v)} />
-            <span className="mt-1.5 block text-xs text-slate-400">
-              No entry posted before this date. Empty = no freeze.
-            </span>
-          </div>
+
+          {fiscalLoading ? (
+            <div className="py-6 text-center text-sm text-slate-400">Loading fiscal years…</div>
+          ) : fiscalYears.length === 0 ? (
+            <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
+              No fiscal years defined. Click <span className="font-medium">Add Year</span> to create the first period.
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded border border-slate-200">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="px-3 py-2">Working</th>
+                    <th className="px-3 py-2">Label</th>
+                    <th className="px-3 py-2">Start (AD)</th>
+                    <th className="px-3 py-2">End (AD)</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fiscalYears.map((y) => {
+                    const isSelected = selectedFiscalYear?.id === y.id
+                    const isActiveFlag = y.isActive || (activeFiscalYear?.id === y.id && !isSelected)
+                    return (
+                      <tr
+                        key={y.id}
+                        className={`border-b border-slate-100 last:border-0 ${isSelected ? 'bg-crimson-50/60' : ''}`}
+                      >
+                        <td className="px-3 py-2">
+                          <button
+                            type="button"
+                            title="Set as working year"
+                            onClick={() => fySetActive(y)}
+                            className={`flex h-5 w-5 items-center justify-center rounded-full border ${
+                              isActiveFlag
+                                ? 'border-crimson-600 bg-crimson-600 text-white'
+                                : 'border-slate-300 text-transparent hover:border-crimson-400'
+                            }`}
+                          >
+                            <Check size={12} />
+                          </button>
+                        </td>
+                        <td className="px-3 py-2 font-medium text-slate-800">{y.label || `FY ${y.startDate}`}</td>
+                        <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.startDate || '').slice(0, 10)}</td>
+                        <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.endDate || '').slice(0, 10)}</td>
+                        <td className="px-3 py-2">
+                          {y.status === 'closed' ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                              <Lock size={10} /> Closed
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                              <Unlock size={10} /> Active
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center justify-end gap-1">
+                            {y.status === 'closed' ? (
+                              <button
+                                type="button"
+                                onClick={() => fyReopen(y)}
+                                title="Reopen this fiscal year"
+                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600"
+                              >
+                                <Unlock size={14} />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => fyClose(y)}
+                                title="Close this fiscal year (read-only)"
+                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-amber-600"
+                              >
+                                <Lock size={14} />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => fyDelete(y)}
+                              title="Delete fiscal year"
+                              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <p className="mt-3 text-xs text-slate-400">
+            Selecting a fiscal year in the header filters the vouchers, journal and reports to that period.
+            Entries dated inside a <span className="font-medium">closed</span> year are rejected on the server.
+          </p>
         </div>
       </Section>
+
+      {/* ── Add Fiscal Year Modal ────────────────────────────── */}
+      {fyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-slate-800">Add Fiscal Year</h3>
+              <button type="button" onClick={() => setFyModalOpen(false)} className="rounded p-1 text-slate-400 hover:bg-slate-100">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm text-slate-600">Label (e.g. 2083-84)</label>
+                <input
+                  value={fyForm.label}
+                  onChange={(e) => setFyForm((f) => ({ ...f, label: e.target.value }))}
+                  placeholder="Auto from start date if empty"
+                  className={inputCls}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-sm text-slate-600">Start date</label>
+                  <NepaliDateInput compact value={fyForm.startDate} onChange={(v) => setFyForm((f) => ({ ...f, startDate: v }))} />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm text-slate-600">End date</label>
+                  <NepaliDateInput compact value={fyForm.endDate} onChange={(v) => setFyForm((f) => ({ ...f, endDate: v }))} />
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <label className="flex items-center gap-2 text-sm text-slate-600">
+                  <input
+                    type="radio"
+                    name="fyStatus"
+                    checked={fyForm.status === 'active'}
+                    onChange={() => setFyForm((f) => ({ ...f, status: 'active' }))}
+                  />
+                  Active
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-600">
+                  <input
+                    type="radio"
+                    name="fyStatus"
+                    checked={fyForm.status === 'closed'}
+                    onChange={() => setFyForm((f) => ({ ...f, status: 'closed' }))}
+                  />
+                  Closed
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={fyForm.makeActive}
+                    onChange={(e) => setFyForm((f) => ({ ...f, makeActive: e.target.checked }))}
+                  />
+                  Set as working year
+                </label>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setFyModalOpen(false)}
+                className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void fyCreate()}
+                disabled={fySaving}
+                className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+              >
+                {fySaving ? 'Creating…' : 'Create Year'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 4. Feature Toggles ───────────────────────────────── */}
       <Section

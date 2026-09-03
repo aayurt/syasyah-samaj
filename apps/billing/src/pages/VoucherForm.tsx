@@ -19,6 +19,7 @@ import { useCachedList } from '../lib/useCachedList'
 import { useCalendar } from '../lib/calendar'
 import { calcEval } from '../lib/calcEval'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useFiscalYear } from '../lib/fiscalYear'
 import {
   DOC_TYPE_LABELS,
   type Account,
@@ -154,6 +155,8 @@ export default function VoucherForm({ mode }: Props) {
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
+  const { selectedYear } = useFiscalYear()
+  const isClosedYear = selectedYear?.status === 'closed'
 
   // Data
   const { docs: parties, setDocs: setParties } = useCachedList<Party>('parties', { sort: 'name', ...tenantQuery })
@@ -515,6 +518,10 @@ export default function VoucherForm({ mode }: Props) {
   }
 
   const submit = async (post: boolean) => {
+    if (isClosedYear) {
+      setError(`The fiscal year ${selectedYear?.label || 'selected'} is closed — vouchers in this period are read-only.`)
+      return
+    }
     setSaving(true); setError('')
     try {
       if (mode === 'edit' && id) {

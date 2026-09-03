@@ -171,6 +171,90 @@ async function getSettings(payload: PayloadRequest['payload']) {
   }
 }
 
+/**
+ * Resolve the active fiscal year from billing settings. Prefers the
+ * activeFiscalYear relationship; falls back to the legacy fiscalYearStart /
+ * freezeDate fields for backward compatibility.
+ *
+ * Returns { startDate?, endDate?, status?, label? } or null when unset.
+ */
+async function resolveFiscalYear(
+  payload: PayloadRequest['payload'],
+  settings: any,
+): Promise<{ startDate?: string; endDate?: string; status?: string; label?: string } | null> {
+  const ref = settings?.activeFiscalYear
+  if (ref != null) {
+    const id = ref && typeof ref === 'object' ? (ref as { id: unknown }).id : ref
+    try {
+      const fy = (await payload.findByID({
+        collection: 'fiscal-years',
+        id: Number(id),
+        depth: 0,
+      })) as any
+      if (fy) {
+        return {
+          startDate: fy.startDate || undefined,
+          endDate: fy.endDate || undefined,
+          status: fy.status || 'active',
+          label: fy.label || undefined,
+        }
+      }
+    } catch {
+      // fall through to legacy fields
+    }
+  }
+  if (settings?.fiscalYearStart) {
+    return {
+      startDate: settings.fiscalYearStart,
+      endDate: settings.freezeDate || undefined,
+      status: 'active',
+    }
+  }
+  return null
+}
+
+/**
+ * Find the fiscal year that contains `dateValue` (scoped to the tenant if
+ * provided), plus the working (active) fiscal year. Used to enforce
+ * closed-period editability: a document dated inside a closed fiscal year
+ * cannot be created or edited.
+ */
+async function findFiscalYearForDate(
+  payload: PayloadRequest['payload'],
+  dateValue: string | Date,
+  tenant?: number | string | { id: number | string } | null,
+): Promise<{ startDate?: string; endDate?: string; status?: string; label?: string } | null> {
+  const d = new Date(dateValue)
+  if (isNaN(d.getTime())) return null
+  const tenantId =
+    tenant && typeof tenant === 'object' ? (tenant as { id: unknown }).id : tenant || undefined
+  try {
+    const where: any = {
+      startDate: { less_than_equal: d.toISOString() },
+      endDate: { greater_than_equal: d.toISOString() },
+    }
+    if (tenantId) where.tenant = { equals: tenantId }
+    const res = await payload.find({
+      collection: 'fiscal-years',
+      where,
+      limit: 1,
+      depth: 0,
+    })
+    const fy = res.docs?.[0] as any
+    if (fy) {
+      return {
+        startDate: fy.startDate || undefined,
+        endDate: fy.endDate || undefined,
+        status: fy.status || 'active',
+        label: fy.label || undefined,
+      }
+    }
+  } catch {
+    // no fiscal years configured — not enforced
+  }
+  return null
+}
+
 function resolveAccount(
   settings: any,
   key: string,
@@ -777,11 +861,12 @@ export async function postDocument(
       })
     }
 
+    const fiscalYear = await resolveFiscalYear(payload, settings)
     const number = await nextNumber(
       payload,
       doc.docType,
       doc.date,
-      settings?.fiscalYearStart,
+      fiscalYear?.startDate,
       doc.tenant,
     )
 
@@ -1033,11 +1118,12 @@ export const Documents: CollectionConfig = {
             )
           }
           const settings = await getSettings(req.payload)
+          const fiscalYear = await resolveFiscalYear(req.payload, settings)
           const number = await nextNumber(
             req.payload,
             doc.docType,
             doc.date,
-            settings?.fiscalYearStart,
+            fiscalYear?.startDate,
             doc.tenant,
           )
           const updated = await req.payload.update({
@@ -1905,7 +1991,8 @@ export const Documents: CollectionConfig = {
         }
         const dateValue = searchParams.get('date') || undefined
         const settings = await getSettings(req.payload)
-        const fy = fiscalYearOf(dateValue ? new Date(dateValue) : new Date(), settings?.fiscalYearStart)
+        const fiscalYear = await resolveFiscalYear(req.payload, settings)
+        const fy = fiscalYearOf(dateValue ? new Date(dateValue) : new Date(), fiscalYear?.startDate)
         const tenantParam = searchParams.get('tenant')
         const tenantId = tenantParam ? tenantParam : 'org'
         const key = `${type}:${fy}:${tenantId}`
@@ -1952,6 +2039,26 @@ export const Documents: CollectionConfig = {
     ],
     beforeValidate: [
       assignTenant,
+      // Closed fiscal year enforcement: a document dated inside a closed
+      // year cannot be created or edited. The active (working) year and any
+      // other open year remain editable.
+      async ({ data, operation, req }) => {
+        if (operation !== 'create' && operation !== 'update') return data
+        const d = data as any
+        if (!d.date) return data
+        // Posting a draft only changes status — the date was already
+        // validated at creation time. Allow post/void/reopen transitions
+        // through their endpoints (context flag set there).
+        const transition = (req as any)?.context?.docStatusTransition
+        if (transition && operation === 'update') return data
+        const fy = await findFiscalYearForDate(req.payload, d.date, d.tenant)
+        if (fy && fy.status === 'closed') {
+          throw new Error(
+            `The fiscal year ${fy.label || ''} is closed — entries in this period are read-only. Reopen it in Settings → Fiscal Years to edit.`,
+          )
+        }
+        return data
+      },
       async ({ data, operation, req }) => {
         if (operation !== 'create' && operation !== 'update') return data
         const d = data as any

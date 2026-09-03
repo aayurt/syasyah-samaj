@@ -97,6 +97,7 @@ export interface Config {
     'audit-logs': AuditLog;
     'recurring-schedules': RecurringSchedule;
     'expense-claims': ExpenseClaim;
+    'fiscal-years': FiscalYear;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -143,6 +144,7 @@ export interface Config {
     'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
     'recurring-schedules': RecurringSchedulesSelect<false> | RecurringSchedulesSelect<true>;
     'expense-claims': ExpenseClaimsSelect<false> | ExpenseClaimsSelect<true>;
+    'fiscal-years': FiscalYearsSelect<false> | FiscalYearsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -1819,6 +1821,38 @@ export interface ExpenseClaim {
   createdAt: string;
 }
 /**
+ * Accounting periods. Active years are editable; closed years are read-only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "fiscal-years".
+ */
+export interface FiscalYear {
+  id: number;
+  /**
+   * Display label, e.g. "2083-84". Auto-generated from the start date if left empty.
+   */
+  label: string;
+  /**
+   * First day of the fiscal year (AD). Entered as BS in the SPA.
+   */
+  startDate: string;
+  /**
+   * Last day of the fiscal year (AD).
+   */
+  endDate: string;
+  /**
+   * Active = entries may be posted. Closed = read-only; the posting engine refuses new entries in this period.
+   */
+  status: 'active' | 'closed';
+  /**
+   * The working year for new entries and voucher numbering. Only one year can be active per tenant.
+   */
+  isActive?: boolean | null;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
@@ -2223,6 +2257,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'expense-claims';
         value: number | ExpenseClaim;
+      } | null)
+    | ({
+        relationTo: 'fiscal-years';
+        value: number | FiscalYear;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -3137,6 +3175,20 @@ export interface ExpenseClaimsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "fiscal-years_select".
+ */
+export interface FiscalYearsSelect<T extends boolean = true> {
+  label?: T;
+  startDate?: T;
+  endDate?: T;
+  status?: T;
+  isActive?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects_select".
  */
 export interface RedirectsSelect<T extends boolean = true> {
@@ -3548,11 +3600,15 @@ export interface BillingSetting {
    */
   timeFormat?: ('12h' | '24h') | null;
   /**
-   * Month and day the fiscal year begins (e.g. 2026-07-16). Unset = calendar year.
+   * The working fiscal year — drives voucher numbering and the period freeze. Manage years under Fiscal Years → Billing Settings → Fiscal Years.
+   */
+  activeFiscalYear?: (number | null) | FiscalYear;
+  /**
+   * [Legacy] Month and day the fiscal year begins (e.g. 2026-07-16). Unset = calendar year.
    */
   fiscalYearStart?: string | null;
   /**
-   * No entries may be posted with a date before this date (period close). Unset = no freeze.
+   * [Legacy] No entries may be posted with a date before this date (period close). Unset = no freeze.
    */
   freezeDate?: string | null;
   /**
@@ -3724,6 +3780,7 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   calendarType?: T;
   dateFormat?: T;
   timeFormat?: T;
+  activeFiscalYear?: T;
   fiscalYearStart?: T;
   freezeDate?: T;
   bankReconciliationEnabled?: T;

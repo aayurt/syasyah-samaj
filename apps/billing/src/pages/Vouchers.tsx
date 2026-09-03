@@ -43,6 +43,7 @@ import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useFiscalYear } from '../lib/fiscalYear'
 import { exportInvoicePdf } from '../lib/pdf'
 import PrintVoucher from '../components/PrintVoucher'
 
@@ -167,6 +168,7 @@ export default function Vouchers() {
   const { cacheVersion } = useSyncState()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
+  const { selectedYear } = useFiscalYear()
   const [docs, setDocs] = useState<Document[]>([])
   const [parties, setParties] = useState<Party[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -812,12 +814,17 @@ export default function Vouchers() {
     }
   }
 
+  // Fiscal year range: when a year is selected in the header and no manual
+  // from/to dates are set, constrain the list to that year's period.
+  const fyFrom = !dateFrom && selectedYear?.startDate ? String(selectedYear.startDate).slice(0, 10) : dateFrom
+  const fyTo = !dateTo && selectedYear?.endDate ? String(selectedYear.endDate).slice(0, 10) : dateTo
+
   const filtered = docs.filter(
     (d) =>
       (!typeFilter || d.docType === typeFilter) &&
       (!statusFilter || d.status === statusFilter) &&
-      (!dateFrom || (d.date && d.date >= dateFrom)) &&
-      (!dateTo || (d.date && d.date <= dateTo + 'T23:59:59')),
+      (!fyFrom || (d.date && d.date >= fyFrom)) &&
+      (!fyTo || (d.date && d.date <= fyTo + 'T23:59:59')),
   )
 
   const partyName = (d: Document) =>
@@ -913,12 +920,22 @@ export default function Vouchers() {
         <button
           data-tour="new-voucher"
           onClick={() => navigate(typeFilter ? `/vouchers/new/${typeFilter}` : '/vouchers/new')}
-          className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          disabled={selectedYear?.status === 'closed'}
+          title={selectedYear?.status === 'closed' ? 'This fiscal year is closed — vouchers are read-only' : undefined}
+          className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Plus size={14} />
           New voucher
         </button>
       </div>
+
+      {selectedYear?.status === 'closed' && (
+        <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+          The fiscal year <span className="font-medium">{selectedYear.label || 'selected'}</span> is{' '}
+          <span className="font-medium">closed</span> — vouchers in this period are read-only. Switch to an
+          active year in the header to create or edit entries.
+        </p>
+      )}
 
       <div className="mt-2">
         <DataStatus />
@@ -1670,7 +1687,7 @@ export default function Vouchers() {
           <div className="mt-4 flex gap-2">
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || selectedYear?.status === 'closed'}
               className="rounded border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
               {saving
@@ -1682,7 +1699,7 @@ export default function Vouchers() {
             <button
               type="button"
               onClick={() => submit(true)}
-              disabled={saving || !canPost}
+              disabled={saving || !canPost || selectedYear?.status === 'closed'}
               className="rounded bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
               title={
                 isItem
