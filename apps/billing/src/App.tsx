@@ -33,7 +33,7 @@ import VoucherForm from './pages/VoucherForm'
 import Parties from './pages/Parties'
 import Aging from './pages/Aging'
 import Items from './pages/Items'
-import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase, CashStatement, BankStatement, ExpenseCategory, IncomeCategory, StockQuantity, BalanceSheet, ProfitLoss } from './pages/reports'
+import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase, VatRegister, CashStatement, BankStatement, ExpenseCategory, IncomeCategory, StockQuantity, BalanceSheet, ProfitLoss } from './pages/reports'
 import Daybooks from './pages/Daybooks'
 import BankReconciliation from './pages/BankReconciliation'
 import Settings from './pages/Settings'
@@ -351,6 +351,7 @@ function Shell({ email }: { email: string }) {
             <Route path="/reports/low-stock" element={<LowStockSummary />} />
             <Route path="/reports/tax-sales" element={<TaxSales />} />
             <Route path="/reports/tax-purchase" element={<TaxPurchase />} />
+            <Route path="/reports/vat-register" element={<VatRegister />} />
             <Route path="/reports/cash-statement" element={<CashStatement />} />
             <Route path="/reports/bank-statement" element={<BankStatement />} />
             <Route path="/reports/expense-category" element={<ExpenseCategory />} />

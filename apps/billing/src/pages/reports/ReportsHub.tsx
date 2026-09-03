@@ -69,6 +69,7 @@ const REPORTS: Record<Category, ReportCard[]> = {
     { title: 'Bank Statement', desc: 'Check all the transactions made with bank', icon: CreditCard, to: '/reports/bank-statement' },
     { title: 'Tax Sales', desc: 'Check report of all tax applicable sales', icon: Receipt, to: '/reports/tax-sales' },
     { title: 'Tax Purchase', desc: 'Check report of all tax applicable purchase', icon: Truck, to: '/reports/tax-purchase' },
+    { title: 'VAT Registers', desc: 'Sales, purchase & return registers for VAT filing', icon: BookOpenText, to: '/reports/vat-register' },
   ],
 }
 
