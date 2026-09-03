@@ -587,26 +587,26 @@ export default function Vouchers() {
     try {
       if (editingId !== null) {
         // Editing an existing draft: patch it, then post if requested.
+        // Queued to outbox — saves locally first, syncs in background.
         await api(`/documents/${editingId}`, {
           method: 'PATCH',
           body: buildBody(),
           query: tenantQuery,
-          immediate: true,
         })
         if (post) {
-          await api(`/documents/${editingId}/post`, { method: 'POST', immediate: true })
+          await api(`/documents/${editingId}/post`, { method: 'POST' })
         }
       } else {
+        // Saves locally first, syncs in background.
         const created = await api<Document | { doc: Document }>('/documents', {
           method: 'POST',
           body: buildBody(),
           query: tenantQuery,
-          immediate: true,
         })
         // Payload REST API returns doc directly; offline outbox returns { doc: { id } }
         const docId = 'doc' in created ? (created as { doc: Document }).doc.id : (created as Document).id
         if (post) {
-          await api(`/documents/${docId}/post`, { method: 'POST', immediate: true })
+          await api(`/documents/${docId}/post`, { method: 'POST' })
         }
       }
       const date = form.date

@@ -157,7 +157,7 @@ export default function Transfers() {
     if (!confirm(`Reverse both legs of transfer ${ref}? Reversal entries will be posted.`)) return
     setVoiding(ref)
     try {
-      await api(`/journal-entries/transfers/${ref}/void`, { method: 'POST', immediate: true })
+      await api(`/journal-entries/transfers/${ref}/void`, { method: 'POST' })
       pushToast('success', 'Transfer reversed', `${ref} — both legs reversed.`)
       loadTransfers()
     } catch (err) {

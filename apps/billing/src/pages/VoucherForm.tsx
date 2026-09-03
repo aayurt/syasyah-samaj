@@ -518,19 +518,19 @@ export default function VoucherForm({ mode }: Props) {
     setSaving(true); setError('')
     try {
       if (mode === 'edit' && id) {
-        await api(`/documents/${id}`, { method: 'PATCH', body: buildBody(), query: tenantQuery, immediate: true })
-        if (post) await api(`/documents/${id}/post`, { method: 'POST', immediate: true })
+        // Saves locally first, syncs in background.
+        await api(`/documents/${id}`, { method: 'PATCH', body: buildBody(), query: tenantQuery })
+        if (post) await api(`/documents/${id}/post`, { method: 'POST' })
       } else {
-        // Go directly to server so the response has the real server ID.
+        // Saves locally first, syncs in background.
         const created = await api<Document | { doc: Document }>('/documents', {
           method: 'POST',
           body: buildBody(),
           query: tenantQuery,
-          immediate: true,
         })
         const docId = 'doc' in created ? (created as { doc: Document }).doc.id : (created as Document).id
         if (post && docId) {
-          await api(`/documents/${docId}/post`, { method: 'POST', immediate: true })
+          await api(`/documents/${docId}/post`, { method: 'POST' })
         }
       }
       navigate('/vouchers')

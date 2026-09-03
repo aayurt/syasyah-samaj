@@ -126,6 +126,7 @@ export default function Members() {
     if (!editEmail.trim()) { setEditError('Email is required.'); return }
     setEditSubmitting(true)
     try {
+      // Saves locally first, syncs in background.
       await api(`/members/${editingId}`, {
         method: 'PATCH',
         body: {
@@ -135,7 +136,6 @@ export default function Members() {
           membershipType: editRoleId ? Number(editRoleId) : null,
           status: editStatus,
         },
-        immediate: true,
       })
       pushToast('success', 'Member updated', editName.trim())
       setEditingId(null)
@@ -190,7 +190,7 @@ export default function Members() {
     try {
       const res = await api<{ message: string; receiptNumber: string; amount: number; renewalDate: string }>(
         `/members/${member.id}/pay-fee`,
-        { method: 'POST', immediate: true },
+        { method: 'POST' },
       )
       pushToast('success', 'Fee collected', `${res.receiptNumber} — ${fmt(res.amount)} · Renews ${res.renewalDate}`)
       // Refresh the list from server
