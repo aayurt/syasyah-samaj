@@ -160,6 +160,61 @@ function taxAggregates(doc: any): { addInc: number; withheld: number } {
   return { addInc: round2(addInc), withheld: round2(withheld) }
 }
 
+/**
+ * Split the value of a voided portion into taxable (net), VAT, and gross
+ * components consistent with the source document's own totals, so void-created
+ * credit notes reverse the same VAT breakdown and the VAT registers reconcile.
+ *
+ * The incoming value follows the document's line convention: for documents
+ * with inclusive tax lines the entered line value already contains tax, so
+ * `value` is treated as gross and the net share is derived from the document's
+ * net/gross ratio. Otherwise the value is net and the document's tax is scaled
+ * by the voided fraction of the net total.
+ */
+function splitVoidValue(
+  doc: any,
+  value: number,
+): { net: number; tax: number; gross: number } {
+  const v = Math.max(0, toNum(value))
+  const netTotal = toNum(doc.netTotal)
+  const grossTotal = toNum(doc.grossTotal)
+  const taxTotal = toNum(doc.taxTotal)
+  const hasInclusive = (doc.taxLines || []).some(
+    (tl: any) => tl.nature === 'inclusive',
+  )
+  if (hasInclusive && grossTotal > 0) {
+    // Value is gross (tax already included). Derive the net share.
+    const net = round2(v * (netTotal / grossTotal))
+    return { net, tax: round2(v - net), gross: round2(v) }
+  }
+  if (netTotal > 0) {
+    // Value is net; scale the document's tax by the voided fraction.
+    const net = round2(v)
+    const tax = round2(taxTotal * (v / netTotal))
+    return { net, tax, gross: round2(net + tax) }
+  }
+  return { net: round2(v), tax: 0, gross: round2(v) }
+}
+
+/**
+ * Copy/sanitize a document's tax lines, scaling each amount by the given
+ * fraction (metadata only — the credit-note posting leg uses gross, so these
+ * never touch the ledger). Rows are rebuilt without sub-document ids so they
+ * can be persisted on a newly created credit note.
+ */
+function scaleTaxLines(doc: any, scale: number): any[] | undefined {
+  const tls = doc.taxLines || []
+  if (tls.length === 0) return undefined
+  return tls.map((tl: any) => ({
+    taxType: tl.taxType ?? null,
+    nature: tl.nature,
+    rate: toNum(tl.rate),
+    baseAmount:
+      tl.baseAmount != null ? round2(toNum(tl.baseAmount) * scale) : undefined,
+    amount: tl.amount != null ? round2(toNum(tl.amount) * scale) : undefined,
+  }))
+}
+
 async function getSettings(payload: PayloadRequest['payload']) {
   try {
     return (await payload.findGlobal({
@@ -1415,6 +1470,9 @@ export const Documents: CollectionConfig = {
               narration: `${reason} — ${doc.number || doc.id}`,
               lines: noteLines,
               netTotal: toNum(doc.netTotal) || 0,
+              taxTotal: toNum(doc.taxTotal) || 0,
+              taxRate: Math.max(0, toNum(doc.taxRate)) || undefined,
+              taxLines: scaleTaxLines(doc, 1) || [],
               grossTotal: toNum(doc.grossTotal) || 0,
               tenant: doc.tenant,
               referenceTo: doc.id,
@@ -1585,6 +1643,20 @@ export const Documents: CollectionConfig = {
             })
           }
 
+          // `totalVoidedAmount` follows the document's line convention: net
+          // for additive/no-tax lines, gross for inclusive-tax lines. Split it
+          // into taxable / VAT / gross so the credit note reverses the same
+          // tax breakdown and the VAT registers reconcile.
+          const voidSplit = splitVoidValue(doc, totalVoidedAmount)
+          const voidScale =
+            (doc.taxLines || []).some((tl: any) => tl.nature === 'inclusive') &&
+            toNum(doc.grossTotal) > 0
+              ? totalVoidedAmount / toNum(doc.grossTotal)
+              : toNum(doc.netTotal) > 0
+                ? totalVoidedAmount / toNum(doc.netTotal)
+                : 0
+          const voidTaxLines = scaleTaxLines(doc, Math.min(1, Math.max(0, voidScale)))
+
           // Partial void always creates a credit note
           const creditNoteType = 'credit-note'
 
@@ -1613,8 +1685,11 @@ export const Documents: CollectionConfig = {
               status: 'posted',
               narration: `Partial void of ${doc.number || doc.id}: ${items.map(i => i.reason || `item ${i.itemIndex + 1}`).join(', ')}`,
               lines: noteLines,
-              netTotal: totalVoidedAmount,
-              grossTotal: totalVoidedAmount,
+              netTotal: voidSplit.net,
+              taxTotal: voidSplit.tax,
+              taxRate: Math.max(0, toNum(doc.taxRate)) || undefined,
+              taxLines: voidTaxLines || [],
+              grossTotal: voidSplit.gross,
               tenant: doc.tenant,
               referenceTo: doc.id,
               referenceToDocType: doc.docType,
@@ -1638,9 +1713,13 @@ export const Documents: CollectionConfig = {
             id: doc.id,
             data: {
               voidedItems: [...existingVoided, ...voidedItems],
-              voidedAmount: round2((doc.voidedAmount || 0) + totalVoidedAmount),
-              // If all items are now voided, mark as full void
-              status: totalVoidedAmount >= (doc.grossTotal || 0) ? 'void' : doc.status,
+              voidedAmount: round2((doc.voidedAmount || 0) + voidSplit.gross),
+              // If the whole gross value is now voided, mark as full void
+              status:
+                round2((doc.voidedAmount || 0) + voidSplit.gross) >=
+                round2(toNum(doc.grossTotal) || 0)
+                  ? 'void'
+                  : doc.status,
             },
             req: {
               transactionID,
@@ -1654,7 +1733,7 @@ export const Documents: CollectionConfig = {
 
           return Response.json({
             doc: updated,
-            creditNote: { id: creditNote.id, number: creditNote.number, amount: totalVoidedAmount },
+            creditNote: { id: creditNote.id, number: creditNote.number, amount: voidSplit.gross },
             voidedItems,
           })
         } catch (err) {

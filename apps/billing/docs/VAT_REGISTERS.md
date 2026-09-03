@@ -192,9 +192,27 @@ line or `taxTotal > 0`.
 | `apps/billing/src/App.tsx` | add `/reports/vat-register` route |
 | `apps/billing/src/pages/reports/ReportsHub.tsx` | add VAT Registers card |
 
-No backend changes needed — registers are computed client-side over the
-`documents` collection (cache-first via the offline `api()` layer), so
-they work offline and follow the existing report convention.
+No backend changes were needed to *compute* the registers (computed
+client-side over the `documents` collection, cache-first via the offline
+`api()` layer). One server change was made so the registers actually
+reconcile: the `/void` and `/:id/partial-void` endpoints in
+`src/collections/Documents/index.ts` now carry the source document's VAT
+breakdown onto the void-created credit note (`netTotal` / `taxTotal` /
+`grossTotal`, plus `taxRate` / `taxLines`). Previously those credit notes
+stored only net/gross with zero tax, so voiding a VAT invoice showed up in
+the return registers with ₹0 VAT.
+
+- **Full void** — the credit note mirrors the document's totals exactly
+  (`taxTotal` = `doc.taxTotal`), so Sales + Sales Return reconcile to zero.
+- **Partial void** — the voided line value is split per the document's tax
+  convention: net for additive/no-tax lines (VAT scaled by the voided
+  fraction of `netTotal`), gross for inclusive-tax lines (net derived via
+  the doc's net/gross ratio). The credit note's gross therefore equals the
+  tax-inclusive value reversed against AR/AP, and the doc's `voidedAmount`
+  accrues in gross terms so voiding all lines still flips it to `void`.
+
+The credit-note posting leg uses gross only, so these tax fields never
+touch the ledger — they are reporting metadata.
 
 ## 6. Out of Scope (for now)
 
