@@ -270,15 +270,15 @@ async function resolveFiscalYear(
 
 /**
  * Find the fiscal year that contains `dateValue` (scoped to the tenant if
- * provided), plus the working (active) fiscal year. Used to enforce
- * closed-period editability: a document dated inside a closed fiscal year
- * cannot be created or edited.
+ * provided). Used to enforce closed-period editability (a document dated
+ * inside a closed fiscal year cannot be created or edited) and to resolve
+ * the fiscal-year segment of voucher numbers.
  */
 async function findFiscalYearForDate(
   payload: PayloadRequest['payload'],
   dateValue: string | Date,
   tenant?: number | string | { id: number | string } | null,
-): Promise<{ startDate?: string; endDate?: string; status?: string; label?: string } | null> {
+): Promise<{ id?: number; startDate?: string; endDate?: string; status?: string; label?: string } | null> {
   const d = new Date(dateValue)
   if (isNaN(d.getTime())) return null
   const tenantId =
@@ -298,6 +298,7 @@ async function findFiscalYearForDate(
     const fy = res.docs?.[0] as any
     if (fy) {
       return {
+        id: Number(fy.id),
         startDate: fy.startDate || undefined,
         endDate: fy.endDate || undefined,
         status: fy.status || 'active',
@@ -308,6 +309,18 @@ async function findFiscalYearForDate(
     // no fiscal years configured — not enforced
   }
   return null
+}
+
+/**
+ * Normalize a fiscal-year label for embedding in a voucher number
+ * (e.g. "2083-84" stays "2083-84"; "FY 2083 / 84" → "FY-2083-84").
+ */
+function cleanFyLabel(label?: string | null): string {
+  if (!label) return ''
+  return label
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 24)
 }
 
 function resolveAccount(
@@ -782,35 +795,62 @@ function fiscalYearOf(dateValue: string | Date, fiscalYearStart?: string): numbe
 }
 
 /**
- * Atomically increments the per-type/per-year/per-tenant sequence and
- * returns the formatted voucher number (e.g. SI-2026-0003).
+ * Atomically increments the per-type/per-fiscal-year/per-tenant sequence and
+ * returns the formatted voucher number (e.g. SI-2083-84-0003).
  *
- * The key is scoped to the illaka as well as the doc type and fiscal year,
- * so each illaka numbers its own vouchers from 1 (per-tenant numbering).
+ * The fiscal-year segment is the BS label of the year containing the voucher
+ * date; sequences restart at 0001 each fiscal year, scoped to the illaka as
+ * well as the doc type (per-tenant numbering). When no fiscal-year record
+ * matches, the legacy AD-year numbering (SI-2026-0003) is used unchanged.
+ *
+ * To keep numbering gapless inside the fiscal year that is live when the
+ * label format ships, a brand-new per-fiscal-year key is seeded from the
+ * legacy AD-year key for the same doc type + tenant instead of starting at 1.
  */
 async function nextNumber(
   payload: PayloadRequest['payload'],
   docType: string,
   dateValue: string | Date,
-  fiscalYearStart?: string,
+  fyInfo?: { id?: number; label?: string; startDate?: string } | null,
   tenant?: number | string | { id: number | string } | null,
 ): Promise<string> {
-  const fy = fiscalYearOf(dateValue, fiscalYearStart)
   const tenantId =
     tenant && typeof tenant === 'object' ? tenant.id : tenant || 'org'
-  const key = `${docType}:${fy}:${tenantId}`
-  const pool = (payload.db as any).pool
-  const result = await pool.query(
-    `INSERT INTO doc_sequences (key, last_number, created_at, updated_at)
-     VALUES ($1, 1, now(), now())
-     ON CONFLICT (key)
-     DO UPDATE SET last_number = doc_sequences.last_number + 1, updated_at = now()
-     RETURNING last_number`,
-    [key],
-  )
-  const seq = Number(result.rows[0].last_number)
+  const fyAdYear = fiscalYearOf(dateValue, fyInfo?.startDate)
   const prefix = DOC_PREFIXES[docType] || 'DOC'
-  return `${prefix}-${fy}-${String(seq).padStart(4, '0')}`
+  const label = cleanFyLabel(fyInfo?.label) || String(fyAdYear)
+  const key =
+    fyInfo?.id != null
+      ? `${docType}:${fyInfo.id}:${tenantId}`
+      : `${docType}:${fyAdYear}:${tenantId}`
+  const pool = (payload.db as any).pool
+  let result: { rows: Array<{ last_number: string }> }
+  if (fyInfo?.id != null) {
+    // New per-fiscal-year key: seed from the legacy AD-year sequence when it
+    // exists (atomic, race-safe via the single UPSERT).
+    const legacyKey = `${docType}:${fyAdYear}:${tenantId}`
+    result = await pool.query(
+      `INSERT INTO doc_sequences (key, last_number, created_at, updated_at)
+       SELECT $1,
+              COALESCE((SELECT last_number FROM doc_sequences WHERE key = $2), 0) + 1,
+              now(), now()
+       ON CONFLICT (key)
+       DO UPDATE SET last_number = doc_sequences.last_number + 1, updated_at = now()
+       RETURNING last_number`,
+      [key, legacyKey],
+    )
+  } else {
+    result = await pool.query(
+      `INSERT INTO doc_sequences (key, last_number, created_at, updated_at)
+       VALUES ($1, 1, now(), now())
+       ON CONFLICT (key)
+       DO UPDATE SET last_number = doc_sequences.last_number + 1, updated_at = now()
+       RETURNING last_number`,
+      [key],
+    )
+  }
+  const seq = Number(result.rows[0]?.last_number ?? 0)
+  return `${prefix}-${label}-${String(seq).padStart(4, '0')}`
 }
 
 function isBillingReq(req: PayloadRequest): boolean {
@@ -916,12 +956,12 @@ export async function postDocument(
       })
     }
 
-    const fiscalYear = await resolveFiscalYear(payload, settings)
+    const fiscalYear = await findFiscalYearForDate(payload, doc.date, doc.tenant)
     const number = await nextNumber(
       payload,
       doc.docType,
       doc.date,
-      fiscalYear?.startDate,
+      fiscalYear,
       doc.tenant,
     )
 
@@ -1172,13 +1212,12 @@ export const Documents: CollectionConfig = {
               { status: 409 },
             )
           }
-          const settings = await getSettings(req.payload)
-          const fiscalYear = await resolveFiscalYear(req.payload, settings)
+          const fiscalYear = await findFiscalYearForDate(req.payload, doc.date, doc.tenant)
           const number = await nextNumber(
             req.payload,
             doc.docType,
             doc.date,
-            fiscalYear?.startDate,
+            fiscalYear,
             doc.tenant,
           )
           const updated = await req.payload.update({
@@ -1449,7 +1488,8 @@ export const Documents: CollectionConfig = {
           const creditNoteType = 'credit-note'
 
           // Generate a number for the credit/debit note
-          const cnNumber = await nextNumber(req.payload, creditNoteType, new Date().toISOString().slice(0, 10), undefined, doc.tenant)
+          const cnFy = await findFiscalYearForDate(req.payload, new Date(), doc.tenant)
+          const cnNumber = await nextNumber(req.payload, creditNoteType, new Date().toISOString().slice(0, 10), cnFy, doc.tenant)
 
           // Create credit/debit note for the full amount
           const noteLines = (doc.lines || []).map((l: any) => ({
@@ -1661,7 +1701,8 @@ export const Documents: CollectionConfig = {
           const creditNoteType = 'credit-note'
 
           // Generate a number for the credit/debit note
-          const cnNumber = await nextNumber(req.payload, creditNoteType, new Date().toISOString().slice(0, 10), undefined, doc.tenant)
+          const cnFy = await findFiscalYearForDate(req.payload, new Date(), doc.tenant)
+          const cnNumber = await nextNumber(req.payload, creditNoteType, new Date().toISOString().slice(0, 10), cnFy, doc.tenant)
 
           // Create credit/debit note
           const noteLines = items.map((item) => {
@@ -2069,21 +2110,40 @@ export const Documents: CollectionConfig = {
           )
         }
         const dateValue = searchParams.get('date') || undefined
-        const settings = await getSettings(req.payload)
-        const fiscalYear = await resolveFiscalYear(req.payload, settings)
-        const fy = fiscalYearOf(dateValue ? new Date(dateValue) : new Date(), fiscalYear?.startDate)
+        const date = dateValue ? new Date(dateValue) : new Date()
         const tenantParam = searchParams.get('tenant')
         const tenantId = tenantParam ? tenantParam : 'org'
-        const key = `${type}:${fy}:${tenantId}`
+        const tenantRef =
+          tenantParam && !isNaN(Number(tenantParam))
+            ? Number(tenantParam)
+            : undefined
+        const fiscalYear = await findFiscalYearForDate(
+          req.payload,
+          date,
+          tenantRef,
+        )
+        const fyAdYear = fiscalYearOf(date, fiscalYear?.startDate)
+        const prefix = DOC_PREFIXES[type]
+        const label = cleanFyLabel(fiscalYear?.label) || String(fyAdYear)
+        const key =
+          fiscalYear?.id != null
+            ? `${type}:${fiscalYear.id}:${tenantId}`
+            : `${type}:${fyAdYear}:${tenantId}`
+        const legacyKey =
+          fiscalYear?.id != null
+            ? `${type}:${fyAdYear}:${tenantId}`
+            : key
         const pool = (req.payload.db as any).pool
         const result = await pool.query(
-          `SELECT last_number FROM doc_sequences WHERE key = $1`,
-          [key],
+          `SELECT COALESCE(
+             (SELECT last_number FROM doc_sequences WHERE key = $1),
+             (SELECT last_number FROM doc_sequences WHERE key = $2),
+             0) + 1 AS next_number`,
+          [key, legacyKey],
         )
-        const last = result.rows[0] ? Number(result.rows[0].last_number) : 0
-        const prefix = DOC_PREFIXES[type]
+        const next = Number(result.rows[0]?.next_number || 0)
         return Response.json({
-          number: `${prefix}-${fy}-${String(last + 1).padStart(4, '0')}`,
+          number: `${prefix}-${label}-${String(next).padStart(4, '0')}`,
         })
       },
     },
