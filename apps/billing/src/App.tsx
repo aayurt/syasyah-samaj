@@ -77,7 +77,7 @@ const navGroups: { title?: string; items: NavItem[] }[] = [
   {
     title: 'Masters',
     items: [
-      { to: '/accounts', label: 'Accounts', icon: FolderTree },
+      { to: '/accounts', label: 'Account Setup', icon: FolderTree },
       { to: '/parties', label: 'Parties', icon: Users },
       { to: '/members', label: 'Members', icon: Users },
       { to: '/membership-types', label: 'Membership Types', icon: Users },

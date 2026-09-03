@@ -1171,7 +1171,19 @@ export default function Settings() {
                 placeholder="Code" className="rounded border border-slate-300 px-3 py-1.5 text-sm font-mono outline-none focus:border-slate-500" />
               <SearchSelect
                 value={coaForm.type}
-                onChange={(v) => setCoaForm({ ...coaForm, type: v as AccountType })}
+                onChange={(v) =>
+                  setCoaForm((f) => ({
+                    ...f,
+                    type: v as AccountType,
+                    // Clear the group when it no longer belongs to the type.
+                    group:
+                      f.group &&
+                      coaGroups.find((g) => g.id === Number(f.group))?.type ===
+                        v
+                        ? f.group
+                        : '',
+                  }))
+                }
                 options={[
                   { value: 'asset', label: 'Asset' },
                   { value: 'liability', label: 'Liability' },
@@ -1196,7 +1208,9 @@ export default function Settings() {
                   value={coaForm.group}
                   onChange={(v) => setCoaForm({ ...coaForm, group: v })}
                   placeholder="— no group —"
-                  options={coaGroups.map((g) => ({ value: g.id, label: g.name }))}
+                  options={coaGroups
+                    .filter((g) => g.type === coaForm.type)
+                    .map((g) => ({ value: g.id, label: g.name }))}
                 />
               </div>
               <input type="number" step="0.01" value={coaForm.openingBalance} onChange={(e) => setCoaForm({ ...coaForm, openingBalance: e.target.value })}

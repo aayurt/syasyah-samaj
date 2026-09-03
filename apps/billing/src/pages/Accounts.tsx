@@ -106,6 +106,21 @@ export default function Accounts() {
     return g ? `${g.name}${g.code ? ` (${g.code})` : ''}` : '—'
   }
 
+  // Only groups that belong to the chosen account type (Assets → asset
+  // groups, etc.). When the type changes and the picked group no longer
+  // matches, the group selection is cleared.
+  const groupsOfType = groups.filter((g) => g.type === form.type)
+  const changeType = (type: AccountType) =>
+    setForm((f) => ({
+      ...f,
+      type,
+      group:
+        f.group &&
+        groups.find((g) => g.id === Number(f.group))?.type === type
+          ? f.group
+          : '',
+    }))
+
   const [searchParams, setSearchParams] = useSearchParams()
   const urlSortKey = searchParams.get('sort') || 'name'
   const urlSortDir = (searchParams.get('dir') as 'asc' | 'desc') || 'asc'
@@ -200,9 +215,7 @@ export default function Accounts() {
               Type
               <select
                 value={form.type}
-                onChange={(e) =>
-                  setForm({ ...form, type: e.target.value as AccountType })
-                }
+                onChange={(e) => changeType(e.target.value as AccountType)}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
               >
                 {TYPES.map((t) => (
@@ -232,11 +245,17 @@ export default function Accounts() {
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
               >
                 <option value="">— none —</option>
-                {groups.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
+                {groupsOfType.length === 0 ? (
+                  <option value="__no-groups__" disabled>
+                    No {TYPE_LABELS[form.type].toLowerCase()} groups yet
                   </option>
-                ))}
+                ) : (
+                  groupsOfType.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))
+                )}
               </select>
             </label>
             <label className="text-sm text-slate-700">
