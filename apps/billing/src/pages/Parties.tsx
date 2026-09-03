@@ -283,7 +283,7 @@ export default function Parties() {
                   : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              {t || 'all'}
+              {t === '' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
           ))}
         </div>

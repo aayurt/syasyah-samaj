@@ -410,7 +410,10 @@ export default function Dashboard() {
             <div className="flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2">
               <div className="flex items-center gap-2">
                 <ArrowUpRight size={14} className="text-emerald-600" />
-                <span className="text-sm text-slate-700">Receivable (AR)</span>
+                <span className="text-sm text-slate-700">
+                  Receivables
+                  <span className="ml-1 text-xs text-slate-400">(money owed to you)</span>
+                </span>
               </div>
               <span className="font-mono text-sm font-semibold text-emerald-700">
                 {fmt(arTotal)}
@@ -419,7 +422,10 @@ export default function Dashboard() {
             <div className="flex items-center justify-between rounded-lg bg-red-50 px-3 py-2">
               <div className="flex items-center gap-2">
                 <ArrowDownLeft size={14} className="text-red-600" />
-                <span className="text-sm text-slate-700">Payable (AP)</span>
+                <span className="text-sm text-slate-700">
+                  Payables
+                  <span className="ml-1 text-xs text-slate-400">(money you owe)</span>
+                </span>
               </div>
               <span className="font-mono text-sm font-semibold text-red-700">
                 {fmt(apTotal)}

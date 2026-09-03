@@ -59,15 +59,15 @@ interface DocTypeMeta {
 
 const DOC_TYPES: DocTypeMeta[] = [
   { value: 'journal-voucher', label: 'Journal Entry', direction: 'internal', needsParty: false, cashMode: false, lineMode: 'journal', group: 'primary' },
-  { value: 'payment-voucher', label: 'Payment Entry', direction: 'outbound', needsParty: true, cashMode: true, lineMode: 'item', group: 'primary' },
-  { value: 'receipt-voucher', label: 'Receipt Entry', direction: 'inbound', needsParty: true, cashMode: true, lineMode: 'item', group: 'primary' },
-  { value: 'sales-invoice', label: 'Sales Entry', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'primary' },
-  { value: 'purchase-invoice', label: 'Purchase Entry', direction: 'inbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'primary' },
+  { value: 'payment-voucher', label: 'Payment', direction: 'outbound', needsParty: true, cashMode: true, lineMode: 'item', group: 'primary' },
+  { value: 'receipt-voucher', label: 'Receipt', direction: 'inbound', needsParty: true, cashMode: true, lineMode: 'item', group: 'primary' },
+  { value: 'sales-invoice', label: 'Sales Invoice', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'primary' },
+  { value: 'purchase-invoice', label: 'Purchase Invoice', direction: 'inbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'primary' },
   { value: 'contra', label: 'Contra Entry', direction: 'internal', needsParty: false, cashMode: false, lineMode: 'contra', group: 'primary' },
   { value: 'credit-note', label: 'Credit Note', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
   { value: 'debit-note', label: 'Debit Note', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
-  { value: 'petty-cash-voucher', label: 'Petty Cash Voucher', direction: 'internal', needsParty: false, cashMode: false, lineMode: 'item', group: 'more' },
-  { value: 'grn', label: 'Goods Received Note', direction: 'inbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
+  { value: 'petty-cash-voucher', label: 'Petty Cash', direction: 'internal', needsParty: false, cashMode: false, lineMode: 'item', group: 'more' },
+  { value: 'grn', label: 'Goods Received (GRN)', direction: 'inbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
   { value: 'delivery-challan', label: 'Delivery Challan', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
 ]
 
@@ -1771,7 +1771,7 @@ export default function Vouchers() {
                   : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              {s || 'all'}
+              {s === '' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
           ))}
         </div>
@@ -2406,7 +2406,7 @@ export default function Vouchers() {
                           <tr className="border-b border-red-200 text-left text-xs uppercase tracking-wide text-red-600">
                             <th className="py-2">#</th>
                             <th className="py-2">Item</th>
-                            <th className="py-2 text-right">Qty Voided</th>
+                            <th className="py-2 text-right">Qty to void</th>
                             <th className="py-2 text-right">Amount</th>
                             <th className="py-2">Reason</th>
                             <th className="py-2">Credit/Debit Note</th>
@@ -2440,7 +2440,7 @@ export default function Vouchers() {
                         </tbody>
                         <tfoot>
                           <tr className="border-t-2 border-red-300 font-medium">
-                            <td colSpan={3} className="py-2 text-xs uppercase text-red-600">Total Voided</td>
+                            <td colSpan={3} className="py-2 text-xs uppercase text-red-600">Total Void Amount</td>
                             <td className="py-2 text-right font-mono text-red-700">Rs. {fmt(viewDoc.voidedAmount || 0)}</td>
                             <td colSpan={2} />
                           </tr>
@@ -2549,7 +2549,7 @@ export default function Vouchers() {
                     <th className="py-2">Item</th>
                     <th className="w-20 py-2 text-right">Qty</th>
                     <th className="w-24 py-2 text-right">Amount</th>
-                    <th className="w-24 py-2 text-right">Void Qty</th>
+                    <th className="w-24 py-2 text-right">Qty to void</th>
                     <th className="w-40 py-2">Reason</th>
                   </tr>
                 </thead>
@@ -2621,7 +2621,7 @@ export default function Vouchers() {
               {voidItems.length > 0 && (
                 <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-amber-800">Total Void Amount:</span>
+                    <span className="font-medium text-amber-800">Total void amount:</span>
                     <span className="font-semibold text-amber-900">
                       Rs. {fmt(voidItems.reduce((sum, vi) => {
                         const line = voidDialogDoc.lines?.[vi.itemIndex]

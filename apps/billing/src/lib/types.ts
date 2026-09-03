@@ -20,15 +20,15 @@ export type DocType =
   | 'donation-receipt'
 
 export const DOC_TYPE_LABELS: Record<string, string> = {
-  'sales-quote': 'Sales Quote',
-  'sales-invoice': 'Sales Entry',
-  'purchase-invoice': 'Purchase Entry',
-  'payment-voucher': 'Payment Entry',
-  'receipt-voucher': 'Receipt Entry',
+  'sales-quote': 'Quote',
+  'sales-invoice': 'Sales Invoice',
+  'purchase-invoice': 'Purchase Invoice',
+  'payment-voucher': 'Payment',
+  'receipt-voucher': 'Receipt',
   'credit-note': 'Credit Note',
   'debit-note': 'Debit Note',
-  'petty-cash-voucher': 'Petty Cash Voucher',
-  grn: 'Goods Received Note',
+  'petty-cash-voucher': 'Petty Cash',
+  grn: 'Goods Received (GRN)',
   'delivery-challan': 'Delivery Challan',
   'journal-voucher': 'Journal Entry',
   contra: 'Contra Entry',

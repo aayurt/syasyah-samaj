@@ -430,7 +430,7 @@ export default function Journal() {
                   : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              {s || 'all'}
+              {s === '' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
           </button>
           ))}
         </div>

@@ -31,10 +31,10 @@ interface Shortcut {
 }
 
 const SHORTCUTS: Shortcut[] = [
-  { label: 'Sales Entry', icon: ArrowUpRight, route: '/vouchers', shortcut: '⌥S', color: 'text-emerald-600' },
-  { label: 'Purchase Entry', icon: ShoppingCart, route: '/vouchers', shortcut: '⌥P', color: 'text-emerald-600' },
-  { label: 'Payment Entry', icon: Send, route: '/vouchers', shortcut: '⌥I', color: 'text-emerald-600' },
-  { label: 'Receipt Entry', icon: Receipt, route: '/vouchers', shortcut: '⌥O', color: 'text-emerald-600' },
+  { label: 'Sales Invoice', icon: ArrowUpRight, route: '/vouchers', shortcut: '⌥S', color: 'text-emerald-600' },
+  { label: 'Purchase Invoice', icon: ShoppingCart, route: '/vouchers', shortcut: '⌥P', color: 'text-emerald-600' },
+  { label: 'Payment', icon: Send, route: '/vouchers', shortcut: '⌥I', color: 'text-emerald-600' },
+  { label: 'Receipt', icon: Receipt, route: '/vouchers', shortcut: '⌥O', color: 'text-emerald-600' },
   { label: 'Journal Entry', icon: BookOpenText, route: '/vouchers', shortcut: '⌥J', color: 'text-emerald-600' },
   { label: 'Contra Entry', icon: RefreshCw, route: '/vouchers', shortcut: '⌥T', color: 'text-emerald-600' },
   { label: 'Credit Note', icon: RotateCcw, route: '/vouchers', shortcut: '⌥C', color: 'text-emerald-600' },

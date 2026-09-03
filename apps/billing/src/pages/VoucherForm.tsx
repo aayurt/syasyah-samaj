@@ -60,17 +60,17 @@ const CASH_TYPES = ['payment-voucher', 'receipt-voucher']
 
 const DOC_TYPE_META: Record<string, { icon: string; activeClasses: string; inactiveClasses: string; textClasses: string; shortLabel: string }> = {
   'sales-quote':       { icon: '📋', activeClasses: 'border-indigo-500 bg-indigo-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-indigo-700', shortLabel: 'Quote' },
-  'sales-invoice':     { icon: '🛒', activeClasses: 'border-crimson-500 bg-crimson-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-crimson-700', shortLabel: 'Sales' },
-  'purchase-invoice':  { icon: '📦', activeClasses: 'border-blue-500 bg-blue-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-blue-700', shortLabel: 'Purchase' },
+  'sales-invoice':     { icon: '🛒', activeClasses: 'border-crimson-500 bg-crimson-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-crimson-700', shortLabel: 'Sales Invoice' },
+  'purchase-invoice':  { icon: '📦', activeClasses: 'border-blue-500 bg-blue-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-blue-700', shortLabel: 'Purchase Invoice' },
   'payment-voucher':   { icon: '💸', activeClasses: 'border-amber-500 bg-amber-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-amber-700', shortLabel: 'Payment' },
   'receipt-voucher':   { icon: '📥', activeClasses: 'border-emerald-500 bg-emerald-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-emerald-700', shortLabel: 'Receipt' },
   'credit-note':       { icon: '↩️', activeClasses: 'border-slate-400 bg-slate-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-slate-700', shortLabel: 'Credit Note' },
   'debit-note':        { icon: '↪️', activeClasses: 'border-slate-400 bg-slate-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-slate-700', shortLabel: 'Debit Note' },
   'petty-cash-voucher':{ icon: '🪙', activeClasses: 'border-amber-500 bg-amber-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-amber-700', shortLabel: 'Petty Cash' },
-  grn:                 { icon: '🏭', activeClasses: 'border-blue-500 bg-blue-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-blue-700', shortLabel: 'GRN' },
-  'delivery-challan':  { icon: '🚚', activeClasses: 'border-emerald-500 bg-emerald-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-emerald-700', shortLabel: 'Challan' },
-  'journal-voucher':   { icon: '📒', activeClasses: 'border-violet-500 bg-violet-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-violet-700', shortLabel: 'Journal' },
-  contra:              { icon: '🔄', activeClasses: 'border-orange-500 bg-orange-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-orange-700', shortLabel: 'Contra' },
+  grn:                 { icon: '🏭', activeClasses: 'border-blue-500 bg-blue-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-blue-700', shortLabel: 'Goods Received (GRN)' },
+  'delivery-challan':  { icon: '🚚', activeClasses: 'border-emerald-500 bg-emerald-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-emerald-700', shortLabel: 'Delivery Challan' },
+  'journal-voucher':   { icon: '📒', activeClasses: 'border-violet-500 bg-violet-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-violet-700', shortLabel: 'Journal Entry' },
+  contra:              { icon: '🔄', activeClasses: 'border-orange-500 bg-orange-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-orange-700', shortLabel: 'Contra Entry' },
 }
 
 type Props = { mode: 'create' | 'edit' }
@@ -1472,13 +1472,19 @@ export default function VoucherForm({ mode }: Props) {
           <div className="flex gap-2">
             <button type="button" onClick={() => submit(false)} disabled={saving}
               className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-              {saving ? 'Saving…' : docType === 'sales-quote' ? 'Save Quote' : 'Save Draft'}
+              {saving ? 'Saving…' : docType === 'sales-quote' ? 'Save Quote' : 'Save draft'}
             </button>
-            <button type="button" onClick={() => submit(true)} disabled={saving || !allRequiredFilled || docType === 'sales-quote'}
-              title={docType === 'sales-quote' ? 'Quotes are non-posting — copy to an invoice when accepted' : !allRequiredFilled ? 'Fill all required fields first' : undefined}
-              className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
-              {docType === 'sales-quote' ? 'Non-posting' : 'Save & Post'}
-            </button>
+            {docType === 'sales-quote' ? (
+              <span className="hidden text-xs text-slate-400 sm:block">
+                Quotes don't post — copy to an invoice when accepted
+              </span>
+            ) : (
+              <button type="button" onClick={() => submit(true)} disabled={saving || !allRequiredFilled}
+                title={!allRequiredFilled ? 'Fill all required fields first' : undefined}
+                className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                {saving ? 'Posting…' : 'Save & post'}
+              </button>
+            )}
           </div>
         </div>
       </div>
