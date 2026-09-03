@@ -10,6 +10,7 @@ import {
   CreditCard,
   FileText,
   FolderTree,
+  ChevronDown,
   HelpCircle,
   LayoutDashboard,
   NotebookText,
@@ -161,6 +162,48 @@ function Shell({ email }: { email: string }) {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('sidebar-collapsed') === '1',
   )
+  // Per-section accordion state for the sidebar nav (persisted). Keyed by
+  // group title; missing/unknown keys default to open.
+  const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>(
+    () => {
+      try {
+        return JSON.parse(localStorage.getItem('sidebar-closed-groups') || '{}')
+      } catch {
+        return {}
+      }
+    },
+  )
+  const toggleGroup = (title: string) => {
+    setClosedGroups((prev) => {
+      const next = { ...prev, [title]: !prev[title] }
+      localStorage.setItem('sidebar-closed-groups', JSON.stringify(next))
+      return next
+    })
+  }
+  // Auto-expand the section containing the active page when navigation moves
+  // into it (e.g. via the command palette or a report link), so the active
+  // item is never hidden behind a closed section.
+  const location = useLocation()
+  useEffect(() => {
+    setClosedGroups((prev) => {
+      const next = { ...prev }
+      let changed = false
+      for (const group of navGroups) {
+        if (!group.title) continue
+        const inside = group.items.some((i) =>
+          i.end
+            ? location.pathname === i.to
+            : location.pathname === i.to ||
+              location.pathname.startsWith(i.to + '/'),
+        )
+        if (inside && next[group.title]) {
+          next[group.title] = false
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [location.pathname])
   const [tourOpen, setTourOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [features, setFeatures] = useState<Record<string, boolean>>({})
@@ -173,7 +216,6 @@ function Shell({ email }: { email: string }) {
 
   // Load feature toggles from settings — cache-first via localStorage
   // Re-fetch on route change AND when Settings dispatches a change event
-  const location = useLocation()
   const refreshFeatures = () => {
     api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
       .then((s) => setFeatures({ bankReconciliationEnabled: !!s.bankReconciliationEnabled }))
@@ -242,37 +284,55 @@ function Shell({ email }: { email: string }) {
               return true
             })
             if (items.length === 0) return null
+            // Titled groups are accordions; title-less groups (Dashboard,
+            // Settings) are always shown. In icon-only sidebar mode every
+            // section is forced open and headers are hidden.
+            const isGroup = !!group.title
+            const open =
+              collapsed || !isGroup || !closedGroups[group.title as string]
             return (
             <div key={group.items[0].to}>
-              {!collapsed && group.title && (
-                <div className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  {group.title}
+              {isGroup && !collapsed && (
+                <button
+                  onClick={() => toggleGroup(group.title as string)}
+                  aria-expanded={open}
+                  className="flex w-full items-center justify-between gap-1 rounded px-3 pb-1 pt-1 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300"
+                >
+                  <span className="truncate">{group.title}</span>
+                  <ChevronDown
+                    size={12}
+                    className={`shrink-0 transition-transform duration-200 ${
+                      open ? '' : '-rotate-90'
+                    }`}
+                  />
+                </button>
+              )}
+              {open && (
+                <div
+                  className={collapsed ? 'flex flex-col items-center gap-1' : 'space-y-1'}
+                >
+                  {items.map(({ to, label, icon: Icon, end }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      end={end}
+                      title={collapsed ? label : undefined}
+                      className={({ isActive }) =>
+                        `flex items-center gap-2 rounded px-3 py-2 text-sm transition-colors ${
+                          collapsed ? 'justify-center' : ''
+                        } ${
+                          isActive
+                            ? 'bg-crimson-600 text-white'
+                            : 'hover:bg-crimson-700/70 hover:text-white'
+                        }`
+                      }
+                    >
+                      <Icon size={16} />
+                      {!collapsed && label}
+                    </NavLink>
+                  ))}
                 </div>
               )}
-              <div
-                className={collapsed ? 'flex flex-col items-center gap-1' : 'space-y-1'}
-              >
-                {items.map(({ to, label, icon: Icon, end }) => (
-                  <NavLink
-                    key={to}
-                    to={to}
-                    end={end}
-                    title={collapsed ? label : undefined}
-                    className={({ isActive }) =>
-                      `flex items-center gap-2 rounded px-3 py-2 text-sm transition-colors ${
-                        collapsed ? 'justify-center' : ''
-                      } ${
-                        isActive
-                          ? 'bg-crimson-600 text-white'
-                          : 'hover:bg-crimson-700/70 hover:text-white'
-                      }`
-                    }
-                  >
-                    <Icon size={16} />
-                    {!collapsed && label}
-                  </NavLink>
-                ))}
-              </div>
             </div>
           )})
           }
