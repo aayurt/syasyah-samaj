@@ -2,7 +2,15 @@ import { expect, test } from '@playwright/test'
 import { Api } from '../helpers/api'
 import { dataset } from '../helpers/dataset'
 import { resolveMasters } from '../helpers/voucherFlow'
-import { expectVoucherRow, voucherRowCount } from '../helpers/ui'
+import {
+  expectVoucherRow,
+  fillJournalLine,
+  openVoucherForm,
+  setNarration,
+  setVoucherDate,
+  submitVoucher,
+  voucherRowCount,
+} from '../helpers/ui'
 
 /**
  * S7/S8 — Runs AFTER the reports suite so these mutations (posting the draft,
@@ -57,24 +65,138 @@ test.describe.serial('S7/S8 — post-report regressions + offline', () => {
     expect(Number(voidNote.taxTotal) || 0).toBeCloseTo(975, 0)
   })
 
-  test('S8.1/8.2 — offline draft appears locally; reconnect yields a single row', async ({ page, request }) => {
-    // The SPA writes go through the sync engine's outbox; forcing the browser
-    // offline exercises the queue path without a real network partition.
+  test('S8.1/8.2 — offline save & post queues locally; reconnect flushes to one numbered row', async ({ page, request }) => {
+    const api = new Api(request)
     const ctx = page.context()
-    await page.goto('/vouchers')
+    // Distinctive narration so we can find exactly this doc server-side after
+    // the reconnect flush (the vouchers list has no narration column).
+    const narration = `E2E offline journal ${Date.now()}`
+    const jv = dataset.vouchers.find((v) => v.docType === 'journal-voucher')!
+    const account = (name: string) => dataset.accounts.accounts.find((a) => a.name === name)!
+    const cash = account('Cash in Hand')
+    const capital = account('Capital')
 
+    // 1. Online: load the journal form so the SPA chunks and the account list
+    //    are in the local cache — a full reload while offline would fail.
+    await openVoucherForm(page, 'journal-voucher')
+
+    // 2. Baseline row count on the vouchers list (full reload, still online).
+    await page.goto('/vouchers')
+    await expect
+      .poll(() => page.locator('tbody tr').count(), { timeout: 20_000 })
+      .toBeGreaterThan(1)
+    const rowsBefore = await page.locator('tbody tr').count()
+
+    // 3. Go offline, then drive the form purely client-side: fill a balanced
+    //    journal entry and Save & post. Writes queue to the sync engine's
+    //    outbox (create + post custom op) and the router navigates locally.
+    await page.goto(`/vouchers/new/journal-voucher`)
+    await expect(page.getByRole('button', { name: 'Save & post' })).toBeVisible({ timeout: 15_000 })
     await ctx.setOffline(true)
-    // Drive the UI while offline — create a draft Sales Invoice.
-    await page.goto('/vouchers/new/sales-invoice').catch(() => {})
-    // Vite dev pages are already loaded; a full reload while offline can fail,
-    // so if we can't reach the form we skip gracefully (offline UI covers the
-    // queue in the dedicated desktop harness). This test is best-effort here.
-    const canOpen = await page.getByRole('button', { name: 'Save draft' }).isVisible().catch(() => false)
+    await setVoucherDate(page, jv.date)
+    await fillJournalLine(page, 0, { accountLabel: `${cash.code} · ${cash.name}`, debit: 2222 })
+    await fillJournalLine(page, 1, { accountLabel: `${capital.code} · ${capital.name}`, credit: 2222 })
+    await setNarration(page, narration)
+    await submitVoucher(page, true)
+
+    // 4. Still offline — the optimistic row must appear in the list (+1), even
+    //    though the server never saw it (no number yet, status Draft).
+    await expect
+      .poll(() => page.locator('tbody tr').count(), { timeout: 15_000 })
+      .toBe(rowsBefore + 1)
+
+    // 5. Reconnect — the engine detects online and flushes the outbox: the
+    //    create maps local→server and the queued post assigns a number.
     await ctx.setOffline(false)
-    if (!canOpen) {
-      test.skip(true, 'form not reachable offline in this environment — covered by desktop harness')
-      return
-    }
-    void request
+    await expect
+      .poll(
+        async () => {
+          const d = await api.findOne('documents', 'narration', narration)
+          return !!(d && d.status === 'posted')
+        },
+        { timeout: 60_000 },
+      )
+      .toBe(true)
+    const posted = await api.findOne('documents', 'narration', narration)
+    expect(posted, 'posted offline doc should exist').toBeTruthy()
+    const number = String(posted!.number)
+    expect(number).toMatch(/^JV-2083-84-\d{4}$/)
+
+    // 6. Exactly one row for that number in the list — the flush must not
+    //    duplicate the doc, and the total row count is unchanged (+1).
+    await expectVoucherRow(page, number)
+    expect(await voucherRowCount(page, number)).toBe(1)
+    await expect
+      .poll(() => page.locator('tbody tr').count(), { timeout: 20_000 })
+      .toBe(rowsBefore + 1)
+  })
+
+  test('S8.3 — offline writes survive app restarts and flush on cold start', async ({ page, request }) => {
+    const api = new Api(request)
+    const narration = `E2E cold-start journal ${Date.now()}`
+    const jv = dataset.vouchers.find((v) => v.docType === 'journal-voucher')!
+    const account = (name: string) => dataset.accounts.accounts.find((a) => a.name === name)!
+    const cash = account('Cash in Hand')
+    const capital = account('Capital')
+
+    // 1. Online: load the journal form so the account list populates the
+    //    local cache (a cold boot with the API down reads it from cache).
+    await openVoucherForm(page, 'journal-voucher')
+    await expect
+      .poll(() => page.locator('table tbody tr').first().locator('select option').count(), { timeout: 15_000 })
+      .toBeGreaterThan(5)
+
+    // 2. Baseline voucher list row count.
+    await page.goto('/vouchers')
+    await expect
+      .poll(() => page.locator('tbody tr').count(), { timeout: 20_000 })
+      .toBeGreaterThan(1)
+    const rowsBefore = await page.locator('tbody tr').count()
+
+    // 3. Simulate the desktop cold-start-offline state: assets reachable but
+    //    every /api request aborted. Cold-boot the app, then queue a write
+    //    through the UI — it goes to the persistent outbox, not the network.
+    await page.route('**/api/**', (route) => route.abort())
+    await page.goto('/vouchers/new/journal-voucher')
+    await expect(page.getByRole('button', { name: 'Save & post' })).toBeVisible({ timeout: 20_000 })
+    await setVoucherDate(page, jv.date)
+    await fillJournalLine(page, 0, { accountLabel: `${cash.code} · ${cash.name}`, debit: 3333 })
+    await fillJournalLine(page, 1, { accountLabel: `${capital.code} · ${capital.name}`, credit: 3333 })
+    await setNarration(page, narration)
+    await submitVoucher(page, true)
+    await expect
+      .poll(() => page.locator('tbody tr').count(), { timeout: 15_000 })
+      .toBe(rowsBefore + 1)
+
+    // 4. Restart the app while still offline — the queued op must survive the
+    //    cold boot in persistent storage and still render in the list.
+    await page.reload()
+    await expect
+      .poll(() => page.locator('tbody tr').count(), { timeout: 20_000 })
+      .toBe(rowsBefore + 1)
+
+    // 5. Connectivity returns; cold-start once more. init() re-queues the
+    //    pending op and flushes it automatically — no manual resync — and the
+    //    doc lands as a single numbered row (no duplicate).
+    await page.unroute('**/api/**')
+    await page.reload()
+    await expect
+      .poll(
+        async () => {
+          const d = await api.findOne('documents', 'narration', narration)
+          return !!(d && d.status === 'posted')
+        },
+        { timeout: 60_000 },
+      )
+      .toBe(true)
+    const posted = await api.findOne('documents', 'narration', narration)
+    expect(posted, 'cold-start flush should post the offline doc').toBeTruthy()
+    const number = String(posted!.number)
+    expect(number).toMatch(/^JV-2083-84-\d{4}$/)
+    await expectVoucherRow(page, number)
+    expect(await voucherRowCount(page, number)).toBe(1)
+    await expect
+      .poll(() => page.locator('tbody tr').count(), { timeout: 20_000 })
+      .toBe(rowsBefore + 1)
   })
 })

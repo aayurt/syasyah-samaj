@@ -369,10 +369,16 @@ export async function api<T = unknown>(
     }
     // Warm the read cache only for plain collection lists — never for
     // computed endpoints (trial-balance, daybook…) whose `docs` array has a
-    // different shape than the collection's documents.
+    // different shape than the collection's documents. Only a *complete* list
+    // may replace the cached one: a truncated read (e.g. the setup gate's
+    // limit=1 existence probe) would overwrite the full cached list and leave
+    // cache-first pages rendering a single row.
     if (plainList && Array.isArray((res as { docs?: unknown }).docs)) {
       try {
-        await engine.warmCache(slug, (res as { docs: Record<string, unknown>[] }).docs, tenant)
+        const resAny = res as { docs: Record<string, unknown>[]; totalDocs?: number }
+        if (resAny.totalDocs == null || resAny.docs.length >= Number(resAny.totalDocs)) {
+          await engine.warmCache(slug, resAny.docs, tenant)
+        }
       } catch {
         // cache writes are best-effort
       }

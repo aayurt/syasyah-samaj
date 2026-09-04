@@ -144,5 +144,25 @@ export default defineConfig({
       dependencies: ['06-reports'],
       use: { storageState: AUTH_STATE },
     },
+    // 08 — Desktop storage backend: the real SqliteAdapter + SyncEngine run in
+    // Node against a file-backed SQLite (node:sqlite) and the live e2e API —
+    // queue while offline, restart the engine, flush on init. No browser: the
+    // adapter's SQL is the code under test.
+    {
+      name: '08-desktop-storage',
+      testMatch: /08-desktop-storage\.spec\.ts/,
+      dependencies: ['07-offline'],
+    },
+    // 09 — The browser SPA forced onto the SQLite backend: an init script sets
+    // window.__SYNC_STORAGE__='sqlite' plus the sql.js UMD URL, so the engine
+    // runs SqliteAdapter on the wasm sql.js database instead of IndexedDB.
+    // Runs the offline-queue → reconnect-flush flow (no full reloads — the
+    // sql.js database is in-memory for this project).
+    {
+      name: '09-spa-sqlite',
+      testMatch: /09-spa-sqlite\.spec\.ts/,
+      dependencies: ['03-masters'],
+      use: { storageState: AUTH_STATE },
+    },
   ],
 })

@@ -2,7 +2,11 @@ import type { StorageAdapter, SyncOperation } from '../StorageAdapter'
 
 /**
  * SQLite-backed storage adapter for the Tauri desktop app.
- * Uses @tauri-apps/plugin-sql for database access.
+ * Uses @tauri-apps/plugin-sql for database access, or an injected driver
+ * (e.g. node:sqlite in tests / headless harnesses) with the same surface:
+ *
+ *   execute(sql, params?) — run a statement (raw SQL when params are absent)
+ *   select(sql, params?)  — run a query and return rows
  *
  * Tables:
  *   outbox  (seq INTEGER PRIMARY KEY AUTOINCREMENT)
@@ -10,6 +14,12 @@ import type { StorageAdapter, SyncOperation } from '../StorageAdapter'
  *   kv      (key TEXT PRIMARY KEY, value TEXT)
  *   idmap   (local_id TEXT PRIMARY KEY, server_id INTEGER)
  */
+
+/** Duck-typed SQLite driver shared by the Tauri plugin and test harnesses. */
+export interface SqliteDriver {
+  execute(sql: string, params?: unknown[]): Promise<unknown> | unknown
+  select<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> | T[]
+}
 
 // Dynamic import so this module can be tree-shaken on web builds
 let Database: any = null
@@ -31,16 +41,33 @@ async function getDb() {
 
 export class SqliteAdapter implements StorageAdapter {
   private db: any = null
-  private dbPath = 'syasya-sync.db'
+  private dbPath = 'sqlite:syasya-sync.db'
 
-  constructor(dbPath?: string) {
+  constructor(
+    dbPath?: string,
+    private driver?: SqliteDriver,
+    /** Async driver factory — used when no driver is injected but the
+     *  environment can't use the Tauri plugin (e.g. the wasm-backed sql.js
+     *  driver that e2e forces with window.__SYNC_STORAGE__='sqlite'). */
+    private driverFactory?: () => Promise<SqliteDriver>,
+  ) {
     if (dbPath) this.dbPath = dbPath
   }
 
   async ready(): Promise<void> {
     if (this.db) return
-    const SqliteDb = await getDb()
-    this.db = await SqliteDb.load(this.dbPath)
+    if (this.driver) {
+      // Injected driver (node:sqlite in tests / headless harnesses) — the
+      // same duck-typed execute/select surface the Tauri plugin exposes.
+      this.db = this.driver
+    } else if (this.driverFactory) {
+      // Environment-specific driver built lazily (wasm sql.js in the browser
+      // test override, node:sqlite in headless harnesses).
+      this.db = await this.driverFactory()
+    } else {
+      const SqliteDb = await getDb()
+      this.db = await SqliteDb.load(this.dbPath)
+    }
 
     // Create tables if they don't exist
     await this.db.execute(`

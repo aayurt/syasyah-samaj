@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { SyncEngine as NewSyncEngine } from '../sync/SyncEngine'
+import type { StorageAdapter } from '../sync/StorageAdapter'
 import { IndexedDbAdapter } from '../sync/adapters/IndexedDbAdapter'
+import { SqliteAdapter } from '../sync/adapters/SqliteAdapter'
 import type { SyncState } from '../sync/SyncEngine'
 import type { OutboxEntry, SyncState as OldSyncState } from './types'
 
@@ -12,6 +14,39 @@ import type { OutboxEntry, SyncState as OldSyncState } from './types'
 
 const isTauri = () =>
   typeof window !== 'undefined' && '__TAURI__' in window
+
+/**
+ * Pick the local storage backend. The desktop shell (Tauri) persists its
+ * offline store in SQLite via @tauri-apps/plugin-sql; the plain web app uses
+ * IndexedDB. window.__SYNC_STORAGE__ ('sqlite' | 'indexeddb') overrides the
+ * choice for tests / debugging.
+ */
+function pickAdapter(): StorageAdapter {
+  if (typeof window !== 'undefined') {
+    const w = window as Window & {
+      __SYNC_STORAGE__?: string
+      __SYNC_SQLITE_JS__?: string // e2e: absolute URL of the sql.js UMD loader
+    }
+    if (w.__SYNC_STORAGE__ === 'sqlite') {
+      if (isTauri()) return new SqliteAdapter()
+      // Plain-browser test override: back SqliteAdapter with the wasm sql.js
+      // driver served by the dev server (the Tauri plugin can't run here).
+      const sqlJsUrl = w.__SYNC_SQLITE_JS__
+      if (!sqlJsUrl) {
+        throw new Error(
+          "__SYNC_STORAGE__='sqlite' outside Tauri needs __SYNC_SQLITE_JS__ (sql.js UMD URL)",
+        )
+      }
+      return new SqliteAdapter(undefined, undefined, () =>
+        import('../sync/adapters/browserSqlite').then((m) =>
+          m.createSqlJsDriver(sqlJsUrl),
+        ),
+      )
+    }
+    if (w.__SYNC_STORAGE__ === 'indexeddb') return new IndexedDbAdapter()
+  }
+  return isTauri() ? new SqliteAdapter() : new IndexedDbAdapter()
+}
 
 let engine: CompatibilityEngine | null = null
 
@@ -29,7 +64,7 @@ export function getEngine(): CompatibilityEngine {
  */
 class CompatibilityEngine {
   private inner: NewSyncEngine | null = null
-  private adapter: IndexedDbAdapter | null = null
+  private adapter: StorageAdapter | null = null
   private initPromise: Promise<void> | null = null
   /** Current tenant ID — set by the React provider via setTenant().
    *  The SyncEngine uses this to scope cache keys (e.g. C00:documents). */
@@ -47,7 +82,7 @@ class CompatibilityEngine {
       return this.inner!
     }
     this.initPromise = (async () => {
-      this.adapter = new IndexedDbAdapter()
+      this.adapter = pickAdapter()
       await this.adapter.ready()
       this.inner = new NewSyncEngine(
         this.adapter,

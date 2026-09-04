@@ -331,12 +331,16 @@ export class SyncEngine {
    * the same entry twice (double-posted vouchers).
    */
   private async flush(): Promise<SyncResult> {
-    const locks = (navigator as Navigator & {
-      locks?: {
-        request: (name: string, cb: () => Promise<SyncResult>) => Promise<SyncResult>
-      }
-    }).locks
-    // Browsers without Web Locks flush directly — same behavior as before.
+    // Web Locks only exist in browsers (tab-level dedupe); outside a browser
+    // (Node/Tauri headless, tests) flush directly — same behavior as before.
+    const locks =
+      typeof navigator !== 'undefined'
+        ? (navigator as Navigator & {
+            locks?: {
+              request: (name: string, cb: () => Promise<SyncResult>) => Promise<SyncResult>
+            }
+          }).locks
+        : undefined
     if (!locks) return this.doFlush()
     return locks.request('syasya-outbox-flush', () => this.doFlush())
   }
