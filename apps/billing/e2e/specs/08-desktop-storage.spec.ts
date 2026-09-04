@@ -167,13 +167,25 @@ test.describe.serial('08 — desktop SQLite storage adapter', () => {
     driverA.db.close()
 
     // ── Session 2: the app restarts (new connection, same database file) ──
+    // Restart persistence: the queued ops live in the sqlite FILE, not in
+    // memory — a brand-new adapter (no engine, nothing flushed yet) sees the
+    // outbox exactly as session 1 left it. This is the desktop property:
+    // offline writes survive an app restart because the plugin-sql database
+    // is file-backed, unlike the in-memory sql.js browser driver.
+    const driverB = makeDriver(file)
+    const adapterB: StorageAdapter = new SqliteAdapter(file, driverB)
+    await adapterB.ready()
+    expect(await adapterB.pendingCount()).toBe(2)
+    const persistedRows = driverB.db.prepare('SELECT COUNT(*) AS c FROM outbox').get() as {
+      c: number | bigint
+    }
+    expect(Number(persistedRows.c)).toBe(2)
+    expect(await adapterB.get('documents', localId)).toBeTruthy()
+
     // init() sees the pending ops and auto-flushes — no manual resync. The
     // flush batches the create first (mapping local→server in idmap), then
     // resolves the /post op through that map and POSTs it: the doc is posted
     // and the server assigns a fiscal-year voucher number.
-    const driverB = makeDriver(file)
-    const adapterB: StorageAdapter = new SqliteAdapter(file, driverB)
-    await adapterB.ready()
     const engineB = new SyncEngine(adapterB, API)
     await engineB.init()
 

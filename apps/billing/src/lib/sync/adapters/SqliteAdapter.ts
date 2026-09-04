@@ -13,6 +13,12 @@ import type { StorageAdapter, SyncOperation } from '../StorageAdapter'
  *   cache   (collection TEXT, id TEXT, data TEXT, updated_at TEXT)
  *   kv      (key TEXT PRIMARY KEY, value TEXT)
  *   idmap   (local_id TEXT PRIMARY KEY, server_id INTEGER)
+ *
+ * Persistence is file-backed by design: the plugin-sql database lives on disk
+ * (sqlite:syasya-sync.db), so outbox writes and the cache survive app
+ * restarts with no export/import step — unlike the in-memory sql.js driver
+ * (adapters/browserSqlite.ts), which serializes the database to localStorage
+ * after every write for the browser e2e override.
  */
 
 /** Duck-typed SQLite driver shared by the Tauri plugin and test harnesses. */

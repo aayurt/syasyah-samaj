@@ -10,10 +10,51 @@ import type { SqliteDriver } from './SqliteAdapter'
  * sql.js ships a UMD build (dist/sql-wasm.js) plus its .wasm; the e2e init
  * script supplies the absolute URL of the UMD file (served by the Vite dev
  * server via /@fs) and this loader injects it as a classic <script> — UMD
- * attaches `window.initSqlJs`, which avoids ESM/CJS bundling entirely. The
- * database is in-memory, so data does not survive a page reload (acceptable
- * for the offline-queue UI flows this backend is used to verify).
+ * attaches `window.initSqlJs`, which avoids ESM/CJS bundling entirely.
+ *
+ * The database lives in WASM memory, so by default it resets on a page
+ * reload. For the cold-start flows this backend is used to verify, every
+ * write exports the whole database (db.export()) to localStorage as base64
+ * and a fresh boot re-imports it — queued outbox writes and the cache
+ * survive reloads, mirroring what the Tauri plugin's file-backed SQLite
+ * gives the desktop app.
  */
+
+const STORAGE_KEY = 'syasya.sqljs.db'
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let bin = ''
+  const CHUNK = 0x8000
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK))
+  }
+  return btoa(bin)
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64)
+  const out = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
+  return out
+}
+
+function loadPersistedDb(): Uint8Array | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? base64ToBytes(raw) : null
+  } catch {
+    return null
+  }
+}
+
+function persistDb(db: any): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, bytesToBase64(db.export()))
+  } catch {
+    // quota / storage unavailable — the session stays in-memory only
+  }
+}
+
 export async function createSqlJsDriver(scriptUrl: string): Promise<SqliteDriver> {
   const win = window as Window & {
     initSqlJs?: (config?: { locateFile?: (file: string) => string }) => Promise<any>
@@ -33,7 +74,8 @@ export async function createSqlJsDriver(scriptUrl: string): Promise<SqliteDriver
   // The wasm file sits next to the loader script (dist/sql-wasm.wasm).
   const wasmUrl = scriptUrl.replace(/[^/]+$/, 'sql-wasm.wasm')
   const SQL = await win.initSqlJs({ locateFile: () => wasmUrl })
-  const db = new SQL.Database()
+  const persisted = loadPersistedDb()
+  const db = persisted ? new SQL.Database(persisted) : new SQL.Database()
 
   const prepareSelect = (sql: string, params?: unknown[]) => {
     const stmt = db.prepare(sql)
@@ -54,6 +96,8 @@ export async function createSqlJsDriver(scriptUrl: string): Promise<SqliteDriver
         // Raw multi-statement SQL (table DDL in ready()).
         db.exec(sql)
       }
+      // Writes changed the database — persist it for the next cold boot.
+      persistDb(db)
     },
     async select<T = Record<string, unknown>>(sql: string, params?: unknown[]) {
       const stmt = prepareSelect(sql, params)

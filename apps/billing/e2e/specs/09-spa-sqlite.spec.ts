@@ -106,4 +106,71 @@ test.describe.serial('09 — SPA forced onto the SQLite backend', () => {
     await expect(page.getByText('No vouchers yet.')).toBeHidden({ timeout: 10_000 })
     await expect(page.getByText(number, { exact: true })).toHaveCount(1)
   })
+
+  test('cold start: a queued offline write survives a reload via the persisted sql.js db', async ({ page, request }) => {
+    // Force the sqlite backend before any app module runs.
+    const sqlJsUrl = `${WEB}/@fs${SQLJS_LOADER}`
+    await page.addInitScript((url) => {
+      const w = window as Window & { __SYNC_STORAGE__?: string; __SYNC_SQLITE_JS__?: string }
+      w.__SYNC_STORAGE__ = 'sqlite'
+      w.__SYNC_SQLITE_JS__ = url
+    }, sqlJsUrl)
+
+    const api = new Api(request)
+    const narration = `E2E sqlite cold start ${Date.now()}`
+    const jv = dataset.vouchers.find((v) => v.docType === 'journal-voucher')!
+    const account = (name: string) => dataset.accounts.accounts.find((a) => a.name === name)!
+    const cash = account('Cash in Hand')
+    const capital = account('Capital')
+
+    // 1. Online: load the journal form and let the account list populate the
+    //    sql.js cache before the API is cut.
+    await openVoucherForm(page, 'journal-voucher')
+    await expect
+      .poll(() => page.locator('table tbody tr').first().locator('select option').count(), {
+        timeout: 20_000,
+      })
+      .toBeGreaterThan(5)
+
+    // 2. Simulate the server being unreachable (assets still served): abort
+    //    every /api request so nothing can flush, then Save & post — both ops
+    //    queue to the sqlite outbox and the optimistic row appears locally.
+    await page.route('**/api/**', (route) => route.abort())
+    await setVoucherDate(page, jv.date)
+    await fillJournalLine(page, 0, { accountLabel: `${cash.code} · ${cash.name}`, debit: 5555 })
+    await fillJournalLine(page, 1, { accountLabel: `${capital.code} · ${capital.name}`, credit: 5555 })
+    await setNarration(page, narration)
+    await submitVoucher(page, true)
+    const draftPill = page.getByRole('table').getByText('Draft', { exact: true })
+    await expect(draftPill).toBeVisible({ timeout: 15_000 })
+
+    // 3. Cold start: reload while the API is still unreachable. The engine
+    //    boots a fresh sql.js database re-imported from localStorage — the
+    //    queued op must survive (nothing could have flushed in step 2).
+    await page.reload()
+    await expect(page.getByRole('heading', { name: 'Vouchers' })).toBeVisible({ timeout: 20_000 })
+
+    // 4. Connectivity returns; reload once more so init() re-queues the
+    //    persisted op and flushes it automatically — no manual resync.
+    await page.unroute('**/api/**')
+    await page.reload()
+    await expect
+      .poll(
+        async () => {
+          const d = await api.findOne('documents', 'narration', narration)
+          return !!(d && d.status === 'posted')
+        },
+        { timeout: 60_000 },
+      )
+      .toBe(true)
+    const posted = await api.findOne('documents', 'narration', narration)
+    expect(posted, 'cold-start flush should post the offline journal').toBeTruthy()
+    const number = String(posted!.number)
+    expect(number).toMatch(/^JV-2083-84-\d{4}$/)
+
+    // The reloaded list refreshes itself after the flush (cacheVersion) and
+    // shows exactly one numbered row.
+    await expect(page.getByText(number, { exact: true }).first()).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByText(number, { exact: true })).toHaveCount(1)
+  })
 })
