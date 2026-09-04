@@ -50,7 +50,6 @@ import SyncStatus from './components/SyncStatus'
 import CommandPalette from './components/CommandPalette'
 import IllakaSwitcher from './components/IllakaSwitcher'
 import FiscalYearSwitcher from './components/FiscalYearSwitcher'
-import RefreshingBar from './components/RefreshingBar'
 import Toaster from './components/Toaster'
 import Tour from './components/Tour'
 import UpdatePrompt from './components/UpdatePrompt'
@@ -383,7 +382,6 @@ function Shell({ email }: { email: string }) {
           </div>
         </header>
         <main className="flex-1 overflow-auto p-6 print:overflow-visible">
-          <RefreshingBar />
           <Routes>
             <Route
               path="/vouchers"

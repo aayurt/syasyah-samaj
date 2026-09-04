@@ -513,7 +513,16 @@ export default function VoucherForm({ mode }: Props) {
       if (bankAccount) base.bankAccount = Number(bankAccount)
       // For receipt/payment: send the amount as a single line
       if (!isItem && lines.length > 0 && lines[0].amount) {
-        base.lines = [{ description: docType === 'receipt-voucher' ? 'Receipt' : 'Payment', amount: Number(lines[0].amount), qty: 1, rate: Number(lines[0].amount) }]
+        const amt = Number(lines[0].amount)
+        base.lines = [{ description: docType === 'receipt-voucher' ? 'Receipt' : 'Payment', amount: amt, qty: 1, rate: amt }]
+        // Pre-supply totals so the optimistic (pre-sync) row renders the real
+        // amount — without them the offline cache row shows Rs 0 until the
+        // server echo lands. Matches the server's recompute (net = gross =
+        // line amount; cash types send no tax rate, so tax is 0).
+        base.netTotal = amt
+        base.grossTotal = amt
+        base.taxTotal = 0
+        base.taxRate = 0
       }
     }
     // Link receipt/payment to a specific invoice

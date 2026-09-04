@@ -836,8 +836,13 @@ export default function Vouchers() {
       (!fyTo || (d.date && d.date <= fyTo + 'T23:59:59')),
   )
 
-  const partyName = (d: Document) =>
-    d.party && typeof d.party === 'object' ? d.party.name : '—'
+  const partyName = (d: Document) => {
+    if (d.party && typeof d.party === 'object') return d.party.name
+    // Optimistic (pre-sync) rows carry party as a raw id — fall back to the
+    // loaded parties list instead of showing a blank party column.
+    const pid = Number(d.party ?? -1)
+    return (pid > 0 && parties.find((p) => p.id === pid)?.name) || '—'
+  }
 
   /** Calculate payment status for a sales/purchase invoice from loaded docs */
   const getPaymentStatus = (inv: Document): { status: 'paid' | 'partial' | 'unpaid'; paid: number; outstanding: number } => {

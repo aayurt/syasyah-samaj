@@ -31,6 +31,9 @@ export interface SyncState {
   conflicts: number
   lastSyncAt: string | null
   syncing: boolean
+  /** Epoch ms of the next scheduled automatic sync (debounced flush or
+   *  periodic sync), or null when none is scheduled (e.g. offline). */
+  nextSyncAt: number | null
 }
 
 /**
@@ -41,11 +44,14 @@ export class SyncEngine {
   private online = true
   private syncing = false
   private lastSyncAt: string | null = null
+  private nextSyncAt: number | null = null
   private listeners = new Set<(state: SyncState) => void>()
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
   private syncTimer: ReturnType<typeof setInterval> | null = null
   private flushTimer: ReturnType<typeof setTimeout> | null = null
   private consecutiveFailures = 0
+
+  private static readonly PERIODIC_SYNC_MS = 60_000
 
   /** Maps a plain collection name (from server) to the local cache key.
    *  Defaults to identity (plain name). The wrapper overrides this to
@@ -109,6 +115,7 @@ export class SyncEngine {
       conflicts: this.conflictsHint,
       lastSyncAt: this.lastSyncAt,
       syncing: this.syncing,
+      nextSyncAt: this.nextSyncAt,
     }
   }
 
@@ -145,6 +152,7 @@ export class SyncEngine {
   setOnline(online: boolean) {
     if (this.online === online) return
     this.online = online
+    if (!online) this.nextSyncAt = null
     this.emit()
     // Coming back online — push anything that queued while we were away.
     if (online) this.scheduleFlush(500)
@@ -161,6 +169,7 @@ export class SyncEngine {
   scheduleFlush(delayMs = 1500) {
     if (!this.online) return
     if (this.flushTimer) clearTimeout(this.flushTimer)
+    this.nextSyncAt = Date.now() + delayMs
     this.flushTimer = setTimeout(() => {
       this.flushTimer = null
       if (!this.syncing) void this.syncAll().catch(() => { /* stay queued */ })
@@ -207,11 +216,12 @@ export class SyncEngine {
 
   private startPeriodicSync() {
     if (this.syncTimer) return
+    this.nextSyncAt = Date.now() + SyncEngine.PERIODIC_SYNC_MS
     this.syncTimer = setInterval(() => {
       if (this.online && !this.syncing) {
         void this.syncAll()
       }
-    }, 60_000)
+    }, SyncEngine.PERIODIC_SYNC_MS)
   }
 
   // ── Queue operations ──────────────────────────────────────────
@@ -310,6 +320,7 @@ export class SyncEngine {
   async syncAll(): Promise<SyncResult | null> {
     if (this.syncing) return null
     this.syncing = true
+    this.nextSyncAt = null
     this.emit()
 
     try {
@@ -317,6 +328,8 @@ export class SyncEngine {
       return result
     } finally {
       this.syncing = false
+      // Healthy cadence: the next automatic sync runs at the periodic interval.
+      this.nextSyncAt = this.online ? Date.now() + SyncEngine.PERIODIC_SYNC_MS : null
       this.emit()
     }
   }

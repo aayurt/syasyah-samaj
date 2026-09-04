@@ -12,6 +12,10 @@ import type { OutboxEntry, SyncState as OldSyncState } from './types'
  * sites continue to work unchanged.
  */
 
+// Server-computed data older than this is considered stale — the periodic
+// 60s sync keeps lastSyncAt well under this while the engine is healthy.
+const REPORT_STALE_MS = 2 * 60_000
+
 const isTauri = () =>
   typeof window !== 'undefined' && '__TAURI__' in window
 
@@ -116,9 +120,11 @@ class CompatibilityEngine {
         reportsStale: false,
         lastReportSyncAt: null,
         syncingCount: 0,
+        nextSyncAt: null,
       }
     }
     const s = this.inner.getState()
+    const lastSyncMs = s.lastSyncAt ? new Date(s.lastSyncAt).getTime() : null
     return {
       online: s.online,
       pending: s.pending,
@@ -126,9 +132,15 @@ class CompatibilityEngine {
       lastSyncAt: s.lastSyncAt,
       banners: [],
       cacheVersion: this._cacheVersion,
-      reportsStale: false,
-      lastReportSyncAt: null,
+      // Server-computed data (reports, dashboards) is only as fresh as the
+      // last successful sync. While offline — or when the periodic 60s sync
+      // has been silent for a while (throttled tab, stalled engine) — the
+      // snapshot is stale and a manual resync is worth offering.
+      reportsStale:
+        !s.online || lastSyncMs == null || Date.now() - lastSyncMs > REPORT_STALE_MS,
+      lastReportSyncAt: lastSyncMs,
       syncingCount: s.syncing ? 1 : 0,
+      nextSyncAt: s.nextSyncAt,
     }
   }
 
@@ -151,7 +163,10 @@ class CompatibilityEngine {
           next.pending !== lastState.pending ||
           next.conflicts !== lastState.conflicts ||
           next.cacheVersion !== lastState.cacheVersion ||
-          next.syncingCount !== lastState.syncingCount
+          next.syncingCount !== lastState.syncingCount ||
+          next.reportsStale !== lastState.reportsStale ||
+          next.lastReportSyncAt !== lastState.lastReportSyncAt ||
+          next.nextSyncAt !== lastState.nextSyncAt
         ) {
           lastState = next
           fn(next)

@@ -30,6 +30,9 @@ export interface SyncState {
   /** Number of network requests (pull/sync) currently in flight. >0 while
    * the server is being talked to — drives the "refreshing" indicator. */
   syncingCount: number
+  /** Epoch ms of the next scheduled automatic sync, or null when none is
+   * scheduled (e.g. offline). Drives the "Resync in Xs" countdown. */
+  nextSyncAt: number | null
 }
 
 export interface OfflineDb {

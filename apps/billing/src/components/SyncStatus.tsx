@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Cloud, CloudOff, RefreshCw } from 'lucide-react'
 import { getEngine, useSyncState } from '../lib/api'
 
@@ -11,10 +11,19 @@ export default function SyncStatus() {
   const state = useSyncState()
   const [syncing, setSyncing] = useState(false)
   const [pullProgress, setPullProgress] = useState('')
+  // 1s tick so the "Resync in Xs" countdown stays smooth between the 2s
+  // state polls.
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (!state.online || state.syncingCount > 0) return
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [state.online, state.syncingCount])
 
   const syncNow = async () => {
     setSyncing(true)
-    setPullProgress('Syncing…')
+    setPullProgress('Resyncing…')
     try {
       const engine = getEngine()
       // Single endpoint: pushes outbox + pulls all changes
@@ -27,12 +36,23 @@ export default function SyncStatus() {
   }
 
   const offline = !state.online
+  // Manual sync is only actionable when something needs it: we're offline
+  // (retry the connection), changes are queued, or the server-computed
+  // snapshot is stale (reports). When everything is fresh (or a background
+  // sync is already running) the button is disabled.
+  const canSync = offline || state.pending > 0 || state.reportsStale
+  // Seconds until the next scheduled automatic sync (debounced flush or the
+  // 60s periodic sync). Null when none is scheduled.
+  const nextIn =
+    state.nextSyncAt != null
+      ? Math.max(0, Math.ceil((state.nextSyncAt - now) / 1000))
+      : null
   const reportAge =
     state.reportsStale && state.lastReportSyncAt
       ? ` · reports ${new Date(state.lastReportSyncAt).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        })}`
+        hour: '2-digit',
+        minute: '2-digit',
+      })}`
       : ''
 
   let pill: React.ReactNode
@@ -58,7 +78,7 @@ export default function SyncStatus() {
         className="flex items-center gap-1.5 rounded border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 hover:bg-sky-100 disabled:opacity-50"
       >
         <RefreshCw size={13} className="animate-spin" />
-        {pullProgress || (state.pending > 0 ? `${state.pending} to sync` : 'Syncing…')}
+        {pullProgress || (state.pending > 0 ? `${state.pending} to sync` : 'Resyncing…')}
       </button>
     )
   } else if (state.syncingCount > 0) {
@@ -70,6 +90,17 @@ export default function SyncStatus() {
       >
         <RefreshCw size={13} className="animate-spin" />
         Refreshing…
+      </span>
+    )
+  } else if (nextIn != null && nextIn > 0) {
+    // All synced now; the next automatic sync is already scheduled.
+    pill = (
+      <span
+        className="flex items-center gap-1.5 rounded border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+        title="All changes synced — next automatic sync is scheduled"
+      >
+        <RefreshCw size={13} />
+        Resync in {nextIn}s
       </span>
     )
   } else {
@@ -90,12 +121,16 @@ export default function SyncStatus() {
       <button
         onClick={() => void syncNow()}
         disabled={syncing}
-        title="Resync — push queued changes and pull the latest data from the server"
+        title={
+          canSync
+            ? 'Resync — push queued changes and pull the latest data from the server'
+            : 'All changes synced'
+        }
         aria-label="Resync"
-        className="flex items-center gap-1.5 rounded border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50"
+        className="flex items-center gap-1.5 rounded border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-700 disabled:cursor-default disabled:opacity-40"
       >
         <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
-        {syncing ? (pullProgress || 'Syncing…') : 'Resync'}
+        {syncing ? (pullProgress || 'Resyncing…') : 'Resync'}
       </button>
     </span>
   )
