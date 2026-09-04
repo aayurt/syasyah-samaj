@@ -63,6 +63,18 @@ async function doFetch<T>(path: string, options: ApiOptions): Promise<T> {
   const url = new URL(`${API_BASE}/api${path}`)
   if (query) {
     for (const [k, v] of Object.entries(query)) {
+      // Nested `where` objects become bracket params — Payload ignores the
+      // JSON form and returns the first rows unfiltered otherwise.
+      if (k === 'where' && v && typeof v === 'object') {
+        for (const [field, cond] of Object.entries(v as Record<string, Record<string, unknown>>)) {
+          for (const [op, val] of Object.entries(cond)) {
+            if (val !== undefined && val !== '') {
+              url.searchParams.set(`where[${field}][${op}]`, String(val))
+            }
+          }
+        }
+        continue
+      }
       if (v !== undefined && v !== '') url.searchParams.set(k, String(v))
     }
     // A bare `tenant` param filters custom report endpoints, but Payload's
@@ -261,6 +273,26 @@ export async function api<T = unknown>(
   // to the server directly (not through Payload's collection endpoints).
   const isWrite = method !== 'GET' && !path.startsWith('/globals/') && !options.immediate
   const isStandardCrud = isWrite && slug && segments.length <= 2 && !/\/[a-z-]+$/.test(path)
+
+  // Immediate writes (admin deletes, custom endpoints) must not fire at a
+  // `local-*` id still held by React state after an outbox create — resolve
+  // it to the mapped server id first. If the row hasn't reached the server
+  // yet, fail loudly rather than pretend the write happened.
+  if (options.immediate && method !== 'GET' && !path.startsWith('/globals/') && id?.startsWith('local-')) {
+    const serverId = await engine.resolveLocalId(id)
+    if (serverId == null) {
+      throw new Error('This row has not synced to the server yet — wait a moment and retry.')
+    }
+    // Swap the local id for the server id, keeping any trailing action
+    // segments (e.g. /documents/{id}/copy-to-invoice) — rewriting to a bare
+    // /collection/{id} would silently hit the wrong endpoint.
+    const segs = pathSegments(path)
+    const rest = segs.slice(2).join('/')
+    path = `/${slug}/${serverId}${rest ? `/${rest}` : ''}`
+    // Re-derive path segments so later cache handling targets the server id.
+    segments.length = 0
+    segments.push(...pathSegments(path))
+  }
 
   if (isWrite) {
     // Queue the write to the outbox for batch sync

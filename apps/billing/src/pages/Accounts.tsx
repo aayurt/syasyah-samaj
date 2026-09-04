@@ -94,7 +94,9 @@ export default function Accounts() {
   const remove = async (id: number) => {
     if (!window.confirm('Delete this account?')) return
     try {
-      await api(`/gl-accounts/${id}`, { method: 'DELETE' })
+      // Admin op — bypass the offline outbox (a queued delete can't resolve a
+      // row that still carries a local id). api() resolves local→server ids.
+      await api(`/gl-accounts/${id}`, { method: 'DELETE', immediate: true })
       await load()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to delete account')

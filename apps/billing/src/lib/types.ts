@@ -98,6 +98,12 @@ export interface JournalEntry {
   lines: JournalLine[]
   tenant?: number | null
   updatedAt?: string
+  /** Source voucher number (e.g. JV-2083-84-0001), attached server-side. */
+  docNumber?: string | null
+  /** Source voucher type (e.g. journal-voucher). */
+  docType?: string | null
+  /** Source voucher (relationship to documents; populated object at depth 1). */
+  referenceDoc?: number | Document | null
 }
 
 export interface TrialBalanceRow {
@@ -116,6 +122,10 @@ export interface LedgerRow {
   credit: number
   balance: number
   runningBalance: number
+  /** Source voucher (doc) id + number when the entry came from a voucher. */
+  docId?: number | null
+  docNumber?: string | null
+  docType?: string | null
 }
 
 export interface Party {

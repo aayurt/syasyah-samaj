@@ -41,6 +41,7 @@ import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
+import { useSetupStatus } from '../lib/setup'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
@@ -493,6 +494,8 @@ export default function Vouchers() {
     : isItem
       ? totals.gross > 0
       : Math.abs(jTotals.diff) < 0.001 && jTotals.debit > 0
+  const setup = useSetupStatus()
+  const setupBlocked = !setup.loading && !setup.complete
 
   const setLine = (key: string, patch: Partial<LineDraft>) => {
     setForm((f) => ({
@@ -584,6 +587,12 @@ export default function Vouchers() {
   }
 
   const submit = async (post: boolean) => {
+    if (post && setupBlocked) {
+      setError(
+        `Setup incomplete — finish the ${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} on the Dashboard checklist before posting. Drafts still save.`,
+      )
+      return
+    }
     setSaving(true)
     setError('')
     try {
@@ -1684,41 +1693,51 @@ export default function Vouchers() {
             </div>
           )}
 
-          <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              disabled={saving || selectedYear?.status === 'closed'}
-              className="rounded border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-            >
-              {saving
-                ? 'Saving…'
-                : editingId !== null
-                  ? 'Save changes'
-                  : 'Save draft'}
-            </button>
-            <button
-              type="button"
-              onClick={() => submit(true)}
-              disabled={saving || !canPost || selectedYear?.status === 'closed'}
-              className="rounded bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
-              title={
-                isItem
-                  ? 'Create the draft and post it to the ledger'
-                  : 'Entry must be balanced to post'
-              }
-            >
-              {saving ? 'Posting…' : 'Save & post'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setForm(emptyForm())
-                setEditingId(null)
-              }}
-              className="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-            >
-              Cancel
-            </button>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            {setupBlocked && (
+              <span className="max-w-[280px] text-xs text-amber-600">
+                Finish setup first ({setup.missingCount} step{setup.missingCount === 1 ? '' : 's'} left) to post
+                — see the checklist on the Dashboard. Drafts still save.
+              </span>
+            )}
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={saving || selectedYear?.status === 'closed'}
+                className="rounded border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                {saving
+                  ? 'Saving…'
+                  : editingId !== null
+                    ? 'Save changes'
+                    : 'Save draft'}
+              </button>
+              <button
+                type="button"
+                onClick={() => submit(true)}
+                disabled={saving || !canPost || setupBlocked || selectedYear?.status === 'closed'}
+                className="rounded bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
+                title={
+                  setupBlocked
+                    ? `Finish setup first (${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} left) — see the checklist on the Dashboard`
+                    : isItem
+                      ? 'Create the draft and post it to the ledger'
+                      : 'Entry must be balanced to post'
+                }
+              >
+                {saving ? 'Posting…' : 'Save & post'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setForm(emptyForm())
+                  setEditingId(null)
+                }}
+                className="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </form>
       )}

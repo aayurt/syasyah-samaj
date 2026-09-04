@@ -2206,6 +2206,23 @@ export const Documents: CollectionConfig = {
           if (errors.length) {
             throw vErr(errors[0] ?? 'Invalid journal lines.')
           }
+          // Journals carry no `lines`, so recomputeTotals never runs — derive
+          // the document amount from the balanced journal lines when the
+          // caller did not pre-supply it. Without this, UI-created journal
+          // vouchers store no grossTotal and show 0.00 everywhere.
+          if (
+            d.netTotal == null &&
+            d.grossTotal == null &&
+            Array.isArray(d.journalLines) &&
+            d.journalLines.length > 0
+          ) {
+            const debitSum = round2(
+              d.journalLines.reduce((s: number, l: any) => s + toNum(l.debit), 0),
+            )
+            d.netTotal = debitSum
+            d.taxTotal = 0
+            d.grossTotal = debitSum
+          }
         }
         if (d.docType === 'contra') {
           await validateContra(req.payload, d)

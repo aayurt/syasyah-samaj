@@ -152,6 +152,31 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // ── 2b. Echo applied creates back to the client ─────────────────────
+  // A client that just flushed a queued create holds only its optimistic
+  // local body in cache (no server-assigned number, no computed totals, no
+  // nested relations). The flush advances the client's cursor past the new
+  // row, so the regular changes pull below would never include it — echo the
+  // authoritative doc here so the client can replace its shallow copy.
+  for (const applied of results.applied) {
+    const op = operations[applied.index]
+    if (op?.op !== 'create' || applied.serverId == null) continue
+    try {
+      const fresh = await payload.findByID({
+        collection: op.collection,
+        id: applied.serverId,
+        // Documents lists render nested party/account names (depth 1).
+        depth: op.collection === 'documents' ? 1 : 0,
+      })
+      if (fresh?.id != null) {
+        results.changes.push({ op: 'update', collection: op.collection, data: fresh })
+      }
+    } catch {
+      // Best-effort — the row exists server-side; a later pull or cache
+      // invalidation reconciles the client copy.
+    }
+  }
+
   // ── 3. Pull changes since lastSyncAt ──────────────────────────────
 
   if (body.lastSyncAt) {

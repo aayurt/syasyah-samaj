@@ -20,6 +20,7 @@ import { useCalendar } from '../lib/calendar'
 import { calcEval } from '../lib/calcEval'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
+import { useSetupStatus } from '../lib/setup'
 import {
   DOC_TYPE_LABELS,
   type Account,
@@ -157,6 +158,8 @@ export default function VoucherForm({ mode }: Props) {
   const { formatDate } = useCalendar()
   const { selectedYear } = useFiscalYear()
   const isClosedYear = selectedYear?.status === 'closed'
+  const setup = useSetupStatus()
+  const setupBlocked = !setup.loading && !setup.complete
 
   // Data
   const { docs: parties, setDocs: setParties } = useCachedList<Party>('parties', { sort: 'name', ...tenantQuery })
@@ -418,10 +421,13 @@ export default function VoucherForm({ mode }: Props) {
       { label: 'To Account', filled: !!toAccount },
       { label: 'Amount', filled: contraTotal > 0 },
     ]
-    const items: { label: string; filled: boolean }[] = [
-      { label: 'Party', filled: !!party },
-      { label: 'Date', filled: !!date },
-    ]
+    const items: { label: string; filled: boolean }[] = []
+    // Petty cash posts Expense dr / Petty Cash cr — the party is optional
+    // (the dataset and API accept it party-less), so don't gate posting on it.
+    if (docType !== 'petty-cash-voucher') {
+      items.push({ label: 'Party', filled: !!party })
+    }
+    items.push({ label: 'Date', filled: !!date })
     if (isItem) {
       items.push({ label: 'Items', filled: lines.some((l) => l.item || l.description) })
     }
@@ -518,6 +524,12 @@ export default function VoucherForm({ mode }: Props) {
   }
 
   const submit = async (post: boolean) => {
+    if (post && setupBlocked) {
+      setError(
+        `Setup incomplete — finish the ${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} on the Dashboard checklist before posting. Drafts still save.`,
+      )
+      return
+    }
     if (isClosedYear) {
       setError(`The fiscal year ${selectedYear?.label || 'selected'} is closed — vouchers in this period are read-only.`)
       return
@@ -602,7 +614,10 @@ export default function VoucherForm({ mode }: Props) {
           {(isItem || isCash) && (
             <div ref={partyRef} className="relative">
               <label className="text-sm font-medium text-slate-700">
-                Party <span className="text-red-500">*</span>
+                Party{' '}
+                {docType !== 'petty-cash-voucher' && (
+                  <span className="text-red-500">*</span>
+                )}
               </label>
               <div className="relative mt-1">
                 <input
@@ -1469,22 +1484,36 @@ export default function VoucherForm({ mode }: Props) {
               </div>
             )}
           </div>
-          <div className="flex gap-2">
-            <button type="button" onClick={() => submit(false)} disabled={saving}
-              className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-              {saving ? 'Saving…' : docType === 'sales-quote' ? 'Save Quote' : 'Save draft'}
-            </button>
-            {docType === 'sales-quote' ? (
-              <span className="hidden text-xs text-slate-400 sm:block">
-                Quotes don't post — copy to an invoice when accepted
+          <div className="flex items-center gap-3">
+            {setupBlocked && (
+              <span className="hidden max-w-[260px] text-xs text-amber-600 lg:block">
+                Finish setup first ({setup.missingCount} step{setup.missingCount === 1 ? '' : 's'} left) to
+                post — see the checklist on the Dashboard. Drafts still save.
               </span>
-            ) : (
-              <button type="button" onClick={() => submit(true)} disabled={saving || !allRequiredFilled}
-                title={!allRequiredFilled ? 'Fill all required fields first' : undefined}
-                className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
-                {saving ? 'Posting…' : 'Save & post'}
-              </button>
             )}
+            <div className="flex gap-2">
+              <button type="button" onClick={() => submit(false)} disabled={saving}
+                className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                {saving ? 'Saving…' : docType === 'sales-quote' ? 'Save Quote' : 'Save draft'}
+              </button>
+              {docType === 'sales-quote' ? (
+                <span className="hidden text-xs text-slate-400 sm:block">
+                  Quotes don't post — copy to an invoice when accepted
+                </span>
+              ) : (
+                <button type="button" onClick={() => submit(true)} disabled={saving || !allRequiredFilled || setupBlocked}
+                  title={
+                    setupBlocked
+                      ? `Finish setup first (${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} left) — see the checklist on the Dashboard`
+                      : !allRequiredFilled
+                        ? 'Fill all required fields first'
+                        : undefined
+                  }
+                  className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                  {saving ? 'Posting…' : 'Save & post'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

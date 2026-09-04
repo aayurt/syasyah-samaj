@@ -56,6 +56,10 @@ export class SyncEngine {
     private storage: StorageAdapter,
     private apiBase: string = '',
     cacheKey?: (collection: string) => string,
+    /** Fired after a flush changed cached rows (ids mapped / server changes
+     *  applied / custom actions succeeded) — lets the wrapper bump its cache
+     *  version so cache-first pages re-read instead of holding stale ids. */
+    private onCacheChanged?: () => void,
   ) {
     if (cacheKey) this._cacheKey = cacheKey
   }
@@ -77,6 +81,16 @@ export class SyncEngine {
           })
         }
       })
+    }
+    // A page reload kills the debounced flush timer of the previous session,
+    // so any writes queued before the navigation would strand in the outbox
+    // until the 60s periodic sync. Re-queue them on startup (storage is
+    // shared across reloads via IndexedDB/SQLite).
+    try {
+      const queued = await this.storage.pendingCount()
+      if (queued > 0) this.scheduleFlush(250)
+    } catch {
+      // storage unavailable — periodic sync will retry
     }
     this.emit()
   }
@@ -395,11 +409,16 @@ export class SyncEngine {
       if (applied.localId && applied.serverId) {
         await this.storage.mapLocalToServer(applied.localId, applied.serverId)
 
-        // Update the cache: replace local ID with server ID
-        const localDoc = await this.storage.get(entry.collection, applied.localId)
-        if (localDoc) {
-          await this.storage.remove(entry.collection, applied.localId)
-          await this.storage.upsert(entry.collection, {
+        // Replace the `local-*` row with the server-id row in every cache
+        // key that holds it. The optimistic create is stored under the plain
+        // collection AND (when a tenant is set) the tenant-scoped read key
+        // that api() serves cache-first lists from — both must be updated or
+        // re-reads keep showing the stale local id.
+        for (const key of new Set([entry.collection, this._cacheKey(entry.collection)])) {
+          const localDoc = await this.storage.get(key, applied.localId)
+          if (!localDoc) continue
+          await this.storage.remove(key, applied.localId)
+          await this.storage.upsert(key, {
             ...localDoc,
             id: applied.serverId,
             _pendingSync: false,
@@ -424,6 +443,7 @@ export class SyncEngine {
 
     // ── Flush custom endpoints (/:id/post, /:id/void, etc.) ────
     // These have server-side business logic and can't be batched.
+    let customApplied = false
     for (const entry of customOps) {
       try {
         // The collection field stores the full path for custom endpoints,
@@ -473,6 +493,7 @@ export class SyncEngine {
           signal: AbortSignal.timeout(15_000),
         })
         if (fetchRes.ok) {
+          customApplied = true
           // Remove from outbox on success
           if (entry.seq != null) {
             await this.storage.removePending(entry.seq)
@@ -492,7 +513,12 @@ export class SyncEngine {
 
     for (const change of result.changes) {
       if (change.data?.id) {
-        await this.storage.upsert(this._cacheKey(change.collection), change.data)
+        // Mirror the create-remap above: write the authoritative server doc
+        // under the plain collection AND the tenant-scoped read key so both
+        // cache-first readers converge on the server version.
+        for (const key of new Set([change.collection, this._cacheKey(change.collection)])) {
+          await this.storage.upsert(key, change.data)
+        }
       }
     }
 
@@ -502,6 +528,17 @@ export class SyncEngine {
     await this.storage.setKey('lastSyncAt', result.serverTime)
 
     await this.refreshCounts()
+
+    // Tell the wrapper that cached rows changed (local ids mapped to server
+    // ids, server changes applied, or a custom action succeeded) so pages
+    // keyed on cacheVersion re-read and drop stale `local-*` ids.
+    if (
+      result.applied.length > 0 ||
+      result.changes.length > 0 ||
+      customApplied
+    ) {
+      this.onCacheChanged?.()
+    }
 
     return result
   }
@@ -548,6 +585,17 @@ export class SyncEngine {
     const pulled = await this.storage.getKey(`pulled:${slug}`)
     if (!pulled) return null
     return this.storage.list(slug)
+  }
+
+  /**
+   * Resolve a local placeholder id to its server id once the background flush
+   * has mapped it (returns null when the write is still queued or failed).
+   * Immediate writes (admin deletes, custom endpoints) must call this first —
+   * the React state may still hold the `local-*` id the outbox returned.
+   */
+  async resolveLocalId(localId: string): Promise<number | null> {
+    if (!localId.startsWith('local-')) return null
+    return this.storage.getServerId(localId)
   }
 
   /** Read a single document from local cache */

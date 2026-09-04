@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
 import DataStatus from '../components/DataStatus'
+import SetupChecklist from '../components/SetupChecklist'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
@@ -118,7 +119,7 @@ export function StatusPill({ status }: { status: string }) {
     <span
       className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${styles[status] || 'bg-slate-100 text-slate-600'}`}
     >
-      {status}
+      {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   )
 }
@@ -308,6 +309,9 @@ export default function Dashboard() {
           {error}
         </p>
       )}
+
+      {/* ── M1 setup gate: onboarding checklist ──────────────── */}
+      <SetupChecklist />
 
       {/* ── KPI Cards ─────────────────────────────────────────── */}
       <div data-tour="dashboard-stats" className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">

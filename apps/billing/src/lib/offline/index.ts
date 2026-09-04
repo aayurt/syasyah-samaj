@@ -49,9 +49,18 @@ class CompatibilityEngine {
     this.initPromise = (async () => {
       this.adapter = new IndexedDbAdapter()
       await this.adapter.ready()
-      this.inner = new NewSyncEngine(this.adapter, '', (collection) => {
-        return this._tenant ? `${this._tenant}:${collection}` : collection
-      })
+      this.inner = new NewSyncEngine(
+        this.adapter,
+        '',
+        (collection) => (this._tenant ? `${this._tenant}:${collection}` : collection),
+        // Background flushes (debounced auto-flush, periodic sync, tab
+        // visibility, init replay) run inside the engine without passing
+        // through this wrapper — bump the version so cache-first pages
+        // re-read rows whose `local-*` id was just mapped to the server id.
+        () => {
+          this._cacheVersion++
+        },
+      )
       await this.inner.init()
     })()
     await this.initPromise
@@ -342,6 +351,19 @@ class CompatibilityEngine {
    * Returns the number of changed documents.
    */
   async pull(tenant?: string): Promise<number> {
+    // BackgroundSync calls pull() on mount and every 5 minutes expecting a
+    // push+pull. When the outbox has entries, delegate to the engine so
+    // queued writes are not stranded until the 60s periodic sync.
+    try {
+      const engine = await this.ensure()
+      const pending = await this.adapter!.pendingCount().catch(() => 0)
+      if (pending > 0) {
+        const result = await engine.syncAll()
+        return result?.changes?.length ?? 0
+      }
+    } catch {
+      // fall through to the lightweight pull below
+    }
     try {
       const lastSyncAt = await this.getKey('lastSyncAt')
       const body: Record<string, unknown> = {
@@ -389,6 +411,12 @@ class CompatibilityEngine {
 
   async readDoc(slug: string, id: string): Promise<Record<string, unknown> | null> {
     return this.adapter!.get(slug, id)
+  }
+
+  /** Resolve a `local-*` placeholder to its server id once the flush mapped it. */
+  async resolveLocalId(localId: string): Promise<number | null> {
+    await this.ensure()
+    return this.adapter!.getServerId(localId)
   }
 
   async invalidate(collection: string, tenant?: string): Promise<void> {

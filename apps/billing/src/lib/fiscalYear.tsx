@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { api } from './api'
+import { api, useSyncState } from './api'
 import { useTenant } from './tenant'
 import type { FiscalYear } from './types'
 
@@ -40,6 +40,7 @@ const FiscalYearContext = createContext<FiscalYearCtx>({
 
 export function FiscalYearProvider({ children }: { children: React.ReactNode }) {
   const { tenantId } = useTenant()
+  const { cacheVersion } = useSyncState()
   const [years, setYears] = useState<FiscalYear[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -76,10 +77,12 @@ export function FiscalYearProvider({ children }: { children: React.ReactNode }) 
     }
   }, [storageKey, tenantId])
 
-  // Reload when the tenant changes (and on first mount).
+  // Reload when the tenant changes, on first mount, and whenever a sync
+  // flush changed cached rows (e.g. a created fiscal year got its real
+  // server id) so the list never keeps showing stale `local-*` ids.
   useEffect(() => {
     void refresh()
-  }, [refresh])
+  }, [refresh, cacheVersion])
 
   const selectYear = useCallback(
     (id: number | null) => {

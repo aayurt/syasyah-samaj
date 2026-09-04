@@ -2,16 +2,8 @@ import { useState } from 'react'
 import { api, fmt } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
-import type { Account } from '../lib/types'
-
-interface LedgerRow {
-  id: number
-  date: string
-  narration: string
-  debit: number
-  credit: number
-  runningBalance: number
-}
+import type { Account, Document, LedgerRow } from '../lib/types'
+import VoucherViewModal from './VoucherViewModal'
 
 type Props = {
   accountId: string
@@ -23,7 +15,20 @@ export default function LedgerModal({ accountId, accountName, onClose }: Props) 
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
   const [ledger, setLedger] = useState<LedgerRow[] | null>(null)
+  const [voucher, setVoucher] = useState<Document | null>(null)
   const [error, setError] = useState('')
+
+  const openVoucher = async (docId: number | string | null | undefined) => {
+    if (!docId) return
+    try {
+      const d = await api<Document>(`/documents/${docId}`, {
+        query: { ...tenantQuery },
+      })
+      setVoucher(d)
+    } catch {
+      setError('Could not load the source voucher.')
+    }
+  }
 
   useState(() => {
     (async () => {
@@ -66,6 +71,7 @@ export default function LedgerModal({ accountId, accountName, onClose }: Props) 
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-2">Number</th>
               <th className="px-4 py-2">Date</th>
               <th className="px-4 py-2">Narration</th>
               <th className="px-4 py-2 text-right">Debit</th>
@@ -76,6 +82,20 @@ export default function LedgerModal({ accountId, accountName, onClose }: Props) 
           <tbody>
             {ledger.map((l) => (
               <tr key={l.id} className="border-b border-slate-50">
+                <td className="px-4 py-2 font-mono text-xs text-slate-500">
+                  {l.docNumber ? (
+                    <button
+                      type="button"
+                      onClick={() => openVoucher(l.docId)}
+                      className="text-blue-600 hover:underline"
+                      title="Open source voucher"
+                    >
+                      {l.docNumber}
+                    </button>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td className="px-4 py-2 text-slate-600">
                   {formatDate(l.date)}
                 </td>
@@ -96,6 +116,7 @@ export default function LedgerModal({ accountId, accountName, onClose }: Props) 
           </tbody>
         </table>
       )}
+      <VoucherViewModal voucher={voucher} onClose={() => setVoucher(null)} />
     </div>
   )
 }

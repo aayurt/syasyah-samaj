@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "description": "Sequential E2E golden dataset — Settings → Accounts → Masters → 13-voucher month → Reports. Dates are AD ISO; the app shows them in BS.",
+    "fiscalYear": { "label": "2083-84", "start": "2026-07-16", "end": "2027-07-15" },
+    "tenantDefaults": { "calendarType": "BS", "dateFormat": "YYYY-MM-DD", "timeFormat": "12h" }
+  },
+
+  "company": {
+    "name": "Syasyah Samaj",
+    "pan": "123456789",
+    "contact": "+977-1-4500000",
+    "email": "info@syasyahsamaaj.org",
+    "address": "Boudhanath, Kathmandu"
+  },
+
+  "accounts": {
+    "groups": [
+      { "name": "Current Assets", "type": "asset", "code": "1" },
+      { "name": "Fixed Assets", "type": "asset", "code": "2" },
+      { "name": "Current Liabilities", "type": "liability", "code": "3" },
+      { "name": "Capital & Reserves", "type": "equity", "code": "4" },
+      { "name": "Income", "type": "income", "code": "5" },
+      { "name": "Direct Expenses", "type": "expense", "code": "6" },
+      { "name": "Indirect Expenses", "type": "expense", "code": "7" }
+    ],
+    "accounts": [
+      { "name": "Cash in Hand", "code": "1010", "type": "asset", "class": "cash", "group": "Current Assets" },
+      { "name": "Petty Cash", "code": "1020", "type": "asset", "class": "cash", "group": "Current Assets" },
+      { "name": "Bank Account", "code": "1030", "type": "asset", "class": "bank", "group": "Current Assets" },
+      { "name": "Accounts Receivable", "code": "1100", "type": "asset", "group": "Current Assets" },
+      { "name": "Inventory", "code": "1200", "type": "asset", "group": "Current Assets" },
+      { "name": "Accounts Payable", "code": "2100", "type": "liability", "group": "Current Liabilities" },
+      { "name": "Accrued Payables", "code": "2200", "type": "liability", "group": "Current Liabilities" },
+      { "name": "VAT (Input / Output)", "code": "2300", "type": "liability", "group": "Current Liabilities" },
+      { "name": "Capital", "code": "4000", "type": "equity", "group": "Capital & Reserves" },
+      { "name": "Sales Revenue", "code": "5000", "type": "income", "group": "Income" },
+      { "name": "Service Revenue", "code": "5100", "type": "income", "group": "Income" },
+      { "name": "Sales & Purchase Returns", "code": "5200", "type": "income", "group": "Income" },
+      { "name": "Purchases / Operating Expense", "code": "6100", "type": "expense", "group": "Direct Expenses" },
+      { "name": "Cost of Goods Sold", "code": "6200", "type": "expense", "group": "Direct Expenses" },
+      { "name": "Rent Expense", "code": "7100", "type": "expense", "group": "Indirect Expenses" },
+      { "name": "Salaries & Wages", "code": "7200", "type": "expense", "group": "Indirect Expenses" },
+      { "name": "Utilities", "code": "7300", "type": "expense", "group": "Indirect Expenses" },
+      { "name": "Office Supplies", "code": "7400", "type": "expense", "group": "Indirect Expenses" },
+      { "name": "Transportation", "code": "7500", "type": "expense", "group": "Indirect Expenses" },
+      { "name": "Miscellaneous Expenses", "code": "7900", "type": "expense", "group": "Indirect Expenses" }
+    ],
+    "defaultRoles": {
+      "receivableAccount": "Accounts Receivable",
+      "payableAccount": "Accounts Payable",
+      "revenueAccount": "Sales Revenue",
+      "expenseAccount": "Purchases / Operating Expense",
+      "taxAccount": "VAT (Input / Output)",
+      "cashAccount": "Cash in Hand",
+      "bankAccount": "Bank Account",
+      "pettyCashAccount": "Petty Cash",
+      "inventoryAccount": "Inventory",
+      "cogsAccount": "Cost of Goods Sold",
+      "returnsAccount": "Sales & Purchase Returns",
+      "accruedPayableAccount": "Accrued Payables"
+    }
+  },
+
+  "parties": [
+    { "name": "Hotel Annapurna", "type": "customer", "email": "accounts@hotelannapurna.com.np", "phone": "01-4220000", "taxId": "301234567", "address": "Durbar Marg, Kathmandu" },
+    { "name": "Boudhanath Stupa Trust", "type": "customer", "email": "office@boudha.org.np", "phone": "01-4250001", "taxId": "301234568", "address": "Boudhanath, Kathmandu" },
+    { "name": "Thamel Tours & Travels", "type": "customer", "email": "info@thameltours.com", "phone": "01-4411223", "taxId": "301234569", "address": "Thamel, Kathmandu" },
+    { "name": "Patan Handicrafts", "type": "both", "email": "sales@patanhandicrafts.com", "phone": "01-5533777", "taxId": "301234570", "address": "Patan, Lalitpur" },
+    { "name": "Kathmandu Traders", "type": "customer", "email": "kt@example.com", "phone": "9841555666", "taxId": "301234571", "address": "Asan, Kathmandu" },
+    { "name": "Nepal Stationery House", "type": "vendor", "email": "orders@nsh.com.np", "phone": "01-4244555", "taxId": "302345678", "address": "New Road, Kathmandu" },
+    { "name": "Kathmandu Wholesale Suppliers", "type": "vendor", "email": "supply@kws.com.np", "phone": "01-4499888", "taxId": "302345679", "address": "Kalimati, Kathmandu" },
+    { "name": "Everest Logistics", "type": "vendor", "email": "ops@everestlogistics.com", "phone": "01-4455666", "taxId": "302345680", "address": "Balkhu, Kathmandu" }
+  ],
+
+  "items": [
+    { "name": "Prayer Flag (Khada)", "code": "KHA-01", "unit": "pc", "openingStock": 200, "purchasePrice": 80, "salePrice": 120, "reorderLevel": 50 },
+    { "name": "Incense Sticks (Dhup)", "code": "DHU-01", "unit": "box", "openingStock": 300, "purchasePrice": 150, "salePrice": 220, "reorderLevel": 100 },
+    { "name": "Ghee (Clarified Butter)", "code": "GHE-01", "unit": "litre", "openingStock": 100, "purchasePrice": 600, "salePrice": 800, "reorderLevel": 30 },
+    { "name": "Rice (Chaamal)", "code": "RIC-01", "unit": "kg", "openingStock": 500, "purchasePrice": 70, "salePrice": 95, "reorderLevel": 200 },
+    { "name": "Oil Lamp (Diyo)", "code": "DIY-01", "unit": "pc", "openingStock": 250, "purchasePrice": 180, "salePrice": 260, "reorderLevel": 60 },
+    { "name": "Pooja Thali Set", "code": "THA-01", "unit": "set", "openingStock": 80, "purchasePrice": 900, "salePrice": 1300, "reorderLevel": 20 },
+    { "name": "Candles", "code": "CAN-01", "unit": "pc", "openingStock": 400, "purchasePrice": 25, "salePrice": 45, "reorderLevel": 150 },
+    { "name": "Cotton Wicks (Batti)", "code": "BAT-01", "unit": "pack", "openingStock": 600, "purchasePrice": 30, "salePrice": 50, "reorderLevel": 200 }
+  ],
+
+  "vouchers": [
+    { "step": 1, "docType": "journal-voucher", "date": "2026-07-16", "narration": "Opening capital introduced into the business", "expectedNumber": "JV-2083-84-0001", "expectedGross": 500000, "journalLines": [
+      { "account": "Bank Account", "debit": 400000 },
+      { "account": "Cash in Hand", "debit": 90000 },
+      { "account": "Petty Cash", "debit": 10000 },
+      { "account": "Capital", "credit": 500000 }
+    ] },
+    { "step": 2, "docType": "grn", "date": "2026-07-18", "party": "Kathmandu Wholesale Suppliers", "narration": "Goods received from Kathmandu Wholesale Suppliers", "expectedNumber": "GRN-2083-84-0001", "expectedGross": 66000, "lines": [
+      { "item": "Rice (Chaamal)", "qty": 300, "rate": 70 },
+      { "item": "Ghee (Clarified Butter)", "qty": 50, "rate": 600 },
+      { "item": "Incense Sticks (Dhup)", "qty": 100, "rate": 150 }
+    ] },
+    { "step": 3, "docType": "purchase-invoice", "date": "2026-07-20", "party": "Nepal Stationery House", "narration": "Office supplies purchased on credit", "taxRate": 13, "expectedNumber": "PI-2083-84-0001", "expectedNet": 12000, "expectedTax": 1560, "expectedGross": 13560, "lines": [
+      { "description": "Office supplies (stationery)", "qty": 1, "rate": 12000 }
+    ] },
+    { "step": 4, "docType": "payment-voucher", "date": "2026-07-22", "party": "Nepal Stationery House", "narration": "Payment to Nepal Stationery House", "paymentMethod": "bank", "expectedNumber": "PV-2083-84-0001", "expectedGross": 13560, "lines": [
+      { "description": "Settlement of office supplies bill", "qty": 1, "rate": 13560 }
+    ] },
+    { "step": 5, "docType": "sales-invoice", "date": "2026-07-24", "party": "Hotel Annapurna", "narration": "Sales to Hotel Annapurna", "taxRate": 13, "expectedNumber": "SI-2083-84-0001", "expectedNet": 22600, "expectedTax": 2938, "expectedGross": 25538, "lines": [
+      { "item": "Prayer Flag (Khada)", "qty": 50, "rate": 120 },
+      { "item": "Oil Lamp (Diyo)", "qty": 30, "rate": 260 },
+      { "item": "Incense Sticks (Dhup)", "qty": 40, "rate": 220 }
+    ] },
+    { "step": 6, "docType": "sales-invoice", "date": "2026-07-28", "party": "Boudhanath Stupa Trust", "narration": "Sales to Boudhanath Stupa Trust", "taxRate": 13, "expectedNumber": "SI-2083-84-0002", "expectedNet": 25500, "expectedTax": 3315, "expectedGross": 28815, "lines": [
+      { "item": "Ghee (Clarified Butter)", "qty": 20, "rate": 800 },
+      { "item": "Rice (Chaamal)", "qty": 100, "rate": 95 }
+    ] },
+    { "step": 7, "docType": "receipt-voucher", "date": "2026-07-30", "party": "Hotel Annapurna", "narration": "Cash received from Hotel Annapurna against invoice", "paymentMethod": "cash", "expectedNumber": "RV-2083-84-0001", "expectedGross": 25538, "lines": [
+      { "description": "Settlement of sales invoice", "qty": 1, "rate": 25538 }
+    ] },
+    { "step": 8, "docType": "delivery-challan", "date": "2026-08-02", "party": "Patan Handicrafts", "narration": "Goods dispatched to Patan Handicrafts on approval", "expectedNumber": "DC-2083-84-0001", "expectedGross": 22500, "lines": [
+      { "item": "Pooja Thali Set", "qty": 25, "rate": 900 }
+    ] },
+    { "step": 9, "docType": "credit-note", "date": "2026-08-04", "party": "Boudhanath Stupa Trust", "referenceNarration": "Sales to Boudhanath Stupa Trust", "narration": "Credit note: returned Ghee from July sale", "taxRate": 13, "expectedNumber": "CN-2083-84-0001", "expectedNet": 4000, "expectedTax": 520, "expectedGross": 4520, "lines": [
+      { "description": "Returned Ghee (5 litres)", "qty": 5, "rate": 800 }
+    ] },
+    { "step": 10, "docType": "petty-cash-voucher", "date": "2026-08-06", "narration": "Tea and refreshments for office visitors", "expectedNumber": "PC-2083-84-0001", "expectedGross": 2500, "lines": [
+      { "description": "Tea, milk and refreshments", "qty": 1, "rate": 2500 }
+    ] },
+    { "step": 11, "docType": "sales-invoice", "date": "2026-08-08", "party": "Thamel Tours & Travels", "narration": "Sales to Thamel Tours & Travels", "taxRate": 13, "expectedNumber": "SI-2083-84-0003", "expectedNet": 7500, "expectedTax": 975, "expectedGross": 8475, "lines": [
+      { "item": "Candles", "qty": 100, "rate": 45 },
+      { "item": "Prayer Flag (Khada)", "qty": 25, "rate": 120 }
+    ] },
+    { "step": 12, "docType": "journal-voucher", "date": "2026-08-10", "narration": "Monthly office rent", "expectedNumber": "JV-2083-84-0002", "expectedGross": 35000, "journalLines": [
+      { "account": "Rent Expense", "debit": 35000 },
+      { "account": "Bank Account", "credit": 35000 }
+    ] },
+    { "step": 13, "docType": "journal-voucher", "date": "2026-08-12", "narration": "Monthly salaries", "expectedNumber": "JV-2083-84-0003", "expectedGross": 60000, "journalLines": [
+      { "account": "Salaries & Wages", "debit": 60000 },
+      { "account": "Bank Account", "credit": 60000 }
+    ] }
+  ],
+
+  "drafts": [
+    { "docType": "sales-invoice", "date": "2026-08-13", "party": "Kathmandu Traders", "narration": "Sales to Kathmandu Traders (draft)", "taxRate": 13, "expectedGross": 0, "lines": [
+      { "item": "Prayer Flag (Khada)", "qty": 20, "rate": 120 },
+      { "item": "Candles", "qty": 50, "rate": 45 },
+      { "description": "Puja room setup service", "qty": 1, "rate": 5000 }
+    ] }
+  ],
+
+  "expectedReports": {
+    "arOutstanding": 32770,
+    "arParties": { "Boudhanath Stupa Trust": 24295, "Thamel Tours & Travels": 8475 },
+    "salesRegister": { "net": 55600, "tax": 7228 },
+    "salesReturnRegister": { "net": -4000, "tax": -520 },
+    "purchaseRegister": { "net": 12000, "tax": 1560 },
+    "netVatPayable": 5148,
+    "bankClosing": 291440,
+    "cashClosing": 115538,
+    "journalEntryCount": 13
+  }
+}

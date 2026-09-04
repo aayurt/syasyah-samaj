@@ -14,6 +14,7 @@
  */
 
 const BASE = process.env.BILLING_API || 'http://localhost:3000/api'
+const ORIGIN = process.env.BILLING_ORIGIN || 'http://localhost:3000'
 const EMAIL = process.env.BILLING_EMAIL || 'aayurtshrestha@gmail.com'
 const PASSWORD = process.env.BILLING_PASSWORD || 'SyashaAdmin2026!'
 
@@ -88,7 +89,7 @@ console.log(`\n[1] Signing in as ${EMAIL} …`)
 await api('/auth/sign-in/email', {
   method: 'POST',
   body: { email: EMAIL, password: PASSWORD },
-  headers: { Origin: 'http://localhost:3000' },
+  headers: { Origin: ORIGIN },
 })
 const sess = await api('/auth/get-session')
 if (!sess?.user) throw new Error('Login failed — no session.')
@@ -163,17 +164,23 @@ const settings = await api('/globals/billing-settings', {
   },
 })
 // Create a working fiscal year (Manager.io-style) and point settings at it.
+// Idempotent: reuse an existing 2083-84 row when one is already present so
+// repeated seed runs don't stack duplicate fiscal years.
 try {
-  const fyRes = await api('/fiscal-years', {
-    method: 'POST',
-    body: {
-      label: '2083-84',
-      startDate: '2026-07-16',
-      endDate: '2027-07-15',
-      status: 'active',
-      isActive: true,
-    },
-  })
+  const fyList = await api('/fiscal-years?limit=100&depth=0')
+  const existingFy = (fyList.docs || []).find((f) => f.label === '2083-84')
+  const fyRes =
+    existingFy ||
+    (await api('/fiscal-years', {
+      method: 'POST',
+      body: {
+        label: '2083-84',
+        startDate: '2026-07-16',
+        endDate: '2027-07-15',
+        status: 'active',
+        isActive: true,
+      },
+    }))
   const fyId = fyRes && (fyRes.id || (fyRes.doc && fyRes.doc.id))
   if (fyId) {
     await api('/globals/billing-settings', {
@@ -224,6 +231,12 @@ console.log(
 )
 
 // ---- 3. documents ----------------------------------------------------------
+// E2E mode: masters + settings only — the Playwright journey creates the
+// voucher month itself (deterministic numbering).
+const SKIP_VOUCHERS = process.env.SKIP_VOUCHERS === '1'
+if (SKIP_VOUCHERS) {
+  console.log('\n[3] SKIP_VOUCHERS=1 — vouchers skipped (E2E masters-only mode).')
+} else {
 console.log('\n[3] Vouchers …')
 
 const D = {
@@ -457,6 +470,7 @@ for (const d of drafts) {
   const created = await api('/documents', { method: 'POST', body: { status: 'draft', ...d } })
   const id = created.doc?.id || created.id
   console.log(`      ${String(d.docType).padEnd(18)} draft created (id ${id})`)
+}
 }
 
 // ---- 4. verify -------------------------------------------------------------

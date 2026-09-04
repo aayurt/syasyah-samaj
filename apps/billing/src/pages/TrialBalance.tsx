@@ -7,7 +7,8 @@ import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
-import type { Account, LedgerRow, TrialBalanceRow } from '../lib/types'
+import type { Account, Document, LedgerRow, TrialBalanceRow } from '../lib/types'
+import VoucherViewModal from '../components/VoucherViewModal'
 
 const TYPE_ORDER = ['asset', 'liability', 'equity', 'income', 'expense']
 const TYPE_LABELS: Record<string, string> = {
@@ -29,6 +30,7 @@ export default function TrialBalance() {
   const [ledgerAccount, setLedgerAccount] = useState('')
   const [ledger, setLedger] = useState<LedgerRow[] | null>(null)
   const [ledgerName, setLedgerName] = useState('')
+  const [voucher, setVoucher] = useState<Document | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { formatDate } = useCalendar()
@@ -58,6 +60,18 @@ export default function TrialBalance() {
   useEffect(() => {
     load()
   }, [cacheVersion, online, tenantId])
+
+  const openVoucher = async (docId: number | string | null | undefined) => {
+    if (!docId) return
+    try {
+      const d = await api<Document>(`/documents/${docId}`, {
+        query: { ...tenantQuery },
+      })
+      setVoucher(d)
+    } catch {
+      setError('Could not load the source voucher.')
+    }
+  }
 
   const showLedger = async (accountId: string, name: string) => {
     setLedgerAccount(accountId)
@@ -260,6 +274,7 @@ export default function TrialBalance() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <th className="px-4 py-2">Number</th>
                   <th className="px-4 py-2">Date</th>
                   <th className="px-4 py-2">Narration</th>
                   <th className="px-4 py-2 text-right">Debit</th>
@@ -270,6 +285,20 @@ export default function TrialBalance() {
               <tbody>
                 {ledger.map((l) => (
                   <tr key={l.id} className="border-b border-slate-50">
+                    <td className="px-4 py-2 font-mono text-xs text-slate-500">
+                      {l.docNumber ? (
+                        <button
+                          type="button"
+                          onClick={() => openVoucher(l.docId)}
+                          className="text-blue-600 hover:underline"
+                          title="Open source voucher"
+                        >
+                          {l.docNumber}
+                        </button>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-slate-600">
                       {formatDate(l.date)}
                     </td>
@@ -298,6 +327,8 @@ export default function TrialBalance() {
           Tip: click an account to open its ledger.
         </p>
       )}
+
+      <VoucherViewModal voucher={voucher} onClose={() => setVoucher(null)} />
     </div>
   )
 }

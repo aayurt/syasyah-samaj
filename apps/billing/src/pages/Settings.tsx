@@ -19,7 +19,7 @@ import {
   Wallet,
   X,
 } from 'lucide-react'
-import { api, protectGlobalsFields } from '../lib/api'
+import { api, protectGlobalsFields, useSyncState } from '../lib/api'
 import { authClient, clearCachedSession } from '../lib/auth'
 import { adToBsString, formatDate } from '../lib/nepaliDate'
 import { useCalendar } from '../lib/calendar'
@@ -136,6 +136,7 @@ const inputCls =
 
 /* ─── Component ────────────────────────────────────────────── */
 export default function Settings() {
+  const { cacheVersion } = useSyncState()
   const [settings, setSettings] = useState<BillingSettings | null>(null)
   const loaded = useRef(false)
   const navigate = useNavigate()
@@ -316,11 +317,15 @@ export default function Settings() {
     } catch { /* non-critical */ } finally { setCoaLoading(false) }
   }
 
+  // Re-read when a background flush changes cached rows (a newly created
+  // account/year gets its real server id) so tables never keep stale
+  // `local-*` ids. Reads are cache-first, so this is cheap when nothing
+  // changed and cannot loop.
   useEffect(() => {
     load()
     loadSequences()
     loadCoa()
-  }, [])
+  }, [cacheVersion])
 
   /* ── Persist helpers ── */
   const persistCalendar = () => {
@@ -428,7 +433,10 @@ export default function Settings() {
   }
 
   const fyDelete = (year: FiscalYear) => {
-    api(`/fiscal-years/${year.id}`, { method: 'DELETE' })
+    // Admin op — bypass the offline outbox (a queued delete can't resolve a
+    // row that still carries a local id, and closing/removing a period is not
+    // something to replay later).
+    api(`/fiscal-years/${year.id}`, { method: 'DELETE', immediate: true })
       .then(() => {
         pushToast('success', 'Fiscal year deleted', String(year.label || year.id))
         void refreshFiscalYears()

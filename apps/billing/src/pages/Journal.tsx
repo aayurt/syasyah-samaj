@@ -13,7 +13,8 @@ import { useCalendar } from '../lib/calendar'
 import { useSearchParams } from 'react-router-dom'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
-import type { Account, JournalEntry } from '../lib/types'
+import type { Account, Document, JournalEntry } from '../lib/types'
+import VoucherViewModal from '../components/VoucherViewModal'
 import { StatusPill } from './Dashboard'
 
 interface LineDraft {
@@ -44,6 +45,7 @@ export default function Journal() {
   const tenantQuery = useTenantQuery()
   const { selectedYear } = useFiscalYear()
   const [entries, setEntries] = useState<JournalEntry[]>([])
+  const [voucher, setVoucher] = useState<Document | null>(null)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [error, setError] = useState('')
   const [form, setForm] = useState(emptyForm)
@@ -58,7 +60,6 @@ export default function Journal() {
     try {
       const [e, a] = await Promise.all([
         list<JournalEntry>('journal-entries', {
-          depth: 0,
           sort: '-date',
           ...tenantQuery,
         }),
@@ -130,6 +131,18 @@ export default function Journal() {
     setSaving(false)
   }
 
+  const openVoucher = async (docId: number | string | null | undefined) => {
+    if (!docId) return
+    try {
+      const d = await api<Document>(`/documents/${docId}`, {
+        query: { ...tenantQuery },
+      })
+      setVoucher(d)
+    } catch {
+      setError('Could not load the source voucher.')
+    }
+  }
+
   const voidEntry = async (id: number) => {
     if (!window.confirm('Void this posted entry? This cannot be undone.')) return
     try {
@@ -155,6 +168,19 @@ export default function Journal() {
   const entryLines = (e: JournalEntry) =>
     Array.isArray(e.lines) ? e.lines : []
 
+  // Source voucher doc (populated object at depth 1, or bare id in older
+  // cache rows). Returns { id, number } when resolvable.
+  const srcDoc = (e: JournalEntry) =>
+    e.referenceDoc && typeof e.referenceDoc === 'object'
+      ? e.referenceDoc
+      : null
+  const entryNumber = (e: JournalEntry) =>
+    srcDoc(e)?.number || e.docNumber || null
+  const entryDocId = (e: JournalEntry) =>
+    typeof e.referenceDoc === 'object'
+      ? (e.referenceDoc as { id?: number } | null)?.id ?? null
+      : (e.referenceDoc ?? null)
+
   const [searchParams, setSearchParams] = useSearchParams()
   const urlSortKey = searchParams.get('sort') || 'date'
   const urlSortDir = (searchParams.get('dir') as 'asc' | 'desc') || 'desc'
@@ -171,13 +197,15 @@ export default function Journal() {
   }, [setSearchParams])
 
   const { query, setQuery, sort, toggleSort, visible } = useSortSearch(filtered, {
-    searchable: (e) => `${e.narration || ''} ${e.status}`,
+    searchable: (e) => `${e.narration || ''} ${e.status} ${entryNumber(e) || ''}`,
     valueOf: (e, key) => {
       switch (key) {
         case 'debit':
           return entryLines(e).reduce((s, l) => s + (Number(l.debit) || 0), 0)
         case 'credit':
           return entryLines(e).reduce((s, l) => s + (Number(l.credit) || 0), 0)
+        case 'docNumber':
+          return entryNumber(e) || ''
         default:
           return (e as unknown as Record<string, unknown>)[key] as
             | string
@@ -197,12 +225,12 @@ export default function Journal() {
         <h1 className="text-lg font-semibold text-slate-900">Journal</h1>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => downloadCsv('journal.csv', ['Date', 'Narration', 'Debit', 'Credit', 'Status'],
+            onClick={() => downloadCsv('journal.csv', ['Number', 'Date', 'Narration', 'Debit', 'Credit', 'Status'],
               filtered.map((e) => {
                 const lines = Array.isArray(e.lines) ? e.lines : []
                 const debit = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0)
                 const credit = lines.reduce((s, l) => s + (Number(l.credit) || 0), 0)
-                return [e.date, e.narration || '', debit, credit, e.status]
+                return [entryNumber(e) || '', e.date, e.narration || '', debit, credit, e.status]
               }))
             }
             disabled={filtered.length === 0}
@@ -445,6 +473,7 @@ export default function Journal() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+              <SortableTh label="Number" sortKey="docNumber" sort={sort} onSort={toggleSort} />
               <SortableTh label="Date" sortKey="date" sort={sort} onSort={toggleSort} />
               <SortableTh label="Narration" sortKey="narration" sort={sort} onSort={toggleSort} />
               <SortableTh label="Debit" sortKey="debit" sort={sort} onSort={toggleSort} />
@@ -456,7 +485,7 @@ export default function Journal() {
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
                   No entries.
                 </td>
               </tr>
@@ -476,6 +505,20 @@ export default function Journal() {
               )
               return (
                 <tr key={e.id} className="border-b border-slate-50">
+                  <td className="px-4 py-2 font-mono text-xs text-slate-500">
+                    {entryNumber(e) ? (
+                      <button
+                        type="button"
+                        onClick={() => openVoucher(entryDocId(e))}
+                        className="text-blue-600 hover:underline"
+                        title="Open source voucher"
+                      >
+                        {entryNumber(e)}
+                      </button>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td className="px-4 py-2 text-slate-600">
                     {formatDate(e.date)}
                   </td>
@@ -512,6 +555,8 @@ export default function Journal() {
       </div>
         </>
       )}
+
+      <VoucherViewModal voucher={voucher} onClose={() => setVoucher(null)} />
     </div>
   )
 }

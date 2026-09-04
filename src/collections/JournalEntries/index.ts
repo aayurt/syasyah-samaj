@@ -147,6 +147,30 @@ export const JournalEntries: CollectionConfig = {
           sort: 'date',
         })
 
+        // Resolve the source vouchers (documents) referenced by each entry so
+        // ledger rows can drill back to the originating voucher number.
+        const refIds = Array.from(
+          new Set(
+            (res.docs as any[])
+              .filter((e) => e.referenceDoc)
+              .map((e) =>
+                typeof e.referenceDoc === 'object'
+                  ? e.referenceDoc.id
+                  : e.referenceDoc,
+              ),
+          ),
+        )
+        const docById = new Map<number, any>()
+        if (refIds.length) {
+          const docRes = await req.payload.find({
+            collection: 'documents',
+            where: { id: { in: refIds } },
+            limit: 1000,
+            depth: 0,
+          })
+          for (const d of docRes.docs as any[]) docById.set(Number(d.id), d)
+        }
+
         let running = 0
         const docs = (res.docs as any[]).map((entry) => {
           let debit = 0
@@ -162,6 +186,14 @@ export const JournalEntries: CollectionConfig = {
             }
           }
           running += debit - credit
+          const refId = entry.referenceDoc
+            ? Number(
+                typeof entry.referenceDoc === 'object'
+                  ? entry.referenceDoc.id
+                  : entry.referenceDoc,
+              )
+            : null
+          const srcDoc = refId ? docById.get(refId) : null
           return {
             id: entry.id,
             date: entry.date,
@@ -171,6 +203,9 @@ export const JournalEntries: CollectionConfig = {
             credit,
             balance: debit - credit,
             runningBalance: running,
+            docId: refId,
+            docNumber: srcDoc?.number || null,
+            docType: srcDoc?.docType || null,
           }
         })
 

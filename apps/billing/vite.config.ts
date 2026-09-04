@@ -83,8 +83,10 @@ export default defineConfig(({ command }) => ({
   server: {
     port: 5173,
     proxy: {
+      // E2E boots a second API instance on its own port and points this proxy
+      // at it via E2E_API_TARGET; the default keeps normal dev on :3000.
       '/api': {
-        target: 'http://localhost:3000',
+        target: process.env.E2E_API_TARGET || 'http://localhost:3000',
         changeOrigin: true,
       },
     },
