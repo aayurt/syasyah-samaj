@@ -1,4 +1,5 @@
 import NepaliDateInput from '../components/NepaliDateInput'
+import { todayAD } from '../lib/nepaliDate'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Download, Plus, Trash2 } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
@@ -34,7 +35,7 @@ const emptyLine = (): LineDraft => ({
 })
 
 const emptyForm = {
-  date: new Date().toISOString().slice(0, 10),
+  date: todayAD(),
   narration: '',
   lines: [emptyLine(), emptyLine()],
 }

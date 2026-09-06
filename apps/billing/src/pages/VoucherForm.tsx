@@ -20,6 +20,7 @@ import { useCalendar } from '../lib/calendar'
 import { calcEval } from '../lib/calcEval'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
+import { todayAD } from '../lib/nepaliDate'
 import { useSetupStatus } from '../lib/setup'
 import {
   DOC_TYPE_LABELS,
@@ -184,7 +185,7 @@ export default function VoucherForm({ mode }: Props) {
     }
   }
 
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(todayAD())
   const [party, setParty] = useState('')
   const [partySearch, setPartySearch] = useState('')
   const [narration, setNarration] = useState('')
@@ -288,7 +289,7 @@ export default function VoucherForm({ mode }: Props) {
       try {
         const d = await api<Document>(`/documents/${id}`, { query: { depth: 1, ...tenantQuery } })
         setDocType(d.docType); setInvoicePrefix(DOC_PREFIXES[d.docType] || 'INV')
-        setDate(d.date?.slice(0, 10) || new Date().toISOString().slice(0, 10))
+        setDate(d.date?.slice(0, 10) || todayAD())
         setNarration(d.narration || '')
         setTaxRate(String(d.taxRate ?? 0))
         setPaymentMethod(d.paymentMethod || 'bank')

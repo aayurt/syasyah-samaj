@@ -3,6 +3,7 @@ import { ArrowRight, Ban, Download } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { pushToast } from '../lib/toast'
+import { todayAD } from '../lib/nepaliDate'
 import { useTenant } from '../lib/tenant'
 import NepaliDateInput from '../components/NepaliDateInput'
 
@@ -27,7 +28,7 @@ type TransferGroup = {
   legs: TransferLeg[]
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = todayAD
 
 export default function Transfers() {
   const { tenants, isCentral } = useTenant()

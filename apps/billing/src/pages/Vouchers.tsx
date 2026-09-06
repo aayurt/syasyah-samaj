@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { api, fmt, getEngine, list, useSyncState } from '../lib/api'
 import { pushToast } from '../lib/toast'
+import { todayAD } from '../lib/nepaliDate'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import type { OutboxEntry } from '../lib/offline/types'
 import {
@@ -150,7 +151,7 @@ interface FormState {
 
 const emptyForm = (): FormState => ({
   docType: '',
-  date: new Date().toISOString().slice(0, 10),
+  date: todayAD(),
   narration: '',
   party: '',
   taxRate: '0',
@@ -289,9 +290,7 @@ export default function Vouchers() {
         setEditingId(null)
         setForm({
           docType: ((b.docType as string) || '') as DocType,
-          date:
-            (b.date as string | undefined)?.slice(0, 10) ||
-            new Date().toISOString().slice(0, 10),
+          date: (b.date as string | undefined)?.slice(0, 10) || todayAD(),
           narration: (b.narration as string) || '',
           party: idOf(b.party),
           taxRate: String(b.taxRate ?? 0),
@@ -653,7 +652,7 @@ export default function Vouchers() {
       v && typeof v === 'object' ? String((v as { id: unknown }).id) : String(v ?? '')
     setForm({
       docType: d.docType,
-      date: d.date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+      date: d.date?.slice(0, 10) || todayAD(),
       narration: d.narration || '',
       party: idOf(d.party),
       taxRate: String(d.taxRate ?? 0),

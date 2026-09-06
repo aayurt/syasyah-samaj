@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CalendarClock, Pause, Play, Plus, Trash2, Zap } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
+import { todayAD } from '../lib/nepaliDate'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
 import type { RecurringSchedule, RecurringFrequency, DocType, Party } from '../lib/types'
@@ -28,7 +29,7 @@ const STATUS_COLORS: Record<string, string> = {
   completed: 'bg-slate-100 text-slate-500',
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = todayAD
 
 type LineDraft = { description: string; qty: string; rate: string }
 

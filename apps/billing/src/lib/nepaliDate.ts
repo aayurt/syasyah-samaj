@@ -27,7 +27,17 @@ const AD_MONTHS_SHORT = [
  * Convert an ISO date string or Date to BS { year, month, date, day }
  */
 export function toBS(date: string | Date): { year: number; month: number; date: number; day: number } {
-  const d = typeof date === 'string' ? new Date(date) : date
+  // Date-only strings ("2025-07-17") parse as UTC midnight per the ES spec,
+  // but NepaliDate reads *local* date parts — east of UTC that lands on the
+  // right day, west of UTC it lands on the previous evening and shifts the BS
+  // date back one. Force local midnight so every timezone sees the same
+  // calendar day the string names.
+  const d =
+    typeof date === 'string'
+      ? date.includes('T')
+        ? new Date(date)
+        : new Date(date + 'T00:00:00')
+      : date
   const nep = new NepaliDate(d)
   return {
     year: nep.getYear(),
@@ -48,6 +58,11 @@ function parseDate(dateStr: string): Date | null {
   if (isTimestamp && !/[Zz]|[+-]\d{2}/.test(dateStr)) {
     // Timestamp without timezone suffix — append Z so browser interprets as UTC.
     d = new Date(dateStr + 'Z')
+  } else if (!isTimestamp) {
+    // Date-only string ("2025-07-17") — a calendar date, not an instant.
+    // Default ES parsing makes it UTC midnight, which local getters then read
+    // as the previous day west of UTC. Parse as local midnight instead.
+    d = new Date(dateStr + 'T00:00:00')
   } else {
     d = new Date(dateStr)
   }
@@ -79,9 +94,10 @@ export function formatDate(
   // Date portion
   let formatted: string
   if (calendarType === 'BS') {
-    // For BS display, convert the UTC date to BS
-    const utcDate = new Date(Date.UTC(yr, mo, dy))
-    const bs = toBS(utcDate)
+    // Convert the local calendar day to BS. Local midnight (not Date.UTC —
+    // NepaliDate reads local parts, so a UTC base shifts west of UTC).
+    const localDate = new Date(yr, mo, dy)
+    const bs = toBS(localDate)
     const monthNames = BS_MONTHS
     const monthShort = BS_MONTHS_SHORT
     formatted = dateFormat
@@ -150,6 +166,16 @@ export function formatTime(
 }
 
 /**
+ * Get the current AD date as a local YYYY-MM-DD string.
+ * (toISOString() is UTC — east of UTC before dawn it yields *yesterday*,
+ * which defaulted new vouchers to the wrong day.)
+ */
+export function todayAD(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/**
  * Get the current BS date as a formatted string
  */
 export function todayBS(): string {
@@ -159,8 +185,9 @@ export function todayBS(): string {
 
 /**
  * Convert BS year/month/date to an AD Date.
- * `bsMonth` is 0-based (0 = Baisakh). Uses toJsDate() — the library works
- * in UTC internally, so this roundtrips exactly with toBS() on ISO strings.
+ * `bsMonth` is 0-based (0 = Baisakh). Uses toJsDate(), which returns *local*
+ * midnight of the AD date (the library reads/writes local date parts), so
+ * callers must not re-derive the date from the UTC ISO string.
  */
 export function toAD(bsYear: number, bsMonth: number, bsDate: number): Date {
   const bs = new NepaliDate(
@@ -186,8 +213,31 @@ export function bsToAdString(bsStr: string): string {
   if (!bsStr) return ''
   const parts = bsStr.split('-')
   if (parts.length !== 3) return ''
-  const d = toAD(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
-  return d.toISOString().slice(0, 10)
+  const bsYear = Number(parts[0])
+  const bsMonth = Number(parts[1])
+  const bsDay = Number(parts[2])
+  // Reject impossible dates (month > 12, day beyond the month's length) so a
+  // typo like 2082-04-33 flags the field red instead of the library silently
+  // rolling it over into Bhadra 3 and storing a different day.
+  if (!Number.isInteger(bsYear) || bsYear < 2000 || bsYear > 2090 || bsMonth < 1 || bsMonth > 12 || !Number.isInteger(bsDay) || bsDay < 1) return ''
+  const len = bsMonthLength(bsYear, bsMonth - 1)
+  if (len < 28 || bsDay > len) return ''
+  let d: Date
+  try {
+    d = toAD(bsYear, bsMonth - 1, bsDay)
+  } catch {
+    return '' // year outside the library's supported range
+  }
+  // toAD() returns *local* midnight. Slicing the UTC ISO string here drops a
+  // day in timezones east of UTC (NPT +5:45: local midnight is 18:15 UTC the
+  // day before), which made typed BS dates store one day early — entering
+  // 2082-04-01 (Shrawan 1) displayed back as 2082-03-32 (Asar 32). Read the
+  // local date parts instead so the AD string matches the intended calendar
+  // day in every timezone.
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 /**

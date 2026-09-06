@@ -198,6 +198,12 @@ export default function Settings() {
     status: 'active' as 'active' | 'closed',
     makeActive: false,
   })
+  // Reset the form every time the modal opens — the webview survives window
+  // close (hide-to-tray) and modal cancels, so stale input must be cleared here.
+  const openFyModal = () => {
+    setFyForm({ label: '', startDate: '', endDate: '', status: 'active', makeActive: false })
+    setFyModalOpen(true)
+  }
 
 
   // ── Feature toggles ──
@@ -433,10 +439,8 @@ export default function Settings() {
   }
 
   const fyDelete = (year: FiscalYear) => {
-    // Admin op — bypass the offline outbox (a queued delete can't resolve a
-    // row that still carries a local id, and closing/removing a period is not
-    // something to replay later).
-    api(`/fiscal-years/${year.id}`, { method: 'DELETE', immediate: true })
+    // Queued to the offline outbox — flushes on reconnect when offline.
+    api(`/fiscal-years/${year.id}`, { method: 'DELETE' })
       .then(() => {
         pushToast('success', 'Fiscal year deleted', String(year.label || year.id))
         void refreshFiscalYears()
@@ -822,7 +826,7 @@ export default function Settings() {
             </div>
             <button
               type="button"
-              onClick={() => setFyModalOpen(true)}
+              onClick={openFyModal}
               className="flex items-center gap-1.5 rounded-md bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
             >
               <Plus size={14} /> Add Year

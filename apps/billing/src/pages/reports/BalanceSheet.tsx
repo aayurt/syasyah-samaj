@@ -6,6 +6,7 @@ import { api, fmt } from '../../lib/api'
 import { downloadCsv } from '../../lib/csv'
 import { exportReportPdf } from '../../lib/pdf'
 import { useCalendar } from '../../lib/calendar'
+import { todayAD } from '../../lib/nepaliDate'
 import { useTenant, useTenantQuery } from '../../lib/tenant'
 import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
@@ -25,7 +26,7 @@ interface BsResponse {
 }
 
 const QUICK_RANGES = [
-  { label: 'As of Today', from: () => '', to: () => new Date().toISOString().slice(0, 10) },
+  { label: 'As of Today', from: () => '', to: todayAD },
   { label: 'End of FY', from: () => '', to: () => fyEnd() },
   { label: 'Last FY End', from: () => '', to: () => lastFyEnd() },
   { label: 'All Time', from: () => '', to: () => '' },

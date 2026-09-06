@@ -3,6 +3,7 @@ import { CheckCircle, FileText, Plus, Receipt, Send, Trash2, XCircle, DollarSign
 import { api, fmt } from '../lib/api'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
+import { todayAD } from '../lib/nepaliDate'
 import type { ExpenseClaim, Party, Account } from '../lib/types'
 import SearchSelect from '../components/SearchSelect'
 
@@ -14,7 +15,7 @@ const STATUS_COLORS: Record<string, string> = {
   reimbursed: 'bg-purple-100 text-purple-700',
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = todayAD
 
 type LineDraft = { description: string; amount: string; accountId: string }
 

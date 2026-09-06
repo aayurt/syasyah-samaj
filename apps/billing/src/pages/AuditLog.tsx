@@ -5,6 +5,7 @@ import { api, fmt, list } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { todayAD } from '../lib/nepaliDate'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import NepaliDateInput from '../components/NepaliDateInput'
@@ -34,13 +35,16 @@ const ACTION_COLORS: Record<string, string> = {
 }
 
 const QUICK_RANGES = [
-  { label: 'Today', from: () => new Date().toISOString().slice(0, 10), to: () => new Date().toISOString().slice(0, 10) },
-  { label: 'This Week', from: () => weekStart(), to: () => new Date().toISOString().slice(0, 10) },
-  { label: 'This Month', from: () => monthStart(), to: () => new Date().toISOString().slice(0, 10) },
+  { label: 'Today', from: todayAD, to: todayAD },
+  { label: 'This Week', from: () => weekStart(), to: todayAD },
+  { label: 'This Month', from: () => monthStart(), to: todayAD },
   { label: 'All Time', from: () => '', to: () => '' },
 ]
-function weekStart(): string { const d = new Date(); d.setDate(d.getDate() - d.getDay()); return d.toISOString().slice(0, 10) }
-function monthStart(): string { const d = new Date(); d.setDate(1); return d.toISOString().slice(0, 10) }
+function fmtLocal(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+function weekStart(): string { const d = new Date(); d.setDate(d.getDate() - d.getDay()); return fmtLocal(d) }
+function monthStart(): string { const d = new Date(); d.setDate(1); return fmtLocal(d) }
 
 function JsonDiff({ before, after }: { before?: Record<string, unknown> | null; after?: Record<string, unknown> | null }) {
   if (!before && !after) return null

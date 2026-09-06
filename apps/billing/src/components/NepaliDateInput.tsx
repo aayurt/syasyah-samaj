@@ -6,6 +6,7 @@ import {
   bsMonthLength,
   bsToAdString,
   BS_MONTHS,
+  todayAD,
   todayBS,
 } from '../lib/nepaliDate'
 
@@ -107,7 +108,7 @@ export default function NepaliDateInput({
       const ad = bsToAdString(todayBS())
       if (ad) onChange(ad)
     } else {
-      onChange(new Date().toISOString().slice(0, 10))
+      onChange(todayAD())
     }
   }
 
