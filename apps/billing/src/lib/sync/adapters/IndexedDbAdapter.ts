@@ -100,6 +100,15 @@ export class IndexedDbAdapter implements StorageAdapter {
     await done
   }
 
+  async discardLocalCreate(localId: string, _collection?: string): Promise<void> {
+    const all = await this.getAll()
+    for (const e of all) {
+      if (e.op === 'create' && e.localId === localId && e.seq !== undefined) {
+        await this.removePending(e.seq)
+      }
+    }
+  }
+
   async markConflict(seq: number, reason: string): Promise<void> {
     const { store, done } = await this.store('outbox', 'readwrite')
     const row = await reqResult(store.get(seq) as IDBRequest<any>)

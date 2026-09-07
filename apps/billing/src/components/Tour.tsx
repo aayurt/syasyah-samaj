@@ -34,15 +34,15 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     route: '/vouchers',
-    title: 'Vouchers',
-    body: 'Record every transaction as a voucher — sales invoices, purchase bills, payment and receipt vouchers, notes, and more. Start one with “New voucher”.',
+    title: 'Transactions',
+    body: 'Record every transaction here — sales invoices, purchase bills, payments and receipts, notes, and more. Start one with “New transaction”.',
     target: '[data-tour="new-voucher"]',
     placement: 'bottom',
   },
   {
     route: '/vouchers',
     title: 'Filter the list',
-    body: 'Narrow vouchers by Type or by Status — each filter sits on its own line.',
+    body: 'Narrow transactions by Type or by Status — each filter sits on its own line.',
     target: '[data-tour="voucher-filters"]',
     placement: 'right',
   },

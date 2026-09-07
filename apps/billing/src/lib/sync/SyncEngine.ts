@@ -375,6 +375,60 @@ export class SyncEngine {
       }
     }
 
+    // A delete queued for a row that is itself still queued as an unflushed
+    // create (offline fast-create-then-delete) can never resolve — drop the
+    // create+delete pair and clear the optimistic cache row so the row just
+    // never existed. (Custom ops that reference the local id, e.g. a queued
+    // post, are left alone: they conflict with a resolvable reason the user
+    // can discard.)
+    const skipped = new Set<number>()
+    const localCreates = new Map<string, number>()
+    for (const p of crudOps) {
+      if (p.op === 'create' && p.localId?.startsWith('local-')) {
+        localCreates.set(p.localId, p.seq!)
+      }
+    }
+    for (const p of crudOps) {
+      if (p.op === 'delete' && typeof p.id === 'string' && p.id.startsWith('local-')) {
+        const createSeq = localCreates.get(p.id)
+        if (createSeq != null) {
+          await this.storage.removePending(createSeq)
+          skipped.add(createSeq)
+          if (p.seq !== undefined) {
+            await this.storage.removePending(p.seq)
+            skipped.add(p.seq)
+          }
+          for (const key of new Set([p.collection, this._cacheKey(p.collection)])) {
+            await this.storage.remove(key, p.id as string)
+          }
+          this.onCacheChanged?.()
+        }
+      }
+    }
+
+    // Deletes/updates still carrying a `local-*` id: the row may already be
+    // on the server (a flush mapped it after the page captured the id), so
+    // resolve via the id map before batching. If it was never flushed, the
+    // op has nothing to act on — drop it (pair-cancel above removed the
+    // create sibling; the row never existed).
+    const resolved: typeof pending = []
+    for (const p of crudOps) {
+      if (skipped.has(p.seq!)) continue
+      if (
+        (p.op === 'delete' || p.op === 'update') &&
+        typeof p.id === 'string' &&
+        p.id.startsWith('local-')
+      ) {
+        const mapped = await this.storage.getServerId(p.id)
+        if (mapped != null) resolved.push({ ...p, id: mapped })
+        if (p.seq !== undefined) await this.storage.removePending(p.seq)
+        continue
+      }
+      resolved.push(p)
+    }
+    crudOps.length = 0
+    crudOps.push(...resolved)
+
     // 1. Batch standard CRUD via sync endpoint
     const body = {
       lastSyncAt: this.lastSyncAt,

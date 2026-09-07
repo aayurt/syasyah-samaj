@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Download, Plus, Trash2, TriangleAlert } from 'lucide-react'
+import { Download, Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
@@ -34,12 +34,14 @@ export default function Items() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<number | null>(null)
   const [ledgerItem, setLedgerItem] = useState<Item | null>(null)
   const [ledger, setLedger] = useState<{
     rows: StockLedgerRow[]
     closing: { onHand: number; avgCost: number; value: number }
   } | null>(null)
   const [loading, setLoading] = useState(false)
+  const [stockLocked, setStockLocked] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -110,31 +112,60 @@ export default function Items() {
     onChange: syncToUrl,
   })
 
-  const create = async (e: React.FormEvent) => {
+  const openNew = () => {
+    setForm(emptyForm)
+    setEditing(null)
+    setShowForm((s) => !s)
+  }
+
+  const startEdit = (it: Item) => {
+    setForm({
+      name: it.name,
+      code: it.code || '',
+      unit: it.unit || '',
+      reorderLevel: it.reorderLevel ? String(it.reorderLevel) : '',
+      // Opening stock only stays editable while no stock movements exist —
+      // once the ledger has entries, the field is locked (shown disabled).
+      openingStock: String(it.openingStock ?? ''),
+      salePrice: it.salePrice ? String(it.salePrice) : '',
+      purchasePrice: it.purchasePrice ? String(it.purchasePrice) : '',
+    })
+    setEditing(it.id)
+    setShowForm(true)
+    setStockLocked(
+      !!levelFor(it.id) && levelFor(it.id)!.onHand !== 0,
+    )
+  }
+
+  const save = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError('')
     try {
-      await api('/items', {
-        method: 'POST',
-        body: {
-          name: form.name,
-          code: form.code || undefined,
-          unit: form.unit || undefined,
-          reorderLevel: form.reorderLevel ? Number(form.reorderLevel) : 0,
-          openingStock: form.openingStock ? Number(form.openingStock) : 0,
-          salePrice: form.salePrice ? Number(form.salePrice) : undefined,
-          purchasePrice: form.purchasePrice
-            ? Number(form.purchasePrice)
-            : undefined,
-          ...(tenantId ? { tenant: tenantId } : {}),
-        },
-      })
+      const body: Record<string, unknown> = {
+        name: form.name,
+        code: form.code || undefined,
+        unit: form.unit || undefined,
+        reorderLevel: form.reorderLevel ? Number(form.reorderLevel) : 0,
+        salePrice: form.salePrice ? Number(form.salePrice) : undefined,
+        purchasePrice: form.purchasePrice ? Number(form.purchasePrice) : undefined,
+        ...(tenantId ? { tenant: tenantId } : {}),
+      }
+      if (!editing || !stockLocked) {
+        body.openingStock = form.openingStock ? Number(form.openingStock) : 0
+      }
+      if (editing) {
+        await api(`/items/${editing}`, { method: 'PATCH', body })
+      } else {
+        await api('/items', { method: 'POST', body })
+      }
       setForm(emptyForm)
+      setEditing(null)
+      setStockLocked(false)
       setShowForm(false)
       await load()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create item')
+      setError(err instanceof Error ? err.message : editing ? 'Failed to update item' : 'Failed to create item')
     }
     setSaving(false)
   }
@@ -142,9 +173,8 @@ export default function Items() {
   const remove = async (id: number) => {
     if (!window.confirm('Delete this item?')) return
     try {
-      // Admin op — bypass the offline outbox (a queued delete can't resolve a
-      // row that still carries a local id). api() resolves local→server ids.
-      await api(`/items/${id}`, { method: 'DELETE', immediate: true })
+      // Queued to the offline outbox — flushes on reconnect when offline.
+      await api(`/items/${id}`, { method: 'DELETE' })
       await load()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to delete item')
@@ -182,7 +212,7 @@ export default function Items() {
             <Download size={14} /> CSV
           </button>
           <button
-            onClick={() => setShowForm((s) => !s)}
+            onClick={openNew}
             className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             <Plus size={14} />
@@ -210,9 +240,12 @@ export default function Items() {
 
       {showForm && (
         <form
-          onSubmit={create}
+          onSubmit={save}
           className="mt-4 rounded-lg border border-slate-200 bg-white p-4"
         >
+          <h3 className="mb-3 text-sm font-semibold text-slate-700">
+            {editing ? 'Edit Item' : 'New Item'}
+          </h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <label className="text-sm text-slate-700">
               Name *
@@ -246,11 +279,13 @@ export default function Items() {
                 type="number"
                 min="0"
                 step="any"
+                disabled={stockLocked}
+                title={stockLocked ? 'Stock movements exist — opening stock is locked' : undefined}
                 value={form.openingStock}
                 onChange={(e) =>
                   setForm({ ...form, openingStock: e.target.value })
                 }
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-100 disabled:text-slate-400"
               />
             </label>
             <label className="text-sm text-slate-700">
@@ -299,11 +334,11 @@ export default function Items() {
               disabled={saving}
               className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
             >
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? 'Saving…' : editing ? 'Update' : 'Save'}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => { setShowForm(false); setEditing(null); setStockLocked(false) }}
               className="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
             >
               Cancel
@@ -394,6 +429,16 @@ export default function Items() {
                   <td className="px-4 py-2 text-right">
                     <ActionMenu
                       items={[
+                        {
+                          label: 'Edit',
+                          icon: <Pencil size={13} />,
+                          onClick: () => startEdit(it),
+                        },
+                        {
+                          label: 'Stock ledger',
+                          icon: <TriangleAlert size={13} />,
+                          onClick: () => showLedger(it),
+                        },
                         {
                           label: 'Delete',
                           icon: <Trash2 size={13} />,

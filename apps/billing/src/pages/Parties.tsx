@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Download, Plus, Trash2 } from 'lucide-react'
+import { Download, Pencil, Plus, Trash2 } from 'lucide-react'
 import { api, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
@@ -10,7 +10,7 @@ import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useSearchParams } from 'react-router-dom'
 import { useTenant, useTenantQuery } from '../lib/tenant'
-import type { Party } from '../lib/types'
+import type { Account, Party } from '../lib/types'
 
 const TYPES: Party['type'][] = ['customer', 'vendor', 'both']
 const TYPE_LABELS: Record<string, string> = {
@@ -27,6 +27,8 @@ const emptyForm = {
   taxId: '',
   address: '',
   openingBalance: '',
+  receivableAccount: '',
+  payableAccount: '',
 }
 
 export default function Parties() {
@@ -38,14 +40,26 @@ export default function Parties() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<number | null>(null)
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(false)
+  const [accounts, setAccounts] = useState<Account[]>([])
 
   const load = async () => {
     setLoading(true)
     try {
-      const res = await list<Party>('parties', { depth: 0, sort: 'name', ...tenantQuery })
+      const [res, glRes] = await Promise.all([
+        list<Party>('parties', { depth: 0, sort: 'name', ...tenantQuery }),
+        list<Account>('gl-accounts', {
+          depth: 0,
+          sort: 'code',
+          limit: 1000,
+          where: { type: { in: ['asset', 'liability'] } } as unknown as string,
+          ...tenantQuery,
+        }),
+      ])
       setParties(res.docs)
+      setAccounts(glRes.docs)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load parties')
     } finally {
@@ -57,29 +71,60 @@ export default function Parties() {
     load()
   }, [cacheVersion, tenantId])
 
-  const create = async (e: React.FormEvent) => {
+  const openNew = () => {
+    setForm(emptyForm)
+    setEditing(null)
+    setShowForm((s) => !s)
+  }
+
+  const startEdit = (p: Party) => {
+    setForm({
+      type: p.type,
+      name: p.name,
+      email: p.email || '',
+      phone: p.phone || '',
+      taxId: p.taxId || '',
+      address: p.address || '',
+      openingBalance: p.openingBalance ? String(p.openingBalance) : '',
+      receivableAccount: p.receivableAccount
+        ? String(typeof p.receivableAccount === 'object' ? (p.receivableAccount as Account).id : p.receivableAccount)
+        : '',
+      payableAccount: p.payableAccount
+        ? String(typeof p.payableAccount === 'object' ? (p.payableAccount as Account).id : p.payableAccount)
+        : '',
+    })
+    setEditing(p.id)
+    setShowForm(true)
+  }
+
+  const save = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError('')
     try {
-      await api('/parties', {
-        method: 'POST',
-        body: {
-          type: form.type,
-          name: form.name,
-          email: form.email || undefined,
-          phone: form.phone || undefined,
-          taxId: form.taxId || undefined,
-          address: form.address || undefined,
-          openingBalance: form.openingBalance ? Number(form.openingBalance) : 0,
-          ...(tenantId ? { tenant: tenantId } : {}),
-        },
-      })
+      const body = {
+        type: form.type,
+        name: form.name,
+        email: form.email || undefined,
+        phone: form.phone || undefined,
+        taxId: form.taxId || undefined,
+        address: form.address || undefined,
+        openingBalance: form.openingBalance ? Number(form.openingBalance) : 0,
+        receivableAccount: form.receivableAccount || undefined,
+        payableAccount: form.payableAccount || undefined,
+        ...(tenantId ? { tenant: tenantId } : {}),
+      }
+      if (editing) {
+        await api(`/parties/${editing}`, { method: 'PATCH', body })
+      } else {
+        await api('/parties', { method: 'POST', body })
+      }
       setForm(emptyForm)
+      setEditing(null)
       setShowForm(false)
       await load()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create party')
+      setError(err instanceof Error ? err.message : editing ? 'Failed to update party' : 'Failed to create party')
     }
     setSaving(false)
   }
@@ -87,9 +132,10 @@ export default function Parties() {
   const remove = async (id: number) => {
     if (!window.confirm('Delete this party?')) return
     try {
-      // Admin op — bypass the offline outbox (a queued delete can't resolve a
-      // row that still carries a local id). api() resolves local→server ids.
-      await api(`/parties/${id}`, { method: 'DELETE', immediate: true })
+      // Queued to the offline outbox — resolves local ids, and if the row
+      // hasn't synced yet the optimistic row is simply dropped. When offline
+      // the delete flushes on reconnect (api() toasts "queued").
+      await api(`/parties/${id}`, { method: 'DELETE' })
       await load()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to delete party')
@@ -150,7 +196,7 @@ export default function Parties() {
             <Download size={14} /> CSV
           </button>
           <button
-            onClick={() => setShowForm((s) => !s)}
+            onClick={openNew}
             className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             <Plus size={14} />
@@ -171,9 +217,12 @@ export default function Parties() {
 
       {showForm && (
         <form
-          onSubmit={create}
+          onSubmit={save}
           className="mt-4 rounded-lg border border-slate-200 bg-white p-4"
         >
+          <h3 className="mb-3 text-sm font-semibold text-slate-700">
+            {editing ? 'Edit Party' : 'New Party'}
+          </h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <label className="text-sm text-slate-700">
               Name *
@@ -237,6 +286,36 @@ export default function Parties() {
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
               />
             </label>
+            <label className="text-sm text-slate-700">
+              AR account (optional)
+              <select
+                value={form.receivableAccount}
+                onChange={(e) => setForm({ ...form, receivableAccount: e.target.value })}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+              >
+                <option value="">Default (global AR)</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.code ? `${a.code} — ` : ''}{a.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm text-slate-700">
+              AP account (optional)
+              <select
+                value={form.payableAccount}
+                onChange={(e) => setForm({ ...form, payableAccount: e.target.value })}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+              >
+                <option value="">Default (global AP)</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.code ? `${a.code} — ` : ''}{a.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="col-span-2 text-sm text-slate-700 md:col-span-3">
               Address
               <textarea
@@ -253,11 +332,11 @@ export default function Parties() {
               disabled={saving}
               className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
             >
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? 'Saving…' : editing ? 'Update' : 'Save'}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => { setShowForm(false); setEditing(null) }}
               className="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
             >
               Cancel
@@ -306,13 +385,14 @@ export default function Parties() {
               <SortableTh label="Phone" sortKey="phone" sort={sort} onSort={toggleSort} />
               <SortableTh label="Tax ID" sortKey="taxId" sort={sort} onSort={toggleSort} />
               <SortableTh label="Opening" sortKey="opening" sort={sort} onSort={toggleSort} align="right" />
+              <th className="px-4 py-2">Accounts</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
                   No parties yet.
                 </td>
               </tr>
@@ -335,9 +415,23 @@ export default function Parties() {
                     minimumFractionDigits: 2,
                   })}
                 </td>
+                <td className="px-4 py-2 text-xs text-slate-500">
+                  {(() => {
+                    const ids = [
+                      p.receivableAccount && 'AR',
+                      p.payableAccount && 'AP',
+                    ].filter(Boolean)
+                    return ids.length ? ids.join(' · ') : '—'
+                  })()}
+                </td>
                 <td className="px-4 py-2 text-right">
                   <ActionMenu
                     items={[
+                      {
+                        label: 'Edit',
+                        icon: <Pencil size={13} />,
+                        onClick: () => startEdit(p),
+                      },
                       {
                         label: 'Delete',
                         icon: <Trash2 size={13} />,

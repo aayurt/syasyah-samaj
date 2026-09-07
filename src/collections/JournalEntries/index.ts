@@ -249,9 +249,14 @@ export const JournalEntries: CollectionConfig = {
             })
           : { docs: [] }
         const acctById = new Map((acctRes.docs as any[]).map((a) => [a.id, a]))
+        const settings = (await req.payload.findGlobal({ slug: 'billing-settings' })) as any
+        const cogsAccountId = settings?.cogsAccount
+          ? Number(typeof settings.cogsAccount === 'object' ? settings.cogsAccount.id : settings.cogsAccount)
+          : null
 
         const income: any[] = []
-        const expense: any[] = []
+        const cogsRows: any[] = []
+        const otherExpense: any[] = []
         for (const [id, s] of sums) {
           const a = acctById.get(id)
           if (!a) continue
@@ -261,32 +266,43 @@ export const JournalEntries: CollectionConfig = {
               amount: round2(s.credit - s.debit),
             })
           } else if (a.type === 'expense') {
-            expense.push({
+            const entry = {
               account: { id, code: a.code, name: a.name },
               amount: round2(s.debit - s.credit),
-            })
+            }
+            if (cogsAccountId && id === cogsAccountId) {
+              cogsRows.push(entry)
+            } else {
+              otherExpense.push(entry)
+            }
           }
         }
         const byName = (x: any, y: any) =>
           x.account.name.localeCompare(y.account.name)
         income.sort(byName)
-        expense.sort(byName)
+        cogsRows.sort(byName)
+        otherExpense.sort(byName)
         const totalIncome = round2(income.reduce((t, r) => t + r.amount, 0))
-        const totalExpense = round2(expense.reduce((t, r) => t + r.amount, 0))
+        const totalCogs = round2(cogsRows.reduce((t, r) => t + r.amount, 0))
+        const totalOtherExpense = round2(otherExpense.reduce((t, r) => t + r.amount, 0))
+        const grossProfit = round2(totalIncome - totalCogs)
         const p = parsePagination(searchParams)
-        const incomePage = paginate(income, p)
-        const expensePage = paginate(expense, p)
         return Response.json({
-          income: incomePage.docs,
-          expense: expensePage.docs,
-          incomeTotal: incomePage.total,
-          expenseTotal: expensePage.total,
+          income: paginate(income, p).docs,
+          cogs: paginate(cogsRows, p).docs,
+          otherExpense: paginate(otherExpense, p).docs,
+          incomeTotal: paginate(income, p).total,
+          cogsTotal: totalCogs,
+          otherExpenseTotal: totalOtherExpense,
           limit: p.limit,
           offset: p.offset,
           totals: {
             income: totalIncome,
-            expense: totalExpense,
-            netProfit: round2(totalIncome - totalExpense),
+            cogs: totalCogs,
+            grossProfit,
+            otherExpense: totalOtherExpense,
+            expense: round2(totalCogs + totalOtherExpense),
+            netProfit: round2(grossProfit - totalOtherExpense),
           },
         })
       },

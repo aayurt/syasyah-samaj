@@ -32,6 +32,10 @@ export interface StorageAdapter {
   /** Remove an operation from the outbox by seq */
   removePending(seq: number): Promise<void>
 
+  /** Drop the queued create op for a local id (used when an offline delete
+   *  cancels a not-yet-flushed offline create) */
+  discardLocalCreate(localId: string, collection?: string): Promise<void>
+
   /** Mark an operation as conflicted */
   markConflict(seq: number, reason: string): Promise<void>
 

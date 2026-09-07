@@ -117,6 +117,15 @@ export const BillingSettings: GlobalConfig = {
               'Amount threshold for simplified invoice (in Rs.). Invoices below this amount show as VAT Inclusive without breakdown.',
           },
         },
+        {
+          name: 'demoSeedEnabled',
+          type: 'checkbox',
+          defaultValue: true,
+          admin: {
+            description:
+              'Allow the demo-data seeder (Setup wizard / Data Management) to create sample charts, parties, items and draft vouchers. When off, the seed actions are rejected.',
+          },
+        },
       ],
     },
     {
@@ -265,6 +274,16 @@ export const BillingSettings: GlobalConfig = {
       type: 'json',
       admin: {
         description: 'User-defined order of default account posting roles in the Settings UI.',
+      },
+    },
+    {
+      name: 'dataEpoch',
+      type: 'number',
+      defaultValue: 0,
+      admin: {
+        hidden: true,
+        description:
+          'Bumped on every bulk data operation (cleanup, demo seed). Clients compare it and invalidate offline caches when it changes.',
       },
     },
   ],

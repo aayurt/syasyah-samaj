@@ -17,7 +17,7 @@ import ConflictResolutionModal from './ConflictResolutionModal'
 
 /** Human-readable label for a queued write's collection. */
 const COLLECTION_LABELS: Record<string, string> = {
-  documents: 'Voucher',
+  documents: 'Transaction',
   'gl-accounts': 'Account',
   'account-groups': 'Account group',
   'journal-entries': 'Journal entry',

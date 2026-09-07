@@ -46,6 +46,8 @@ import { AuditLogs } from './collections/AuditLogs'
 import { RecurringSchedules } from './collections/RecurringSchedules'
 import { ExpenseClaims } from './collections/ExpenseClaims'
 import { FiscalYears } from './collections/FiscalYears'
+import { OpeningBalances } from './collections/OpeningBalances'
+import { DataOps } from './collections/DataOps'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -131,6 +133,8 @@ export default buildConfig({
     RecurringSchedules,
     ExpenseClaims,
     FiscalYears,
+    OpeningBalances,
+    DataOps,
   ],
   cors: [getServerSideURL(), ...trustedOriginsValues].filter(Boolean),
   globals: [Header, Footer, BillingSettings],

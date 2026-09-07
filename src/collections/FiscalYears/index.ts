@@ -62,19 +62,30 @@ export const FiscalYears: CollectionConfig = {
           throw new Error('Fiscal year needs a label (or a start date to generate one).')
         }
 
+        const tenantRef = d.tenant ?? (req as PayloadRequest).user?.tenants?.[0]?.tenant
+        const tenantId = tenantRef != null ? extractID(tenantRef) : undefined
+        const tenantFilter = tenantId
+          ? { tenant: { equals: tenantId } }
+          : null
+
+        // A closed year can never become the working year — only open years
+        // may be flagged isActive. (The SPA blocks this too; this is the
+        // server-side backstop.)
+        if (d.isActive && d.status === 'closed') {
+          throw new Error('A closed fiscal year cannot be set as the working year. Open it first.')
+        }
+
         // Only one active (working) year per tenant: unflag any other years
         // when this one is being set as active. `isActive` marks the year the
         // SPA defaults to; `status` controls editability.
         if (d.isActive) {
-          const tenantRef = d.tenant ?? (req as PayloadRequest).user?.tenants?.[0]?.tenant
-          const tenantId = tenantRef != null ? extractID(tenantRef) : undefined
           try {
             await req.payload.update({
               collection: 'fiscal-years',
               where: {
                 and: [
                   { isActive: { equals: true } },
-                  ...(tenantId ? [{ tenant: { equals: tenantId } }] : []),
+                  ...(tenantFilter ? [tenantFilter] : []),
                 ],
               },
               data: { isActive: false },
@@ -83,6 +94,27 @@ export const FiscalYears: CollectionConfig = {
             } as any)
           } catch {
             // best-effort — the unique-ish invariant is a UX nicety
+          }
+        }
+
+        // Only one year may be open (status 'active') at a time: (re)opening
+        // a year as active must close any other currently open year.
+        if (d.status === 'active') {
+          try {
+            await req.payload.update({
+              collection: 'fiscal-years',
+              where: {
+                and: [
+                  { status: { equals: 'active' } },
+                  ...(tenantFilter ? [tenantFilter] : []),
+                ],
+              },
+              data: { status: 'closed' },
+              overrideAccess: true,
+              depth: 0,
+            } as any)
+          } catch {
+            // best-effort — the single-open invariant is a UX nicety
           }
         }
         return data

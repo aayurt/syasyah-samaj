@@ -41,10 +41,9 @@ test.describe.serial('S3 — Masters', () => {
       .toBeTruthy()
     await expect(page.getByText('E2E Customer').first()).toBeVisible({ timeout: 10_000 })
 
-    // Resync so the local cache row maps to its server id, then delete
-    // through the UI (Actions → Delete + confirm) to leave the dataset clean.
-    await page.getByRole('button', { name: 'Resync' }).click()
-    await expect(page.getByRole('button', { name: 'Resync' })).toBeVisible({ timeout: 20_000 })
+    // Delete through the UI (Actions → Delete + confirm) to leave the
+    // dataset clean — the delete queues to the outbox, which self-resolves
+    // local→server ids, so no manual Resync is needed.
     const row = page.locator('tr', { hasText: 'E2E Customer' }).first()
     page.once('dialog', (d) => d.accept())
     await row.getByRole('button', { name: 'Actions' }).click()
@@ -78,10 +77,9 @@ test.describe.serial('S3 — Masters', () => {
       .toBeTruthy()
     await expect(page.getByText('E2E Item').first()).toBeVisible({ timeout: 10_000 })
 
-    // Resync so the local cache row maps to its server id, then delete
-    // through the UI (Actions → Delete + confirm) to leave the dataset clean.
-    await page.getByRole('button', { name: 'Resync' }).click()
-    await expect(page.getByRole('button', { name: 'Resync' })).toBeVisible({ timeout: 20_000 })
+    // Delete through the UI (Actions → Delete + confirm) to leave the
+    // dataset clean — the delete queues to the outbox, which self-resolves
+    // local→server ids, so no manual Resync is needed.
     const row = page.locator('tr', { hasText: 'E2E Item' }).first()
     page.once('dialog', (d) => d.accept())
     await row.getByRole('button', { name: 'Actions' }).click()

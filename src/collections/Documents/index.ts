@@ -338,6 +338,31 @@ function resolveAccount(
   return Number(id)
 }
 
+/**
+ * Resolve the AR/AP control account for a document: the party's own
+ * receivable/payable account when set, otherwise the global default from
+ * Billing Settings. doc.party may be an id or a populated object.
+ */
+async function resolveControlAccount(
+  payload: PayloadRequest['payload'],
+  doc: any,
+  side: 'receivableAccount' | 'payableAccount',
+  docType: string,
+  label: string,
+): Promise<number> {
+  const partyId = doc?.party ? accId(doc.party) : null
+  if (partyId) {
+    const party = (await payload.findByID({
+      collection: 'parties',
+      id: String(partyId),
+      depth: 0,
+    })) as any
+    const override = party?.[side]
+    if (override) return accId(override)
+  }
+  return resolveAccount(await getSettings(payload), side, docType, label)
+}
+
 function accId(v: unknown): number {
   if (v && typeof v === 'object') return Number((v as { id: unknown }).id)
   return Number(v)
@@ -382,11 +407,43 @@ async function computeStockPlan(
   doc: any,
 ): Promise<StockPlan> {
   const type = doc.docType
-  if (!['grn', 'delivery-challan', 'sales-invoice'].includes(type)) {
+  const refType = (doc as any).referenceToDocType || ''
+  const isStockIn = type === 'grn' || type === 'purchase-invoice'
+  const isStockOut = type === 'delivery-challan' || type === 'sales-invoice'
+  // Credit notes return goods at the ORIGINAL movement cost when they
+  // reference the source voucher — sales-side returns restock the shelf,
+  // purchase-side returns (vs. a purchase-invoice/GRN) send the goods back
+  // to the supplier. Manual credit notes with item lines default to a
+  // sales-side return.
+  const isReturn = type === 'credit-note'
+  const returnIsPurchase =
+    isReturn && ['purchase-invoice', 'grn'].includes(refType)
+  if (
+    !isStockIn &&
+    !isStockOut &&
+    !isReturn
+  ) {
+    return { movements: [], totalCogs: 0 }
+  }
+  // A credit note against an order never moved stock — nothing to reverse.
+  if (isReturn && refType === 'purchase-order') {
     return { movements: [], totalCogs: 0 }
   }
   const movements: StockPlan['movements'] = []
   let totalCogs = 0
+
+  // Original movement costs for return restocks, fetched once for all lines.
+  let refMoves: any[] = []
+  if (isReturn && doc.referenceTo) {
+    const res = await payload.find({
+      collection: 'stock-movements',
+      where: { doc: { equals: accId(doc.referenceTo) } },
+      limit: 1000,
+      depth: 0,
+    })
+    refMoves = res.docs
+  }
+
   for (const line of doc.lines || []) {
     const itemId = line.item ? accId(line.item) : null
     if (!itemId) continue
@@ -402,22 +459,54 @@ async function computeStockPlan(
     if (!item) {
       throw new Error('Linked inventory item not found.')
     }
-    if (type === 'grn') {
+    if (isStockIn) {
       const rate = toNum(line.rate) || (qty > 0 ? toNum(line.amount) / qty : 0)
       if (rate <= 0) {
-        throw new Error('GRN lines need a purchase rate (or amount).')
+        throw new Error('Stock-in lines (GRN / purchase invoice) need a purchase rate (or amount).')
       }
       movements.push({ itemId, qty, unitCost: round2(rate), isIn: true })
-    } else {
-      const { onHand, avgCost } = await currentAvco(payload, item)
-      if (qty > onHand + 0.0001) {
-        throw new Error(
-          `Insufficient stock for "${item.name}": ${qty} requested, ${round2(onHand)} on hand.`,
-        )
-      }
-      movements.push({ itemId, qty, unitCost: round2(avgCost), isIn: false })
-      totalCogs += qty * avgCost
+      continue
     }
+
+    // Sales issues (and purchase returns) value at the weighted-average cost.
+    const { onHand, avgCost } = await currentAvco(payload, item)
+
+    if (isReturn) {
+      // Reuse the referenced voucher's original movement cost so returns
+      // restock at the exact cost the goods left (or arrived) at; fall back
+      // to the current average for manual returns without a reference.
+      const refMove = refMoves.find(
+        (m: any) =>
+          accId(m.item) === itemId &&
+          (returnIsPurchase
+            ? toNum(m.qtyIn) > 0
+            : toNum(m.qtyOut) > 0),
+      )
+      const unitCost =
+        refMove && toNum(refMove.unitCost) > 0
+          ? toNum(refMove.unitCost)
+          : avgCost
+      if (returnIsPurchase) {
+        if (qty > onHand + 0.0001) {
+          throw new Error(
+            `Insufficient stock to return "${item.name}": ${qty} requested, ${round2(onHand)} on hand.`,
+          )
+        }
+        movements.push({ itemId, qty, unitCost: round2(unitCost), isIn: false })
+      } else {
+        movements.push({ itemId, qty, unitCost: round2(unitCost), isIn: true })
+      }
+      totalCogs += qty * unitCost
+      continue
+    }
+
+    if (qty > onHand + 0.0001) {
+      throw new Error(
+        `Insufficient stock for "${item.name}": ${qty} requested, ${round2(onHand)} on hand.`,
+      )
+    }
+    movements.push({ itemId, qty, unitCost: round2(avgCost), isIn: false })
+    totalCogs += qty * avgCost
   }
   return { movements, totalCogs: round2(totalCogs) }
 }
@@ -428,12 +517,17 @@ async function computeStockPlan(
  * inventory docTypes the COGS / Inventory legs use the weighted-average cost
  * from the stock plan (not the line's selling price).
  */
-function buildPostingLines(
+async function buildPostingLines(
+  payload: PayloadRequest['payload'],
   doc: any,
   settings: any,
   stockPlan: StockPlan = { movements: [], totalCogs: 0 },
   taxById: Map<number, any> = new Map(),
-): PostingLine[] {
+): Promise<PostingLine[]> {
+  // AR/AP legs post to the party's own control account when it has one,
+  // else the global defaults.
+  const arAccount = await resolveControlAccount(payload, doc, 'receivableAccount', doc.docType, 'Accounts Receivable')
+  const apAccount = await resolveControlAccount(payload, doc, 'payableAccount', doc.docType, 'Accounts Payable')
   const type = doc.docType
   const net = toNum(doc.netTotal)
   const tax = toNum(doc.taxTotal)
@@ -467,7 +561,7 @@ function buildPostingLines(
       // AR (gross) ← Revenue (net) + Output Tax; with item lines also
       // COGS (AVCO) → Inventory (AVCO), keeping the entry balanced.
       lines.push({
-        account: resolveAccount(settings, 'receivableAccount', type, 'Accounts Receivable'),
+        account: arAccount,
         debit: gross,
       })
       lines.push({
@@ -511,11 +605,30 @@ function buildPostingLines(
       }
       break
     case 'purchase-invoice':
-      // Expense (net) + Input Tax ← AP (gross); withholding credits TDS payable.
-      lines.push({
-        account: resolveAccount(settings, 'expenseAccount', type, 'Purchases / Expense'),
-        debit: net,
-      })
+      // Goods lines capitalize into Inventory at their line cost; service
+      // lines stay on Purchases/Expense. Input tax and TDS legs unchanged;
+      // the full gross stays on Accounts Payable.
+      {
+        const goodsVal = round2(
+          stockPlan.movements
+            .filter((m) => m.isIn)
+            .reduce((t, m) => t + m.qty * m.unitCost, 0),
+        )
+        const serviceVal = round2(Math.max(net - goodsVal, 0))
+        if (goodsVal > 0) {
+          lines.push({
+            account: resolveAccount(settings, 'inventoryAccount', type, 'Inventory'),
+            debit: goodsVal,
+            memo: 'Inventory (goods)',
+          })
+        }
+        if (serviceVal > 0) {
+          lines.push({
+            account: resolveAccount(settings, 'expenseAccount', type, 'Purchases / Expense'),
+            debit: serviceVal,
+          })
+        }
+      }
       if (taxLines.length > 0) {
         for (const tl of taxLines) {
           const amount = toNum(tl.amount)
@@ -541,7 +654,7 @@ function buildPostingLines(
         })
       }
       lines.push({
-        account: resolveAccount(settings, 'payableAccount', type, 'Accounts Payable'),
+        account: apAccount,
         credit: gross,
       })
       break
@@ -550,7 +663,7 @@ function buildPostingLines(
       // TDS (withholding) is present the cash leg is net of TDS and the TDS
       // is credited to its payable ledger.
       lines.push({
-        account: resolveAccount(settings, 'payableAccount', type, 'Accounts Payable'),
+        account: apAccount,
         debit: net,
       })
       if (withheld > 0) {
@@ -595,7 +708,7 @@ function buildPostingLines(
           })
         }
         lines.push({
-          account: resolveAccount(settings, 'receivableAccount', type, 'Accounts Receivable'),
+          account: arAccount,
           credit: net,
         })
       } else {
@@ -604,7 +717,7 @@ function buildPostingLines(
           debit: gross,
         })
         lines.push({
-          account: resolveAccount(settings, 'receivableAccount', type, 'Accounts Receivable'),
+          account: arAccount,
           credit: gross,
         })
       }
@@ -633,20 +746,36 @@ function buildPostingLines(
       break
     case 'credit-note':
       // Reduces the amount owed. Direction depends on original doc type:
-      //   Sales-side: Dr. Sales Returns, Cr. AR
-      //   Purchase-side: Dr. AP, Cr. Purchase Returns
+      //   Sales-side: Dr. Sales Returns, Cr. AR, and returned goods restock
+      //               inventory at the original cost (Dr. Inventory, Cr. COGS)
+      //   Purchase-side: Dr. AP, Cr. Purchase Returns, and returned goods
+      //               leave inventory at the original cost (Cr. Inventory)
       {
         const origType = (doc as any).referenceToDocType || ''
         const isPurchase = ['purchase-invoice', 'purchase-order', 'grn'].includes(origType)
+        // Value of the returned goods at cost, from the stock plan.
+        const returnedCost = round2(stockPlan.totalCogs || 0)
         if (isPurchase) {
           lines.push({
-            account: resolveAccount(settings, 'payableAccount', type, 'Accounts Payable'),
+            account: apAccount,
             debit: gross,
           })
-          lines.push({
-            account: resolveAccount(settings, 'returnsAccount', type, 'Purchase Returns'),
-            credit: gross,
-          })
+          // Goods returned to the supplier reverse Inventory at cost; the
+          // remainder reverses Purchases.
+          const purchasesVal = round2(Math.max(gross - returnedCost, 0))
+          if (purchasesVal > 0) {
+            lines.push({
+              account: resolveAccount(settings, 'returnsAccount', type, 'Purchase Returns'),
+              credit: purchasesVal,
+            })
+          }
+          if (returnedCost > 0) {
+            lines.push({
+              account: resolveAccount(settings, 'inventoryAccount', type, 'Inventory'),
+              credit: returnedCost,
+              memo: 'Return goods to supplier',
+            })
+          }
         } else {
           // Default: sales-side credit note
           lines.push({
@@ -654,9 +783,21 @@ function buildPostingLines(
             debit: gross,
           })
           lines.push({
-            account: resolveAccount(settings, 'receivableAccount', type, 'Accounts Receivable'),
+            account: arAccount,
             credit: gross,
           })
+          if (returnedCost > 0) {
+            lines.push({
+              account: resolveAccount(settings, 'inventoryAccount', type, 'Inventory'),
+              debit: returnedCost,
+              memo: 'Restock returned goods',
+            })
+            lines.push({
+              account: resolveAccount(settings, 'cogsAccount', type, 'Cost of Goods Sold'),
+              credit: returnedCost,
+              memo: 'Reverse COGS',
+            })
+          }
         }
       }
       break
@@ -668,7 +809,7 @@ function buildPostingLines(
         debit: gross,
       })
       lines.push({
-        account: resolveAccount(settings, 'payableAccount', type, 'Accounts Payable'),
+        account: apAccount,
         credit: gross,
       })
       break
@@ -864,6 +1005,83 @@ function isBillingReq(req: PayloadRequest): boolean {
  * auto-post path. Throws on failure (caller maps to an HTTP response); the
  * transaction is committed here and rolled back on error.
  */
+export async function createPostingArtifacts(
+  payload: PayloadRequest['payload'],
+  doc: any,
+  opts?: { transactionID?: number | string },
+): Promise<{
+  entry: any
+  lines: PostingLine[]
+  stockPlan: StockPlan
+}> {
+  const settings = await getSettings(payload)
+  // Inventory side-effects (movements + COGS) are computed up front so
+  // a stock shortfall aborts the whole posting before any write.
+  const stockPlan = await computeStockPlan(payload, doc)
+  // Resolve the tax types referenced by the document's tax lines so the
+  // posting engine can use each tax's own sales/purchase ledger account.
+  const taxById = new Map<number, any>()
+  const taxTypeIds = Array.from(
+    new Set(
+      (doc.taxLines || [])
+        .map((tl: any) => (tl.taxType ? accId(tl.taxType) : null))
+        .filter((v: number | null) => v !== null),
+    ),
+  )
+  if (taxTypeIds.length) {
+    const taxRes = await payload.find({
+      collection: 'tax-types',
+      where: { id: { in: taxTypeIds } },
+      depth: 0,
+      limit: 1000,
+    })
+    for (const t of taxRes.docs as any[]) taxById.set(Number(t.id), t)
+  }
+  const lines = await buildPostingLines(payload, doc, settings, stockPlan, taxById)
+  const narration =
+    doc.narration ||
+    (DOC_TYPES.find((t) => t.value === doc.docType)?.label || doc.docType)
+  const transactionID = opts?.transactionID
+
+  const entry = await payload.create({
+    collection: 'journal-entries',
+    data: {
+      date: doc.date,
+      narration,
+      status: 'posted',
+      lines: lines.map((l) => ({
+        account: l.account,
+        debit: l.debit || undefined,
+        credit: l.credit || undefined,
+        memo: l.memo || undefined,
+      })),
+      referenceDoc: doc.id,
+      // The entry inherits the document's illaka — the beforeValidate
+      // hook only fills tenant when missing.
+      tenant: doc.tenant,
+    },
+    req: transactionID ? { transactionID } : {},
+  })
+
+  // Stock movements, atomic with the journal entry.
+  for (const mv of stockPlan.movements) {
+    await payload.create({
+      collection: 'stock-movements',
+      data: {
+        item: mv.itemId,
+        doc: doc.id,
+        date: doc.date,
+        qtyIn: mv.isIn ? mv.qty : undefined,
+        qtyOut: mv.isIn ? undefined : mv.qty,
+        unitCost: mv.unitCost,
+        tenant: doc.tenant,
+      },
+      req: transactionID ? { transactionID } : {},
+    })
+  }
+  return { entry, lines, stockPlan }
+}
+
 export async function postDocument(
   payload: PayloadRequest['payload'],
   docId: number | string,
@@ -891,70 +1109,14 @@ export async function postDocument(
         'Orders are status-only documents (confirmed, not posted). Confirm the order to lock it, then raise the challan/invoice against it.',
       )
     }
-    const settings = await getSettings(payload)
-    // Inventory side-effects (movements + COGS) are computed up front so
-    // a stock shortfall aborts the whole posting before any write.
-    const stockPlan = await computeStockPlan(payload, doc)
-    // Resolve the tax types referenced by the document's tax lines so the
-    // posting engine can use each tax's own sales/purchase ledger account.
-    const taxById = new Map<number, any>()
-    const taxTypeIds = Array.from(
-      new Set(
-        (doc.taxLines || [])
-          .map((tl: any) => (tl.taxType ? accId(tl.taxType) : null))
-          .filter((v: number | null) => v !== null),
-      ),
+    const { entry, stockPlan } = await createPostingArtifacts(
+      payload,
+      doc,
+      { transactionID },
     )
-    if (taxTypeIds.length) {
-      const taxRes = await payload.find({
-        collection: 'tax-types',
-        where: { id: { in: taxTypeIds } },
-        depth: 0,
-        limit: 1000,
-      })
-      for (const t of taxRes.docs as any[]) taxById.set(Number(t.id), t)
-    }
-    const lines = buildPostingLines(doc, settings, stockPlan, taxById)
     const narration =
       doc.narration ||
       (DOC_TYPES.find((t) => t.value === doc.docType)?.label || doc.docType)
-
-    const entry = await payload.create({
-      collection: 'journal-entries',
-      data: {
-        date: doc.date,
-        narration,
-        status: 'posted',
-        lines: lines.map((l) => ({
-          account: l.account,
-          debit: l.debit || undefined,
-          credit: l.credit || undefined,
-          memo: l.memo || undefined,
-        })),
-        referenceDoc: doc.id,
-        // The entry inherits the document's illaka — the beforeValidate
-        // hook only fills tenant when missing.
-        tenant: doc.tenant,
-      },
-      req: { transactionID },
-    })
-
-    // Stock movements, atomic with the journal entry.
-    for (const mv of stockPlan.movements) {
-      await payload.create({
-        collection: 'stock-movements',
-        data: {
-          item: mv.itemId,
-          doc: doc.id,
-          date: doc.date,
-          qtyIn: mv.isIn ? mv.qty : undefined,
-          qtyOut: mv.isIn ? undefined : mv.qty,
-          unitCost: mv.unitCost,
-          tenant: doc.tenant,
-        },
-        req: { transactionID },
-      })
-    }
 
     const fiscalYear = await findFiscalYearForDate(payload, doc.date, doc.tenant)
     const number = await nextNumber(
@@ -1494,6 +1656,7 @@ export const Documents: CollectionConfig = {
           // Create credit/debit note for the full amount
           const noteLines = (doc.lines || []).map((l: any) => ({
             description: l.description || 'Voided item',
+            item: l.item ? accId(l.item) : undefined,
             qty: toNum(l.qty) || 1,
             rate: toNum(l.rate) || 0,
             amount: toNum(l.amount) || round2((toNum(l.qty) || 1) * (toNum(l.rate) || 0)),
@@ -1518,6 +1681,7 @@ export const Documents: CollectionConfig = {
               referenceTo: doc.id,
               referenceToDocType: doc.docType,
             },
+            overrideAccess: true,
             req: {
               transactionID,
               context: { docStatusTransition: 'post' },
@@ -1536,31 +1700,15 @@ export const Documents: CollectionConfig = {
             voidedBy: req.user?.email || 'system',
           }))
 
-          // Reverse the document's stock movements so voiding a sale restores
-          // stock (and vice versa for a GRN), atomic with the credit note.
-          const moves = await req.payload.find({
-            collection: 'stock-movements',
-            where: { doc: { equals: doc.id } },
-            limit: 1000,
-            depth: 0,
-          })
-          for (const m of moves.docs as any[]) {
-            const qtyIn = toNum(m.qtyIn)
-            const qtyOut = toNum(m.qtyOut)
-            await req.payload.create({
-              collection: 'stock-movements',
-              data: {
-                item: accId(m.item),
-                doc: doc.id,
-                date: new Date().toISOString().slice(0, 10),
-                qtyIn: qtyOut > 0 ? qtyOut : undefined,
-                qtyOut: qtyIn > 0 ? qtyIn : undefined,
-                unitCost: toNum(m.unitCost),
-                tenant: doc.tenant,
-              },
-              req: { transactionID },
-            })
-          }
+          // Post the credit note itself: its reversal journal entry reverses
+          // AR/AP and (for inventory vouchers) the Inventory / COGS legs at
+          // the original cost, and its stock movements restock returned goods
+          // or return them to the supplier — all atomic with the void.
+          const { stockPlan } = await createPostingArtifacts(
+            req.payload,
+            creditNote as any,
+            { transactionID },
+          )
 
           const updated = await req.payload.update({
             collection: 'documents',
@@ -1582,8 +1730,8 @@ export const Documents: CollectionConfig = {
 
           return Response.json({
             doc: updated,
-            creditNote: { id: creditNote.id, number: creditNote.number, amount: toNum(doc.grossTotal) || 0 },
-            reversedMovements: moves.docs.length,
+            creditNote: { id: creditNote.id, number: cnNumber, amount: toNum(doc.grossTotal) || 0 },
+            reversedMovements: stockPlan.movements.length,
           })
         } catch (err) {
           try {
@@ -1710,6 +1858,7 @@ export const Documents: CollectionConfig = {
             const rate = toNum(line.rate) || 0
             return {
               description: `${item.reason || 'Void'} - ${line.description || 'Item'}`,
+              item: line.item ? accId(line.item) : undefined,
               qty: item.quantity,
               rate: rate,
               amount: round2(item.quantity * rate),
@@ -1735,11 +1884,21 @@ export const Documents: CollectionConfig = {
               referenceTo: doc.id,
               referenceToDocType: doc.docType,
             },
+            overrideAccess: true,
             req: {
               transactionID,
               context: { docStatusTransition: 'post' },
             },
           }) as any
+
+          // Post the partial-void credit note — restock the returned items /
+          // reverse COGS at the original cost (sales) or issue goods back to
+          // the supplier (purchases), atomic with the partial void.
+          const { stockPlan } = await createPostingArtifacts(
+            req.payload,
+            creditNote as any,
+            { transactionID },
+          )
 
           // Link credit note back to the original doc's voided items
           for (let i = 0; i < voidedItems.length; i++) {
@@ -2244,11 +2403,14 @@ export const Documents: CollectionConfig = {
         const orderStatus = (data as any)?.orderStatus
 
         // Posted documents are immutable except voiding or reopening;
-        // voided are final.
+        // voided are final. A partial void keeps the voucher posted while it
+        // records the voided lines (allowed via the partial-void endpoint).
         if (operation === 'update' && (doc?.status === 'posted' || doc?.status === 'void')) {
           const allowed =
             doc.status === 'posted'
-              ? nextStatus === 'void' || nextStatus === 'draft'
+              ? nextStatus === 'void' ||
+                nextStatus === 'draft' ||
+                (engineFlag === 'partial-void' && nextStatus === 'posted')
               : false
           if (!allowed) {
             throw vErr(

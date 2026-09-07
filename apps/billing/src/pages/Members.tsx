@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CreditCard, Download, Edit3, MoreVertical, Plus, X } from 'lucide-react'
+import { CreditCard, Download, Edit3, MoreVertical, Plus, Trash2, X } from 'lucide-react'
 import { api, useSyncState, fmt } from '../lib/api'
 import SearchSelect from '../components/SearchSelect'
 import { downloadCsv } from '../lib/csv'
@@ -180,6 +180,19 @@ export default function Members() {
     onChange: syncToUrl,
   })
   const filtered = visible
+
+  const handleDelete = async (m: Member) => {
+    setOpenMenu(null)
+    if (!window.confirm(`Delete member "${m.fullName}"? This cannot be undone.`)) return
+    try {
+      // Queued to the offline outbox — flushes on reconnect when offline.
+      await api(`/members/${m.id}`, { method: 'DELETE' })
+      pushToast('success', 'Member deleted', m.fullName)
+      await refreshMembers()
+    } catch (err) {
+      pushToast('error', 'Delete failed', err instanceof Error ? err.message : String(err))
+    }
+  }
 
   const handlePayFee = async (member: Member) => {
     if (!member.membershipType) {
@@ -453,6 +466,12 @@ export default function Members() {
                                 className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
                               >
                                 <Edit3 size={12} /> Edit Member
+                              </button>
+                              <button
+                                onClick={() => handleDelete(m)}
+                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 size={12} /> Delete Member
                               </button>
                               {m.lastReceipt && (
                                 <button

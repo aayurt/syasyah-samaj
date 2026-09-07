@@ -44,6 +44,10 @@ function crudToast(method: string, path: string, error?: string): void {
   const nounCap = noun.charAt(0).toUpperCase() + noun.slice(1)
   if (error) {
     pushToast('error', `${action} ${noun} failed`, error)
+  } else if (method === 'DELETE' && !getEngine().getState().online) {
+    // Offline deletes queue in the outbox and flush on reconnect — say so,
+    // otherwise "Deleted" reads as if the server already dropped the row.
+    pushToast('info', `${nounCap} delete queued`, 'Will sync to the server when you reconnect.')
   } else {
     pushToast('success', `${nounCap} ${action.toLowerCase()}`)
   }
@@ -316,7 +320,10 @@ export async function api<T = unknown>(
             const body = options.body as Record<string, unknown> | undefined
             if (existing) await engine.warmCache(slug, [{ ...existing, ...body }], tenant)
           } else if (method === 'DELETE' && id) {
-            await engine.invalidate(slug, tenant)
+            // Outboxed delete — remove just this row from every cache key
+            // that holds it (both the plain and tenant-scoped list). A full
+            // invalidate would blank cache-first lists until the next pull.
+            await getEngine().removeDoc(slug, String(id), tenant).catch(() => {})
           }
         } catch { /* best-effort */ }
       }

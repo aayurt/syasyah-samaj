@@ -91,10 +91,9 @@ test.describe.serial('S2 — Account setup', () => {
     // CSV path is hard to assert headlessly (download) — verify row exists.
     await expect(page.getByText('E2E Rent Test').first()).toBeVisible({ timeout: 10_000 })
 
-    // Resync so the local cache row maps to its server id, then delete
-    // through the UI (Actions → Delete + confirm) to leave the dataset clean.
-    await page.getByRole('button', { name: 'Resync' }).click()
-    await expect(page.getByRole('button', { name: 'Resync' })).toBeVisible({ timeout: 20_000 })
+    // Delete through the UI (Actions → Delete + confirm) to leave the
+    // dataset clean — the delete queues to the outbox, which self-resolves
+    // local→server ids, so no manual Resync is needed.
     const row = page.locator('tr', { hasText: 'E2E Rent Test' }).first()
     page.once('dialog', (d) => d.accept())
     await row.getByRole('button', { name: 'Actions' }).click()

@@ -57,6 +57,7 @@ const REPORTS: Record<Category, ReportCard[]> = {
   Inventory: [
     { title: 'Low Stock Summary', desc: 'View all items which are getting low on quantity', icon: TrendingDown, to: '/reports/low-stock' },
     { title: 'Stock Quantity Report', desc: 'View opening & closing quantity of each item', icon: Hash, to: '/reports/stock-quantity' },
+    { title: 'Inventory Valuation', desc: 'Opening, receipts, issues & closing value at AVCO', icon: BarChart3, to: '/reports/inventory-valuation' },
   ],
   'Income Expense': [
     { title: 'Income Expense Report', desc: 'Check all the income expense report', icon: BarChart3, to: '/reports/pnl' },

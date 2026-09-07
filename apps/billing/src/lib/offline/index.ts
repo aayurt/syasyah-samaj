@@ -228,6 +228,28 @@ class CompatibilityEngine {
     const collection = parts[0] || ''
     const id = parts[1] && /^\d+$/.test(parts[1]) ? Number(parts[1]) : undefined
 
+    // DELETE of a row that still carries a `local-*` id (created offline and
+    // not yet flushed): the server doesn't know it. Resolve via the id map —
+    // or, if the create itself is still in the outbox, cancel create+delete
+    // and drop the optimistic cache row (the row simply never existed).
+    const rawId = parts[1]
+    if (method === 'DELETE' && typeof rawId === 'string' && rawId.startsWith('local-')) {
+      const serverId = await this.adapter!.getServerId(rawId)
+      if (serverId != null) {
+        // Row flushed earlier — queue the delete against the real id.
+        await engine.offlineWrite('DELETE', collection, serverId, {})
+        this._cacheVersion++
+        return { doc: { id: serverId }, queued: true }
+      }
+      // Unflushed create: drop both the queued create and this delete.
+      await this.adapter!.discardLocalCreate(rawId, collection)
+      await this.adapter!.remove(collection, rawId)
+      const scoped = this._tenant ? `${this._tenant}:${collection}` : collection
+      await this.adapter!.remove(scoped, rawId).catch(() => {})
+      this._cacheVersion++
+      return { doc: { id: rawId }, queued: false }
+    }
+
     const result = await engine.offlineWrite(
       method,
       collection,
@@ -461,6 +483,21 @@ class CompatibilityEngine {
 
   async readDoc(slug: string, id: string): Promise<Record<string, unknown> | null> {
     return this.adapter!.get(slug, id)
+  }
+
+  /**
+   * Remove a single row from the collection cache under both the plain and
+   * the tenant-scoped key. Used after an outboxed DELETE so cache-first list
+   * pages reflect the deletion without a full invalidation (which would
+   * blank the list until the next server pull).
+   */
+  async removeDoc(slug: string, id: string, tenant?: string): Promise<void> {
+    await this.ensure()
+    const keys = new Set([slug, tenant ? `${tenant}:${slug}` : slug])
+    for (const key of keys) {
+      await this.adapter!.remove(key, id)
+    }
+    this._cacheVersion++
   }
 
   /** Resolve a `local-*` placeholder to its server id once the flush mapped it. */

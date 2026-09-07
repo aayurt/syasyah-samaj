@@ -140,7 +140,7 @@ export default function Journal() {
       })
       setVoucher(d)
     } catch {
-      setError('Could not load the source voucher.')
+      setError('Could not load the source transaction.')
     }
   }
 
@@ -512,7 +512,7 @@ export default function Journal() {
                         type="button"
                         onClick={() => openVoucher(entryDocId(e))}
                         className="text-blue-600 hover:underline"
-                        title="Open source voucher"
+                        title="Open source transaction"
                       >
                         {entryNumber(e)}
                       </button>

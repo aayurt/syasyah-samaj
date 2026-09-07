@@ -137,6 +137,8 @@ export interface Party {
   taxId?: string
   address?: string
   openingBalance?: number
+  receivableAccount?: number | Account | null
+  payableAccount?: number | Account | null
   tenant?: number | null
 }
 
@@ -259,8 +261,13 @@ export interface PnlRow {
 
 export interface PnlResponse {
   income: PnlRow[]
-  expense: PnlRow[]
-  totals: { income: number; expense: number; netProfit: number }
+  expense: PnlRow[] // backward compat – equals otherExpense (COGS removed)
+  cogs: PnlRow[]
+  otherExpense: PnlRow[]
+  incomeTotal: number
+  cogsTotal: number
+  otherExpenseTotal: number
+  totals: { income: number; cogs: number; grossProfit: number; otherExpense: number; expense: number; netProfit: number }
 }
 
 export interface BsRow {
@@ -319,6 +326,17 @@ export interface FiscalYear {
   tenant?: number | { id: number } | null
 }
 
+export interface OpeningBalance {
+  id: number
+  account: number | Account
+  fiscalYear: number | FiscalYear
+  amount?: number
+  tenant?: number | null
+}
+export interface OpeningBalancesForYear {
+  docs: OpeningBalance[]
+}
+
 export interface BillingSettings {
   calendarType?: 'AD' | 'BS'
   dateFormat?: string
@@ -343,6 +361,8 @@ export interface BillingSettings {
   bankReconciliationEnabled?: boolean
   simplifiedInvoiceEnabled?: boolean
   simplifiedInvoiceThreshold?: number
+  demoSeedEnabled?: boolean
+  dataEpoch?: number
   membershipFeeAccount?: number | Account | null
   donationAccount?: number | Account | null
   companyName?: string

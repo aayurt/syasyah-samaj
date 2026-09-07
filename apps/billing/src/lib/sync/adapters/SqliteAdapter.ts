@@ -150,6 +150,10 @@ export class SqliteAdapter implements StorageAdapter {
     await this.db.execute(`DELETE FROM outbox WHERE seq = ?`, [seq])
   }
 
+  async discardLocalCreate(localId: string, _collection?: string): Promise<void> {
+    await this.db.execute(`DELETE FROM outbox WHERE op = 'create' AND local_id = ?`, [localId])
+  }
+
   async markConflict(seq: number, reason: string): Promise<void> {
     await this.db.execute(
       `UPDATE outbox SET conflict = ? WHERE seq = ?`,

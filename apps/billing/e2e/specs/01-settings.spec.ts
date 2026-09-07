@@ -90,11 +90,9 @@ test.describe.serial('S1 — Settings', () => {
       )
       .toBeTruthy()
 
-    // S1.4 — delete the extra year through the UI. Resync first so the local
-    // cache row maps to its server id (a delete fired at a still-local id
-    // would 404 on the server and the row would linger).
-    await page.getByRole('button', { name: 'Resync' }).click()
-    await expect(page.getByRole('button', { name: 'Resync' })).toBeVisible({ timeout: 20_000 })
+    // S1.4 — delete the extra year through the UI. The delete queues to the
+    // offline outbox, which self-resolves local→server ids, so no manual
+    // Resync is needed here.
     await table
       .locator('tbody tr', { hasText: '2085-86' })
       .first()

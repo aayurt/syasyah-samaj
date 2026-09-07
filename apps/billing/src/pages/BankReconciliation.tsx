@@ -165,7 +165,7 @@ export default function BankReconciliation() {
       setVoucherResult(res)
       await loadStatements()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create vouchers')
+      setError(err instanceof Error ? err.message : 'Failed to create transactions')
     } finally {
       setCreatingVouchers(false)
     }

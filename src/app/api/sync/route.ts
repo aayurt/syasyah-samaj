@@ -41,6 +41,7 @@ const ALLOWED_COLLECTIONS = new Set([
   'fiscal-years',
   'tenants',
   'audit-logs',
+  'opening-balances',
 ])
 
 const MAX_BATCH_SIZE = 100
@@ -194,6 +195,7 @@ export async function POST(req: NextRequest) {
       'recurring-schedules',
       'expense-claims',
       'fiscal-years',
+      'opening-balances',
     ]
 
     for (const slug of changeCollections) {
@@ -293,13 +295,24 @@ async function processOperation(
 
     case 'delete': {
       if (!op.id) throw new Error('Delete requires id')
-      await payload.delete({
-        collection: op.collection,
-        id: op.id,
-        overrideAccess: true,
-        req: reqOpts,
-      })
-      return { status: 'deleted' }
+      try {
+        await payload.delete({
+          collection: op.collection,
+          id: op.id,
+          overrideAccess: true,
+          req: reqOpts,
+        })
+        return { status: 'deleted' }
+      } catch (err: any) {
+        // An outboxed delete can race a client that already deleted the row
+        // (two devices, or a retried batch). Deleting a missing row is the
+        // desired end state — treat it as success instead of stranding the
+        // entry in the outbox as a permanent conflict.
+        if (err?.status === 404 || /not found/i.test(String(err?.message || ''))) {
+          return { status: 'already deleted' }
+        }
+        throw err
+      }
     }
 
     default:

@@ -36,7 +36,14 @@ export async function computeStockLedger(
     where: { item: { equals: item.id } },
     limit: 1000,
     depth: 0,
-    sort: 'date',
+  })
+  // Movements can share a date (same-day GRN + sale + return); order them by
+  // date then insertion order so the running average stays chronological.
+  const docs = [...(res.docs as any[])].sort((a: any, b: any) => {
+    const da = new Date(a.date).getTime()
+    const db = new Date(b.date).getTime()
+    if (da !== db) return da - db
+    return Number(a.id) - Number(b.id)
   })
   const rows: StockLedgerRow[] = []
   let onHand = toNum(item.openingStock)
@@ -58,7 +65,7 @@ export async function computeStockLedger(
     })
   }
 
-  for (const m of res.docs as any[]) {
+  for (const m of docs) {
     const qtyIn = toNum(m.qtyIn)
     const qtyOut = toNum(m.qtyOut)
     if (qtyIn > 0) {

@@ -11,6 +11,8 @@ import {
   MoreVertical,
   Pencil,
   Plus,
+  CalendarDays,
+  ChevronDown,
   Printer,
   RefreshCw,
   Trash2,
@@ -90,7 +92,7 @@ interface LineDraft {
   amount: string
 }
 
-const INVENTORY_TYPES = ['sales-invoice', 'delivery-challan', 'grn']
+const INVENTORY_TYPES = ['sales-invoice', 'delivery-challan', 'grn', 'purchase-invoice']
 
 interface JLineDraft {
   key: string
@@ -208,6 +210,7 @@ export default function Vouchers() {
   const [voidItems, setVoidItems] = useState<Array<{itemIndex: number; quantity: number; reason: string}>>([])
   const [voidLoading, setVoidLoading] = useState(false)
   const [receiptSortAsc, setReceiptSortAsc] = useState(true)
+  const [dateOpen, setDateOpen] = useState(false)
   /** Outbox seq of a conflicted create being resumed into this form. */
   const resumedSeqRef = useRef<number | null>(null)
   // TDS toggle state (separate from tax lines for cleaner UX)
@@ -257,7 +260,7 @@ export default function Vouchers() {
       setItems(it.docs)
       setTaxTypes(tx.docs.filter((t) => t.active !== false))
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load vouchers')
+      setError(err instanceof Error ? err.message : 'Failed to load transactions')
     } finally {
       setLoading(false)
     }
@@ -636,7 +639,7 @@ export default function Vouchers() {
       setTdsAmountManual('')
       await load()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to save voucher')
+      setError(err instanceof Error ? err.message : 'Failed to save transaction')
     }
     setSaving(false)
   }
@@ -775,7 +778,7 @@ export default function Vouchers() {
   const bulkPost = async () => {
     const drafts = visible.filter((d) => selected.has(d.id) && d.status === 'draft')
     if (drafts.length === 0) return
-    if (!window.confirm(`Post ${drafts.length} draft voucher(s)?`)) return
+    if (!window.confirm(`Post ${drafts.length} draft transaction(s)?`)) return
     setBulkLoading(true); setError('')
     try {
       for (const d of drafts) {
@@ -929,23 +932,23 @@ export default function Vouchers() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-900">Vouchers</h1>
+        <h1 className="text-lg font-semibold text-slate-900">Transactions</h1>
         <button
           data-tour="new-voucher"
           onClick={() => navigate(typeFilter ? `/vouchers/new/${typeFilter}` : '/vouchers/new')}
           disabled={selectedYear?.status === 'closed'}
-          title={selectedYear?.status === 'closed' ? 'This fiscal year is closed — vouchers are read-only' : undefined}
+          title={selectedYear?.status === 'closed' ? 'This fiscal year is closed — transactions are read-only' : undefined}
           className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Plus size={14} />
-          New voucher
+          New transaction
         </button>
       </div>
 
       {selectedYear?.status === 'closed' && (
         <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
           The fiscal year <span className="font-medium">{selectedYear.label || 'selected'}</span> is{' '}
-          <span className="font-medium">closed</span> — vouchers in this period are read-only. Switch to an
+          <span className="font-medium">closed</span> — transactions in this period are read-only. Switch to an
           active year in the header to create or edit entries.
         </p>
       )}
@@ -974,7 +977,7 @@ export default function Vouchers() {
             <div className="mb-3 flex items-center justify-between rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
               <span className="flex items-center gap-1.5">
                 <Pencil size={13} />
-                Editing draft — changes apply to this voucher
+                Editing draft — changes apply to this transaction
               </span>
               <button
                 type="button"
@@ -1751,78 +1754,113 @@ export default function Vouchers() {
         <TableSkeleton rows={7} />
       ) : (
         <>
-      <div data-tour="voucher-filters" className="mt-6 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs uppercase tracking-wide text-slate-500">
-            Type
-          </span>
-          <button
-            onClick={() => setTypeFilter('')}
-            className={`rounded px-2.5 py-1 text-xs font-medium ${
-              typeFilter === ''
-                ? 'bg-crimson-600 text-white'
-                : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            all
-          </button>
-          {DOC_TYPES.map((t) => (
+      {/* Filter toolbar — single row: status pills · search · type/date dropdowns */}
+      <div data-tour="voucher-filters" className="mt-4 flex flex-wrap items-center gap-2">
+        {/* Status pills */}
+        <div className="flex items-center rounded-lg border border-slate-300 bg-white p-0.5" role="group" aria-label="Filter by status">
+          {[
+            { v: '', label: 'All' },
+            { v: 'draft', label: 'Draft' },
+            { v: 'posted', label: 'Posted' },
+            { v: 'void', label: 'Void' },
+          ].map((s) => (
             <button
-              key={t.value}
-              onClick={() => setTypeFilter(t.value)}
-              className={`rounded px-2.5 py-1 text-xs font-medium ${
-                typeFilter === t.value
-                  ? 'bg-crimson-600 text-white'
-                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
+              key={s.v}
+              onClick={() => setStatusFilter(s.v)}
+              aria-pressed={statusFilter === s.v}
+              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                statusFilter === s.v
+                  ? 'bg-crimson-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              {t.label}
+              {s.label}
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs uppercase tracking-wide text-slate-500">
-            Status
-          </span>
-          {['', 'draft', 'posted', 'void'].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`rounded px-2.5 py-1 text-xs font-medium ${
-                statusFilter === s
-                  ? 'bg-crimson-600 text-white'
-                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {s === '' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs uppercase tracking-wide text-slate-500">
-            Date
-          </span>
-          <NepaliDateInput compact value={dateFrom} onChange={setDateFrom} />
-          <span className="text-xs text-slate-400">to</span>
-          <NepaliDateInput compact value={dateTo} onChange={setDateTo} />
-          {(dateFrom || dateTo) && (
-            <button
-              onClick={() => { setDateFrom(''); setDateTo('') }}
-              className="rounded px-2 py-1 text-xs font-medium text-crimson-600 hover:bg-crimson-50"
-            >
-              clear dates
-            </button>
-          )}
-        </div>
-        <div className="flex items-center justify-between gap-3 pt-1">
-          <span className="text-xs text-slate-400">
-            {visible.length} of {filtered.length}
-          </span>
+
+        {/* Search */}
+        <div className="min-w-40 flex-1 max-w-xs">
           <SearchBox
             value={query}
             onChange={setQuery}
             placeholder="Search number, party, narration…"
           />
+        </div>
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {/* Type dropdown */}
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            aria-label="Filter by transaction type"
+            className="h-[34px] rounded-lg border border-slate-300 bg-white pl-2.5 pr-8 text-xs text-slate-700 outline-none focus:border-slate-500"
+          >
+            <option value="">Type: All</option>
+            {DOC_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>Type: {t.label}</option>
+            ))}
+          </select>
+
+          {/* Date range dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setDateOpen((o) => !o)}
+              aria-expanded={dateOpen}
+              className={`flex h-[34px] items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium ${
+                dateFrom || dateTo
+                  ? 'border-crimson-300 bg-crimson-50 text-crimson-700'
+                  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <CalendarDays size={13} />
+              {dateFrom || dateTo
+                ? `${dateFrom || '…'} → ${dateTo || '…'}`
+                : 'Date'}
+              <ChevronDown size={12} className={`transition-transform ${dateOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {dateOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setDateOpen(false)} />
+                <div className="absolute right-0 z-40 mt-1 w-64 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
+                  <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Date range</div>
+                  <div className="mt-2 space-y-2">
+                    <label className="block text-xs text-slate-600">
+                      From
+                      <div className="mt-1"><NepaliDateInput compact value={dateFrom} onChange={setDateFrom} /></div>
+                    </label>
+                    <label className="block text-xs text-slate-600">
+                      To
+                      <div className="mt-1"><NepaliDateInput compact value={dateTo} onChange={setDateTo} /></div>
+                    </label>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => { setDateFrom(''); setDateTo('') }}
+                      className="text-xs font-medium text-crimson-600 hover:bg-crimson-50 rounded px-2 py-1"
+                      disabled={!dateFrom && !dateTo}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDateOpen(false)}
+                      className="rounded bg-slate-800 px-3 py-1 text-xs font-medium text-white hover:bg-slate-700"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Result count */}
+          <span className="whitespace-nowrap text-xs text-slate-400">
+            {visible.length} of {filtered.length}
+          </span>
         </div>
       </div>
 
@@ -1874,8 +1912,8 @@ export default function Vouchers() {
               </th>
               <SortableTh label="Date" sortKey="date" sort={sort} onSort={toggleSort} />
               <SortableTh label="Updated" sortKey="updatedAt" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Number" sortKey="number" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Type" sortKey="type" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Transaction No." sortKey="number" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Transaction Type" sortKey="type" sort={sort} onSort={toggleSort} />
               <SortableTh label="Party" sortKey="party" sort={sort} onSort={toggleSort} />
               <SortableTh label="Amount" sortKey="amount" sort={sort} onSort={toggleSort} align="right" />
               <SortableTh label="Status" sortKey="status" sort={sort} onSort={toggleSort} />
@@ -1888,7 +1926,7 @@ export default function Vouchers() {
             {visible.length === 0 && (
               <tr>
                 <td colSpan={11} className="px-4 py-6 text-center text-slate-400">
-                  No vouchers yet.
+                  No transactions yet.
                 </td>
               </tr>
             )}
@@ -2035,10 +2073,10 @@ export default function Vouchers() {
                               <button
                                 onClick={async () => {
                                   setMenuFor(null)
-                                  if (!window.confirm('Reopen this voucher? This will delete the journal entry and clear the voucher number. You can then edit and re-post it.')) return
+                                  if (!window.confirm('Reopen (unpost) this transaction? This will delete the journal entry and clear the transaction number. You can then edit and re-post it.')) return
                                   try {
                                     await api(`/documents/${d.id}/reopen`, { method: 'POST' })
-                                    pushToast('success', 'Voucher reopened — edit and re-post when ready')
+                                    pushToast('success', 'Transaction reopened — edit and re-post when ready')
                                     navigate(`/vouchers/edit/${d.id}`)
                                   } catch (err) {
                                     pushToast('error', 'Reopen failed', err instanceof Error ? err.message : String(err))
@@ -2124,7 +2162,7 @@ export default function Vouchers() {
                   <div className="border-b border-slate-200 bg-slate-50 px-8 py-5 text-center rounded-t-xl print:bg-white print:rounded-none">
                     <h1 className="text-xl font-bold tracking-tight text-slate-900">स्यस्यः धुकू</h1>
                     <p className="mt-0.5 text-xs text-slate-400">
-                      {isSimplified ? 'Tax Invoice (VAT Inclusive)' : 'Tax Invoice / Voucher'}
+                      {isSimplified ? 'Tax Invoice (VAT Inclusive)' : 'Tax Invoice / Transaction'}
                     </p>
                   </div>
                 )
@@ -2365,7 +2403,7 @@ export default function Vouchers() {
                               <th className="py-2 cursor-pointer select-none hover:text-slate-700" onClick={() => setReceiptSortAsc(!receiptSortAsc)}>
                                 Date {receiptSortAsc ? '↑' : '↓'}
                               </th>
-                              <th className="py-2">Number</th>
+                              <th className="py-2">Transaction No.</th>
                               <th className="py-2 text-right">Amount</th>
                               <th className="py-2 text-center">Type</th>
                             </tr>
@@ -2497,10 +2535,10 @@ export default function Vouchers() {
                       </button>
                       <button
                         onClick={async () => {
-                          if (!window.confirm('Reopen this voucher? This will delete the journal entry and clear the voucher number. You can then edit and re-post it.')) return
+                          if (!window.confirm('Reopen (unpost) this transaction? This will delete the journal entry and clear the transaction number. You can then edit and re-post it.')) return
                           try {
                             await api(`/documents/${viewDoc.id}/reopen`, { method: 'POST' })
-                            pushToast('success', 'Voucher reopened — edit and re-post when ready')
+                            pushToast('success', 'Transaction reopened — edit and re-post when ready')
                             setViewDoc(null)
                             navigate(`/vouchers/edit/${viewDoc.id}`)
                           } catch (err) {

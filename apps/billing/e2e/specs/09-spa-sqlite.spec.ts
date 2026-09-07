@@ -57,7 +57,7 @@ test.describe.serial('09 — SPA forced onto the SQLite backend', () => {
     // 2. Baseline: the journey ran through 03-masters only — no vouchers yet
     //    (the list renders an empty-state row, not a data row).
     await page.goto('/vouchers')
-    await expect(page.getByRole('heading', { name: 'Vouchers' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Transactions' })).toBeVisible()
     await expect(page.getByText('No vouchers yet.')).toBeVisible({ timeout: 20_000 })
     await expect(page.getByText(/^JV-2083-84-/)).toHaveCount(0)
 

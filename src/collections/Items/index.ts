@@ -7,7 +7,7 @@ import {
   scopedUpdate,
 } from '@/access/tenantScoped'
 import type { CollectionConfig } from 'payload'
-import { toNum } from '@/utilities/journalValidation'
+import { round2, toNum } from '@/utilities/journalValidation'
 import { computeStockLedger } from '@/utilities/stockValuation'
 import { assignTenant } from '@/utilities/tenantScope'
 import { paginate, parsePagination } from '@/utilities/pagination'
@@ -59,6 +59,78 @@ export const Items: CollectionConfig = {
           })
         }
         const page = paginate(levels, parsePagination(searchParams))
+        return Response.json({
+          docs: page.docs,
+          total: page.total,
+          hasMore: page.hasMore,
+          limit: parsePagination(searchParams).limit,
+          offset: parsePagination(searchParams).offset,
+        })
+      },
+    },
+    {
+      // Valuation summary per item: opening and closing quantity+value,
+      // receipts and issues (quantity+value) inside the period, weighted-
+      // average cost, and a reorder flag. One summary per item.
+      path: '/valuation',
+      method: 'get',
+      handler: async (req) => {
+        if (!req.user || !isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const { searchParams } = new URL(req.url || '/')
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
+        const from = searchParams.get('from') || ''
+        const to = searchParams.get('to') || ''
+        const res = await req.payload.find({
+          collection: 'items',
+          limit: 1000,
+          depth: 0,
+          where: tenant ? { tenant: { equals: tenant } } : undefined,
+        })
+        const docs: any[] = []
+        for (const item of res.docs as any[]) {
+          const ledger = await computeStockLedger(req.payload, item)
+          const last = ledger[ledger.length - 1]
+          const onHand = last?.qtyOnHand ?? 0
+          const avgCost = last?.avgCost ?? 0
+          let receiptsQty = 0
+          let receiptsValue = 0
+          let issuesQty = 0
+          let issuesValue = 0
+          for (const r of ledger.slice(1)) {
+            if (from && (r.date || '') < from) continue
+            if (to && (r.date || '') > to + 'T23:59:59') continue
+            if (r.qtyIn > 0) {
+              receiptsQty += r.qtyIn
+              receiptsValue += r.qtyIn * r.unitCost
+            } else if (r.qtyOut > 0) {
+              issuesQty += r.qtyOut
+              issuesValue += r.qtyOut * r.unitCost
+            }
+          }
+          const openingQty =
+            from && ledger.length > 0
+              ? (ledger[0]?.qtyOnHand ?? 0)
+              : (toNum(item.openingStock) || 0)
+          const openingRow = ledger[0]
+          docs.push({
+            item: { id: item.id, code: item.code, name: item.name, unit: item.unit },
+            valuationMethod: item.valuationMethod || 'avco',
+            openingQty,
+            openingValue: openingRow?.balanceValue ?? 0,
+            receiptsQty: round2(receiptsQty),
+            receiptsValue: round2(receiptsValue),
+            issuesQty: round2(issuesQty),
+            issuesValue: round2(issuesValue),
+            closingQty: onHand,
+            closingValue: last ? last.balanceValue : 0,
+            avgCost,
+            belowReorder:
+              Number(item.reorderLevel) > 0 && onHand < Number(item.reorderLevel),
+          })
+        }
+        const page = paginate(docs, parsePagination(searchParams))
         return Response.json({
           docs: page.docs,
           total: page.total,

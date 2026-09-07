@@ -54,8 +54,11 @@ export default function ProfitLoss() {
     downloadCsv('profit-loss.csv', ['Section', 'Account', 'Amount'], [
       ...data.income.map((r) => ['Income', r.account.name, r.amount]),
       ['', 'Total Income', data.totals.income],
-      ...data.expense.map((r) => ['Expense', r.account.name, r.amount]),
-      ['', 'Total Expenses', data.totals.expense],
+      ...data.cogs.map((r) => ['Cost of Goods Sold', r.account.name, r.amount]),
+      ['', 'Total COGS', data.totals.cogs],
+      ['', 'Gross Profit', data.totals.grossProfit],
+      ...data.otherExpense.map((r) => ['Operating Expenses', r.account.name, r.amount]),
+      ['', 'Total Operating Expenses', data.totals.otherExpense],
       ['', 'Net Profit/Loss', data.totals.netProfit],
     ])
   }
@@ -75,13 +78,20 @@ export default function ProfitLoss() {
           totals: ['Total Income', data.totals.income],
         },
         {
-          title: `Expenses (${fmt(data.totals.expense)})`,
+          title: `Cost of Goods Sold (${fmt(data.totals.cogs)})`,
           columns: ['Account', 'Amount'],
-          rows: data.expense.map((r) => [r.account.name, r.amount]),
-          totals: ['Total Expenses', data.totals.expense],
+          rows: data.cogs.map((r) => [r.account.name, r.amount]),
+          totals: ['Total COGS', data.totals.cogs],
+        },
+        {
+          title: `Operating Expenses (${fmt(data.totals.otherExpense)})`,
+          columns: ['Account', 'Amount'],
+          rows: data.otherExpense.map((r) => [r.account.name, r.amount]),
+          totals: ['Total Operating Expenses', data.totals.otherExpense],
         },
       ],
       foot: [
+        { label: 'Gross Profit', value: data.totals.grossProfit },
         { label: data.totals.netProfit >= 0 ? 'Net Profit' : 'Net Loss', value: data.totals.netProfit },
       ],
     })
@@ -157,14 +167,20 @@ export default function ProfitLoss() {
           </div>
 
           {/* KPI summary */}
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div className="rounded-lg border border-slate-200 bg-white p-4">
               <div className="text-xs uppercase tracking-wide text-slate-500">Total Income</div>
               <div className="mt-1 font-mono text-xl font-semibold text-emerald-700">{fmt(data.totals.income)}</div>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Total Expenses</div>
-              <div className="mt-1 font-mono text-xl font-semibold text-red-600">{fmt(data.totals.expense)}</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">Cost of Goods Sold</div>
+              <div className="mt-1 font-mono text-xl font-semibold text-red-600">{fmt(data.totals.cogs)}</div>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-white p-4">
+              <div className="text-xs uppercase tracking-wide text-slate-500">Gross Profit</div>
+              <div className={`mt-1 font-mono text-xl font-semibold ${data.totals.grossProfit >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                {data.totals.grossProfit >= 0 ? '+' : ''}{fmt(data.totals.grossProfit)}
+              </div>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-4">
               <div className="text-xs uppercase tracking-wide text-slate-500">Net Profit / Loss</div>
@@ -179,9 +195,19 @@ export default function ProfitLoss() {
             <RowList title="Income" rows={data.income} total={data.totals.income} color="text-emerald-700" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
           </div>
 
-          {/* Expenses */}
+          {/* Cost of Goods Sold */}
           <div className="mt-4">
-            <RowList title="Expenses" rows={data.expense} total={data.totals.expense} color="text-red-600" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
+            <RowList title="Cost of Goods Sold" rows={data.cogs} total={data.totals.cogs} color="text-red-600" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
+          </div>
+
+          {/* Gross Profit banner */}
+          <div className={`mt-4 rounded-lg border px-4 py-3 text-sm font-medium ${data.totals.grossProfit >= 0 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
+            Gross Profit: {data.totals.grossProfit >= 0 ? '+' : ''}{fmt(data.totals.grossProfit)}
+          </div>
+
+          {/* Operating Expenses */}
+          <div className="mt-4">
+            <RowList title="Operating Expenses" rows={data.otherExpense} total={data.totals.otherExpense} color="text-red-600" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
           </div>
 
           {/* Final summary */}
@@ -191,8 +217,18 @@ export default function ProfitLoss() {
               <span className="font-mono font-semibold text-emerald-700">{fmt(data.totals.income)}</span>
             </div>
             <div className="mt-1 flex justify-between text-sm">
-              <span className="font-semibold text-slate-700">Total Expenses</span>
-              <span className="font-mono font-semibold text-red-600">({fmt(data.totals.expense)})</span>
+              <span className="font-semibold text-slate-700">Cost of Goods Sold</span>
+              <span className="font-mono font-semibold text-red-600">({fmt(data.totals.cogs)})</span>
+            </div>
+            <div className="mt-2 flex justify-between border-t border-slate-200 pt-2 text-sm">
+              <span className="font-bold text-slate-700">Gross Profit</span>
+              <span className={`font-mono font-bold ${data.totals.grossProfit >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                {data.totals.grossProfit >= 0 ? '+' : ''}{fmt(data.totals.grossProfit)}
+              </span>
+            </div>
+            <div className="mt-2 flex justify-between text-sm">
+              <span className="font-semibold text-slate-700">Operating Expenses</span>
+              <span className="font-mono font-semibold text-red-600">({fmt(data.totals.otherExpense)})</span>
             </div>
             <div className="mt-2 flex justify-between border-t border-slate-200 pt-2 text-sm">
               <span className="font-bold text-slate-900">{data.totals.netProfit >= 0 ? 'Net Profit' : 'Net Loss'}</span>

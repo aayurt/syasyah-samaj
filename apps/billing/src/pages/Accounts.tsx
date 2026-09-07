@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Download, Plus, Trash2 } from 'lucide-react'
+import { Download, Pencil, Plus, Trash2 } from 'lucide-react'
 import { api, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
@@ -10,7 +10,8 @@ import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useSearchParams } from 'react-router-dom'
 import { useTenant, useTenantQuery } from '../lib/tenant'
-import type { Account, AccountGroup, AccountType } from '../lib/types'
+import { useFiscalYear } from '../lib/fiscalYear'
+import type { Account, AccountGroup, AccountType, OpeningBalance } from '../lib/types'
 
 const TYPES: AccountType[] = ['asset', 'liability', 'equity', 'income', 'expense']
 const TYPE_LABELS: Record<string, string> = {
@@ -27,7 +28,6 @@ const emptyForm = {
   type: 'asset' as AccountType,
   class: 'other',
   group: '',
-  openingBalance: '',
 }
 
 export default function Accounts() {
@@ -36,22 +36,36 @@ export default function Accounts() {
   const tenantQuery = useTenantQuery()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [groups, setGroups] = useState<AccountGroup[]>([])
+  const [openings, setOpenings] = useState<Record<number, number>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<number | null>(null)
+  const { selectedYear } = useFiscalYear()
 
   const load = async () => {
     setLoading(true)
     setError('')
     try {
-      const [a, g] = await Promise.all([
+      const [a, g, o] = await Promise.all([
         list<Account>('gl-accounts', { depth: 1, sort: 'name', ...tenantQuery }),
         list<AccountGroup>('account-groups', { depth: 0, sort: 'name' }),
+        selectedYear
+          ? api<{ docs: OpeningBalance[] }>('/opening-balances/for-year', {
+              query: { fiscalYear: String(selectedYear.id), ...tenantQuery },
+            })
+          : Promise.resolve({ docs: [] }),
       ])
       setAccounts(a.docs)
       setGroups(g.docs)
+      const map: Record<number, number> = {}
+      for (const b of o.docs || []) {
+        const id = typeof b.account === 'object' ? b.account.id : b.account
+        map[id] = Number(b.amount || 0)
+      }
+      setOpenings(map)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load accounts')
     } finally {
@@ -61,32 +75,52 @@ export default function Accounts() {
 
   useEffect(() => {
     load()
-  }, [cacheVersion, tenantId])
+    // reload when the working fiscal year changes — the opening column is FY-scoped
+  }, [cacheVersion, tenantId, selectedYear?.id])
 
-  const create = async (e: React.FormEvent) => {
+  const openNew = () => {
+    setForm(emptyForm)
+    setEditing(null)
+    setShowForm((s) => !s)
+  }
+
+  const startEdit = (a: Account) => {
+    setForm({
+      name: a.name,
+      code: a.code || '',
+      type: a.type,
+      class: a.class || 'other',
+      group: a.group ? String(typeof a.group === 'object' ? (a.group as AccountGroup).id : a.group) : '',
+    })
+    setEditing(a.id)
+    setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const save = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError('')
     try {
-      await api('/gl-accounts', {
-        method: 'POST',
-        body: {
-          name: form.name,
-          code: form.code || undefined,
-          type: form.type,
-          class: form.class,
-          group: form.group ? Number(form.group) : undefined,
-          openingBalance: form.openingBalance
-            ? Number(form.openingBalance)
-            : 0,
-          ...(tenantId ? { tenant: tenantId } : {}),
-        },
-      })
+      const body = {
+        name: form.name,
+        code: form.code || undefined,
+        type: form.type,
+        class: form.class,
+        group: form.group ? Number(form.group) : undefined,
+        ...(tenantId ? { tenant: tenantId } : {}),
+      }
+      if (editing) {
+        await api(`/gl-accounts/${editing}`, { method: 'PATCH', body })
+      } else {
+        await api('/gl-accounts', { method: 'POST', body })
+      }
       setForm(emptyForm)
+      setEditing(null)
       setShowForm(false)
       await load()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create account')
+      setError(err instanceof Error ? err.message : editing ? 'Failed to update account' : 'Failed to create account')
     }
     setSaving(false)
   }
@@ -94,9 +128,8 @@ export default function Accounts() {
   const remove = async (id: number) => {
     if (!window.confirm('Delete this account?')) return
     try {
-      // Admin op — bypass the offline outbox (a queued delete can't resolve a
-      // row that still carries a local id). api() resolves local→server ids.
-      await api(`/gl-accounts/${id}`, { method: 'DELETE', immediate: true })
+      // Queued to the offline outbox — flushes on reconnect when offline.
+      await api(`/gl-accounts/${id}`, { method: 'DELETE' })
       await load()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to delete account')
@@ -142,23 +175,23 @@ export default function Accounts() {
     searchable: (a) =>
       [a.name, a.code || '', groupName(a), a.class || ''].join(' '),
     valueOf: (a, key) => {
-      switch (key) {
-        case 'group':
-          return groupName(a)
-        case 'opening':
-          return Number(a.openingBalance) || 0
-        default:
-          return (a as unknown as Record<string, unknown>)[key] as
-            | string
-            | number
-            | undefined
-      }
-    },
-    defaultSort: { key: 'name', dir: 'asc' },
-    initialQuery: urlQuery,
-    initialSort: { key: urlSortKey, dir: urlSortDir },
-    onChange: syncToUrl,
-  })
+        switch (key) {
+          case 'group':
+            return groupName(a)
+          case 'opening':
+            return Number(a.openingBalance) || 0
+          default:
+            return (a as unknown as Record<string, unknown>)[key] as
+              | string
+              | number
+              | undefined
+        }
+      },
+      defaultSort: { key: 'name', dir: 'asc' },
+      initialQuery: urlQuery,
+      initialSort: { key: urlSortKey, dir: urlSortDir },
+      onChange: syncToUrl,
+    })
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -167,7 +200,7 @@ export default function Accounts() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => downloadCsv('accounts.csv', ['Code', 'Name', 'Type', 'Class', 'Opening Balance'],
-              visible.map((a) => [a.code || '', a.name, a.type, a.class || '', a.openingBalance || 0]))
+              visible.map((a) => [a.code || '', a.name, a.type, a.class || '', openings[a.id] ?? a.openingBalance ?? 0]))
             }
             disabled={visible.length === 0}
             className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
@@ -175,7 +208,7 @@ export default function Accounts() {
             <Download size={14} /> CSV
           </button>
           <button
-            onClick={() => setShowForm((s) => !s)}
+            onClick={openNew}
             className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             <Plus size={14} />
@@ -192,9 +225,12 @@ export default function Accounts() {
 
       {showForm && (
         <form
-          onSubmit={create}
+          onSubmit={save}
           className="mt-4 rounded-lg border border-slate-200 bg-white p-4"
         >
+          <h3 className="mb-3 text-sm font-semibold text-slate-700">
+            {editing ? 'Edit Account' : 'New Account'}
+          </h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <label className="text-sm text-slate-700">
               Name *
@@ -260,18 +296,6 @@ export default function Accounts() {
                 )}
               </select>
             </label>
-            <label className="text-sm text-slate-700">
-              Opening balance
-              <input
-                type="number"
-                step="0.01"
-                value={form.openingBalance}
-                onChange={(e) =>
-                  setForm({ ...form, openingBalance: e.target.value })
-                }
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              />
-            </label>
           </div>
           <div className="mt-4 flex gap-2">
             <button
@@ -279,11 +303,11 @@ export default function Accounts() {
               disabled={saving}
               className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
             >
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? 'Saving…' : editing ? 'Update' : 'Save'}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => { setShowForm(false); setEditing(null) }}
               className="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
             >
               Cancel
@@ -332,7 +356,7 @@ export default function Accounts() {
                   <SortableTh label="Name" sortKey="name" sort={sort} onSort={toggleSort} />
                   <SortableTh label="Group" sortKey="group" sort={sort} onSort={toggleSort} />
                   <SortableTh label="Class" sortKey="class" sort={sort} onSort={toggleSort} />
-                  <SortableTh label="Opening" sortKey="opening" sort={sort} onSort={toggleSort} align="right" />
+                  <SortableTh label="Opening (FY)" sortKey="opening" sort={sort} onSort={toggleSort} align="right" />
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -348,13 +372,18 @@ export default function Accounts() {
                     </td>
                     <td className="px-4 py-2 text-slate-500">{a.class || 'other'}</td>
                     <td className="px-4 py-2 text-right font-mono text-slate-700">
-                      {Number(a.openingBalance || 0).toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                      })}
+{Number(openings[a.id] ?? a.openingBalance ?? 0).toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                        })}
                     </td>
                     <td className="px-4 py-2 text-right">
                       <ActionMenu
                         items={[
+                          {
+                            label: 'Edit',
+                            icon: <Pencil size={13} />,
+                            onClick: () => startEdit(a),
+                          },
                           {
                             label: 'Delete',
                             icon: <Trash2 size={13} />,

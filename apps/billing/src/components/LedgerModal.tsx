@@ -26,7 +26,7 @@ export default function LedgerModal({ accountId, accountName, onClose }: Props) 
       })
       setVoucher(d)
     } catch {
-      setError('Could not load the source voucher.')
+      setError('Could not load the source transaction.')
     }
   }
 
@@ -88,7 +88,7 @@ export default function LedgerModal({ accountId, accountName, onClose }: Props) 
                       type="button"
                       onClick={() => openVoucher(l.docId)}
                       className="text-blue-600 hover:underline"
-                      title="Open source voucher"
+                      title="Open source transaction"
                     >
                       {l.docNumber}
                     </button>

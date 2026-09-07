@@ -16,7 +16,7 @@ test.describe.serial('S5 — Journal list with voucher numbers', () => {
     await expect(page.getByText('JV-2083-84-0003').first()).toBeVisible()
   })
 
-  test('S5.2 — clicking a number opens the source voucher modal', async ({ page }) => {
+  test('S5.2 — clicking a number opens the source transaction modal', async ({ page }) => {
     await page.goto('/journal')
     const num = 'JV-2083-84-0001'
     const cell = page.getByRole('button', { name: num }).first()

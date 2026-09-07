@@ -84,7 +84,7 @@ export function useSetupStatus(): SetupStatus {
     const load = () => {
       attempts++
       Promise.allSettled([
-        list<Account>('gl-accounts', { depth: 0, limit: 1 }),
+        list<Account>('gl-accounts', { depth: 0, limit: 1, ...tenantQuery }),
         list<Document>('documents', { depth: 0, limit: 1, ...tenantQuery }),
       ]).then(([accounts, documents]) => {
         if (!alive) return
@@ -119,7 +119,15 @@ export function useSetupStatus(): SetupStatus {
   const defaults = !settingsKnown
     ? null
     : CORE_DEFAULTS.every((k) => settings && settings[k] != null)
-  const fiscalYear = (years?.length ?? 0) > 0 || Boolean(settings?.activeFiscalYear)
+  const fiscalYearOwn = (years?.length ?? 0) > 0
+  // A global activeFiscalYear is only meaningful for tenants that already have
+  // business data (legacy single-org layouts where years were seeded once and
+  // shared). A truly fresh tenant (no docs, no chart, no years) must not be
+  // treated as ready just because the demo org left a global year set.
+  const hasAnyData =
+    (accountCount ?? 0) > 0 || (docCount ?? 0) > 0 || (years?.length ?? 0) > 0
+  const fresh = accountCount !== null && docCount !== null && !hasAnyData
+  const fiscalYear = fiscalYearOwn || (!fresh && Boolean(settings?.activeFiscalYear))
   // Unknown counts are not treated as missing — only a confirmed 0 blocks.
   const chart = accountCount === null ? null : accountCount > 0
   const inUse = (docCount ?? 0) > 0

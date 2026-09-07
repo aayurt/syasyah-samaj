@@ -14,7 +14,7 @@ import NepaliDateInput from '../components/NepaliDateInput'
 import VoucherViewModal from '../components/VoucherViewModal'
 
 const TYPES: { value: DaybookType; label: string }[] = [
-  { value: 'all', label: 'All Vouchers' },
+  { value: 'all', label: 'All Transactions' },
   { value: 'cash', label: 'Cash & Bank' },
   { value: 'petty-cash', label: 'Petty Cash' },
   { value: 'sales', label: 'Sales Daybook' },
@@ -22,7 +22,7 @@ const TYPES: { value: DaybookType; label: string }[] = [
   { value: 'journal', label: 'Journal Proper' },
 ]
 
-const HEADERS = ['Date', 'Voucher', 'Narration', 'Account', 'Debit', 'Credit', 'Running']
+const HEADERS = ['Date', 'Transaction', 'Narration', 'Account', 'Debit', 'Credit', 'Running']
 
 export default function Daybooks() {
   const [type, setType] = useState<DaybookType>('all')
@@ -45,7 +45,7 @@ export default function Daybooks() {
       })
       setVoucher(d)
     } catch {
-      setError('Could not load the source voucher.')
+      setError('Could not load the source transaction.')
     }
   }
 
@@ -216,7 +216,7 @@ export default function Daybooks() {
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
               <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Voucher</th>
+              <th className="px-4 py-2">Transaction</th>
               <th className="px-4 py-2">Narration</th>
               <th className="px-4 py-2">Account</th>
               <th className="px-4 py-2 text-right">Debit</th>
@@ -308,9 +308,9 @@ export default function Daybooks() {
 
       <p className="mt-3 text-xs text-slate-400">
         {type === 'all' &&
-          'Every posted voucher line, in date order (Tally Day Book). Click a voucher number to open the source entry.'}
+          'Every posted transaction line, in date order (Tally Day Book). Click a transaction number to open the source entry.'}
         {type === 'cash' &&
-          'All postings touching cash or bank accounts, with a running balance. Click a voucher number to open the source entry.'}
+          'All postings touching cash or bank accounts, with a running balance. Click a transaction number to open the source entry.'}
         {type === 'petty-cash' &&
           'Postings to the petty cash account configured in Settings.'}
         {type === 'sales' && 'Postings to income accounts (sales revenue).'}

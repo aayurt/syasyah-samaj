@@ -5,14 +5,20 @@ import {
   BarChart3,
   BookOpenText,
   Boxes,
+  BadgeCheck,
+  Building2,
   CalendarClock,
-  Clock3,
-  CreditCard,
+  Database,
+  ClipboardList,
+  FileCheck2,
   FileText,
   FolderTree,
   ChevronDown,
   HelpCircle,
+  History,
+  Landmark,
   LayoutDashboard,
+  ListChecks,
   NotebookText,
   PanelLeftClose,
   Receipt,
@@ -21,23 +27,27 @@ import {
   Scale,
   Settings as SettingsIcon,
   Users,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react'
 import { authClient, isAdminUser, useOfflineSession } from './lib/auth'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Accounts from './pages/Accounts'
+import SetupOpeningBalances from './pages/SetupOpeningBalances'
 import Journal from './pages/Journal'
 import TrialBalance from './pages/TrialBalance'
 import Vouchers from './pages/Vouchers'
+import Posting from './pages/Posting'
 import VoucherForm from './pages/VoucherForm'
 import Parties from './pages/Parties'
 import Aging from './pages/Aging'
 import Items from './pages/Items'
-import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase, VatRegister, CashStatement, BankStatement, ExpenseCategory, IncomeCategory, StockQuantity, BalanceSheet, ProfitLoss } from './pages/reports'
+import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase, VatRegister, CashStatement, BankStatement, ExpenseCategory, IncomeCategory, StockQuantity, InventoryValuation, BalanceSheet, ProfitLoss } from './pages/reports'
 import Daybooks from './pages/Daybooks'
 import BankReconciliation from './pages/BankReconciliation'
 import Settings from './pages/Settings'
+import RecentActivity from './pages/RecentActivity'
 import AuditLog from './pages/AuditLog'
 import Transfers from './pages/Transfers'
 import Members from './pages/Members'
@@ -59,50 +69,66 @@ import { useBackgroundSync } from './lib/BackgroundSync'
 import { CalendarProvider } from './lib/calendar'
 import { FiscalYearProvider } from './lib/fiscalYear'
 import { api } from './lib/api'
+import { useDataEpochWatcher } from './lib/dataOps'
+import { useSetupStatus } from './lib/setup'
 import type { BillingSettings } from './lib/types'
+import DataManagement from './pages/DataManagement'
+import SetupWizard from './pages/SetupWizard'
 
-type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
+type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; feature?: string; disabled?: boolean }
 
 const navGroups: { title?: string; items: NavItem[] }[] = [
   { items: [{ to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true }] },
   {
     title: 'Bookkeeping',
     items: [
-      { to: '/vouchers', label: 'Vouchers', icon: FileText },
+      { to: '/vouchers', label: 'Transactions', icon: FileText },
       { to: '/journal', label: 'Journal', icon: BookOpenText },
       { to: '/transfers', label: 'Transfers', icon: ArrowLeftRight },
+      { to: '/posting', label: 'Posting', icon: FileCheck2 },
+      { to: '/daybooks', label: 'Daybook', icon: NotebookText },
     ],
   },
   {
-    title: 'Masters',
+    title: 'Operations',
     items: [
-      { to: '/accounts', label: 'Account Setup', icon: FolderTree },
       { to: '/parties', label: 'Parties', icon: Users },
       { to: '/members', label: 'Members', icon: Users },
-      { to: '/membership-types', label: 'Membership Types', icon: Users },
-      { to: '/recurring-billing', label: 'Recurring Billing', icon: CalendarClock },
-      { to: '/expense-claims', label: 'Expense Claims', icon: Receipt },
+      { to: '/recurring-billing', label: 'Billing', icon: CalendarClock },
+      { to: '/expense-claims', label: 'Expenses', icon: Receipt },
+      { to: '/inventory', label: 'Inventory', icon: Boxes },
+      { to: '/bank-reconciliation', label: 'Bank Management', icon: Landmark, feature: 'bankReconciliationEnabled' },
+      { to: '/fixed-assets', label: 'Fixed Assets', icon: Building2, disabled: true },
     ],
   },
-  {
-    title: 'Inventory',
-    items: [{ to: '/inventory', label: 'Inventory', icon: Boxes }],
+{
+    title: 'Masters',
+    items: [
+      { to: '/accounts', label: 'Accounts', icon: FolderTree },
+      { to: '/opening-balances', label: 'Opening Balances', icon: Wallet },
+      { to: '/membership-types', label: 'Membership Types', icon: Users },
+    ],
   },
   {
     title: 'Reports',
     items: [
-      { to: '/trial-balance', label: 'Trial Balance', icon: Scale },
-      { to: '/aging', label: 'Aging', icon: Clock3 },
-      { to: '/reports', label: 'Reports', icon: BarChart3 },
-      { to: '/daybooks', label: 'Daybooks', icon: NotebookText },
-      { to: '/bank-reconciliation', label: 'Bank Reconciliation', icon: CreditCard },
+      { to: '/trial-balance', label: 'Trial Balance', icon: ListChecks },
+      { to: '/reports/pnl', label: 'Profit & Loss', icon: BarChart3 },
+      { to: '/reports/balance-sheet', label: 'Balance Sheet', icon: Scale },
+      { to: '/reports', label: 'Reports', icon: ClipboardList },
     ],
   },
   {
     title: 'Admin',
     items: [
       { to: '/audit', label: 'Audit Log', icon: FileText },
+      { to: '/data-management', label: 'Data Management', icon: Database },
+      { to: '/approvals', label: 'Approvals', icon: BadgeCheck, disabled: true },
     ],
+  },
+  {
+    title: 'Logs',
+    items: [{ to: '/activity', label: 'Recent Activity', icon: History }],
   },
   { items: [{ to: '/settings', label: 'Settings', icon: SettingsIcon }] },
 ]
@@ -157,7 +183,10 @@ export default function App() {
 
 function Shell({ email }: { email: string }) {
   useBackgroundSync()
+  useDataEpochWatcher()
   const navigate = useNavigate()
+  // Setup gate — drives the full-page /setup wizard for fresh tenants.
+  const setup = useSetupStatus()
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('sidebar-collapsed') === '1',
   )
@@ -217,7 +246,10 @@ function Shell({ email }: { email: string }) {
   // Re-fetch on route change AND when Settings dispatches a change event
   const refreshFeatures = () => {
     api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
-      .then((s) => setFeatures({ bankReconciliationEnabled: !!s.bankReconciliationEnabled }))
+      .then((s) => setFeatures({
+        bankReconciliationEnabled: !!s.bankReconciliationEnabled,
+        demoSeedEnabled: s.demoSeedEnabled !== false,
+      }))
       .catch(() => {})
   }
   useEffect(() => { refreshFeatures() }, [location.pathname])
@@ -225,6 +257,20 @@ function Shell({ email }: { email: string }) {
     window.addEventListener('billing-settings-changed', refreshFeatures)
     return () => window.removeEventListener('billing-settings-changed', refreshFeatures)
   }, [])
+
+  // Fresh (or just-cleaned) books land on the onboarding wizard instead of an
+  // empty dashboard. Redirect only when setup is KNOWN incomplete — a loading
+  // or in-use status must never bounce the user away.
+  useEffect(() => {
+    if (
+      location.pathname === '/' &&
+      !setup.loading &&
+      !setup.complete &&
+      !setup.inUse
+    ) {
+      navigate('/setup', { replace: true })
+    }
+  }, [location.pathname, setup.loading, setup.complete, setup.inUse, navigate])
 
   const closeTour = () => {
     localStorage.setItem('tour-seen', '1')
@@ -279,7 +325,7 @@ function Shell({ email }: { email: string }) {
         <nav className="flex-1 space-y-4 overflow-y-auto px-2 pb-4">
           {navGroups.map((group) => {
             const items = group.items.filter((item) => {
-              if (item.to === '/bank-reconciliation' && !features.bankReconciliationEnabled) return false
+              if (item.feature && !features[item.feature]) return false
               return true
             })
             if (items.length === 0) return null
@@ -310,7 +356,26 @@ function Shell({ email }: { email: string }) {
                 <div
                   className={collapsed ? 'flex flex-col items-center gap-1' : 'space-y-1'}
                 >
-                  {items.map(({ to, label, icon: Icon, end }) => (
+                  {items.map(({ to, label, icon: Icon, end, disabled }) =>
+                  disabled ? (
+                    <span
+                      key={to}
+                      title={collapsed ? `${label} (coming soon)` : 'Coming soon'}
+                      className={`flex items-center gap-2 rounded px-3 py-2 text-sm text-slate-600 ${
+                        collapsed ? 'justify-center' : ''
+                      } cursor-not-allowed select-none opacity-60`}
+                    >
+                      <Icon size={16} />
+                      {!collapsed && (
+                        <>
+                          <span className="flex-1 truncate">{label}</span>
+                          <span className="rounded bg-slate-800 px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide text-slate-400">
+                            Soon
+                          </span>
+                        </>
+                      )}
+                    </span>
+                  ) : (
                     <NavLink
                       key={to}
                       to={to}
@@ -393,6 +458,7 @@ function Shell({ email }: { email: string }) {
             />
             <Route path="/" element={<Dashboard />} />
             <Route path="/accounts" element={<Accounts />} />
+            <Route path="/opening-balances" element={<SetupOpeningBalances />} />
             <Route path="/vouchers" element={<Vouchers />} />
             <Route path="/vouchers/new" element={<VoucherForm mode="create" />} />
             <Route path="/vouchers/new/:docType" element={<VoucherForm mode="create" />} />
@@ -415,10 +481,13 @@ function Shell({ email }: { email: string }) {
             <Route path="/reports/expense-category" element={<ExpenseCategory />} />
             <Route path="/reports/income-category" element={<IncomeCategory />} />
             <Route path="/reports/stock-quantity" element={<StockQuantity />} />
+            <Route path="/reports/inventory-valuation" element={<InventoryValuation />} />
             <Route path="/reports/balance-sheet" element={<BalanceSheet />} />
             <Route path="/reports/pnl" element={<ProfitLoss />} />
             <Route path="/audit" element={<AuditLog />} />
+            <Route path="/activity" element={<RecentActivity />} />
             <Route path="/transfers" element={<Transfers />} />
+            <Route path="/posting" element={<Posting />} />
             {features.bankReconciliationEnabled && <Route path="/bank-reconciliation" element={<BankReconciliation />} />}
             <Route path="/daybooks" element={<Daybooks />} />
             <Route path="/members" element={<Members />} />
@@ -426,6 +495,8 @@ function Shell({ email }: { email: string }) {
             <Route path="/recurring-billing" element={<RecurringBilling />} />
             <Route path="/expense-claims" element={<ExpenseClaims />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/setup" element={<SetupWizard />} />
+            <Route path="/data-management" element={<DataManagement />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

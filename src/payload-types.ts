@@ -98,6 +98,8 @@ export interface Config {
     'recurring-schedules': RecurringSchedule;
     'expense-claims': ExpenseClaim;
     'fiscal-years': FiscalYear;
+    'opening-balances': OpeningBalance;
+    'data-ops': DataOp;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -145,6 +147,8 @@ export interface Config {
     'recurring-schedules': RecurringSchedulesSelect<false> | RecurringSchedulesSelect<true>;
     'expense-claims': ExpenseClaimsSelect<false> | ExpenseClaimsSelect<true>;
     'fiscal-years': FiscalYearsSelect<false> | FiscalYearsSelect<true>;
+    'opening-balances': OpeningBalancesSelect<false> | OpeningBalancesSelect<true>;
+    'data-ops': DataOpsSelect<false> | DataOpsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -1258,6 +1262,14 @@ export interface Party {
    */
   openingBalance?: number | null;
   /**
+   * Optional AR control account for this party (overrides the global default).
+   */
+  receivableAccount?: (number | null) | GlAccount;
+  /**
+   * Optional AP control account for this party (overrides the global default).
+   */
+  payableAccount?: (number | null) | GlAccount;
+  /**
    * Mark as a donor to surface this party in donation reports.
    */
   donor?: boolean | null;
@@ -1854,6 +1866,32 @@ export interface FiscalYear {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "opening-balances".
+ */
+export interface OpeningBalance {
+  id: number;
+  account: number | GlAccount;
+  fiscalYear: number | FiscalYear;
+  /**
+   * Opening balance for this account at the start of the fiscal year (signed by account type).
+   */
+  amount?: number | null;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "data-ops".
+ */
+export interface DataOp {
+  id: number;
+  kind?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -2261,6 +2299,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'fiscal-years';
         value: number | FiscalYear;
+      } | null)
+    | ({
+        relationTo: 'opening-balances';
+        value: number | OpeningBalance;
+      } | null)
+    | ({
+        relationTo: 'data-ops';
+        value: number | DataOp;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -2745,6 +2791,8 @@ export interface PartiesSelect<T extends boolean = true> {
   taxId?: T;
   address?: T;
   openingBalance?: T;
+  receivableAccount?: T;
+  payableAccount?: T;
   donor?: T;
   tenant?: T;
   updatedAt?: T;
@@ -3189,6 +3237,27 @@ export interface FiscalYearsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "opening-balances_select".
+ */
+export interface OpeningBalancesSelect<T extends boolean = true> {
+  account?: T;
+  fiscalYear?: T;
+  amount?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "data-ops_select".
+ */
+export interface DataOpsSelect<T extends boolean = true> {
+  kind?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects_select".
  */
 export interface RedirectsSelect<T extends boolean = true> {
@@ -3624,6 +3693,10 @@ export interface BillingSetting {
    */
   simplifiedInvoiceThreshold?: number | null;
   /**
+   * Allow the demo-data seeder (Setup wizard / Data Management) to create sample charts, parties, items and draft vouchers. When off, the seed actions are rejected.
+   */
+  demoSeedEnabled?: boolean | null;
+  /**
    * Company or organization name shown on invoices and reports.
    */
   companyName?: string | null;
@@ -3723,6 +3796,10 @@ export interface BillingSetting {
     | number
     | boolean
     | null;
+  /**
+   * Bumped on every bulk data operation (cleanup, demo seed). Clients compare it and invalidate offline caches when it changes.
+   */
+  dataEpoch?: number | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -3786,6 +3863,7 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   bankReconciliationEnabled?: T;
   simplifiedInvoiceEnabled?: T;
   simplifiedInvoiceThreshold?: T;
+  demoSeedEnabled?: T;
   companyName?: T;
   companyPan?: T;
   companyContact?: T;
@@ -3809,6 +3887,7 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   depreciationAccount?: T;
   accumulatedDepreciationAccount?: T;
   defAccountOrder?: T;
+  dataEpoch?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

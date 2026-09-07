@@ -5,12 +5,14 @@ import {
   Calendar,
   Check,
   ChevronDown,
+  ChevronRight,
   FolderTree,
   GripVertical,
   Hash,
   HelpCircle,
   Lock,
   LogOut,
+  Pencil,
   Plus,
   RotateCcw,
   ToggleLeft,
@@ -19,7 +21,7 @@ import {
   Wallet,
   X,
 } from 'lucide-react'
-import { api, protectGlobalsFields, useSyncState } from '../lib/api'
+import { api, fmt, protectGlobalsFields, useSyncState } from '../lib/api'
 import { authClient, clearCachedSession } from '../lib/auth'
 import { adToBsString, formatDate } from '../lib/nepaliDate'
 import { useCalendar } from '../lib/calendar'
@@ -191,6 +193,7 @@ export default function Settings() {
   } = useFiscalYear()
   const [fyModalOpen, setFyModalOpen] = useState(false)
   const [fySaving, setFySaving] = useState(false)
+  const [fyEditing, setFyEditing] = useState<number | null>(null)
   const [fyForm, setFyForm] = useState({
     label: '',
     startDate: '',
@@ -198,10 +201,31 @@ export default function Settings() {
     status: 'active' as 'active' | 'closed',
     makeActive: false,
   })
+  // Shared confirmation/validation modal for fiscal-year state changes
+  // (close / open / set-as-working). Enforces the single-active rule with an
+  // explicit warning instead of a raw window.confirm.
+  const [fyConfirm, setFyConfirm] = useState<{
+    action: 'close' | 'open' | 'working'
+    year: FiscalYear
+    swap?: FiscalYear
+    swapIsWorking?: boolean
+  } | null>(null)
   // Reset the form every time the modal opens — the webview survives window
   // close (hide-to-tray) and modal cancels, so stale input must be cleared here.
   const openFyModal = () => {
     setFyForm({ label: '', startDate: '', endDate: '', status: 'active', makeActive: false })
+    setFyEditing(null)
+    setFyModalOpen(true)
+  }
+  const openFyEdit = (year: FiscalYear) => {
+    setFyForm({
+      label: year.label || '',
+      startDate: (year.startDate || '').slice(0, 10),
+      endDate: (year.endDate || '').slice(0, 10),
+      status: year.status === 'closed' ? 'closed' : 'active',
+      makeActive: !!year.isActive,
+    })
+    setFyEditing(year.id)
     setFyModalOpen(true)
   }
 
@@ -210,11 +234,13 @@ export default function Settings() {
   const [bankRecEnabled, setBankRecEnabled] = useState(false)
   const [simplifiedInvEnabled, setSimplifiedInvEnabled] = useState(true)
   const [simplifiedInvThreshold, setSimplifiedInvThreshold] = useState('5000')
-  const savedFeatures = useRef({ bankRec: false, simplifiedInv: true, threshold: '5000' })
+  const [demoSeedEnabled, setDemoSeedEnabled] = useState(true)
+  const savedFeatures = useRef({ bankRec: false, simplifiedInv: true, threshold: '5000', demoSeed: true })
   const featuresDirty =
     bankRecEnabled !== savedFeatures.current.bankRec ||
     simplifiedInvEnabled !== savedFeatures.current.simplifiedInv ||
-    simplifiedInvThreshold !== savedFeatures.current.threshold
+    simplifiedInvThreshold !== savedFeatures.current.threshold ||
+    demoSeedEnabled !== savedFeatures.current.demoSeed
   const [featuresSaved, setFeaturesSaved] = useState(false)
 
 
@@ -222,9 +248,30 @@ export default function Settings() {
   const [coaAccounts, setCoaAccounts] = useState<Account[]>([])
   const [coaGroups, setCoaGroups] = useState<AccountGroup[]>([])
   const [coaLoading, setCoaLoading] = useState(false)
-  const [coaForm, setCoaForm] = useState({ name: '', code: '', type: 'asset' as AccountType, class: 'other', group: '', openingBalance: '' })
+  const [coaBalances, setCoaBalances] = useState<Record<number, number>>({})
+  const [coaExpanded, setCoaExpanded] = useState<Record<number, boolean>>({})
+  const [coaForm, setCoaForm] = useState({ name: '', code: '', type: 'asset' as AccountType, class: 'other', group: '' })
   const [coaSaving, setCoaSaving] = useState(false)
   const [showCoaForm, setShowCoaForm] = useState(false)
+  const [coaEditingId, setCoaEditingId] = useState<number | null>(null)
+
+  const openCoaNew = () => {
+    setCoaForm({ name: '', code: '', type: 'asset', class: 'other', group: '' })
+    setCoaEditingId(null)
+    setShowCoaForm(true)
+  }
+
+  const openCoaEdit = (a: Account) => {
+    setCoaForm({
+      name: a.name,
+      code: a.code || '',
+      type: a.type,
+      class: a.class || 'other',
+      group: a.group && typeof a.group === 'object' ? String(a.group.id) : a.group ? String(a.group) : '',
+    })
+    setCoaEditingId(a.id)
+    setShowCoaForm(true)
+  }
 
   // ── Default account assignments (editable) ──
   const [defAccounts, setDefAccounts] = useState<Record<string, string>>({})
@@ -275,10 +322,12 @@ export default function Settings() {
       const br = res.bankReconciliationEnabled || false
       const si = res.simplifiedInvoiceEnabled !== false
       const st = String(res.simplifiedInvoiceThreshold || 5000)
+      const ds = res.demoSeedEnabled !== false
       setBankRecEnabled(br)
       setSimplifiedInvEnabled(si)
       setSimplifiedInvThreshold(st)
-      savedFeatures.current = { bankRec: br, simplifiedInv: si, threshold: st }
+      setDemoSeedEnabled(ds)
+      savedFeatures.current = { bankRec: br, simplifiedInv: si, threshold: st, demoSeed: ds }
 
       // Default account assignments
       const da: Record<string, string> = {}
@@ -314,12 +363,14 @@ export default function Settings() {
   const loadCoa = async () => {
     setCoaLoading(true)
     try {
-      const [a, g] = await Promise.all([
+      const [a, g, b] = await Promise.all([
         api<{ docs: Account[] }>('/gl-accounts', { query: { depth: 1, sort: 'name', limit: 500 } }),
         api<{ docs: AccountGroup[] }>('/account-groups', { query: { depth: 0, sort: 'name', limit: 100 } }),
+        api<{ docs: { account: { id: number }; balance: number }[] }>('/gl-accounts/balances', { query: { depth: 0, limit: 500 } }),
       ])
       setCoaAccounts(a.docs || [])
       setCoaGroups(g.docs || [])
+      setCoaBalances(Object.fromEntries((b.docs || []).map((x) => [x.account.id, x.balance])))
     } catch { /* non-critical */ } finally { setCoaLoading(false) }
   }
 
@@ -332,6 +383,16 @@ export default function Settings() {
     loadSequences()
     loadCoa()
   }, [cacheVersion])
+
+  // Default groups to expanded once they first load; user collapses persist.
+  useEffect(() => {
+    if (coaGroups.length === 0) return
+    setCoaExpanded((prev) => {
+      const next = { ...prev }
+      for (const g of coaGroups) if (!(g.id in prev)) next[g.id] = true
+      return next
+    })
+  }, [coaGroups])
 
   /* ── Persist helpers ── */
   const persistCalendar = () => {
@@ -395,7 +456,54 @@ export default function Settings() {
   }
 
   // ── Fiscal year actions ──
+  // All state-changing actions funnel through a validation modal (fyConfirm)
+  // so the single-active rule is surfaced before anything happens.
+
   const fyClose = (year: FiscalYear) => {
+    setFyConfirm({ action: 'close', year })
+  }
+
+  const fyReopen = (year: FiscalYear) => {
+    // Only one fiscal year may be open at a time — if another is already
+    // open, reopening this one closes that other year.
+    const alreadyOpen = fiscalYears.find(
+      (y) => y.status === 'active' && y.id !== year.id,
+    )
+    setFyConfirm({
+      action: 'open',
+      year,
+      swap: alreadyOpen,
+      swapIsWorking: activeFiscalYear?.id === alreadyOpen?.id,
+    })
+  }
+
+  const fySetActive = (year: FiscalYear) => {
+    // Only an open (status 'active') year may become the working year.
+    if (year.status === 'closed') {
+      pushToast(
+        'error',
+        'Cannot set working year',
+        `${year.label} is closed. Only an open fiscal year can be the working year — reopen it first.`,
+      )
+      return
+    }
+    // If another year is already active, confirm closing it first.
+    const otherActive = fiscalYears.find(
+      (y) => y.status === 'active' && y.id !== year.id,
+    )
+    if (otherActive) {
+      setFyConfirm({
+        action: 'working',
+        year,
+        swap: otherActive,
+        swapIsWorking: activeFiscalYear?.id === otherActive.id,
+      })
+      return
+    }
+    fyDoSetWorking(year)
+  }
+
+  const fyCloseNow = (year: FiscalYear) => {
     api(`/fiscal-years/${year.id}`, {
       method: 'PATCH',
       body: { status: 'closed' },
@@ -407,19 +515,19 @@ export default function Settings() {
       .catch((err) => pushToast('error', 'Failed to close year', err instanceof Error ? err.message : String(err)))
   }
 
-  const fyReopen = (year: FiscalYear) => {
+  const fyOpenNow = (year: FiscalYear) => {
     api(`/fiscal-years/${year.id}`, {
       method: 'PATCH',
       body: { status: 'active' },
     })
       .then(() => {
-        pushToast('success', 'Fiscal year reopened', `${year.label} — entries are editable again.`)
+        pushToast('success', 'Fiscal year opened', `${year.label} — entries are editable again.`)
         void refreshFiscalYears()
       })
-      .catch((err) => pushToast('error', 'Failed to reopen year', err instanceof Error ? err.message : String(err)))
+      .catch((err) => pushToast('error', 'Failed to open year', err instanceof Error ? err.message : String(err)))
   }
 
-  const fySetActive = (year: FiscalYear) => {
+  const fyDoSetWorking = (year: FiscalYear) => {
     api(`/fiscal-years/${year.id}`, {
       method: 'PATCH',
       body: { isActive: true },
@@ -438,6 +546,27 @@ export default function Settings() {
       .catch((err) => pushToast('error', 'Failed to set working year', err instanceof Error ? err.message : String(err)))
   }
 
+  const fyConfirmGo = async () => {
+    if (!fyConfirm) return
+    const { action, year, swap } = fyConfirm
+    setFyConfirm(null)
+    // When opening/setting a year requires closing the currently open one,
+    // close that other year first, then perform the requested action.
+    if (swap && (action === 'open' || action === 'working')) {
+      try {
+        await api(`/fiscal-years/${swap.id}`, {
+          method: 'PATCH',
+          body: { status: 'closed' },
+        })
+      } catch {
+        // best-effort — the action below still runs
+      }
+    }
+    if (action === 'close') fyCloseNow(year)
+    else if (action === 'open') fyOpenNow(year)
+    else fyDoSetWorking(year)
+  }
+
   const fyDelete = (year: FiscalYear) => {
     // Queued to the offline outbox — flushes on reconnect when offline.
     api(`/fiscal-years/${year.id}`, { method: 'DELETE' })
@@ -448,11 +577,13 @@ export default function Settings() {
       .catch((err) => pushToast('error', 'Failed to delete year', err instanceof Error ? err.message : String(err)))
   }
 
-  const fyCreate = async () => {
+  const fySave = async () => {
     if (!fyForm.startDate || !fyForm.endDate) {
       pushToast('error', 'Missing dates', 'Both start and end date are required.')
       return
     }
+    // A closed year cannot be the working year — override makeActive if so.
+    const makeActive = fyForm.status === 'active' && fyForm.makeActive
     setFySaving(true)
     try {
       // Auto-generate a BS label (e.g. "2083-84") from the AD start date when
@@ -468,29 +599,54 @@ export default function Settings() {
         startDate: fyForm.startDate,
         endDate: fyForm.endDate,
         status: fyForm.status,
-        isActive: fyForm.makeActive,
+        isActive: makeActive,
       }
-      if (tenantId) body.tenant = Number(tenantId)
-      await api('/fiscal-years', { method: 'POST', body })
-      pushToast('success', 'Fiscal year created', fyForm.label || fyForm.startDate)
-      if (fyForm.makeActive) {
-        // fetch the created year to learn its id, then point settings at it
-        const res = await api<{ docs: FiscalYear[] }>('/fiscal-years', {
-          query: { limit: 1, depth: 0, sort: '-startDate', where: JSON.stringify({ startDate: { equals: fyForm.startDate } }) },
-        })
-        const created = res.docs?.[0]
-        if (created) {
+      // If making this the active year, close any other active year first.
+      if (makeActive) {
+        const otherActive = fiscalYears.find(
+          (y) => y.status === 'active' && y.id !== activeFiscalYear?.id,
+        )
+        if (otherActive) {
+          await api(`/fiscal-years/${otherActive.id}`, {
+            method: 'PATCH',
+            body: { status: 'closed' },
+          }).catch(() => {})
+        }
+      }
+      if (fyEditing) {
+        // ── EDIT ──
+        await api(`/fiscal-years/${fyEditing}`, { method: 'PATCH', body })
+        if (makeActive) {
           await api('/globals/billing-settings', {
             method: 'POST',
-            body: { activeFiscalYear: created.id },
+            body: { activeFiscalYear: fyEditing },
           }).catch(() => {})
+        }
+        pushToast('success', 'Fiscal year updated', fyForm.label || fyForm.startDate)
+      } else {
+        // ── CREATE ──
+        if (tenantId) body.tenant = Number(tenantId)
+        await api('/fiscal-years', { method: 'POST', body })
+        pushToast('success', 'Fiscal year created', fyForm.label || fyForm.startDate)
+        if (makeActive) {
+          const res = await api<{ docs: FiscalYear[] }>('/fiscal-years', {
+            query: { limit: 1, depth: 0, sort: '-startDate', where: JSON.stringify({ startDate: { equals: fyForm.startDate } }) },
+          })
+          const created = res.docs?.[0]
+          if (created) {
+            await api('/globals/billing-settings', {
+              method: 'POST',
+              body: { activeFiscalYear: created.id },
+            }).catch(() => {})
+          }
         }
       }
       setFyModalOpen(false)
       setFyForm({ label: '', startDate: '', endDate: '', status: 'active', makeActive: false })
+      setFyEditing(null)
       void refreshFiscalYears()
     } catch (err) {
-      pushToast('error', 'Failed to create fiscal year', err instanceof Error ? err.message : String(err))
+      pushToast('error', fyEditing ? 'Failed to update fiscal year' : 'Failed to create fiscal year', err instanceof Error ? err.message : String(err))
     } finally {
       setFySaving(false)
     }
@@ -501,6 +657,7 @@ export default function Settings() {
       bankReconciliationEnabled: bankRecEnabled,
       simplifiedInvoiceEnabled: simplifiedInvEnabled,
       simplifiedInvoiceThreshold: parseFloat(simplifiedInvThreshold) || 5000,
+      demoSeedEnabled,
     }
     try {
       const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
@@ -511,7 +668,7 @@ export default function Settings() {
       window.dispatchEvent(new Event('billing-settings-changed'))
       protectGlobalsFields(Object.keys(body))
     } catch { /* ignore */ }
-    savedFeatures.current = { bankRec: bankRecEnabled, simplifiedInv: simplifiedInvEnabled, threshold: simplifiedInvThreshold }
+    savedFeatures.current = { bankRec: bankRecEnabled, simplifiedInv: simplifiedInvEnabled, threshold: simplifiedInvThreshold, demoSeed: demoSeedEnabled }
     setFeaturesSaved(true)
     setTimeout(() => setFeaturesSaved(false), 2000)
     // Fire-and-forget: sync to server in background
@@ -523,6 +680,7 @@ export default function Settings() {
     setBankRecEnabled(s.bankRec)
     setSimplifiedInvEnabled(s.simplifiedInv)
     setSimplifiedInvThreshold(s.threshold)
+    setDemoSeedEnabled(s.demoSeed)
   }
 
   // ── Default account assignments ──
@@ -584,26 +742,28 @@ export default function Settings() {
   }
 
   // ── Chart of Accounts CRUD ──
-  const createCoaAccount = async (e: React.FormEvent) => {
+  const saveCoaAccount = async (e: React.FormEvent) => {
     e.preventDefault()
     setCoaSaving(true)
     try {
-      await api('/gl-accounts', {
-        method: 'POST',
-        body: {
-          name: coaForm.name,
-          code: coaForm.code || undefined,
-          type: coaForm.type,
-          class: coaForm.class,
-          group: coaForm.group ? Number(coaForm.group) : undefined,
-          openingBalance: coaForm.openingBalance ? Number(coaForm.openingBalance) : 0,
-        },
-      })
-      setCoaForm({ name: '', code: '', type: 'asset', class: 'other', group: '', openingBalance: '' })
+      const body = {
+        name: coaForm.name,
+        code: coaForm.code || undefined,
+        type: coaForm.type,
+        class: coaForm.class,
+        group: coaForm.group ? Number(coaForm.group) : undefined,
+      }
+      if (coaEditingId != null) {
+        await api(`/gl-accounts/${coaEditingId}`, { method: 'PATCH', body })
+      } else {
+        await api('/gl-accounts', { method: 'POST', body })
+      }
+      setCoaForm({ name: '', code: '', type: 'asset', class: 'other', group: '' })
+      setCoaEditingId(null)
       setShowCoaForm(false)
       await loadCoa()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create account')
+      setError(err instanceof Error ? err.message : 'Failed to save account')
     }
     setCoaSaving(false)
   }
@@ -618,13 +778,57 @@ export default function Settings() {
     }
   }
 
-  const coaGroupName = (a: Account) => {
-    const g = a.group && typeof a.group === 'object' ? a.group : coaGroups.find((x) => x.id === a.group)
-    return g ? g.name : '—'
-  }
-
   const accountName = (v: BillingSettings[keyof BillingSettings]) =>
     v && typeof v === 'object' ? (v as Account).name : '—'
+
+  // Nested tree: type → group → sub-group → accounts.
+  interface CoaGroupNode {
+    group: AccountGroup
+    children: CoaGroupNode[]
+    accounts: Account[]
+  }
+  const coaTreeFor = (type: AccountType): { roots: CoaGroupNode[]; ungrouped: Account[] } => {
+    const accountsByGroup = new Map<number, Account[]>()
+    const ungrouped: Account[] = []
+    for (const a of coaAccounts) {
+      if (a.type !== type) continue
+      const gid = a.group && typeof a.group === 'object' ? a.group.id : Number(a.group)
+      if (gid && !Number.isNaN(gid)) {
+        const arr = accountsByGroup.get(gid) ?? []
+        arr.push(a)
+        accountsByGroup.set(gid, arr)
+      } else {
+        ungrouped.push(a)
+      }
+    }
+    const childrenByParent = new Map<number, AccountGroup[]>()
+    const roots: AccountGroup[] = []
+    for (const g of coaGroups) {
+      if (g.type !== type) continue
+      const pid = g.parent && typeof g.parent === 'object' ? g.parent.id : Number(g.parent || 0)
+      if (pid && !Number.isNaN(pid)) {
+        const arr = childrenByParent.get(pid) ?? []
+        arr.push(g)
+        childrenByParent.set(pid, arr)
+      } else {
+        roots.push(g)
+      }
+    }
+    const build = (g: AccountGroup): CoaGroupNode => ({
+      group: g,
+      children: (childrenByParent.get(g.id) ?? [])
+        .map(build)
+        .sort((x, y) => x.group.name.localeCompare(y.group.name)),
+      accounts: (accountsByGroup.get(g.id) ?? []).sort((x, y) => x.name.localeCompare(y.name)),
+    })
+    ungrouped.sort((x, y) => x.name.localeCompare(y.name))
+    return { roots: roots.map(build).sort((x, y) => x.group.name.localeCompare(y.group.name)), ungrouped }
+  }
+
+  const countCoaAccounts = (node: CoaGroupNode): number =>
+    node.accounts.length + node.children.reduce((n, c) => n + countCoaAccounts(c), 0)
+
+  const toggleCoaGroup = (id: number) => setCoaExpanded((prev) => ({ ...prev, [id]: !prev[id] }))
 
   /* ── Calendar summary ── */
   const calSummary = `${calendarType} • ${dateFormat} • ${timeFormat === '12h' ? '12h' : '24h'}`
@@ -821,7 +1025,7 @@ export default function Settings() {
             <div>
               <p className="text-sm font-medium text-slate-700">Fiscal Years</p>
               <p className="text-xs text-slate-400">
-                Active years are editable · Closed years are read-only · The working year drives voucher numbering.
+                Active years are editable · Closed years are read-only · The working year drives transaction numbering.
               </p>
             </div>
             <button
@@ -862,18 +1066,27 @@ export default function Settings() {
                         className={`border-b border-slate-100 last:border-0 ${isSelected ? 'bg-crimson-50/60' : ''}`}
                       >
                         <td className="px-3 py-2">
-                          <button
-                            type="button"
-                            title="Set as working year"
-                            onClick={() => fySetActive(y)}
-                            className={`flex h-5 w-5 items-center justify-center rounded-full border ${
-                              isActiveFlag
-                                ? 'border-crimson-600 bg-crimson-600 text-white'
-                                : 'border-slate-300 text-transparent hover:border-crimson-400'
-                            }`}
-                          >
-                            <Check size={12} />
-                          </button>
+                          {y.status === 'closed' ? (
+                            <span
+                              title="Closed years cannot be the working year — reopen the year first."
+                              className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-300"
+                            >
+                              <Check size={12} />
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              title="Set as working year"
+                              onClick={() => fySetActive(y)}
+                              className={`flex h-5 w-5 items-center justify-center rounded-full border ${
+                                isActiveFlag
+                                  ? 'border-crimson-600 bg-crimson-600 text-white'
+                                  : 'border-slate-300 text-transparent hover:border-crimson-400'
+                              }`}
+                            >
+                              <Check size={12} />
+                            </button>
+                          )}
                         </td>
                         <td className="px-3 py-2 font-medium text-slate-800">{y.label || `FY ${y.startDate}`}</td>
                         <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.startDate || '').slice(0, 10)}</td>
@@ -895,7 +1108,7 @@ export default function Settings() {
                               <button
                                 type="button"
                                 onClick={() => fyReopen(y)}
-                                title="Reopen this fiscal year"
+                                title="Open this fiscal year"
                                 className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600"
                               >
                                 <Unlock size={14} />
@@ -910,6 +1123,14 @@ export default function Settings() {
                                 <Lock size={14} />
                               </button>
                             )}
+                            <button
+                              type="button"
+                              onClick={() => openFyEdit(y)}
+                              title="Edit fiscal year"
+                              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                            >
+                              <Pencil size={14} />
+                            </button>
                             <button
                               type="button"
                               onClick={() => fyDelete(y)}
@@ -929,19 +1150,19 @@ export default function Settings() {
           )}
 
           <p className="mt-3 text-xs text-slate-400">
-            Selecting a fiscal year in the header filters the vouchers, journal and reports to that period.
+            Selecting a fiscal year in the header filters the transactions, journal and reports to that period.
             Entries dated inside a <span className="font-medium">closed</span> year are rejected on the server.
           </p>
         </div>
       </Section>
 
-      {/* ── Add Fiscal Year Modal ────────────────────────────── */}
+      {/* ── Add / Edit Fiscal Year Modal ──────────────────── */}
       {fyModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-slate-800">Add Fiscal Year</h3>
-              <button type="button" onClick={() => setFyModalOpen(false)} className="rounded p-1 text-slate-400 hover:bg-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">{fyEditing ? 'Edit Fiscal Year' : 'Add Fiscal Year'}</h3>
+              <button type="button" onClick={() => { setFyModalOpen(false); setFyEditing(null) }} className="rounded p-1 text-slate-400 hover:bg-slate-100">
                 <X size={16} />
               </button>
             </div>
@@ -980,7 +1201,7 @@ export default function Settings() {
                     type="radio"
                     name="fyStatus"
                     checked={fyForm.status === 'closed'}
-                    onChange={() => setFyForm((f) => ({ ...f, status: 'closed' }))}
+                    onChange={() => setFyForm((f) => ({ ...f, status: 'closed', makeActive: false }))}
                   />
                   Closed
                 </label>
@@ -988,6 +1209,7 @@ export default function Settings() {
                   <input
                     type="checkbox"
                     checked={fyForm.makeActive}
+                    disabled={fyForm.status === 'closed'}
                     onChange={(e) => setFyForm((f) => ({ ...f, makeActive: e.target.checked }))}
                   />
                   Set as working year
@@ -997,23 +1219,93 @@ export default function Settings() {
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setFyModalOpen(false)}
+                onClick={() => { setFyModalOpen(false); setFyEditing(null) }}
                 className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={() => void fyCreate()}
+                onClick={() => void fySave()}
                 disabled={fySaving}
                 className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
               >
-                {fySaving ? 'Creating…' : 'Create Year'}
+                {fySaving ? 'Saving…' : fyEditing ? 'Save Changes' : 'Create Year'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* ── Fiscal Year Action Confirmation Modal ───────────── */}
+      {fyConfirm && (() => {
+        const { action, year, swap, swapIsWorking } = fyConfirm
+        const isWorkingYear = activeFiscalYear?.id === year.id
+        const title =
+          action === 'close' ? 'Close Fiscal Year' :
+          action === 'open' ? 'Open Fiscal Year' :
+          'Set as Working Year'
+        const confirmLabel =
+          action === 'close' ? 'Close Year' :
+          action === 'open' ? 'Open Year' :
+          'Set as Working Year'
+        const swapNote = swap
+          ? `Only one fiscal year can be active at a time. ${action === 'open' ? `Opening ${year.label}` : `Setting ${year.label} as the working year`} will close ${swap.label}${swapIsWorking ? ' — the current working year' : ''}.`
+          : null
+        const closeWarn =
+          action === 'close' && isWorkingYear
+            ? `${year.label} is the current working year. After closing it, no fiscal year will be active for new entries.`
+            : null
+        return (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+            <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-base font-semibold text-slate-800">{title}</h3>
+                <button type="button" onClick={() => setFyConfirm(null)} className="rounded p-1 text-slate-400 hover:bg-slate-100">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="space-y-3 text-sm text-slate-600">
+                <p>
+                  {action === 'close'
+                    ? `Close ${year.label}? Entries dated in this year will become read-only.`
+                    : action === 'open'
+                      ? `Open ${year.label}? Entries dated in this year will be editable again.`
+                      : `Set ${year.label} as the working year for new entries and transaction numbering?`}
+                </p>
+                {swapNote && (
+                  <p className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+                    {swapNote}
+                  </p>
+                )}
+                {closeWarn && (
+                  <p className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+                    {closeWarn}
+                  </p>
+                )}
+              </div>
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFyConfirm(null)}
+                  className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void fyConfirmGo()}
+                  className={`rounded px-4 py-2 text-sm font-medium text-white hover:opacity-90 ${
+                    action === 'close' ? 'bg-amber-600' : 'bg-crimson-600'
+                  }`}
+                >
+                  {confirmLabel}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── 4. Feature Toggles ───────────────────────────────── */}
       <Section
@@ -1086,6 +1378,28 @@ export default function Settings() {
               />
             </div>
           )}
+
+          {/* Demo seed */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={demoSeedEnabled}
+                onChange={(e) => setDemoSeedEnabled(e.target.checked)}
+                className="peer sr-only"
+              />
+              <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+              <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+            </div>
+            <div>
+              <div className="text-sm text-slate-700">Demo seed</div>
+              <div className="text-xs text-slate-400">
+                {demoSeedEnabled
+                  ? 'Enabled — Setup wizard & Data Management can add demo data'
+                  : 'Disabled — demo data seeding is rejected'}
+              </div>
+            </div>
+          </label>
         </div>
       </Section>
 
@@ -1147,7 +1461,7 @@ export default function Settings() {
           })}
         </div>
         <p className="mt-3 text-xs text-slate-400">
-          These defaults are used when posting vouchers. Missing accounts block posting until configured.
+          These defaults are used when posting transactions. Missing accounts block posting until configured.
           Drag rows to reorder posting roles.
         </p>
       </Section>
@@ -1167,7 +1481,7 @@ export default function Settings() {
           </span>
           <button
             type="button"
-            onClick={() => setShowCoaForm(!showCoaForm)}
+            onClick={() => openCoaNew()}
             className="flex items-center gap-1 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
           >
             <Plus size={12} /> New Account
@@ -1175,7 +1489,8 @@ export default function Settings() {
         </div>
 
         {showCoaForm && (
-          <form onSubmit={createCoaAccount} className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <form onSubmit={saveCoaAccount} className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="mb-2 text-xs font-medium text-slate-600">{coaEditingId != null ? 'Edit Account' : 'New Account'}</div>
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
               <input required value={coaForm.name} onChange={(e) => setCoaForm({ ...coaForm, name: e.target.value })}
                 placeholder="Account name" className="rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500" />
@@ -1225,44 +1540,111 @@ export default function Settings() {
                     .map((g) => ({ value: g.id, label: g.name }))}
                 />
               </div>
-              <input type="number" step="0.01" value={coaForm.openingBalance} onChange={(e) => setCoaForm({ ...coaForm, openingBalance: e.target.value })}
-                placeholder="Opening balance" className="w-32 rounded border border-slate-300 px-3 py-1.5 text-sm font-mono outline-none focus:border-slate-500" />
               <button type="submit" disabled={coaSaving}
                 className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
-                {coaSaving ? 'Saving…' : 'Save'}</button>
-              <button type="button" onClick={() => setShowCoaForm(false)} className="text-xs text-slate-400 hover:text-slate-700">Cancel</button>
+                {coaSaving ? 'Saving…' : coaEditingId != null ? 'Save Changes' : 'Save'}</button>
+              <button type="button" onClick={() => { setCoaEditingId(null); setShowCoaForm(false) }} className="text-xs text-slate-400 hover:text-slate-700">Cancel</button>
             </div>
           </form>
         )}
 
-        {/* Accounts grouped by type */}
+        {/* Accounts grouped by type → nested tree */}
         {(['asset', 'liability', 'equity', 'income', 'expense'] as AccountType[]).map((type) => {
-          const rows = coaAccounts.filter((a) => a.type === type)
-          if (rows.length === 0) return null
+          const tree = coaTreeFor(type)
+          if (tree.roots.length === 0 && tree.ungrouped.length === 0) return null
           const labels: Record<string, string> = { asset: 'Assets', liability: 'Liabilities', equity: 'Equity', income: 'Income', expense: 'Expenses' }
+          const total = tree.roots.reduce((n, r) => n + countCoaAccounts(r), 0) + tree.ungrouped.length
+
+          const renderCoaAccount = (a: Account, depth: number) => {
+            const bal = coaBalances[a.id] ?? 0
+            const isInventory = defAccounts.inventoryAccount === String(a.id)
+            return (
+              <div key={`a${a.id}`}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50"
+                style={{ paddingLeft: `${10 + depth * 22}px` }}>
+                <span className="w-24 shrink-0 truncate font-mono text-xs text-slate-400">{a.code || '—'}</span>
+                <span className="flex-1 truncate text-slate-800">{a.name}</span>
+                {isInventory && (
+                  <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-700" title="Inventory is valued at weighted-average cost (AVCO)">AVCO</span>
+                )}
+                {a.class === 'bank' && (
+                  <span className="rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-sky-600">Bank</span>
+                )}
+                {a.class === 'cash' && (
+                  <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-600">Cash</span>
+                )}
+                <span className={`hidden shrink-0 font-mono text-xs sm:inline ${bal === 0 ? 'text-slate-300' : bal < 0 ? 'text-red-600' : 'text-slate-700'}`}>
+                  {fmt(bal)}
+                </span>
+                <span className="flex shrink-0 items-center gap-0.5">
+                  <button onClick={() => openCoaEdit(a)} title="Edit"
+                    className="rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-700">
+                    <Pencil size={12} />
+                  </button>
+                  <button onClick={() => removeCoaAccount(a.id)} title="Delete"
+                    className="rounded p-1 text-slate-300 hover:bg-red-50 hover:text-red-500">
+                    <Trash2 size={12} />
+                  </button>
+                </span>
+              </div>
+            )
+          }
+
+          const renderCoaGroup = (node: CoaGroupNode, depth: number) => {
+            const hasChildren = node.accounts.length + node.children.length > 0
+            const expanded = !!coaExpanded[node.group.id]
+            const count = node.accounts.length + node.children.reduce((n, c) => n + c.accounts.length, 0)
+            return (
+              <div key={`g${node.group.id}`}>
+                <button type="button" onClick={() => hasChildren && toggleCoaGroup(node.group.id)}
+                  className={`flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-sm ${hasChildren ? 'hover:bg-slate-50' : 'cursor-default'}`}
+                  style={{ paddingLeft: `${8 + depth * 22}px` }}>
+                  {hasChildren ? (
+                    expanded
+                      ? <ChevronDown size={13} className="shrink-0 text-slate-400" />
+                      : <ChevronRight size={13} className="shrink-0 text-slate-400" />
+                  ) : (
+                    <span className="w-[13px] shrink-0" />
+                  )}
+                  <span className="font-medium text-slate-700">{node.group.name}</span>
+                  <span className="text-xs text-slate-400">({count} account{count === 1 ? '' : 's'})</span>
+                </button>
+                {(!hasChildren || expanded) && (
+                  <div className="ml-[20px] border-l border-slate-100">
+                    {node.children.map((c) => renderCoaGroup(c, depth + 1))}
+                    {node.accounts.map((a) => renderCoaAccount(a, depth + 1))}
+                  </div>
+                )}
+              </div>
+            )
+          }
+
           return (
             <div key={type} className="mb-3">
-              <div className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
-                {labels[type]} <span className="text-slate-400">({rows.length})</span>
+              <div className="mb-1 flex items-baseline gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+                <span>{labels[type]} <span className="text-slate-400">({total})</span></span>
+                {(() => {
+                  const typeBalance = coaAccounts
+                    .filter((x) => x.type === type)
+                    .reduce((s, x) => s + (coaBalances[x.id] || 0), 0)
+                  if (typeBalance === 0) return null
+                  return (
+                    <span className={`font-mono text-[11px] ${typeBalance < 0 ? 'text-red-500' : 'text-slate-600'}`}>
+                      {fmt(typeBalance)}
+                    </span>
+                  )
+                })()}
               </div>
-              <table className="w-full text-sm">
-                <tbody>
-                  {rows.map((a) => (
-                    <tr key={a.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50">
-                      <td className="px-3 py-1.5 font-mono text-xs text-slate-500 w-20">{a.code || '—'}</td>
-                      <td className="px-3 py-1.5 text-slate-800">{a.name}</td>
-                      <td className="px-3 py-1.5 text-xs text-slate-400">{coaGroupName(a)}</td>
-                      <td className="px-3 py-1.5 text-xs text-slate-400 capitalize">{a.class || 'other'}</td>
-                      <td className="px-3 py-1.5 text-right">
-                        <button onClick={() => removeCoaAccount(a.id)} title="Delete"
-                          className="rounded p-1 text-slate-300 hover:bg-red-50 hover:text-red-500">
-                          <Trash2 size={12} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="overflow-hidden rounded-lg border border-slate-200">
+                <div className="divide-y divide-slate-50">
+                  {tree.roots.map((n) => renderCoaGroup(n, 0))}
+                  {tree.ungrouped.length > 0 && (
+                    <div className="bg-slate-50/60">
+                      {tree.ungrouped.map((a) => renderCoaAccount(a, 1))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )
         })}
@@ -1274,9 +1656,9 @@ export default function Settings() {
         )}
       </Section>
 
-      {/* ── 6. Voucher Numbering ─────────────────────────────── */}
+      {/* ── 6. Transaction Numbering ─────────────────────────── */}
       <Section
-        title="Voucher Numbering"
+        title="Transaction Numbering"
         subtitle={sequences.length ? `${sequences.length} sequences` : 'No sequences yet'}
         icon={Hash}
         open={!!openSections.sequences}
@@ -1284,7 +1666,7 @@ export default function Settings() {
       >
         {sequences.length === 0 ? (
           <p className="text-sm text-slate-400">
-            No sequences yet. Numbers are created automatically when vouchers are posted.
+            No sequences yet. Numbers are created automatically when transactions are posted.
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -1339,7 +1721,7 @@ export default function Settings() {
             <button
               onClick={async () => {
                 const val = parseInt(resetValue) || 0
-                if (!window.confirm(`Reset ${resetKey} to ${val}? The next voucher will use ${val + 1}.`)) return
+                if (!window.confirm(`Reset ${resetKey} to ${val}? The next transaction will use ${val + 1}.`)) return
                 setResetting(true)
                 try {
                   await api(`/doc-sequences/${sequences.find((s) => s.key === resetKey)?.id}`, {

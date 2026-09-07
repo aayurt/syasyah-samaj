@@ -10,7 +10,7 @@ import { expect, test } from '@playwright/test'
  * exist until suite 04 creates the voucher month).
  */
 test.describe.serial('S0 — Shell & navigation', () => {
-  const NAV_GROUPS = ['Bookkeeping', 'Masters', 'Inventory', 'Reports', 'Admin']
+  const NAV_GROUPS = ['Bookkeeping', 'Operations', 'Masters', 'Reports', 'Admin', 'Logs']
 
   /** Dismiss the first-run tour overlay and force the expanded sidebar. */
   async function resetShell(page: import('@playwright/test').Page) {
@@ -49,7 +49,7 @@ test.describe.serial('S0 — Shell & navigation', () => {
     const masters = page.getByRole('button', { name: 'Masters', exact: true })
     await masters.click()
     await expect(masters).toHaveAttribute('aria-expanded', 'false')
-    await expect(page.getByRole('link', { name: /Account Setup/ })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: /Accounts/ })).toHaveCount(0)
     await expect(masters.locator('svg.-rotate-90')).toBeVisible()
 
     // Persisted across reloads.

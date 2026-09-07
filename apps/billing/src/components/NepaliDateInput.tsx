@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Calendar } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCalendar } from '../lib/calendar'
 import {
   adToBsString,
   bsMonthLength,
   bsToAdString,
   BS_MONTHS,
+  toAD,
+  toBS,
   todayAD,
   todayBS,
 } from '../lib/nepaliDate'
@@ -16,8 +18,8 @@ interface Props {
   label?: string
   required?: boolean
   className?: string
-  /** Single-line variant for filter bars: BS entry via a text field
-   * (YYYY-MM-DD), no preview line, tighter padding. */
+  /** Single-line variant for filter bars: no label/preview line, tighter
+   * padding. Same BS calendar popup as the full variant. */
   compact?: boolean
 }
 
@@ -25,11 +27,11 @@ const BS_YEAR_MIN = 2000
 const BS_YEAR_MAX = 2090
 
 /**
- * Dual-calendar date input. Stores AD internally. In BS mode the user picks
- * a real Bikram Sambat date via year/month/day selects (a native date input
- * can't accept BS values — browsers only parse Gregorian). In AD mode it's
- * the standard browser date picker. The toggle converts the current date
- * between modes; the other calendar is always previewed underneath.
+ * Dual-calendar date input. Stores AD internally. In BS mode the user picks a
+ * real Bikram Sambat date from a calendar popup (a native date input can't
+ * accept BS values — browsers only parse Gregorian). In AD mode it's the
+ * standard browser date picker. The toggle converts the current date between
+ * modes; the other calendar is always previewed underneath (full variant).
  */
 export default function NepaliDateInput({
   value,
@@ -41,17 +43,17 @@ export default function NepaliDateInput({
 }: Props) {
   const { calendarType } = useCalendar()
   const [inputMode, setInputMode] = useState<'AD' | 'BS'>(calendarType)
-  const [bsText, setBsText] = useState('')
-  const [bsInvalid, setBsInvalid] = useState(false)
+  const [calOpen, setCalOpen] = useState(false)
+  // The month shown in the BS calendar popup (0-based month).
+  const [calYear, setCalYear] = useState(() => toBS(new Date()).year)
+  const [calMonth, setCalMonth] = useState(() => toBS(new Date()).month)
+  // Anchor for the fixed-position popup (viewport coords of the trigger).
+  const [calPos, setCalPos] = useState<{ left: number; top: number } | null>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   // Sync the entry mode when the global calendar setting changes.
   useEffect(() => setInputMode(calendarType), [calendarType])
-
-  // Keep the compact BS text field in sync with the external AD value.
-  useEffect(() => {
-    setBsText(value ? adToBsString(value) : '')
-    setBsInvalid(false)
-  }, [value])
 
   // BS parts derived from the AD value
   const bs = useMemo(() => {
@@ -61,20 +63,6 @@ export default function NepaliDateInput({
     const [y, m, d] = raw.split('-').map(Number)
     return { year: y, month: m - 1, day: d }
   }, [value])
-
-  const years = useMemo(
-    () =>
-      Array.from(
-        { length: BS_YEAR_MAX - BS_YEAR_MIN + 1 },
-        (_, i) => BS_YEAR_MIN + i,
-      ),
-    [],
-  )
-
-  const daysInMonth = useMemo(
-    () => (bs ? bsMonthLength(bs.year, bs.month) : 32),
-    [bs],
-  )
 
   const setBs = (year: number, month: number, day: number) => {
     // Clamp the day when switching to a shorter month.
@@ -91,13 +79,7 @@ export default function NepaliDateInput({
       onChange('')
       return
     }
-    if (inputMode === 'BS') {
-      // Raw comes as YYYY-MM-DD with 1-based month from the selects
-      const ad = bsToAdString(raw)
-      if (ad) onChange(ad)
-    } else {
-      onChange(raw)
-    }
+    onChange(raw)
   }
 
   const toggleMode = () =>
@@ -112,41 +94,170 @@ export default function NepaliDateInput({
     }
   }
 
-  const selectCls = compact
-    ? 'rounded border border-slate-300 bg-white py-1.5 pl-1.5 pr-5 text-xs outline-none focus:border-slate-500'
-    : 'rounded border border-slate-300 bg-white py-2.5 pl-2 pr-7 text-sm outline-none focus:border-slate-500'
+  const openCalendar = () => {
+    // Open on the selected date's month (or today if nothing selected).
+    const target = bs ?? (() => {
+      const t = toBS(new Date())
+      return { year: t.year, month: t.month }
+    })()
+    setCalYear(target.year)
+    setCalMonth(target.month)
+    // Anchor the popup to the trigger button in viewport coords so it can't
+    // be clipped by an overflow container (filter bars, modals, tables).
+    const r = triggerRef.current?.getBoundingClientRect()
+    if (r) {
+      const POPUP_W = 288 // w-72
+      const left = Math.min(r.left, Math.max(8, window.innerWidth - POPUP_W - 8))
+      const top = r.bottom + 6
+      setCalPos({ left, top })
+    }
+    setCalOpen(true)
+  }
+
+  // Close on outside click / Escape; re-anchor and stay in view on scroll/resize.
+  useEffect(() => {
+    if (!calOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setCalOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCalOpen(false)
+    }
+    const onScroll = () => {
+      const r = triggerRef.current?.getBoundingClientRect()
+      if (r) {
+        const POPUP_W = 288
+        setCalPos({
+          left: Math.min(r.left, Math.max(8, window.innerWidth - POPUP_W - 8)),
+          top: r.bottom + 6,
+        })
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('resize', onScroll)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+      window.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [calOpen])
+
+  const calCells = useMemo(() => {
+    // Leading blanks to align the first day of the BS month (week starts Sun).
+    const lead = toAD(calYear, calMonth, 1).getDay()
+    const len = bsMonthLength(calYear, calMonth)
+    const cells: (number | null)[] = Array.from({ length: lead }, () => null)
+    for (let d = 1; d <= len; d++) cells.push(d)
+    return cells
+  }, [calYear, calMonth])
+
+  const today = useMemo(() => toBS(new Date()), [])
+
+  const calMoveMonth = (delta: number) => {
+    let m = calMonth + delta
+    let y = calYear
+    if (m < 0) { m = 11; y -= 1 }
+    if (m > 11) { m = 0; y += 1 }
+    if (y < BS_YEAR_MIN || y > BS_YEAR_MAX) return
+    setCalMonth(m)
+    setCalYear(y)
+  }
+
+  /** Shared BS calendar popup — rendered fixed so no ancestor clips it. */
+  const bsCalendar = calOpen && calPos ? (
+    <div
+      className="fixed z-50 mt-1 w-72 rounded-lg border border-slate-200 bg-white p-3 shadow-xl"
+      style={{ left: calPos.left, top: calPos.top }}
+    >
+      {/* Header: month/year navigation */}
+      <div className="mb-2 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => calMoveMonth(-1)}
+          className="rounded p-1 text-slate-500 hover:bg-slate-100"
+          title="Previous month"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <div className="text-sm font-semibold text-slate-800">
+          {BS_MONTHS[calMonth]} {calYear}
+        </div>
+        <button
+          type="button"
+          onClick={() => calMoveMonth(1)}
+          className="rounded p-1 text-slate-500 hover:bg-slate-100"
+          title="Next month"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+      {/* Weekday header (week starts Sunday) */}
+      <div className="mb-1 grid grid-cols-7 text-center text-[10px] font-medium text-slate-400">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+          <div key={d} className="py-0.5">{d}</div>
+        ))}
+      </div>
+      {/* Day grid */}
+      <div className="grid grid-cols-7 gap-0.5">
+        {calCells.map((d, i) =>
+          d === null ? (
+            <div key={`b-${i}`} />
+          ) : (
+            <button
+              key={d}
+              type="button"
+              onClick={() => {
+                setBs(calYear, calMonth, d)
+                setCalOpen(false)
+              }}
+              className={`flex h-8 items-center justify-center rounded text-sm transition-colors ${
+                bs?.year === calYear && bs?.month === calMonth && bs?.day === d
+                  ? 'bg-red-700 font-semibold text-white'
+                  : today.year === calYear && today.month === calMonth && today.date === d
+                    ? 'bg-red-50 font-semibold text-red-700 ring-1 ring-red-200'
+                    : 'text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              {d}
+            </button>
+          ),
+        )}
+      </div>
+    </div>
+  ) : null
 
   // ── Compact variant: single-line, for filter bars ────────────────────
   if (compact) {
     return (
       <div className={`inline-flex items-center gap-2 ${className}`}>
         {inputMode === 'BS' ? (
-          <input
-            type="text"
-            value={bsText}
-            placeholder="YYYY-MM-DD (BS)"
-            onChange={(e) => {
-              const raw = e.target.value
-              setBsText(raw)
-              const m = /^\d{4}-\d{2}-\d{2}$/.exec(raw.trim())
-              const ad = m ? bsToAdString(raw.trim()) : ''
-              if (ad) {
-                setBsInvalid(false)
-                onChange(ad)
-              } else {
-                setBsInvalid(raw.trim() !== '')
-              }
-            }}
-            className={`w-32 rounded border px-2 py-1.5 text-xs outline-none focus:border-slate-500 ${
-              bsInvalid ? 'border-red-400 bg-red-50' : 'border-slate-300'
-            }`}
-          />
+          <div className="relative" ref={wrapRef}>
+            <button
+              ref={triggerRef}
+              type="button"
+              onClick={() => (calOpen ? setCalOpen(false) : openCalendar())}
+              className="flex w-36 items-center justify-between gap-1 rounded border border-slate-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-slate-500"
+            >
+              <span className={bs ? 'text-slate-700' : 'text-slate-400'}>
+                {bs
+                  ? `${bs.day} ${BS_MONTHS[bs.month]} ${bs.year}`
+                  : 'Select date'}
+              </span>
+              <Calendar size={12} className="shrink-0 text-slate-400" />
+            </button>
+            {bsCalendar}
+          </div>
         ) : (
           <input
             type="date"
             value={value}
             onChange={(e) => handleChange(e.target.value)}
-            className={`rounded border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-slate-500`}
+            className="rounded border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-slate-500"
           />
         )}
         <button
@@ -170,54 +281,21 @@ export default function NepaliDateInput({
       )}
       <div className="mt-1 flex items-center gap-1.5">
         {inputMode === 'BS' ? (
-          <div className="flex flex-1 items-center gap-1.5">
-            <select
-              value={bs?.day ?? ''}
-              onChange={(e) =>
-                bs && setBs(bs.year, bs.month, Number(e.target.value))
-              }
-              className={`${selectCls} w-20`}
-              aria-label="BS day"
+          <div className="relative flex-1" ref={wrapRef}>
+            <button
+              ref={triggerRef}
+              type="button"
+              onClick={() => (calOpen ? setCalOpen(false) : openCalendar())}
+              className="flex w-full items-center justify-between rounded border border-slate-300 bg-white py-2.5 pl-3 pr-3 text-sm outline-none focus:border-slate-500"
             >
-              {!bs && <option value="">Day</option>}
-              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(
-                (d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ),
-              )}
-            </select>
-            <select
-              value={bs?.month ?? ''}
-              onChange={(e) =>
-                bs && setBs(bs.year, Number(e.target.value), bs.day)
-              }
-              className={`${selectCls} flex-1`}
-              aria-label="BS month"
-            >
-              {!bs && <option value="">Month</option>}
-              {BS_MONTHS.map((m, i) => (
-                <option key={m} value={i}>
-                  {m}
-                </option>
-              ))}
-            </select>
-            <select
-              value={bs?.year ?? ''}
-              onChange={(e) =>
-                bs && setBs(Number(e.target.value), bs.month, bs.day)
-              }
-              className={`${selectCls} w-24`}
-              aria-label="BS year"
-            >
-              {!bs && <option value="">Year</option>}
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
+              <span className={bs ? 'text-slate-800' : 'text-slate-400'}>
+                {bs
+                  ? `${bs.day} ${BS_MONTHS[bs.month]} ${bs.year}`
+                  : 'Select BS date'}
+              </span>
+              <Calendar size={14} className="text-slate-400" />
+            </button>
+            {bsCalendar}
           </div>
         ) : (
           <div className="relative flex-1">

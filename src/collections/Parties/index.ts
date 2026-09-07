@@ -68,6 +68,27 @@ export const Parties: CollectionConfig = {
         position: 'sidebar',
       },
     },
+    // Optional per-party control accounts. When set, postings for this party
+    // use these GL accounts instead of the global AR/AP defaults from
+    // Billing Settings → Default accounts.
+    {
+      name: 'receivableAccount',
+      type: 'relationship',
+      relationTo: 'gl-accounts',
+      admin: {
+        description: 'Optional AR control account for this party (overrides the global default).',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'payableAccount',
+      type: 'relationship',
+      relationTo: 'gl-accounts',
+      admin: {
+        description: 'Optional AP control account for this party (overrides the global default).',
+        position: 'sidebar',
+      },
+    },
     {
       name: 'donor',
       type: 'checkbox',
