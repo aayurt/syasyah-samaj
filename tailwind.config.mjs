@@ -50,12 +50,7 @@ const config = {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
-      keyframes: {
-        spin: {
-          from: { transform: 'rotate(0deg)' },
-          to: { transform: 'rotate(360deg)' },
-        },
-      },
+
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
@@ -104,6 +99,10 @@ const config = {
         sans: ['var(--font-geist-sans)'],
       },
       keyframes: {
+        spin: {
+          from: { transform: 'rotate(0deg)' },
+          to: { transform: 'rotate(360deg)' },
+        },
         'accordion-down': {
           from: { height: '0' },
           to: { height: 'var(--radix-accordion-content-height)' },

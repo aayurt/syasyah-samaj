@@ -32,7 +32,7 @@ export default async function Hero() {
                         </p>
 
                         <div className="flex gap-4">
-                            <Button asChild size="lg" className="bg-yellow-400 text-black hover:bg-yellow-300">
+                            <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
                                 <Link href="/members">
                                     {t('home.becomeMember')}
                                 </Link>
