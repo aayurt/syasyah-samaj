@@ -62,21 +62,21 @@ export default async function IlakaPage({ params: paramsPromise }: Args) {
 
       <div className="container mx-auto px-4">
         <div className="mb-8">
-          <Link href="/ilakas" className="inline-flex items-center gap-2 text-red-900 dark:text-red-400 font-semibold hover:underline">
+          <Link href="/ilakas" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
             <ArrowLeft className="w-4 h-4" />
             {t('ilaka.backToAll')}
           </Link>
         </div>
 
-        <div className="bg-white dark:bg-card rounded-3xl overflow-hidden border border-border shadow-sm mb-12">
-          <div className="relative h-[40vh] md:h-[50vh] lg:h-[70vh] overflow-hidden bg-red-900/10">
+        <div className="bg-card rounded-3xl overflow-hidden border border-border shadow-sm mb-12">
+          <div className="relative h-[40vh] md:h-[50vh] lg:h-[70vh] overflow-hidden bg-primary/10">
             {(() => {
               const firstGalleryItem = ilaka.gallery?.[0]
               if (firstGalleryItem?.image && typeof firstGalleryItem.image !== 'string') {
                 return <Media resource={firstGalleryItem.image} className="w-full h-full object-cover object-center" />
               }
               return (
-                <div className="w-full h-full flex items-center justify-center text-red-900/20">
+                <div className="w-full h-full flex items-center justify-center text-primary/20">
                   <span className="text-6xl font-bold">{t('brand')}</span>
                 </div>
               )
@@ -110,7 +110,7 @@ export default async function IlakaPage({ params: paramsPromise }: Args) {
 
         {ilaka.gallery && ilaka.gallery.length > 1 && (
           <div className="mb-12">
-            <h2 className="text-2xl font-bold text-red-900 dark:text-slate-50 mb-6">{t('ilaka.gallery')}</h2>
+            <h2 className="text-2xl font-bold text-primary mb-6">{t('ilaka.gallery')}</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {ilaka.gallery.slice(1).map((item, index) => (
                 <div key={item.id || index} className="relative aspect-square rounded-xl overflow-hidden border border-border hover:shadow-md transition-all group">
@@ -125,14 +125,14 @@ export default async function IlakaPage({ params: paramsPromise }: Args) {
 
         {/* Additional information or related events/posts could go here */}
         <div className="prose dark:prose-invert max-w-none mb-12">
-          <p className="text-lg text-gray-600 dark:text-gray-300">
+          <p className="text-lg text-muted-foreground">
             {ilaka.description}
           </p>
         </div>
 
         {ilaka.location && (ilaka.location.address || ilaka.location.mapUrl || (ilaka.location.latitude && ilaka.location.longitude)) && (
           <div className="mb-12">
-            <h2 className="text-2xl font-bold text-red-900 dark:text-slate-50 mb-6 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-primary mb-6 flex items-center gap-2">
               <MapPin className="w-6 h-6" />
               {t('ilaka.location')}
             </h2>
@@ -158,7 +158,7 @@ export default async function IlakaPage({ params: paramsPromise }: Args) {
                 </div>
               </div> */}
               <div className="lg:col-span-2">
-                <div className="h-[400px] w-full rounded-3xl overflow-hidden border border-border shadow-sm bg-gray-100 dark:bg-gray-800">
+                <div className="h-[400px] w-full rounded-3xl overflow-hidden border border-border shadow-sm bg-muted">
                   {ilaka.location.mapUrl && ilaka.location.mapUrl.includes('google.com/maps/embed') ? (
                     <iframe
                       src={ilaka.location.mapUrl}
@@ -172,11 +172,11 @@ export default async function IlakaPage({ params: paramsPromise }: Args) {
                     />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center">
-                      <MapPin className="w-12 h-12 text-red-900/40 mb-4" />
-                      <p className="text-gray-500">
+                      <MapPin className="w-12 h-12 text-primary/40 mb-4" />
+                      <p className="text-muted-foreground">
                         {ilaka.location.address || t('ilaka.locationProvided')}
                       </p>
-                      <p className="text-sm text-gray-400 mt-2">
+                      <p className="text-sm text-muted-foreground/70 mt-2">
                         {t('ilaka.openInMaps')}
                       </p>
                     </div>

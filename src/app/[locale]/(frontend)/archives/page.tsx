@@ -35,7 +35,7 @@ export default async function ArchivesPage({ params: paramsPromise }: { params: 
               ) : (
                 <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">No Image</div>
               )}
-              <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-bold text-black shadow-sm">
+              <div className="absolute top-4 left-4 px-3 py-1 bg-background/90 backdrop-blur rounded-full text-xs font-bold text-foreground shadow-sm">
                 {item.era || item.year}
               </div>
             </div>

@@ -3,6 +3,8 @@ import { getPayload } from "payload"
 import configPromise from "@/payload.config"
 import { getCurrentLocale } from "@/locales/server"
 import { headers } from "next/headers"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default async function HomepageHero() {
   const payload = await getPayload({ config: configPromise })
@@ -24,16 +26,18 @@ export default async function HomepageHero() {
   if (!tenant) return <></>
 
   return (
-    <section className="bg-[url('https://images.unsplash.com/photo-1605640840605-14ac1855827b')] bg-cover bg-center text-white min-h-screen">
-      <div className="bg-black/50 min-h-screen">
+    <section className="bg-gradient-to-br from-primary via-secondary to-primary text-primary-foreground min-h-screen relative">
+      <div className="relative min-h-screen">
         <div className="max-w-6xl mx-auto px-6 py-32 text-center flex flex-col justify-center items-center min-h-screen">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">{t('home.homepageWelcome') + ' ' + (tenant.name === "default" ? "" : tenant.name)}</h1>
-          <p className="text-lg md:text-xl mb-6">
+          <p className="text-lg md:text-xl mb-6 text-primary-foreground/80">
             {t('home.homepageWelcomeDescription')}
           </p>
-          <button className="bg-yellow-500 text-black px-6 py-3 rounded-xl font-semibold hover:bg-yellow-400">
-            {t('home.joinCommunity')}
-          </button>
+          <Button asChild size="lg" className="bg-yellow-500 text-black hover:bg-yellow-400">
+            <Link href="/members">
+              {t('home.joinCommunity')}
+            </Link>
+          </Button>
         </div>
       </div>
     </section>

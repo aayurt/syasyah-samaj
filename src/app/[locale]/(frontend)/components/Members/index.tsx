@@ -2,7 +2,7 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { getI18n, getCurrentLocale } from '@/locales/server'
 import { Media } from '@/components/Media'
-
+import { Card } from '@/components/ui/card'
 
 export default async function Members({ locale: propLocale }: { locale?: 'en' | 'ne' | 'new' }) {
     const payload = await getPayload({ config: configPromise })
@@ -15,13 +15,13 @@ export default async function Members({ locale: propLocale }: { locale?: 'en' | 
     })
 
     return (
-        <section id="committee" className="py-24 dark:bg-gray-900">
+        <section id="committee" className="py-24 dark:bg-muted">
             <div>
                 <div className="mb-12 text-center">
-                    <h2 className="text-3xl md:text-4xl font-bold text-red-900 dark:text-slate-50">
+                    <h2 className="text-3xl md:text-4xl font-bold text-primary dark:text-foreground">
                         {t('home.committeeMembers', { count: members.length })}
                     </h2>
-                    <p className="text-gray-600 mt-3 max-w-2xl mx-auto dark:text-slate-50">
+                    <p className="text-muted-foreground mt-3 max-w-2xl mx-auto dark:text-muted-foreground">
                         {t('home.communityActivities', { count: members.length })}
                     </p>
                 </div>
@@ -30,31 +30,22 @@ export default async function Members({ locale: propLocale }: { locale?: 'en' | 
                     {[...members].reverse().map((member, idx) => {
                         const website = member.socialLinks?.website;
                         const CardContent = (
-                            <>
-                                {/* 🔥 spinning border layer */}
-                                <div className="rotating-border-gradient" />
-                                {/* 🧊 card content */}
-                                <div className="relative bg-white dark:bg-slate-900 rounded-[14px] p-6 text-center shadow-md h-full transition-colors z-10">
-
-                                    {/* Avatar */}
-                                    <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-2 border-gray-200">
+                            <Card className="relative p-6 text-center shadow-md h-full transition-all duration-300 overflow-visible hover:shadow-xl hover:border-primary/30">
+                                <div className="relative rounded-[14px] p-6 text-center h-full transition-colors z-10">
+                                    <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-2 border-muted">
                                         <Media
                                             resource={member.profileImage}
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
-
-                                    {/* Name */}
-                                    <h4 className="font-semibold text-red-900 dark:text-slate-50">
+                                    <h4 className="font-semibold text-primary dark:text-foreground">
                                         {member.fullName}
                                     </h4>
-
-                                    {/* Bio */}
-                                    <p className="text-sm text-gray-700 dark:text-gray-400 mt-1">
+                                    <p className="text-sm text-muted-foreground mt-1">
                                         {member.bio}
                                     </p>
                                 </div>
-                            </>
+                            </Card>
                         );
 
                         return website ? (
@@ -63,12 +54,12 @@ export default async function Members({ locale: propLocale }: { locale?: 'en' | 
                                 href={website}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="rotating-border-container block hover:cursor-pointer"
+                                className="block hover:cursor-pointer"
                             >
                                 {CardContent}
                             </a>
                         ) : (
-                            <div key={idx} className="rotating-border-container">
+                            <div key={idx}>
                                 {CardContent}
                             </div>
                         );

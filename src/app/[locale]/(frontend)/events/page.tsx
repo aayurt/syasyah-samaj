@@ -32,10 +32,10 @@ export default async function EventsPage({ params: paramsPromise }: { params: Pr
     return (
         <div className="pt-24">
             <div className="container mx-auto px-4 py-12 text-center">
-                <h1 className="text-4xl md:text-5xl font-bold text-red-900 dark:text-slate-50 mb-6">
+                <h1 className="text-4xl md:text-5xl font-bold text-primary mb-6">
                     {t('home.UpcomingEvents')} & {t('home.pastEvents')}
                 </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                     {t('events.pageDescription')}
                 </p>
             </div>

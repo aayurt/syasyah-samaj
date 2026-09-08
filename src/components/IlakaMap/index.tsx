@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import type { Tenant } from '@/payload-types'
 
 // Fix for default marker icons in Leaflet with Next.js
 const DefaultIcon = L.icon({
@@ -16,7 +17,11 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon
 
 interface IlakaMapProps {
-  tenants: any[]
+  tenants: Tenant[]
+}
+
+type TenantWithLocation = Tenant & {
+  location: NonNullable<Tenant['location']> & { latitude: number; longitude: number }
 }
 
 const IlakaMap: React.FC<IlakaMapProps> = ({ tenants }) => {
@@ -28,9 +33,12 @@ const IlakaMap: React.FC<IlakaMapProps> = ({ tenants }) => {
 
   if (!isMounted) return <div className="h-[500px] w-full bg-muted animate-pulse rounded-xl" />
 
-  const validTenants = tenants.filter(t => t.location?.latitude && t.location?.longitude)
-  const center: [number, number] = validTenants.length > 0
-    ? [validTenants[0].location.latitude, validTenants[0].location.longitude]
+  const validTenants = tenants.filter(
+    (t): t is TenantWithLocation => Boolean(t.location?.latitude && t.location?.longitude)
+  )
+  const first = validTenants[0]
+  const center: [number, number] = first
+    ? [first.location.latitude, first.location.longitude]
     : [27.7172, 85.3240] // Default to Kathmandu
 
   return (

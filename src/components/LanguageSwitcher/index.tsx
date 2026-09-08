@@ -47,7 +47,7 @@ export const LanguageSwitcher: React.FC = () => {
             <SelectTrigger className="w-[110px] h-9 border-none bg-transparent hover:bg-accent hover:text-accent-foreground focus:ring-0 relative">
                 {isLoading ? (
                     <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-red-900 dark:text-red-400" />
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         <span className="text-xs font-medium">Wait...</span>
                     </div>
                 ) : (

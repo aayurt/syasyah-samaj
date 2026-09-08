@@ -17,7 +17,7 @@ export async function Footer({ locale }: { locale?: string }) {
   const navItems = footerData?.navItems || []
 
   return (
-    <footer className="mt-auto border-t border-border bg-gray-900 dark:bg-card text-white">
+    <footer className="mt-auto border-t border-border bg-muted dark:bg-card text-foreground">
       <div className="container py-8 gap-8 flex flex-col md:flex-row md:justify-between">
         <Link className="flex items-center" href="/">
           <Logo />
@@ -27,13 +27,13 @@ export async function Footer({ locale }: { locale?: string }) {
           <ThemeSelector />
           <nav className="flex flex-col md:flex-row gap-4">
             {navItems.map(({ link }, i) => {
-              return <CMSLink className="text-white" key={i} {...link} />
+              return <CMSLink className="text-foreground" key={i} {...link} />
             })}
           </nav>
         </div>
       </div>
-      <div className="container border-t border-gray-700 dark:border-gray-800 mt-6 py-2">
-        <div className="flex flex-col md:flex-row justify-center items-center gap-4 text-sm text-gray-400">
+      <div className="container border-t border-border mt-6 py-2">
+        <div className="flex flex-col md:flex-row justify-center items-center gap-4 text-sm text-muted-foreground">
           <p>{t('copyright')}</p>
         </div>
       </div>

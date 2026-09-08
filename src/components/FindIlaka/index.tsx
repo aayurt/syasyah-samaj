@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Search, MapPin, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { Input } from '@/components/ui/input'
 
 interface Ilaka {
   id: string
@@ -32,13 +33,13 @@ export const FindIlaka: React.FC<{ initialIlakas: Ilaka[] }> = ({ initialIlakas 
   return (
     <div className="relative w-full max-w-xl mx-auto z-50">
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-        <input
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5 z-10" />
+        <Input
           type="text"
           placeholder="Enter your village or area to find your Ilaka..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-4 rounded-2xl border bg-background/80 backdrop-blur-xl shadow-2xl outline-none focus:ring-2 ring-primary/20 transition-all text-lg"
+          className="w-full pl-12 pr-4 py-6 h-14 rounded-2xl border bg-background/80 backdrop-blur-xl shadow-2xl outline-none focus:ring-2 ring-primary/20 transition-all text-lg"
         />
       </div>
 

@@ -5,6 +5,7 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export default async function Ilakas({ locale: propLocale }: { locale?: 'en' | 'ne' | 'new' }) {
     const t = await getI18n()
@@ -23,30 +24,28 @@ export default async function Ilakas({ locale: propLocale }: { locale?: 'en' | '
     })
 
     return (
-        <section id="ilakas" className="py-24 dark:bg-gray-900">
+        <section id="ilakas" className="py-24 dark:bg-muted">
             <div className="container mx-auto px-4">
                 <div className="mb-12 text-center">
-                    <h2 className="text-3xl md:text-4xl font-bold text-red-900 dark:text-slate-50">
+                    <h2 className="text-3xl md:text-4xl font-bold text-primary dark:text-foreground">
                         {t('home.ilakas')}
                     </h2>
-                    <p className="text-gray-600 mt-3 max-w-2xl mx-auto dark:text-slate-50">
+                    <p className="text-muted-foreground mt-3 max-w-2xl mx-auto dark:text-muted-foreground">
                         {t('home.ilakasDescription')}
                     </p>
                 </div>
-
 
                 <div className="max-w-5xl mx-auto mt-12 w-full">
                     <IlakaTabs ilakas={ilakas} />
                 </div>
 
                 <div className="mt-16 text-center">
-                    <Link
-                        href="/ilakas"
-                        className="inline-flex items-center gap-2 px-8 py-3 bg-red-900 text-white rounded-full font-bold hover:bg-red-800 transition-colors"
-                    >
-                        {t('ilaka.viewAllIlakas')}
-                        <ArrowRight className="w-5 h-5" />
-                    </Link>
+                    <Button asChild size="lg" className="rounded-full">
+                        <Link href="/ilakas" className="inline-flex items-center gap-2">
+                            {t('ilaka.viewAllIlakas')}
+                            <ArrowRight className="w-5 h-5" />
+                        </Link>
+                    </Button>
                 </div>
             </div>
         </section>

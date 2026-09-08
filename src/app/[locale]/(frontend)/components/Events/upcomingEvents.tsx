@@ -1,9 +1,7 @@
-import { Media } from '@/components/Media'
-import { getCurrentLocale, getI18n } from '@/locales/server'
 import configPromise from '@payload-config'
-import { ArrowRight, Calendar } from 'lucide-react'
-import Link from 'next/link'
+import { getCurrentLocale, getI18n } from '@/locales/server'
 import { getPayload } from 'payload'
+import EventCard from './EventCard'
 
 export default async function UpcomingEvents({
     title,
@@ -32,61 +30,26 @@ export default async function UpcomingEvents({
             <div className="container mx-auto px-4">
                 {(title || description) && (
                     <div className="text-center mb-16">
-                        {title && <h2 className="text-3xl md:text-4xl font-bold text-red-900 dark:text-slate-50 mb-4">{title}</h2>}
-                        {description && <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">{description}</p>}
+                        {title && <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">{title}</h2>}
+                        {description && <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{description}</p>}
                     </div>
                 )}
                 {!title && !description && (
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold text-red-900 dark:text-slate-50 mb-4">{t('home.UpcomingEvents')}</h2>
-                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">{t('home.UpcomingEventsDescription')}</p>
+                        <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">{t('home.UpcomingEvents')}</h2>
+                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t('home.UpcomingEventsDescription')}</p>
                     </div>
                 )}
 
                 {upcomingEvents.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                        {upcomingEvents.map((event: any) => (
-                            <Link
-                                key={event.id}
-                                href={`/events/${event.slug}`}
-                                className="group bg-white dark:bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300 flex flex-col h-full"
-                            >
-                                <div className="relative h-48 overflow-hidden">
-                                    {event.coverImage && typeof event.coverImage !== 'string' && (
-                                        <Media
-                                            resource={event.coverImage}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                    )}
-                                    <div className="absolute top-4 right-4 bg-red-900/90 dark:bg-red-600/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-white">
-                                        {t('home.UpcomingEvents')}
-                                    </div>
-                                </div>
-                                <div className="p-6 flex flex-col flex-grow">
-                                    <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
-                                        <Calendar className="w-4 h-4 mr-2 text-red-700" />
-                                        {event.startDatetime && new Date(event.startDatetime).toLocaleDateString(locale, {
-                                            month: 'long',
-                                            day: 'numeric',
-                                            year: 'numeric'
-                                        })}
-                                    </div>
-                                    <h3 className="text-xl font-bold mb-3 text-red-900 dark:text-slate-50 group-hover:text-red-900 dark:group-hover:text-red-400 transition-colors">
-                                        {event.title}
-                                    </h3>
-                                    <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4 flex-grow">
-                                        {event.description}
-                                    </p>
-                                    <div className="flex items-center text-red-900 dark:text-red-400 font-semibold text-sm group-hover:translate-x-1 transition-transform">
-                                        {t('home.learnMore')} <ArrowRight className="w-4 h-4 ml-1" />
-                                    </div>
-                                </div>
-                            </Link>
+                        {upcomingEvents.map((event) => (
+                            <EventCard key={event.id} event={event as any} badgeLabel={t('home.UpcomingEvents')} />
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-12 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-dashed border-border">
-                        <p className="text-gray-500">{t('home.noUpcomingEvents')} </p>
+                    <div className="text-center py-12 bg-muted rounded-3xl border border-dashed border-border">
+                        <p className="text-muted-foreground">{t('home.noUpcomingEvents')}</p>
                     </div>
                 )}
             </div>

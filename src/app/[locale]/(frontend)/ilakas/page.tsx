@@ -50,10 +50,10 @@ export default async function IlakasPage({ params: paramsPromise }: { params: Pr
     <div className="pt-24 pb-24">
       <div className="container mx-auto px-4 mb-16">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-red-900 dark:text-slate-50 mb-6">
+          <h1 className="text-4xl md:text-5xl font-bold text-primary mb-6">
             {t('home.ilakas' as any, { count: 0 })}
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
+          <p className="text-lg text-muted-foreground">
             {t('home.ilakasDescription' as any, { count: 0 })}
           </p>
         </div>
@@ -65,9 +65,9 @@ export default async function IlakasPage({ params: paramsPromise }: { params: Pr
             <Link
               key={ilaka.id}
               href={`/ilakas/${ilaka.slug}`}
-              className="group bg-white dark:bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300 flex flex-col h-full"
+              className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300 flex flex-col h-full"
             >
-              <div className="relative h-64 overflow-hidden bg-red-900/10">
+              <div className="relative h-64 overflow-hidden bg-primary/10">
                 {(() => {
                   const firstGalleryItem = ilaka.gallery?.[0]
                   if (firstGalleryItem?.image && typeof firstGalleryItem.image !== 'string') {
@@ -77,24 +77,24 @@ export default async function IlakasPage({ params: paramsPromise }: { params: Pr
                     />
                   }
                   return (
-                    <div className="w-full h-full flex items-center justify-center text-red-900/20">
+                    <div className="w-full h-full flex items-center justify-center text-primary/20">
                       <span className="text-4xl font-bold">{t('brand')}</span>
                     </div>
                   )
                 })()}
-                <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-red-900 dark:text-red-400 flex items-center gap-1">
+                <div className="absolute top-4 left-4 bg-background/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-primary flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   {t('ilaka.badge')}
                 </div>
               </div>
               <div className="p-8 flex flex-col flex-grow">
-                <h3 className="text-2xl font-bold mb-4 group-hover:text-red-900 dark:group-hover:text-red-400 transition-colors">
+                <h3 className="text-2xl font-bold mb-4 group-hover:text-primary transition-colors text-foreground">
                   {ilaka.name}
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6 flex-grow line-clamp-3">
+                <p className="text-muted-foreground mb-6 flex-grow line-clamp-3">
                   {ilaka.description}
                 </p>
-                <div className="flex items-center text-red-900 dark:text-red-400 font-semibold group-hover:translate-x-1 transition-transform">
+                <div className="flex items-center text-primary font-semibold group-hover:translate-x-1 transition-transform">
                   {t('ilaka.viewDetails')} <ArrowRight className="w-4 h-4 ml-2" />
                 </div>
               </div>
@@ -103,8 +103,8 @@ export default async function IlakasPage({ params: paramsPromise }: { params: Pr
         </div>
 
         {ilakas.length === 0 && (
-          <div className="text-center py-24 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-dashed border-border">
-            <p className="text-gray-500">{t('ilaka.noIlakasFound')}</p>
+          <div className="text-center py-24 bg-muted rounded-3xl border border-dashed border-border">
+            <p className="text-muted-foreground">{t('ilaka.noIlakasFound')}</p>
           </div>
         )}
       </div>

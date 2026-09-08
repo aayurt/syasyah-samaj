@@ -8,10 +8,10 @@ import PastEvents from './components/Events/pastEvents'
 import UpcomingEvents from './components/Events/upcomingEvents'
 import Ilakas from './components/Ilakas'
 import HomepageHero from './components/homepageHero'
-import Hero from './components/Hero'
 import { headers } from 'next/headers'
 import Notification from './components/Notification'
 import { FindIlaka } from '@/components/FindIlaka'
+import { Card } from '@/components/ui/card'
 
 export default async function HomePage({ locale: propLocale }: { locale?: 'en' | 'ne' | 'new' }) {
   const payload = await getPayload({ config: configPromise })
@@ -41,7 +41,7 @@ export default async function HomePage({ locale: propLocale }: { locale?: 'en' |
   })
 
   return (
-    <div className="font-sans bg-white text-gray-900">
+    <div className="font-sans bg-background text-foreground">
       <Notification />
       <HomepageHero />
 
@@ -54,7 +54,6 @@ export default async function HomePage({ locale: propLocale }: { locale?: 'en' |
         }))} />
       </div>
 
-      <Hero />
       <Ilakas locale={locale as 'en' | 'ne' | 'new'} />
 
       <About t={t} />
@@ -82,15 +81,15 @@ const Container = ({ children }: { children: React.ReactNode }) => (
 
 const SectionTitle = ({ title, subtitle }: { title: string; subtitle?: string }) => (
   <div className="mb-12 text-center">
-    <h2 className="text-3xl md:text-4xl font-bold text-red-900">{title}</h2>
-    {subtitle && <p className="text-gray-600 dark:text-gray-300 mt-3 max-w-2xl mx-auto">{subtitle}</p>}
+    <h2 className="text-3xl md:text-4xl font-bold text-primary">{title}</h2>
+    {subtitle && <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">{subtitle}</p>}
   </div>
 )
 
 // ---------- About ----------
 
 const About = ({ t }: { t: T }) => (
-  <section id="about" className="py-24 bg-gray-50 dark:bg-card">
+  <section id="about" className="py-24 bg-muted dark:bg-card">
     <Container>
       <SectionTitle
         title={t('home.aboutTitle')}
@@ -118,22 +117,22 @@ const About = ({ t }: { t: T }) => (
 )
 
 const InfoCard = ({ title, text }: { title: string; text: string }) => (
-  <div className="bg-white dark:bg-card rounded-2xl p-8 shadow-sm border hover:shadow-md transition">
-    <h3 className="font-semibold text-lg mb-3 text-red-900">{title}</h3>
-    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{text}</p>
-  </div>
+  <Card className="p-8 shadow-sm hover:shadow-md transition-all">
+    <h3 className="font-semibold text-lg mb-3 text-primary">{title}</h3>
+    <p className="text-muted-foreground text-sm leading-relaxed">{text}</p>
+  </Card>
 )
 
 const Contact = ({ t }: { t: T }) => (
-  <section id="contact" className="py-24 bg-red-900 text-white">
+  <section id="contact" className="py-24 bg-primary text-primary-foreground">
     <Container>
       <div className="max-w-xl mx-auto text-center">
         <h2 className="text-3xl font-bold mb-4">{t('home.contactTitle')}</h2>
-        <p className="text-red-100 mb-8">
+        <p className="text-primary-foreground/80 mb-8">
           {t('home.contactDescription')}
         </p>
 
-        <div className="space-y-2 text-red-100">
+        <div className="space-y-2 text-primary-foreground/80">
           <p>Email: info@syasyahsamaj.org</p>
           <p>{t('home.contactAddress')}</p>
         </div>

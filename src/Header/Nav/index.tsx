@@ -22,7 +22,7 @@ export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
               key={i}
               {...link}
               appearance="link"
-              className="relative px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 transition-all hover:text-red-900 dark:hover:text-red-400 group"
+              className="relative px-3 py-2 text-sm font-semibold text-muted-foreground transition-all hover:text-primary group"
             >
             </CMSLink>
           )
@@ -34,14 +34,14 @@ export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
         {/* Search Icon */}
         <Link
           href="/search"
-          className="p-2 rounded-xl transition-all hover:bg-red-50 dark:hover:bg-red-900/10 text-gray-500 hover:text-red-900 dark:hover:text-red-400 group"
+          className="p-2 rounded-xl transition-all hover:bg-primary/10 text-muted-foreground hover:text-primary group"
           title="Search"
         >
           <SearchIcon className="w-5 h-5 transition-transform group-hover:scale-110" />
         </Link>
 
         {/* Vertical Divider (Desktop Only) */}
-        <div className="hidden md:block w-px h-6 bg-gray-200 dark:bg-gray-800" />
+        <div className="hidden md:block w-px h-6 bg-border" />
 
         {/* Theme & Language Controls */}
         <div className="hidden md:flex items-center gap-1">
@@ -51,28 +51,28 @@ export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
 
         {/* Mobile Menu Toggle */}
         <button
-          className="lg:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="lg:hidden p-2 rounded-xl hover:bg-muted transition-colors"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           aria-label="Toggle Menu"
         >
           {isMobileMenuOpen ? (
-            <X className="w-6 h-6 text-gray-700 dark:text-gray-200" />
+            <X className="w-6 h-6 text-foreground" />
           ) : (
-            <Menu className="w-6 h-6 text-gray-700 dark:text-gray-200" />
+            <Menu className="w-6 h-6 text-foreground" />
           )}
         </button>
       </div>
 
       {/* Mobile Menu (Simple Overlay) */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[100] lg:hidden bg-white dark:bg-slate-950 p-6 flex flex-col animate-in slide-in-from-right duration-300">
+        <div className="fixed inset-0 z-[100] lg:hidden bg-background p-6 flex flex-col animate-in slide-in-from-right duration-300">
           <div className="flex justify-between items-center mb-12">
-            <span className="text-2xl font-bold text-red-900 dark:text-red-400 uppercase tracking-widest">Menu</span>
+            <span className="text-2xl font-bold text-primary uppercase tracking-widest">Menu</span>
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 rounded-full hover:bg-muted transition-colors"
             >
-              <X className="w-8 h-8 text-gray-700 dark:text-gray-200" />
+              <X className="w-8 h-8 text-foreground" />
             </button>
           </div>
           <div className="flex flex-col gap-6">
@@ -84,7 +84,7 @@ export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
               <div key={i} onClick={() => setIsMobileMenuOpen(false)}>
                 <CMSLink
                   {...link}
-                  className="text-3xl font-bold text-gray-900 dark:text-white hover:text-red-900 dark:hover:text-red-400 transition-colors py-2 block border-b border-gray-100 dark:border-gray-800"
+                  className="text-3xl font-bold text-foreground hover:text-primary transition-colors py-2 block border-b border-border"
                 />
               </div>
             ))}

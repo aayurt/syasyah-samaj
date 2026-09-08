@@ -26,7 +26,7 @@ export const Logo = (props: Props) => {
       />
       <img
         src="/syasyah_text.svg"
-        alt="Syasha Samaj"
+        alt="Syasyah Samaj"
         className={clsx('max-w-[9.375rem] w-full mt-2 ', className)}
       />
     </>

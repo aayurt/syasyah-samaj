@@ -35,6 +35,7 @@ export const IlakaBadge: React.FC<{ name?: string | null }> = ({ name }) => {
         backgroundColor: color,
         whiteSpace: 'nowrap',
       }}
+      aria-label={name}
     >
       {name}
     </span>
