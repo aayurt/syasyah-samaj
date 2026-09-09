@@ -68,7 +68,7 @@ import { TenantProvider } from './lib/tenant'
 import { useBackgroundSync } from './lib/BackgroundSync'
 import { CalendarProvider } from './lib/calendar'
 import { FiscalYearProvider } from './lib/fiscalYear'
-import { LangProvider } from './lib/i18n'
+import { LangProvider, useT } from './lib/i18n'
 import { api } from './lib/api'
 import { useDataEpochWatcher } from './lib/dataOps'
 import { useSetupStatus } from './lib/setup'
@@ -76,71 +76,86 @@ import type { BillingSettings } from './lib/types'
 import DataManagement from './pages/DataManagement'
 import SetupWizard from './pages/SetupWizard'
 
-type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; feature?: string; disabled?: boolean }
+type NavItem = { to: string; label: string; labelKey?: string; icon: LucideIcon; end?: boolean; feature?: string; disabled?: boolean }
 
-const navGroups: { title?: string; items: NavItem[] }[] = [
-  { items: [{ to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true }] },
+const navGroups: { title?: string; titleKey?: string; items: NavItem[] }[] = [
+  { items: [{ to: '/', label: 'Dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: true }] },
   {
     title: 'Bookkeeping',
+    titleKey: 'nav.bookkeeping',
     items: [
-      { to: '/transaction-entry', label: 'Transaction Entry', icon: FileText },
-      { to: '/journal', label: 'Journal', icon: BookOpenText },
-      { to: '/transfers', label: 'Transfers', icon: ArrowLeftRight },
-      { to: '/posting', label: 'Posting', icon: FileCheck2 },
-      { to: '/daybooks', label: 'Daybook', icon: NotebookText },
+      { to: '/transaction-entry', label: 'Transaction Entry', labelKey: 'nav.transactionEntry', icon: FileText },
+      { to: '/journal', label: 'Journal', labelKey: 'nav.journal', icon: BookOpenText },
+      { to: '/transfers', label: 'Transfers', labelKey: 'nav.transfers', icon: ArrowLeftRight },
+      { to: '/posting', label: 'Posting', labelKey: 'nav.posting', icon: FileCheck2 },
+      { to: '/daybooks', label: 'Daybook', labelKey: 'nav.daybook', icon: NotebookText },
     ],
   },
   {
     title: 'Operations',
+    titleKey: 'nav.operations',
     items: [
-      { to: '/parties', label: 'Parties', icon: Users },
-      { to: '/members', label: 'Members', icon: Users },
-      { to: '/recurring-billing', label: 'Billing', icon: CalendarClock },
-      { to: '/expense-claims', label: 'Expenses', icon: Receipt },
-      { to: '/inventory', label: 'Inventory', icon: Boxes },
-      { to: '/bank-reconciliation', label: 'Bank Management', icon: Landmark, feature: 'bankReconciliationEnabled' },
-      { to: '/fixed-assets', label: 'Fixed Assets', icon: Building2, disabled: true },
+      { to: '/parties', label: 'Parties', labelKey: 'nav.parties', icon: Users },
+      { to: '/members', label: 'Members', labelKey: 'nav.members', icon: Users },
+      { to: '/recurring-billing', label: 'Billing', labelKey: 'nav.recurringBilling', icon: CalendarClock },
+      { to: '/expense-claims', label: 'Expenses', labelKey: 'nav.expenseClaims', icon: Receipt },
+      { to: '/inventory', label: 'Inventory', labelKey: 'nav.inventory', icon: Boxes },
+      { to: '/bank-reconciliation', label: 'Bank Management', labelKey: 'nav.bankReconciliation', icon: Landmark, feature: 'bankReconciliationEnabled' },
+      { to: '/fixed-assets', label: 'Fixed Assets', labelKey: 'nav.fixedAssets', icon: Building2, disabled: true },
     ],
   },
-{
+  {
     title: 'Masters',
+    titleKey: 'nav.masters',
     items: [
-      { to: '/accounts', label: 'Accounts', icon: FolderTree },
-      { to: '/opening-balances', label: 'Opening Balances', icon: Wallet },
-      { to: '/membership-types', label: 'Membership Types', icon: Users },
+      { to: '/accounts', label: 'Accounts', labelKey: 'nav.accounts', icon: FolderTree },
+      { to: '/opening-balances', label: 'Opening Balances', labelKey: 'nav.openingBalances', icon: Wallet },
+      { to: '/membership-types', label: 'Membership Types', labelKey: 'nav.membershipTypes', icon: Users },
     ],
   },
   {
     title: 'Reports',
+    titleKey: 'nav.reports',
     items: [
-      { to: '/trial-balance', label: 'Trial Balance', icon: ListChecks },
-      { to: '/reports/pnl', label: 'Profit & Loss', icon: BarChart3 },
-      { to: '/reports/balance-sheet', label: 'Balance Sheet', icon: Scale },
-      { to: '/reports', label: 'Reports', icon: ClipboardList },
+      { to: '/trial-balance', label: 'Trial Balance', labelKey: 'nav.trialBalance', icon: ListChecks },
+      { to: '/reports/pnl', label: 'Profit & Loss', labelKey: 'nav.profitLoss', icon: BarChart3 },
+      { to: '/reports/balance-sheet', label: 'Balance Sheet', labelKey: 'nav.balanceSheet', icon: Scale },
+      { to: '/reports', label: 'Reports', labelKey: 'nav.reportsHub', icon: ClipboardList },
     ],
   },
   {
     title: 'Admin',
+    titleKey: 'nav.admin',
     items: [
-      { to: '/audit', label: 'Audit Log', icon: FileText },
-      { to: '/data-management', label: 'Data Management', icon: Database },
-      { to: '/approvals', label: 'Approvals', icon: BadgeCheck, disabled: true },
+      { to: '/audit', label: 'Audit Log', labelKey: 'nav.auditLog', icon: FileText },
+      { to: '/data-management', label: 'Data Management', labelKey: 'nav.dataManagement', icon: Database },
+      { to: '/approvals', label: 'Approvals', labelKey: 'nav.approvals', icon: BadgeCheck, disabled: true },
     ],
   },
   {
     title: 'Logs',
-    items: [{ to: '/activity', label: 'Recent Activity', icon: History }],
+    titleKey: 'nav.logs',
+    items: [{ to: '/activity', label: 'Recent Activity', labelKey: 'nav.recentActivity', icon: History }],
   },
-  { items: [{ to: '/settings', label: 'Settings', icon: SettingsIcon }] },
+  { items: [{ to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: SettingsIcon }] },
 ]
 
 export default function App() {
+  return (
+    <LangProvider>
+      <AppShell />
+    </LangProvider>
+  )
+}
+
+function AppShell() {
   const { session, checking } = useOfflineSession()
+  const t = useT()
 
   if (checking) {
     return (
       <div className="grid h-screen place-items-center text-sm text-slate-500">
-        Loading…
+        {t('login.loading', 'Loading…')}
       </div>
     )
   }
@@ -155,15 +170,15 @@ export default function App() {
     return (
       <div className="grid h-screen place-items-center">
         <div className="text-center">
-          <p className="text-lg font-semibold text-slate-800">Not authorized</p>
+          <p className="text-lg font-semibold text-slate-800">{t('login.notAuthorized', 'Not authorized')}</p>
           <p className="mt-1 text-sm text-slate-500">
-            You need an admin account to use Billing.
+            {t('login.needAdmin', 'You need an admin account to use Billing.')}
           </p>
           <button
             onClick={() => authClient.signOut()}
             className="mt-4 text-sm text-crimson-600 hover:underline"
           >
-            Sign out
+            {t('login.signOut', 'Sign out')}
           </button>
         </div>
       </div>
@@ -175,9 +190,7 @@ export default function App() {
     <TenantProvider>
       <CalendarProvider>
         <FiscalYearProvider>
-          <LangProvider>
-            <Shell email={session.user.email} />
-          </LangProvider>
+          <Shell email={session.user.email} />
         </FiscalYearProvider>
       </CalendarProvider>
     </TenantProvider>
@@ -188,6 +201,7 @@ function Shell({ email }: { email: string }) {
   useBackgroundSync()
   useDataEpochWatcher()
   const navigate = useNavigate()
+  const t = useT()
   // Setup gate — drives the full-page /setup wizard for fresh tenants.
   const setup = useSetupStatus()
   const [collapsed, setCollapsed] = useState(
@@ -319,7 +333,7 @@ function Shell({ email }: { email: string }) {
           )}
           <button
             onClick={toggleSidebar}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={collapsed ? t('sidebar.expand', 'Expand sidebar') : t('sidebar.collapse', 'Collapse sidebar')}
             className="rounded p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
           >
             {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
@@ -346,7 +360,7 @@ function Shell({ email }: { email: string }) {
                   aria-expanded={open}
                   className="flex w-full items-center justify-between gap-1 rounded px-3 pb-1 pt-1 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300"
                 >
-                  <span className="truncate">{group.title}</span>
+                  <span className="truncate">{group.titleKey ? t(group.titleKey, group.title) : group.title}</span>
                   <ChevronDown
                     size={12}
                     className={`shrink-0 transition-transform duration-200 ${
@@ -359,7 +373,7 @@ function Shell({ email }: { email: string }) {
                 <div
                   className={collapsed ? 'flex flex-col items-center gap-1' : 'space-y-1'}
                 >
-                  {items.map(({ to, label, icon: Icon, end, disabled }) =>
+                  {items.map(({ to, label, labelKey, icon: Icon, end, disabled }) =>
                   disabled ? (
                     <span
                       key={to}
@@ -371,7 +385,7 @@ function Shell({ email }: { email: string }) {
                       <Icon size={16} />
                       {!collapsed && (
                         <>
-                          <span className="flex-1 truncate">{label}</span>
+                          <span className="flex-1 truncate">{labelKey ? t(labelKey, label) : label}</span>
                           <span className="rounded bg-slate-800 px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide text-slate-400">
                             Soon
                           </span>
@@ -383,7 +397,7 @@ function Shell({ email }: { email: string }) {
                       key={to}
                       to={to}
                       end={end}
-                      title={collapsed ? label : undefined}
+                      title={collapsed ? (labelKey ? t(labelKey, label) : label) : undefined}
                       className={({ isActive }) =>
                         `flex items-center gap-2 rounded px-3 py-2 text-sm transition-colors ${
                           collapsed ? 'justify-center' : ''
@@ -395,18 +409,17 @@ function Shell({ email }: { email: string }) {
                       }
                     >
                       <Icon size={16} />
-                      {!collapsed && label}
+                      {!collapsed && (labelKey ? t(labelKey, label) : label)}
                     </NavLink>
                   ))}
                 </div>
               )}
             </div>
-          )})
-          }
+          )})}
           <div>
             {!collapsed && (
               <div className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                Help
+                {t('nav.help', 'Help')}
               </div>
             )}
             <div
@@ -414,13 +427,13 @@ function Shell({ email }: { email: string }) {
             >
               <button
                 onClick={() => setTourOpen(true)}
-                title={collapsed ? 'Guide' : undefined}
+                title={collapsed ? t('nav.guide', 'Guide') : undefined}
                 className={`flex items-center gap-2 rounded px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-crimson-700/70 hover:text-white ${
                   collapsed ? 'justify-center' : ''
                 }`}
               >
                 <HelpCircle size={16} />
-                {!collapsed && 'Guide'}
+                {!collapsed && t('nav.guide', 'Guide')}
               </button>
             </div>
           </div>
@@ -441,7 +454,7 @@ function Shell({ email }: { email: string }) {
             </span>
             <button
               onClick={() => setPaletteOpen(true)}
-              title="Search & shortcuts (⌘K)"
+              title={`${t('header.search', 'Search & shortcuts')} (⌘K)`}
               className="flex shrink-0 items-center gap-1.5 rounded border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
             >
               <Search size={14} />

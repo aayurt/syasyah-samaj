@@ -1,5 +1,6 @@
 import { Lock, ChevronDown } from 'lucide-react'
 import { useTenant } from '../lib/tenant'
+import { useT } from '../lib/i18n'
 
 /**
  * P1 illaka switcher (§21.1 of docs/illaka/PLAN.md).
@@ -11,13 +12,14 @@ import { useTenant } from '../lib/tenant'
 export default function IllakaSwitcher() {
   const { tenantId, setTenantId, tenants, isCentral, isIllaka, illakaCode } =
     useTenant()
+  const t = useT()
 
   // Illaka-scoped user: show a locked chip
   if (isIllaka) {
     const locked = tenants.find((t) => t.id === tenantId)
     const label = illakaCode
       ? `${locked?.name || illakaCode}`
-      : locked?.name || 'Illaka'
+      : locked?.name || t('illaka.label', 'Illaka')
     return (
       <div className="flex items-center gap-1.5 rounded bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-200">
         <Lock size={12} />
@@ -34,7 +36,7 @@ export default function IllakaSwitcher() {
     ? current
       ? `${current.code ? current.code + ' · ' : ''}${current.name}`
       : 'Unknown'
-    : 'All Illakas'
+    : t('illaka.all', 'All Illakas')
 
   return (
     <div className="relative">
@@ -42,12 +44,12 @@ export default function IllakaSwitcher() {
         value={tenantId}
         onChange={(e) => setTenantId(e.target.value)}
         className="appearance-none rounded border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 hover:border-slate-300 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500"
-        title="Switch illaka scope"
+        title={t('illaka.switchScope', 'Switch illaka scope')}
       >
-        <option value="">All Illakas</option>
-        {tenants.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.code ? `${t.code} · ` : ''}{t.name}
+        <option value="">{t('illaka.all', 'All Illakas')}</option>
+        {tenants.map((ten) => (
+          <option key={ten.id} value={ten.id}>
+            {ten.code ? `${ten.code} · ` : ''}{ten.name}
           </option>
         ))}
       </select>

@@ -4,6 +4,7 @@ import { useSyncState } from '../lib/offline'
 import { pushToast } from '../lib/toast'
 import { useNavigate } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
+import { useT } from '../lib/i18n'
 
 /**
  * Fiscal year switcher with a floating "Add Year" button.
@@ -15,6 +16,7 @@ export default function FiscalYearSwitcher() {
   const { years, selectedYear, activeYear, selectYear, refresh, loading } = useFiscalYear()
   const { cacheVersion } = useSyncState()
   const navigate = useNavigate()
+  const t = useT()
   const [showAddYear, setShowAddYear] = useState(false)
   const addBtnRef = useRef<HTMLButtonElement>(null)
 
@@ -91,7 +93,7 @@ export default function FiscalYearSwitcher() {
           void refresh()
         }}
         className="appearance-none rounded border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 hover:border-slate-300 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500"
-        title="Switch fiscal year — filters the data shown to this period"
+        title={t('fy.switchScope', 'Switch fiscal year — filters the data shown to this period')}
       >
         {years.map((y) => (
           <option key={y.id} value={y.id}>
@@ -118,7 +120,7 @@ export default function FiscalYearSwitcher() {
       {isWorking && (
         <span
           className="pointer-events-none absolute -left-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[8px] font-bold text-white"
-          title="Working year"
+          title={t('fy.workingYear', 'Working year')}
         >
           ✓
         </span>
@@ -127,7 +129,7 @@ export default function FiscalYearSwitcher() {
       <button
         ref={addBtnRef}
         onClick={handleAddYearClick}
-        title="Add new fiscal year"
+        title={t('fy.addYear', 'Add new fiscal year')}
         className="pointer-events-auto absolute -right-5 top-1/2 -translate-y-1/2 rounded-full bg-crimson-600 text-white p-1 hover:bg-crimson-700 focus:outline-none focus:ring-1 focus:ring-crimson-500"
       >
         <Plus size={14} />
