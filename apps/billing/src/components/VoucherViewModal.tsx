@@ -1,7 +1,7 @@
 import { X } from 'lucide-react'
 import { fmt } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
-import { useT } from '../lib/i18n'
+import { useT, docTypeLabel } from '../lib/i18n'
 import { DOC_TYPE_LABELS } from '../lib/types'
 import type { Document } from '../lib/types'
 
@@ -31,7 +31,7 @@ export default function VoucherViewModal({
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              {DOC_TYPE_LABELS[voucher.docType] || voucher.docType}
+              {docTypeLabel(voucher.docType, t)}
             </h2>
             <p className="font-mono text-sm text-slate-500">
               {voucher.number || `#${voucher.id}`} · {formatDate(voucher.date)}

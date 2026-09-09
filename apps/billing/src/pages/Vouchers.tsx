@@ -21,13 +21,12 @@ import {
   X,
 } from 'lucide-react'
 import { api, fmt, getEngine, list, useSyncState } from '../lib/api'
-import { useT } from '../lib/i18n'
+import { useT, docTypeLabel } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import { todayAD } from '../lib/nepaliDate'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import type { OutboxEntry } from '../lib/offline/types'
 import {
-  DOC_TYPE_LABELS,
   type Account,
   type BillingSettings,
   type DocType,
@@ -907,7 +906,7 @@ export default function Vouchers() {
       [
         d.number || '',
         d.narration || '',
-        DOC_TYPE_LABELS[d.docType] || '',
+        docTypeLabel(d.docType, t) || '',
         partyName(d),
       ].join(' '),
     valueOf: (d, key) => {
@@ -915,7 +914,7 @@ export default function Vouchers() {
         case 'party':
           return partyName(d)
         case 'type':
-          return DOC_TYPE_LABELS[d.docType] || d.docType
+          return docTypeLabel(d.docType, t)
         case 'amount':
           return Number(d.grossTotal) || 0
         default:
@@ -1009,9 +1008,9 @@ export default function Vouchers() {
                 }}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
               >
-                {DOC_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
+                {DOC_TYPES.map((dt) => (
+                  <option key={dt.value} value={dt.value}>
+                    {docTypeLabel(dt.value, t, dt.label)}
                   </option>
                 ))}
               </select>
@@ -1799,8 +1798,8 @@ export default function Vouchers() {
             className="h-[34px] rounded-lg border border-slate-300 bg-white pl-2.5 pr-8 text-xs text-slate-700 outline-none focus:border-slate-500"
           >
             <option value="">{t('vouchers.typeAll', 'Type: All')}</option>
-            {DOC_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>Type: {t.label}</option>
+            {DOC_TYPES.map((dt) => (
+              <option key={dt.value} value={dt.value}>Type: {docTypeLabel(dt.value, t, dt.label)}</option>
             ))}
           </select>
 
@@ -1954,7 +1953,7 @@ export default function Vouchers() {
                   )}
                 </td>
                 <td className="px-4 py-2 text-slate-600">
-                  {DOC_TYPE_LABELS[d.docType] || d.docType}
+                  {docTypeLabel(d.docType, t)}
                 </td>
                 <td className="px-4 py-2 text-slate-700">{partyName(d)}</td>
                 <td className="px-4 py-2 text-right font-mono text-slate-800">
@@ -2174,7 +2173,7 @@ export default function Vouchers() {
               <div className="flex items-center justify-between border-b border-slate-200 px-8 py-4">
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">
-                    {DOC_TYPE_LABELS[viewDoc.docType] || viewDoc.docType}
+                    {docTypeLabel(viewDoc.docType, t)}
                   </h2>
                   <div className="mt-0.5 font-mono text-sm text-slate-500">
                     {viewDoc.number || '— draft —'}

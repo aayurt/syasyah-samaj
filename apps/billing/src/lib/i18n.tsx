@@ -129,3 +129,49 @@ export function useT() {
     return key
   }
 }
+
+/**
+ * Convert a DocType value (e.g. 'journal-voucher') to its camelCase i18n
+ * key segment (e.g. 'journalVoucher') used by the `docType` namespace.
+ */
+export function docTypeKey(value: string | null | undefined): string {
+  if (!value) return ''
+  return value
+    .split('-')
+    .map((seg, i) => (i === 0 ? seg : seg.charAt(0).toUpperCase() + seg.slice(1)))
+    .join('')
+}
+
+/**
+ * docTypeLabel(value, t, fallback?) — translated doc-type label.
+ * Falls back to the provided English label (or the raw value) for unknown types.
+ */
+export function docTypeLabel(
+  value: string | null | undefined,
+  t: (key: string, fallback?: string) => string,
+  fallback?: string,
+): string {
+  if (!value) return fallback || ''
+  const key = docTypeKey(value)
+  const enDoc = (en as Record<string, unknown>).docType as Record<string, string> | undefined
+  const known = enDoc && typeof enDoc[key] === 'string'
+  if (!known) return fallback || DOC_TYPE_FALLBACK[value] || value
+  return t(`docType.${key}`, DOC_TYPE_FALLBACK[value] || fallback || value)
+}
+
+const DOC_TYPE_FALLBACK: Record<string, string> = {
+  'sales-quote': 'Quote',
+  'sales-invoice': 'Sales Invoice',
+  'purchase-invoice': 'Purchase Invoice',
+  'payment-voucher': 'Payment',
+  'receipt-voucher': 'Receipt',
+  'credit-note': 'Credit Note',
+  'debit-note': 'Debit Note',
+  'petty-cash-voucher': 'Petty Cash',
+  grn: 'Goods Received (GRN)',
+  'delivery-challan': 'Delivery Challan',
+  'journal-voucher': 'Journal Entry',
+  contra: 'Contra Entry',
+  'membership-receipt': 'Membership Receipt',
+  'donation-receipt': 'Donation Receipt',
+}

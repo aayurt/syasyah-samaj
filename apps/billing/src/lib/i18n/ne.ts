@@ -9,6 +9,24 @@
  */
 
 export const ne = {
+  // ── Document type labels (shared) ──
+  docType: {
+    quote: 'कोटेशन',
+    salesInvoice: 'बिक्री चलानी',
+    purchaseInvoice: 'खरिद चलानी',
+    paymentVoucher: 'भुक्तानी',
+    receiptVoucher: 'रसिद',
+    creditNote: 'क्रेडिट नोट',
+    debitNote: 'डेबिट नोट',
+    pettyCashVoucher: 'सानो नगद',
+    grn: 'सामान प्राप्त (GRN)',
+    deliveryChallan: 'डेलिभरी चलानी',
+    journalVoucher: 'जर्नल प्रविष्टि',
+    contra: 'कन्ट्रा प्रविष्टि',
+    membershipReceipt: 'सदस्यता रसिद',
+    donationReceipt: 'दान रसिद',
+  },
+
   // ── Shell / nav ──
   nav: {
     dashboard: 'डैशबोर्ड',
@@ -870,6 +888,32 @@ export const ne = {
     taxPurchaseDesc: 'सबै कर लागू किन्माको प्रतिवेदन जाँच गर्नुहोस्',
     vatRegisters: 'VAT रजिस्टरहरू',
     vatRegistersDesc: 'VAT फाइलिङका लागि बिक्री, किन्मा र फिर्ता रजिस्टरहरू',
+    // Quick ranges & totals
+    thisMonth: 'यो महिना',
+    lastMonth: 'गत महिना',
+    thisYear: 'यो वर्ष',
+    thisWeek: 'यो हप्ता',
+    today: 'आज',
+    allTime: 'सम्पूर्ण अवधि',
+    thisFY: 'यो आ.व.',
+    asOfToday: 'आज सम्म',
+    endOfFY: 'आ.व. अन्त्य',
+    lastFYEnd: 'गत आ.व. अन्त्य',
+    totalIncome: 'कुल आम्दानी',
+    totalExpenses: 'कुल खर्च',
+    netProfit: 'खुद नाफा',
+    netLoss: 'खुद घाटा',
+    netProfitLoss: 'खुद नाफा/घाटा',
+    assets: 'सम्पत्ति',
+    liabilities: 'दायित्व',
+    equity: 'पूँजी',
+    totalAssets: 'कुल सम्पत्ति',
+    totalLiabilities: 'कुल दायित्व',
+    totalEquity: 'कुल पूँजी',
+    liabilitiesEquity: 'दायित्व + पूँजी',
+    grossProfit: 'खुद नाफा (बिक्री नाफा)',
+    costOfGoodsSold: 'बिक्रीको लागत',
+    operatingExpenses: 'सञ्चालन खर्च',
   },
 
   // ── Trial Balance page ──

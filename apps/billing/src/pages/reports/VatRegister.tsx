@@ -192,7 +192,7 @@ export default function VatRegister() {
             onClick={() => { setFrom(r.from()); setTo(r.to()) }}
             className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
           >
-            {r.label}
+            {t(`reports.${r.label === 'This Month' ? 'thisMonth' : r.label === 'Last Month' ? 'lastMonth' : r.label === 'This FY' ? 'thisFY' : r.label === 'This Week' ? 'thisWeek' : r.label === 'Today' ? 'today' : r.label === 'This Year' ? 'thisYear' : 'allTime'}`, r.label)}
           </button>
         ))}
         <label className="ml-auto flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600">

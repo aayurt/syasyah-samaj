@@ -7,6 +7,24 @@
  */
 
 export const en = {
+  // ── Document type labels (shared) ──
+  docType: {
+    quote: 'Quote',
+    salesInvoice: 'Sales Invoice',
+    purchaseInvoice: 'Purchase Invoice',
+    paymentVoucher: 'Payment',
+    receiptVoucher: 'Receipt',
+    creditNote: 'Credit Note',
+    debitNote: 'Debit Note',
+    pettyCashVoucher: 'Petty Cash',
+    grn: 'Goods Received (GRN)',
+    deliveryChallan: 'Delivery Challan',
+    journalVoucher: 'Journal Entry',
+    contra: 'Contra Entry',
+    membershipReceipt: 'Membership Receipt',
+    donationReceipt: 'Donation Receipt',
+  },
+
   // ── Shell / nav ──
   nav: {
     dashboard: 'Dashboard',
@@ -870,6 +888,32 @@ export const en = {
     taxPurchaseDesc: 'Check report of all tax applicable purchase',
     vatRegisters: 'VAT Registers',
     vatRegistersDesc: 'Sales, purchase & return registers for VAT filing',
+    // Quick ranges & totals
+    thisMonth: 'This Month',
+    lastMonth: 'Last Month',
+    thisYear: 'This Year',
+    thisWeek: 'This Week',
+    today: 'Today',
+    allTime: 'All Time',
+    thisFY: 'This FY',
+    asOfToday: 'As of Today',
+    endOfFY: 'End of FY',
+    lastFYEnd: 'Last FY End',
+    totalIncome: 'Total Income',
+    totalExpenses: 'Total Expenses',
+    netProfit: 'Net Profit',
+    netLoss: 'Net Loss',
+    netProfitLoss: 'Net Profit/Loss',
+    assets: 'Assets',
+    liabilities: 'Liabilities',
+    equity: 'Equity',
+    totalAssets: 'Total Assets',
+    totalLiabilities: 'Total Liabilities',
+    totalEquity: 'Total Equity',
+    liabilitiesEquity: 'Liabilities + Equity',
+    grossProfit: 'Gross Profit',
+    costOfGoodsSold: 'Cost of Goods Sold',
+    operatingExpenses: 'Operating Expenses',
   },
 
   // ── Trial Balance page ──

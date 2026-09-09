@@ -12,8 +12,7 @@ import {
 import { useCalendar } from '../lib/calendar'
 import { getEngine, fmt, useSyncState } from '../lib/api'
 import type { OutboxEntry } from '../lib/offline/types'
-import { DOC_TYPE_LABELS } from '../lib/types'
-import { useT } from '../lib/i18n'
+import { useT, docTypeLabel } from '../lib/i18n'
 import ConflictResolutionModal from './ConflictResolutionModal'
 
 /** Human-readable label for a queued write's collection. */
@@ -42,7 +41,7 @@ function DraftBody({ entry, formatDate }: { entry: OutboxEntry; formatDate: (d: 
   if (isDoc) {
     const lines = (b.lines as Record<string, unknown>[] | undefined) || []
     const jl = (b.journalLines as Record<string, unknown>[] | undefined) || []
-    const label = DOC_TYPE_LABELS[String(b.docType)] || String(b.docType || 'Voucher')
+    const label = docTypeLabel(String(b.docType), t, 'Voucher')
     return (
       <div className="space-y-4">
         <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
@@ -367,9 +366,10 @@ export default function SyncBanner() {
     COLLECTION_LABELS[viewEntry?.path.replace(/^\/+|\/+$/g, '').split('/')[0] ?? '']
   const viewTitle =
     viewEntry && viewEntry.body && typeof viewEntry.body === 'object'
-      ? DOC_TYPE_LABELS[
-          String((viewEntry.body as Record<string, unknown>).docType ?? '')
-        ] || collection
+      ? docTypeLabel(
+          String((viewEntry.body as Record<string, unknown>).docType ?? ''),
+          t,
+        ) || collection
       : collection
 
   return (

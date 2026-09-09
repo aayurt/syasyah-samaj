@@ -98,7 +98,7 @@ export default function InventoryValuation() {
         <span className="text-xs text-slate-400">to</span>
         <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
         <div className="flex gap-1">
-          {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{r.label}</button>))}
+          {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{t(`reports.${r.label === 'This Month' ? 'thisMonth' : r.label === 'Last Month' ? 'lastMonth' : r.label === 'This FY' ? 'thisFY' : r.label === 'This Week' ? 'thisWeek' : r.label === 'Today' ? 'today' : r.label === 'This Year' ? 'thisYear' : 'allTime'}`, r.label)}</button>))}
         </div>
       </div>
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}

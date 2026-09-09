@@ -155,7 +155,7 @@ export default function ProfitLoss() {
         <span className="text-xs text-slate-400">to</span>
         <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
         <div className="flex gap-1">
-          {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{r.label}</button>))}
+          {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{t(`reports.${r.label === 'This Month' ? 'thisMonth' : r.label === 'Last Month' ? 'lastMonth' : r.label === 'This FY' ? 'thisFY' : 'allTime'}`, r.label)}</button>))}
         </div>
       </div>
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
@@ -164,28 +164,28 @@ export default function ProfitLoss() {
           {/* Net Profit/Loss banner */}
           <div className={`mt-4 rounded-lg border px-4 py-3 text-sm font-medium ${data.totals.netProfit >= 0 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
             {data.totals.netProfit >= 0
-              ? `✓ Net Profit: ${fmt(data.totals.netProfit)}`
-              : `✗ Net Loss: ${fmt(Math.abs(data.totals.netProfit))}`}
+              ? `✓ ${t('reports.netProfit', 'Net Profit')}: ${fmt(data.totals.netProfit)}`
+              : `✗ ${t('reports.netLoss', 'Net Loss')}: ${fmt(Math.abs(data.totals.netProfit))}`}
           </div>
 
           {/* KPI summary */}
           <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Total Income</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">{t('reports.totalIncome', 'Total Income')}</div>
               <div className="mt-1 font-mono text-xl font-semibold text-emerald-700">{fmt(data.totals.income)}</div>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Cost of Goods Sold</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">{t('reports.costOfGoodsSold', 'Cost of Goods Sold')}</div>
               <div className="mt-1 font-mono text-xl font-semibold text-red-600">{fmt(data.totals.cogs)}</div>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Gross Profit</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">{t('reports.grossProfit', 'Gross Profit')}</div>
               <div className={`mt-1 font-mono text-xl font-semibold ${data.totals.grossProfit >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
                 {data.totals.grossProfit >= 0 ? '+' : ''}{fmt(data.totals.grossProfit)}
               </div>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Net Profit / Loss</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">{t('reports.netProfitLoss', 'Net Profit / Loss')}</div>
               <div className={`mt-1 font-mono text-xl font-semibold ${data.totals.netProfit >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
                 {data.totals.netProfit >= 0 ? '+' : ''}{fmt(data.totals.netProfit)}
               </div>
@@ -194,46 +194,46 @@ export default function ProfitLoss() {
 
           {/* Income */}
           <div className="mt-4">
-            <RowList title="Income" rows={data.income} total={data.totals.income} color="text-emerald-700" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
+            <RowList title={t('dashboard.income', 'Income')} rows={data.income} total={data.totals.income} color="text-emerald-700" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
           </div>
 
           {/* Cost of Goods Sold */}
           <div className="mt-4">
-            <RowList title="Cost of Goods Sold" rows={data.cogs} total={data.totals.cogs} color="text-red-600" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
+            <RowList title={t('reports.costOfGoodsSold', 'Cost of Goods Sold')} rows={data.cogs} total={data.totals.cogs} color="text-red-600" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
           </div>
 
           {/* Gross Profit banner */}
           <div className={`mt-4 rounded-lg border px-4 py-3 text-sm font-medium ${data.totals.grossProfit >= 0 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
-            Gross Profit: {data.totals.grossProfit >= 0 ? '+' : ''}{fmt(data.totals.grossProfit)}
+            {t('reports.grossProfit', 'Gross Profit')}: {data.totals.grossProfit >= 0 ? '+' : ''}{fmt(data.totals.grossProfit)}
           </div>
 
           {/* Operating Expenses */}
           <div className="mt-4">
-            <RowList title="Operating Expenses" rows={data.otherExpense} total={data.totals.otherExpense} color="text-red-600" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
+            <RowList title={t('reports.operatingExpenses', 'Operating Expenses')} rows={data.otherExpense} total={data.totals.otherExpense} color="text-red-600" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
           </div>
 
           {/* Final summary */}
           <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
             <div className="flex justify-between text-sm">
-              <span className="font-semibold text-slate-700">Total Income</span>
+              <span className="font-semibold text-slate-700">{t('reports.totalIncome', 'Total Income')}</span>
               <span className="font-mono font-semibold text-emerald-700">{fmt(data.totals.income)}</span>
             </div>
             <div className="mt-1 flex justify-between text-sm">
-              <span className="font-semibold text-slate-700">Cost of Goods Sold</span>
+              <span className="font-semibold text-slate-700">{t('reports.costOfGoodsSold', 'Cost of Goods Sold')}</span>
               <span className="font-mono font-semibold text-red-600">({fmt(data.totals.cogs)})</span>
             </div>
             <div className="mt-2 flex justify-between border-t border-slate-200 pt-2 text-sm">
-              <span className="font-bold text-slate-700">Gross Profit</span>
+              <span className="font-bold text-slate-700">{t('reports.grossProfit', 'Gross Profit')}</span>
               <span className={`font-mono font-bold ${data.totals.grossProfit >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
                 {data.totals.grossProfit >= 0 ? '+' : ''}{fmt(data.totals.grossProfit)}
               </span>
             </div>
             <div className="mt-2 flex justify-between text-sm">
-              <span className="font-semibold text-slate-700">Operating Expenses</span>
+              <span className="font-semibold text-slate-700">{t('reports.operatingExpenses', 'Operating Expenses')}</span>
               <span className="font-mono font-semibold text-red-600">({fmt(data.totals.otherExpense)})</span>
             </div>
             <div className="mt-2 flex justify-between border-t border-slate-200 pt-2 text-sm">
-              <span className="font-bold text-slate-900">{data.totals.netProfit >= 0 ? 'Net Profit' : 'Net Loss'}</span>
+              <span className="font-bold text-slate-900">{data.totals.netProfit >= 0 ? t('reports.netProfit', 'Net Profit') : t('reports.netLoss', 'Net Loss')}</span>
               <span className={`font-mono font-bold ${data.totals.netProfit >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
                 {data.totals.netProfit >= 0 ? '+' : ''}{fmt(data.totals.netProfit)}
               </span>

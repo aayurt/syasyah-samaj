@@ -206,7 +206,7 @@ export default function PurchaseReport() {
         </div>
         <div className="flex gap-1">
           {QUICK_RANGES.map((r) => (
-            <button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{r.label}</button>
+            <button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{t(`reports.${r.label === 'This Month' ? 'thisMonth' : r.label === 'Last Month' ? 'lastMonth' : r.label === 'This FY' ? 'thisFY' : r.label === 'This Week' ? 'thisWeek' : r.label === 'Today' ? 'today' : r.label === 'This Year' ? 'thisYear' : 'allTime'}`, r.label)}</button>
           ))}
         </div>
       </div>

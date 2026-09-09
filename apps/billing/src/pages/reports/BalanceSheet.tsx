@@ -72,13 +72,13 @@ export default function BalanceSheet() {
   const csv = () => {
     if (!data) return
     downloadCsv('balance-sheet.csv', ['Section', 'Account', 'Balance'], [
-      ...data.assets.map((r) => ['Assets', r.account.name, r.balance]),
-      ...data.liabilities.map((r) => ['Liabilities', r.account.name, r.balance]),
-      ...data.equity.map((r) => ['Equity', r.account.name, r.balance]),
-      ['', 'Total Assets', data.totals.assets],
-      ['', 'Total Liabilities', data.totals.liabilities],
-      ['', 'Total Equity', data.totals.equity],
-      ['', 'Liabilities + Equity', data.totals.liabilitiesEquity],
+      ...data.assets.map((r) => [t('reports.assets', 'Assets'), r.account.name, r.balance]),
+      ...data.liabilities.map((r) => [t('reports.liabilities', 'Liabilities'), r.account.name, r.balance]),
+      ...data.equity.map((r) => [t('reports.equity', 'Equity'), r.account.name, r.balance]),
+      ['', t('reports.totalAssets', 'Total Assets'), data.totals.assets],
+      ['', t('reports.totalLiabilities', 'Total Liabilities'), data.totals.liabilities],
+      ['', t('reports.totalEquity', 'Total Equity'), data.totals.equity],
+      ['', t('reports.liabilitiesEquity', 'Liabilities + Equity'), data.totals.liabilitiesEquity],
     ])
   }
 
@@ -170,7 +170,7 @@ export default function BalanceSheet() {
         <span className="text-xs text-slate-400">to</span>
         <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
         <div className="flex gap-1">
-          {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{r.label}</button>))}
+          {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{t(`reports.${r.label === 'As of Today' ? 'asOfToday' : r.label === 'End of FY' ? 'endOfFY' : r.label === 'Last FY End' ? 'lastFYEnd' : 'allTime'}`, r.label)}</button>))}
         </div>
       </div>
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
@@ -184,34 +184,34 @@ export default function BalanceSheet() {
           {/* KPI summary */}
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Total Assets</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">{t('reports.totalAssets', 'Total Assets')}</div>
               <div className="mt-1 font-mono text-xl font-semibold text-emerald-700">{fmt(data.totals.assets)}</div>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Total Liabilities</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">{t('reports.totalLiabilities', 'Total Liabilities')}</div>
               <div className="mt-1 font-mono text-xl font-semibold text-red-600">{fmt(data.totals.liabilities)}</div>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Total Equity</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">{t('reports.totalEquity', 'Total Equity')}</div>
               <div className="mt-1 font-mono text-xl font-semibold text-amber-700">{fmt(data.totals.equity)}</div>
             </div>
           </div>
 
           {/* Sections */}
           <div className="mt-4 space-y-3">
-            <Section title="Assets" rows={data.assets} total={data.totals.assets} sectionKey="assets" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
-            <Section title="Liabilities" rows={data.liabilities} total={data.totals.liabilities} sectionKey="liabilities" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
-            <Section title="Equity" rows={data.equity} total={data.totals.equity} sectionKey="equity" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
+            <Section title={t('reports.assets', 'Assets')} rows={data.assets} total={data.totals.assets} sectionKey="assets" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
+            <Section title={t('reports.liabilities', 'Liabilities')} rows={data.liabilities} total={data.totals.liabilities} sectionKey="liabilities" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
+            <Section title={t('reports.equity', 'Equity')} rows={data.equity} total={data.totals.equity} sectionKey="equity" onAccountClick={(id, name) => setLedgerAccount({ id, name })} />
           </div>
 
           {/* Grand totals */}
           <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
             <div className="flex justify-between text-sm">
-              <span className="font-semibold text-slate-700">Total Assets</span>
+              <span className="font-semibold text-slate-700">{t('reports.totalAssets', 'Total Assets')}</span>
               <span className="font-mono font-semibold text-emerald-700">{fmt(data.totals.assets)}</span>
             </div>
             <div className="mt-1 flex justify-between text-sm">
-              <span className="font-semibold text-slate-700">Total Liabilities + Equity</span>
+              <span className="font-semibold text-slate-700">{t('reports.liabilitiesEquity', 'Total Liabilities + Equity')}</span>
               <span className="font-mono font-semibold text-amber-700">{fmt(data.totals.liabilitiesEquity)}</span>
             </div>
           </div>

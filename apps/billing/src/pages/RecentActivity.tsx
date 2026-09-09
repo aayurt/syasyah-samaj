@@ -14,7 +14,7 @@ import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
-import { useT } from '../lib/i18n'
+import { useT, docTypeLabel } from '../lib/i18n'
 
 const DOC_LABELS: Record<string, string> = {
   'journal-voucher': 'Journal Entry',
@@ -148,7 +148,7 @@ export default function RecentActivity() {
           key: `d${d.id}`,
           kind: 'Transaction added',
           label: d.number || `Transaction #${d.id}`,
-          sub: `${DOC_LABELS[d.docType || ''] || d.docType || 'Transaction'} · ${d.status || 'draft'}`,
+          sub: `${docTypeLabel(d.docType, t, DOC_LABELS[d.docType || ''])} · ${t(`status.${d.status || 'draft'}`, d.status || 'draft')}`,
           createdAt: d.createdAt,
         })),
       ]

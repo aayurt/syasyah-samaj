@@ -163,18 +163,18 @@ export default function VoucherForm({ mode }: Props) {
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
   const docTypeLabels: Record<string, string> = {
-    'sales-quote': t('vouchers.shortLabelQuote', 'Quote'),
-    'sales-invoice': t('vouchers.shortLabelSalesInvoice', 'Sales Invoice'),
-    'purchase-invoice': t('vouchers.shortLabelPurchaseInvoice', 'Purchase Invoice'),
-    'payment-voucher': t('vouchers.shortLabelPayment', 'Payment'),
-    'receipt-voucher': t('vouchers.shortLabelReceipt', 'Receipt'),
-    'credit-note': t('vouchers.shortLabelCreditNote', 'Credit Note'),
-    'debit-note': t('vouchers.shortLabelDebitNote', 'Debit Note'),
-    'petty-cash-voucher': t('vouchers.shortLabelPettyCash', 'Petty Cash'),
-    grn: t('vouchers.shortLabelGrn', 'Goods Received (GRN)'),
-    'delivery-challan': t('vouchers.shortLabelDeliveryChallan', 'Delivery Challan'),
-    'journal-voucher': t('vouchers.shortLabelJournalEntry', 'Journal Entry'),
-    contra: t('vouchers.shortLabelContraEntry', 'Contra Entry'),
+    'sales-quote': t('docType.quote', 'Quote'),
+    'sales-invoice': t('docType.salesInvoice', 'Sales Invoice'),
+    'purchase-invoice': t('docType.purchaseInvoice', 'Purchase Invoice'),
+    'payment-voucher': t('docType.paymentVoucher', 'Payment'),
+    'receipt-voucher': t('docType.receiptVoucher', 'Receipt'),
+    'credit-note': t('docType.creditNote', 'Credit Note'),
+    'debit-note': t('docType.debitNote', 'Debit Note'),
+    'petty-cash-voucher': t('docType.pettyCashVoucher', 'Petty Cash'),
+    grn: t('docType.grn', 'Goods Received (GRN)'),
+    'delivery-challan': t('docType.deliveryChallan', 'Delivery Challan'),
+    'journal-voucher': t('docType.journalVoucher', 'Journal Entry'),
+    contra: t('docType.contra', 'Contra Entry'),
   }
   const { selectedYear } = useFiscalYear()
   const isClosedYear = selectedYear?.status === 'closed'
@@ -372,7 +372,7 @@ export default function VoucherForm({ mode }: Props) {
   }, [])
 
   /* ── Derived ────────────────────────────────────────────────── */
-  const meta = DOC_TYPE_LABELS[docType] || docType
+  const meta = docTypeLabels[docType] || DOC_TYPE_LABELS[docType] || docType
   const isItem = ['sales-quote', 'sales-invoice', 'purchase-invoice',
     'credit-note', 'debit-note', 'petty-cash-voucher', 'grn', 'delivery-challan'].includes(docType)
   const isContra = docType === 'contra'
