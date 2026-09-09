@@ -33,7 +33,7 @@ export default async function HomepageHero() {
           <p className="text-lg md:text-xl mb-6 text-primary-foreground/80">
             {t('home.homepageWelcomeDescription')}
           </p>
-          <Button asChild size="lg" className="bg-yellow-500 text-black hover:bg-yellow-400">
+          <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Link href="/members">
               {t('home.joinCommunity')}
             </Link>

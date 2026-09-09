@@ -21,12 +21,16 @@ export const Logo = (props: Props) => {
         loading={loading}
         fetchPriority={priority}
         decoding="async"
+        width={150}
+        height={100}
         className={clsx('max-w-[9.375rem] w-full h-[100px]', className)}
         src="/logo.png"
       />
       <img
         src="/syasyah_text.svg"
         alt="Syasyah Samaj"
+        width={150}
+        height={40}
         className={clsx('max-w-[9.375rem] w-full mt-2 ', className)}
       />
     </>

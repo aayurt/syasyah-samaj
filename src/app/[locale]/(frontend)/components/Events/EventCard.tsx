@@ -20,7 +20,7 @@ export default async function EventCard({ event, badgeLabel }: { event: EventTyp
         <Link
             key={event.id}
             href={`/events/${event.slug}`}
-            className="group bg-white dark:bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300 flex flex-col h-full"
+            className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300 flex flex-col h-full"
         >
             <div className="relative h-48 overflow-hidden">
                 {event.coverImage && typeof event.coverImage !== 'string' && (

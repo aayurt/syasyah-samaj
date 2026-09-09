@@ -31,7 +31,7 @@ export default async function Members({ locale: propLocale }: { locale?: 'en' | 
                         const website = member.socialLinks?.website;
                         const CardContent = (
                             <Card className="relative p-6 text-center shadow-md h-full transition-all duration-300 overflow-visible hover:shadow-xl hover:border-primary/30">
-                                <div className="relative rounded-[14px] p-6 text-center h-full transition-colors z-10">
+                                <div className="relative rounded-[14px] text-center h-full transition-colors z-10">
                                     <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-2 border-muted">
                                         <Media
                                             resource={member.profileImage}

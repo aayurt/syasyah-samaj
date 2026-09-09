@@ -46,9 +46,9 @@ export const DigitalIDCard: React.FC<DigitalIDCardProps> = ({ member, issuedDate
   const getPaymentStatusBadge = () => {
     if (!member.paymentStatus) return null
     const statusColors: any = {
-      paid: 'bg-green-100 text-green-800',
-      unpaid: 'bg-red-100 text-red-800',
-      overdue: 'bg-orange-100 text-orange-800',
+      paid: 'bg-success/20 text-success',
+      unpaid: 'bg-error/20 text-error',
+      overdue: 'bg-warning/20 text-warning',
     }
     const colors = statusColors[member.paymentStatus] || 'bg-gray-100 text-gray-800'
     return (
@@ -123,7 +123,7 @@ export const DigitalIDCard: React.FC<DigitalIDCardProps> = ({ member, issuedDate
         </div>
         <div className="flex flex-col text-right">
           <span className="text-[10px] text-white/50 uppercase">Valid Until</span>
-          <span className="text-xs font-bold text-yellow-400">{validUntil || member.renewalDate || 'Lifetime'}</span>
+          <span className="text-xs font-bold text-warning">{validUntil || member.renewalDate || 'Lifetime'}</span>
         </div>
       </div>
     </motion.div>

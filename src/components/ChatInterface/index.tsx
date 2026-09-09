@@ -130,8 +130,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Type a message..."
+                aria-label="Type a message"
                 className="flex-1 bg-muted/50 border-none rounded-full px-6 py-2 outline-none focus:ring-2 ring-primary/20 transition-all"
             />
             <button
