@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
-import { CreditCard, Download, Edit3, MoreVertical, Plus, Trash2, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { CreditCard, Download, Edit3, FileText, Image, MoreVertical, Plus, Table2, Trash2, X } from 'lucide-react'
 import { api, useSyncState, fmt } from '../lib/api'
+import { API_BASE } from '../lib/base'
 import SearchSelect from '../components/SearchSelect'
 import { downloadCsv } from '../lib/csv'
 import { useSearchParams } from 'react-router-dom'
@@ -11,6 +12,11 @@ import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import SearchBox from '../components/SearchBox'
+import { DISTRICTS } from '../lib/districts'
+
+/* ─────────────────────────────────────────────────────────────
+   Types
+   ───────────────────────────────────────────────────────────── */
 
 type Member = {
   id: number
@@ -22,7 +28,590 @@ type Member = {
   lastReceipt?: { id: number; number: string } | null
   tenant?: { id: number; name: string; code?: string } | null
   updatedAt?: string
+  profileImage?: { id: number; url: string } | number | null
+  phoneNumber?: string
+  idCardDetails?: { bloodGroup?: string; emergencyContact?: string }
+  application?: {
+    citizenshipNo?: string
+    citizenshipIssuedDateBs?: string
+    citizenshipDistrict?: string
+    addressPermanent?: string
+    addressTemporary?: string
+    mobile?: string
+    specialQualification?: string
+    occupation?: string
+    officeName?: string
+    fatherName?: string
+    grandfatherName?: string
+    fatherInLawName?: string
+    spouseName?: string
+    sonName?: string
+    daughterName?: string
+    appliedDateBs?: string
+  }
 }
+
+type ViewMode = 'table' | 'application'
+
+const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+
+/* ─────────────────────────────────────────────────────────────
+   Application Form state
+   ───────────────────────────────────────────────────────────── */
+
+const blankForm = {
+  fullName: '',
+  email: '',
+  phoneNumber: '',
+  membershipTypeId: '',
+  bloodGroup: '',
+  citizenshipNo: '',
+  citizenshipIssuedDateBs: '',
+  citizenshipDistrict: '',
+  addressPermanent: '',
+  addressTemporary: '',
+  mobile: '',
+  specialQualification: '',
+  occupation: '',
+  officeName: '',
+  grandfatherName: '',
+  fatherName: '',
+  fatherInLawName: '',
+  spouseName: '',
+  sonName: '',
+  daughterName: '',
+  appliedDateBs: '',
+  profileImageId: null as number | null,
+  profileImageUrl: '',
+}
+
+type FormState = typeof blankForm
+
+function toFormState(m: Member): FormState {
+  const img = m.profileImage
+  const imgUrl = img && typeof img === 'object' && 'url' in img ? (img as { url: string }).url : ''
+  const imgId = img && typeof img === 'object' && 'id' in img ? (img as { id: number }).id : typeof img === 'number' ? img : null
+  return {
+    fullName: m.fullName || '',
+    email: m.email || '',
+    phoneNumber: (m as Record<string, unknown>).phoneNumber as string || '',
+    membershipTypeId: m.membershipType ? String(m.membershipType.id) : '',
+    bloodGroup: m.idCardDetails?.bloodGroup || '',
+    citizenshipNo: m.application?.citizenshipNo || '',
+    citizenshipIssuedDateBs: m.application?.citizenshipIssuedDateBs || '',
+    citizenshipDistrict: m.application?.citizenshipDistrict || '',
+    addressPermanent: m.application?.addressPermanent || '',
+    addressTemporary: m.application?.addressTemporary || '',
+    mobile: m.application?.mobile || '',
+    specialQualification: m.application?.specialQualification || '',
+    occupation: m.application?.occupation || '',
+    officeName: m.application?.officeName || '',
+    grandfatherName: m.application?.grandfatherName || '',
+    fatherName: m.application?.fatherName || '',
+    fatherInLawName: m.application?.fatherInLawName || '',
+    spouseName: m.application?.spouseName || '',
+    sonName: m.application?.sonName || '',
+    daughterName: m.application?.daughterName || '',
+    appliedDateBs: m.application?.appliedDateBs || '',
+    profileImageId: imgId,
+    profileImageUrl: imgUrl,
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Shared form-field helpers
+   ───────────────────────────────────────────────────────────── */
+
+function FieldLabel({ label, sublabel }: { label: string; sublabel?: string }) {
+  return (
+    <label className="mb-1 block text-xs font-medium text-slate-600">
+      {label}
+      {sublabel && <span className="ml-1 text-slate-400 font-normal">({sublabel})</span>}
+    </label>
+  )
+}
+
+function TextInput({
+  value, onChange, placeholder, disabled, className = '',
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  disabled?: boolean
+  className?: string
+}) {
+  return (
+    <input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      disabled={disabled}
+      className={`h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 ${className}`}
+    />
+  )
+}
+
+function TextArea({
+  value, onChange, placeholder, rows = 2,
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  rows?: number
+}) {
+  return (
+    <textarea
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
+      className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-crimson-500 resize-y"
+    />
+  )
+}
+
+function Select({
+  value, onChange, options, placeholder,
+}: {
+  value: string
+  onChange: (v: string) => void
+  options: { value: string; label: string }[]
+  placeholder?: string
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 bg-white"
+    >
+      {placeholder && <option value="">{placeholder}</option>}
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Section wrapper
+   ───────────────────────────────────────────────────────────── */
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <h3 className="border-b border-dashed border-slate-300 pb-1 text-sm font-semibold text-slate-700">
+        {title}
+      </h3>
+      {children}
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Photo Upload & Preview
+   ───────────────────────────────────────────────────────────── */
+
+function PhotoUpload({
+  imageId, imageUrl, onUpload,
+}: {
+  imageId: number | null
+  imageUrl: string
+  onUpload: (id: number, url: string) => void
+}) {
+  const [uploading, setUploading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleFile = async (file: File) => {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('alt', 'Member photo')
+      // Use direct fetch — api() always sets Content-Type: application/json
+      const res = await fetch(`${API_BASE}/api/media`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      })
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+      const data = (await res.json()) as { doc: { id: number; url: string } }
+      onUpload(data.doc.id, data.doc.url)
+      pushToast('success', 'Photo uploaded')
+    } catch (err) {
+      pushToast('error', 'Upload failed', err instanceof Error ? err.message : String(err))
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      {/* फोटो frame */}
+      <div
+        className="flex h-[150px] w-[120px] cursor-pointer items-center justify-center rounded border-2 border-dashed border-slate-400 bg-slate-50 overflow-hidden"
+        onClick={() => inputRef.current?.click()}
+        title="Click to upload photo"
+      >
+        {imageUrl ? (
+          <img src={imageUrl} alt="Member photo" className="h-full w-full object-cover" />
+        ) : uploading ? (
+          <span className="text-xs text-slate-400">Uploading…</span>
+        ) : (
+          <div className="flex flex-col items-center gap-1 text-slate-400">
+            <Image size={24} />
+            <span className="text-xs">फोटो</span>
+          </div>
+        )}
+      </div>
+      <span className="text-[11px] font-medium text-slate-500">फोटो</span>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) handleFile(f)
+          e.target.value = ''
+        }}
+      />
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Application Form Component
+   ───────────────────────────────────────────────────────────── */
+
+function ApplicationForm({
+  members,
+  membershipTypes,
+  onSaved,
+}: {
+  members: Member[]
+  membershipTypes: { id: number; name: string; fee: number }[]
+  onSaved: () => void
+}) {
+  const [editingMemberId, setEditingMemberId] = useState<number | null>(null)
+  const [form, setForm] = useState<FormState>({ ...blankForm })
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [searchMember, setSearchMember] = useState('')
+
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }))
+
+  // Filter members for the edit-picker
+  const filteredMembers = searchMember.trim()
+    ? members.filter(
+        (m) =>
+          m.fullName.toLowerCase().includes(searchMember.toLowerCase()) ||
+          m.email.toLowerCase().includes(searchMember.toLowerCase()),
+      )
+    : []
+
+  const loadMember = (m: Member) => {
+    setEditingMemberId(m.id)
+    setForm(toFormState(m))
+    setSearchMember('')
+  }
+
+  const startNew = () => {
+    setEditingMemberId(null)
+    setForm({ ...blankForm })
+  }
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    if (!form.fullName.trim()) { setError('Full name is required.'); return }
+    if (!form.email.trim()) { setError('Email is required.'); return }
+    setSaving(true)
+    try {
+      const body: Record<string, unknown> = {
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
+        phoneNumber: form.phoneNumber || undefined,
+        membershipType: form.membershipTypeId ? Number(form.membershipTypeId) : null,
+        profileImage: form.profileImageId || null,
+        idCardDetails: {
+          bloodGroup: form.bloodGroup || undefined,
+        },
+        application: {
+          citizenshipNo: form.citizenshipNo || undefined,
+          citizenshipIssuedDateBs: form.citizenshipIssuedDateBs || undefined,
+          citizenshipDistrict: form.citizenshipDistrict || undefined,
+          addressPermanent: form.addressPermanent || undefined,
+          addressTemporary: form.addressTemporary || undefined,
+          mobile: form.mobile || undefined,
+          specialQualification: form.specialQualification || undefined,
+          occupation: form.occupation || undefined,
+          officeName: form.officeName || undefined,
+          grandfatherName: form.grandfatherName || undefined,
+          fatherName: form.fatherName || undefined,
+          fatherInLawName: form.fatherInLawName || undefined,
+          spouseName: form.spouseName || undefined,
+          sonName: form.sonName || undefined,
+          daughterName: form.daughterName || undefined,
+          appliedDateBs: form.appliedDateBs || undefined,
+        },
+      }
+      if (editingMemberId) {
+        await api(`/members/${editingMemberId}`, { method: 'PATCH', body })
+        pushToast('success', 'Member updated', form.fullName.trim())
+      } else {
+        await api('/members', { method: 'POST', body })
+        pushToast('success', 'Member created', form.fullName.trim())
+      }
+      setEditingMemberId(null)
+      setForm({ ...blankForm })
+      onSaved()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save member')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-6">
+      {/* ── Org header ─────────────────────────────────── */}
+      <div className="mb-6 flex items-center gap-4 border-b-2 border-slate-300 pb-4">
+        <img src="/logo.png" alt="Logo" className="h-14 w-14 object-contain" />
+        <div className="flex-1">
+          <h2 className="text-lg font-bold text-slate-800">स्यस्यः समाज, यल</h2>
+          <p className="text-sm text-slate-600">Syasyah Samaj, Yala</p>
+          <p className="text-xs text-slate-500">Phone: 01-XXXXXXX</p>
+        </div>
+        {/* Photo upload in top-right */}
+        <PhotoUpload
+          imageId={form.profileImageId}
+          imageUrl={form.profileImageUrl}
+          onUpload={(id, url) => { set('profileImageId', id); set('profileImageUrl', url) }}
+        />
+      </div>
+
+      {/* ── Red title ─────────────────────────────────── */}
+      <div className="mb-5 text-center">
+        <h2 className="text-base font-bold text-red-700 underline decoration-red-600 decoration-2 underline-offset-4">
+          साधारण/स्थायी/आजीवन दुज़: (सदस्य) आवेदन फाराम
+        </h2>
+      </div>
+
+      {/* ── Edit-existing picker ────────────────────────── */}
+      <div className="mb-5 rounded border border-amber-200 bg-amber-50 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1">
+            <label className="mb-1 block text-xs font-medium text-slate-600">
+              {editingMemberId ? 'Editing existing member' : 'Edit existing member (optional)'}
+            </label>
+            <input
+              value={searchMember}
+              onChange={(e) => setSearchMember(e.target.value)}
+              placeholder="Search by name or email to edit…"
+              className="h-[34px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+            />
+          </div>
+          {editingMemberId && (
+            <button
+              type="button"
+              onClick={startNew}
+              className="mt-5 rounded border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+            >
+              New
+            </button>
+          )}
+        </div>
+        {filteredMembers.length > 0 && (
+          <div className="mt-2 max-h-40 overflow-y-auto rounded border border-slate-200 bg-white">
+            {filteredMembers.slice(0, 10).map((m) => (
+              <button
+                key={m.id}
+                onClick={() => loadMember(m)}
+                className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-slate-50"
+              >
+                <span className="font-medium text-slate-800">{m.fullName}</span>
+                <span className="text-xs text-slate-400">{m.email}</span>
+                {m.membershipType && (
+                  <span className="ml-auto text-xs text-slate-500">{m.membershipType.name}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Error ─────────────────────────────────────── */}
+      {error && (
+        <p className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
+
+      <form onSubmit={handleSave} className="space-y-6">
+        {/* ── Section A: Identity ──────────────────────── */}
+        <Section title="Identity (पहिचान)">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <FieldLabel label="Full Name (नाम)" />
+              <TextInput value={form.fullName} onChange={(v) => set('fullName', v)} placeholder="e.g. Ram Bahadur Shrestha" />
+            </div>
+            <div>
+              <FieldLabel label="Citizenship No. (नागरिकता ल्या:)" />
+              <TextInput value={form.citizenshipNo} onChange={(v) => set('citizenshipNo', v)} placeholder="e.g. 12-34-56-78901" />
+            </div>
+            <div>
+              <FieldLabel label="Citizenship Issued Date (BS)" sublabel="YYYY-MM-DD" />
+              <TextInput value={form.citizenshipIssuedDateBs} onChange={(v) => set('citizenshipIssuedDateBs', v)} placeholder="2080-01-15" />
+            </div>
+            <div>
+              <FieldLabel label="Citizenship District (जिल्ला)" />
+              <Select
+                value={form.citizenshipDistrict}
+                onChange={(v) => set('citizenshipDistrict', v)}
+                options={DISTRICTS.map((d) => ({ value: d.value, label: d.label }))}
+                placeholder="— Select district —"
+              />
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Section B: Address & Contact ─────────────── */}
+        <Section title="Address & Contact (ठेगाना)">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <FieldLabel label="Permanent Address (स्थायी ठेगाना)" />
+              <TextArea value={form.addressPermanent} onChange={(v) => set('addressPermanent', v)} placeholder="Ward, VDC/Municipality, District" />
+            </div>
+            <div className="sm:col-span-2">
+              <FieldLabel label="Temporary Address (अस्थाई ठेगाना)" />
+              <TextArea value={form.addressTemporary} onChange={(v) => set('addressTemporary', v)} placeholder="Current residence address" />
+            </div>
+            <div>
+              <FieldLabel label="Email (इमेल)" />
+              <TextInput value={form.email} onChange={(v) => set('email', v)} placeholder="e.g. ram@example.com" />
+            </div>
+            <div>
+              <FieldLabel label="Phone (फोन)" />
+              <TextInput value={form.phoneNumber} onChange={(v) => set('phoneNumber', v)} placeholder="e.g. 01-XXXXXXX" />
+            </div>
+            <div>
+              <FieldLabel label="Mobile (मोबाइल)" />
+              <TextInput value={form.mobile} onChange={(v) => set('mobile', v)} placeholder="e.g. 98XXXXXXXX" />
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Section C: Personal ──────────────────────── */}
+        <Section title="Personal (व्यक्तिगत)">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <FieldLabel label="Blood Group (रक्ता)" />
+              <Select
+                value={form.bloodGroup}
+                onChange={(v) => set('bloodGroup', v)}
+                options={BLOOD_GROUPS.map((g) => ({ value: g, label: g }))}
+                placeholder="— Select —"
+              />
+            </div>
+            <div>
+              <FieldLabel label="Special Qualification (विशिष्टता)" />
+              <TextInput value={form.specialQualification} onChange={(v) => set('specialQualification', v)} placeholder="e.g. MBA, PhD" />
+            </div>
+            <div>
+              <FieldLabel label="Occupation (पेशा)" />
+              <TextInput value={form.occupation} onChange={(v) => set('occupation', v)} placeholder="e.g. Engineer" />
+            </div>
+            <div>
+              <FieldLabel label="Office Name (कार्यालयको नाम)" />
+              <TextInput value={form.officeName} onChange={(v) => set('officeName', v)} placeholder="e.g. Nepal Telecom" />
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Section D: Family ────────────────────────── */}
+        <Section title="Family (पारिवारिक)">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <FieldLabel label="Grandfather's Name (बाजेको नाम)" />
+              <TextInput value={form.grandfatherName} onChange={(v) => set('grandfatherName', v)} />
+            </div>
+            <div>
+              <FieldLabel label="Father's Name (बाबुको नाम)" />
+              <TextInput value={form.fatherName} onChange={(v) => set('fatherName', v)} />
+            </div>
+            <div>
+              <FieldLabel label="Father-in-law's Name (ससुराको नाम)" />
+              <TextInput value={form.fatherInLawName} onChange={(v) => set('fatherInLawName', v)} />
+            </div>
+            <div>
+              <FieldLabel label="Spouse's Name (पति/पत्नीको नाम)" />
+              <TextInput value={form.spouseName} onChange={(v) => set('spouseName', v)} />
+            </div>
+            <div>
+              <FieldLabel label="Son's Name (छोराको नाम)" />
+              <TextInput value={form.sonName} onChange={(v) => set('sonName', v)} />
+            </div>
+            <div>
+              <FieldLabel label="Daughter's Name (छोरीको नाम)" />
+              <TextInput value={form.daughterName} onChange={(v) => set('daughterName', v)} />
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Section E: Membership & Fee ──────────────── */}
+        <Section title="Membership & Fee (दुज़ तथा शुल्क)">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <FieldLabel label="Membership Type (दुज़)" />
+              <SearchSelect
+                value={form.membershipTypeId}
+                onChange={(v) => set('membershipTypeId', v)}
+                placeholder="— Select type —"
+                options={membershipTypes.map((t) => ({
+                  value: t.id,
+                  label: t.name,
+                  sublabel: fmt(t.fee),
+                }))}
+              />
+            </div>
+            <div>
+              <FieldLabel label="Application Date (BS)" sublabel="YYYY-MM-DD" />
+              <TextInput value={form.appliedDateBs} onChange={(v) => set('appliedDateBs', v)} placeholder="2082-05-15" />
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Footer note ─────────────────────────────── */}
+        <div className="rounded border border-dashed border-slate-300 bg-slate-50 p-3 text-center text-xs text-slate-500">
+          दस्तखत: नागरिकताका फोटो कापि संलग्न यानादिस ।
+        </div>
+
+        {/* ── Save ────────────────────────────────────── */}
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex h-[38px] items-center gap-1.5 rounded bg-crimson-600 px-5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : editingMemberId ? 'Update Member' : 'Save Application'}
+          </button>
+          {editingMemberId && (
+            <button
+              type="button"
+              onClick={startNew}
+              className="text-sm text-slate-500 hover:text-slate-700"
+            >
+              Start New
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Main Members Page
+   ═══════════════════════════════════════════════════════════════ */
 
 export default function Members() {
   const { cacheVersion } = useSyncState()
@@ -49,6 +638,7 @@ export default function Members() {
   const [editStatus, setEditStatus] = useState('active')
   const [editError, setEditError] = useState('')
   const [editSubmitting, setEditSubmitting] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('table')
 
   useEffect(() => {
     setLoading(true)
@@ -217,288 +807,332 @@ export default function Members() {
 
   return (
     <div className="space-y-4">
+      {/* ── Header with segmented control ──────────────── */}
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-800">Members</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-semibold text-slate-800">Members</h1>
+          {/* Segmented control */}
+          <div className="flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === 'table'
+                  ? 'bg-white text-slate-800 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <Table2 size={14} /> Table
+            </button>
+            <button
+              onClick={() => setViewMode('application')}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === 'application'
+                  ? 'bg-white text-slate-800 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <FileText size={14} /> Application Form
+            </button>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => downloadCsv('members.csv', ['Name', 'Email', 'Membership Type', 'Payment Status', 'Renewal Date'],
-              filtered.map((m) => [m.fullName, m.email, m.membershipType?.name || '', m.paymentStatus || '', m.renewalDate || '']))
-            }
-            disabled={filtered.length === 0}
-            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-          >
-            <Download size={14} /> CSV
-          </button>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-1.5 rounded bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
-          >
-            <Plus size={14} /> Add Member
-          </button>
-          <SearchBox value={query} onChange={setQuery} placeholder="Search members…" />
+          {viewMode === 'table' && (
+            <>
+              <button
+                onClick={() => downloadCsv('members.csv', ['Name', 'Email', 'Membership Type', 'Payment Status', 'Renewal Date'],
+                  filtered.map((m) => [m.fullName, m.email, m.membershipType?.name || '', m.paymentStatus || '', m.renewalDate || '']))
+                }
+                disabled={filtered.length === 0}
+                className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+              >
+                <Download size={14} /> CSV
+              </button>
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="flex items-center gap-1.5 rounded bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
+              >
+                <Plus size={14} /> Add Member
+              </button>
+              <SearchBox value={query} onChange={setQuery} placeholder="Search members…" />
+            </>
+          )}
         </div>
       </div>
 
-      {/* ── Create form ─────────────────────────────────── */}
-      {showForm && (
-        <form onSubmit={handleCreate} className="rounded-lg border border-slate-200 bg-white p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700">New Member</h3>
-            <button type="button" onClick={() => { setShowForm(false); setFormError('') }} className="text-slate-400 hover:text-slate-600">
-              <X size={16} />
-            </button>
-          </div>
-          {formError && (
-            <p className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</p>
-          )}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Full Name *</label>
-              <input
-                value={formName} onChange={(e) => setFormName(e.target.value)}
-                placeholder="e.g. Aayurt Shrestha"
-                className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Email *</label>
-              <input
-                type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)}
-                placeholder="e.g. aayurt@example.com"
-                className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Phone</label>
-              <input
-                value={formPhone} onChange={(e) => setFormPhone(e.target.value)}
-                placeholder="e.g. +977-9800000000"
-                className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Membership Type</label>
-              <SearchSelect
-                value={formRoleId}
-                onChange={setFormRoleId}
-                placeholder="— None —"
-                options={membershipTypes.map((t) => ({
-                  value: t.id,
-                  label: t.name,
-                  sublabel: fmt(t.fee),
-                }))}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Status</label>
-              <SearchSelect
-                value={formStatus}
-                onChange={setFormStatus}
-                options={[
-                  { value: 'active', label: 'Active' },
-                  { value: 'inactive', label: 'Inactive' },
-                  { value: 'suspended', label: 'Suspended' },
-                ]}
-              />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center gap-3">
-            <button
-              type="submit" disabled={submitting}
-              className="inline-flex h-[38px] items-center gap-1.5 rounded bg-crimson-600 px-4 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
-            >
-              {submitting ? 'Creating…' : 'Create Member'}
-            </button>
-            <button type="button" onClick={() => { setShowForm(false); setFormError('') }} className="text-sm text-slate-500 hover:text-slate-700">
-              Cancel
-            </button>
-          </div>
-        </form>
+      {/* ═══ APPLICATION FORM VIEW ══════════════════════════ */}
+      {viewMode === 'application' && (
+        <ApplicationForm
+          members={members}
+          membershipTypes={membershipTypes}
+          onSaved={refreshMembers}
+        />
       )}
 
-      {/* ── Edit form ─────────────────────────────────── */}
-      {editingId && (
-        <form onSubmit={handleUpdate} className="rounded-lg border border-crimson-200 bg-crimson-50/30 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700">Edit Member</h3>
-            <button type="button" onClick={() => setEditingId(null)} className="text-slate-400 hover:text-slate-600">
-              <X size={16} />
-            </button>
-          </div>
-          {editError && (
-            <p className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{editError}</p>
+      {/* ═══ TABLE VIEW ═════════════════════════════════════ */}
+      {viewMode === 'table' && (
+        <>
+          {/* ── Create form ─────────────────────────────────── */}
+          {showForm && (
+            <form onSubmit={handleCreate} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-700">New Member</h3>
+                <button type="button" onClick={() => { setShowForm(false); setFormError('') }} className="text-slate-400 hover:text-slate-600">
+                  <X size={16} />
+                </button>
+              </div>
+              {formError && (
+                <p className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</p>
+              )}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">Full Name *</label>
+                  <input
+                    value={formName} onChange={(e) => setFormName(e.target.value)}
+                    placeholder="e.g. Aayurt Shrestha"
+                    className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">Email *</label>
+                  <input
+                    type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)}
+                    placeholder="e.g. aayurt@example.com"
+                    className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">Phone</label>
+                  <input
+                    value={formPhone} onChange={(e) => setFormPhone(e.target.value)}
+                    placeholder="e.g. +977-9800000000"
+                    className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">Membership Type</label>
+                  <SearchSelect
+                    value={formRoleId}
+                    onChange={setFormRoleId}
+                    placeholder="— None —"
+                    options={membershipTypes.map((t) => ({
+                      value: t.id,
+                      label: t.name,
+                      sublabel: fmt(t.fee),
+                    }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">Status</label>
+                  <SearchSelect
+                    value={formStatus}
+                    onChange={setFormStatus}
+                    options={[
+                      { value: 'active', label: 'Active' },
+                      { value: 'inactive', label: 'Inactive' },
+                      { value: 'suspended', label: 'Suspended' },
+                    ]}
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-3">
+                <button
+                  type="submit" disabled={submitting}
+                  className="inline-flex h-[38px] items-center gap-1.5 rounded bg-crimson-600 px-4 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+                >
+                  {submitting ? 'Creating…' : 'Create Member'}
+                </button>
+                <button type="button" onClick={() => { setShowForm(false); setFormError('') }} className="text-sm text-slate-500 hover:text-slate-700">
+                  Cancel
+                </button>
+              </div>
+            </form>
           )}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Full Name *</label>
-              <input
-                value={editName} onChange={(e) => setEditName(e.target.value)}
-                className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Email *</label>
-              <input
-                type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)}
-                className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Phone</label>
-              <input
-                value={editPhone} onChange={(e) => setEditPhone(e.target.value)}
-                placeholder="Leave blank to keep current"
-                className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Membership Type</label>
-              <SearchSelect
-                value={editRoleId}
-                onChange={setEditRoleId}
-                placeholder="— None —"
-                options={membershipTypes.map((t) => ({
-                  value: t.id,
-                  label: t.name,
-                  sublabel: fmt(t.fee),
-                }))}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Status</label>
-              <SearchSelect
-                value={editStatus}
-                onChange={setEditStatus}
-                options={[
-                  { value: 'active', label: 'Active' },
-                  { value: 'inactive', label: 'Inactive' },
-                  { value: 'suspended', label: 'Suspended' },
-                ]}
-              />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center gap-3">
-            <button
-              type="submit" disabled={editSubmitting}
-              className="inline-flex h-[38px] items-center gap-1.5 rounded bg-crimson-600 px-4 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
-            >
-              {editSubmitting ? 'Saving…' : 'Save Changes'}
-            </button>
-            <button type="button" onClick={() => setEditingId(null)} className="text-sm text-slate-500 hover:text-slate-700">
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
 
-      <DataStatus />
-      {loading && members.length === 0 ? (
-        <TableSkeleton rows={6} />
-      ) : filtered.length === 0 ? (
-        <div className="py-12 text-center text-sm text-slate-400">
-          {query ? 'No members match your search.' : 'No members yet.'}
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-              <tr>
-                <SortableTh label="Name" sortKey="fullName" sort={sort} onSort={toggleSort} />
-                <SortableTh label="Email" sortKey="email" sort={sort} onSort={toggleSort} />
-                <SortableTh label="Type" sortKey="membershipType" sort={sort} onSort={toggleSort} />
-                <SortableTh label="Status" sortKey="paymentStatus" sort={sort} onSort={toggleSort} />
-                <SortableTh label="Renewal" sortKey="renewalDate" sort={sort} onSort={toggleSort} />
-                <SortableTh label="Updated" sortKey="updatedAt" sort={sort} onSort={toggleSort} />
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtered.map((m) => (
-                <tr key={m.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-800">{m.fullName}</td>
-                  <td className="px-4 py-3 text-slate-600">{m.email}</td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {m.membershipType?.name || '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        m.paymentStatus === 'paid'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : m.paymentStatus === 'overdue'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      {m.paymentStatus || 'unpaid'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{m.renewalDate || '—'}</td>
-                  <td className="px-4 py-3 text-xs text-slate-400">
-                    {(m as Record<string, unknown>).updatedAt ? new Date((m as Record<string, unknown>).updatedAt as string).toLocaleDateString() : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {m.paymentStatus !== 'paid' && m.membershipType && (
-                        <button
-                          onClick={() => handlePayFee(m)}
-                          disabled={paying === m.id}
-                          className="inline-flex items-center gap-1.5 rounded bg-crimson-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+          {/* ── Edit form ─────────────────────────────────── */}
+          {editingId && (
+            <form onSubmit={handleUpdate} className="rounded-lg border border-crimson-200 bg-crimson-50/30 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-700">Edit Member</h3>
+                <button type="button" onClick={() => setEditingId(null)} className="text-slate-400 hover:text-slate-600">
+                  <X size={16} />
+                </button>
+              </div>
+              {editError && (
+                <p className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{editError}</p>
+              )}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">Full Name *</label>
+                  <input
+                    value={editName} onChange={(e) => setEditName(e.target.value)}
+                    className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">Email *</label>
+                  <input
+                    type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)}
+                    className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">Phone</label>
+                  <input
+                    value={editPhone} onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder="Leave blank to keep current"
+                    className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">Membership Type</label>
+                  <SearchSelect
+                    value={editRoleId}
+                    onChange={setEditRoleId}
+                    placeholder="— None —"
+                    options={membershipTypes.map((t) => ({
+                      value: t.id,
+                      label: t.name,
+                      sublabel: fmt(t.fee),
+                    }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">Status</label>
+                  <SearchSelect
+                    value={editStatus}
+                    onChange={setEditStatus}
+                    options={[
+                      { value: 'active', label: 'Active' },
+                      { value: 'inactive', label: 'Inactive' },
+                      { value: 'suspended', label: 'Suspended' },
+                    ]}
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-3">
+                <button
+                  type="submit" disabled={editSubmitting}
+                  className="inline-flex h-[38px] items-center gap-1.5 rounded bg-crimson-600 px-4 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+                >
+                  {editSubmitting ? 'Saving…' : 'Save Changes'}
+                </button>
+                <button type="button" onClick={() => setEditingId(null)} className="text-sm text-slate-500 hover:text-slate-700">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+
+          <DataStatus />
+          {loading && members.length === 0 ? (
+            <TableSkeleton rows={6} />
+          ) : filtered.length === 0 ? (
+            <div className="py-12 text-center text-sm text-slate-400">
+              {query ? 'No members match your search.' : 'No members yet.'}
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+              <table className="w-full text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                  <tr>
+                    <SortableTh label="Name" sortKey="fullName" sort={sort} onSort={toggleSort} />
+                    <SortableTh label="Email" sortKey="email" sort={sort} onSort={toggleSort} />
+                    <SortableTh label="Type" sortKey="membershipType" sort={sort} onSort={toggleSort} />
+                    <SortableTh label="Status" sortKey="paymentStatus" sort={sort} onSort={toggleSort} />
+                    <SortableTh label="Renewal" sortKey="renewalDate" sort={sort} onSort={toggleSort} />
+                    <SortableTh label="Updated" sortKey="updatedAt" sort={sort} onSort={toggleSort} />
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filtered.map((m) => (
+                    <tr key={m.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium text-slate-800">{m.fullName}</td>
+                      <td className="px-4 py-3 text-slate-600">{m.email}</td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {m.membershipType?.name || '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                            m.paymentStatus === 'paid'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : m.paymentStatus === 'overdue'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-slate-100 text-slate-600'
+                          }`}
                         >
-                          <CreditCard size={12} />
-                          {paying === m.id ? 'Processing…' : 'Pay Fee'}
-                        </button>
-                      )}
-                      <div className="relative">
-                        <button
-                          onClick={() => setOpenMenu(openMenu === m.id ? null : m.id)}
-                          className="rounded border border-slate-200 p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-                          aria-label="Actions"
-                        >
-                          <MoreVertical size={14} />
-                        </button>
-                        {openMenu === m.id && (
-                          <>
-                            <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />
-                            <div className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                              <button
-                                onClick={() => startEdit(m)}
-                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
-                              >
-                                <Edit3 size={12} /> Edit Member
-                              </button>
-                              <button
-                                onClick={() => handleDelete(m)}
-                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
-                              >
-                                <Trash2 size={12} /> Delete Member
-                              </button>
-                              {m.lastReceipt && (
-                                <button
-                                  onClick={() => { setOpenMenu(null); window.open(`/print/receipt/${m.lastReceipt!.id}`, '_blank') }}
-                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
-                                >
-                                  <Download size={12} /> View Receipt
-                                </button>
-                              )}
-                              <button
-                                onClick={() => { setOpenMenu(null); handlePayFee(m) }}
-                                disabled={paying === m.id || m.paymentStatus === 'paid'}
-                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-                              >
-                                <CreditCard size={12} /> Pay Fee
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                          {m.paymentStatus || 'unpaid'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{m.renewalDate || '—'}</td>
+                      <td className="px-4 py-3 text-xs text-slate-400">
+                        {(m as Record<string, unknown>).updatedAt ? new Date((m as Record<string, unknown>).updatedAt as string).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {m.paymentStatus !== 'paid' && m.membershipType && (
+                            <button
+                              onClick={() => handlePayFee(m)}
+                              disabled={paying === m.id}
+                              className="inline-flex items-center gap-1.5 rounded bg-crimson-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+                            >
+                              <CreditCard size={12} />
+                              {paying === m.id ? 'Processing…' : 'Pay Fee'}
+                            </button>
+                          )}
+                          <div className="relative">
+                            <button
+                              onClick={() => setOpenMenu(openMenu === m.id ? null : m.id)}
+                              className="rounded border border-slate-200 p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                              aria-label="Actions"
+                            >
+                              <MoreVertical size={14} />
+                            </button>
+                            {openMenu === m.id && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />
+                                <div className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                                  <button
+                                    onClick={() => startEdit(m)}
+                                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                  >
+                                    <Edit3 size={12} /> Edit Member
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(m)}
+                                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
+                                  >
+                                    <Trash2 size={12} /> Delete Member
+                                  </button>
+                                  {m.lastReceipt && (
+                                    <button
+                                      onClick={() => { setOpenMenu(null); window.open(`/print/receipt/${m.lastReceipt!.id}`, '_blank') }}
+                                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                    >
+                                      <Download size={12} /> View Receipt
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => { setOpenMenu(null); handlePayFee(m) }}
+                                    disabled={paying === m.id || m.paymentStatus === 'paid'}
+                                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                                  >
+                                    <CreditCard size={12} /> Pay Fee
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
