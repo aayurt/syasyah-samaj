@@ -374,6 +374,17 @@ export interface BillingSettings {
   defAccountOrder?: string[]
 }
 
+/** Number series for document numbering. Backed by the doc-sequences collection. */
+export interface DocSequence {
+  id: number
+  key: string
+  name: string
+  docType: string
+  prefix: string
+  fiscalYearId: number | null
+  lastNumber: number
+}
+
 export type ClaimStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'reimbursed'
 
 export interface ExpenseClaim {

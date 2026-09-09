@@ -1937,6 +1937,100 @@ export default function Settings() {
         </p>
       </Section>
 
+      {/* ── Add / Edit Series Modal ─────────────────────────── */}
+      {seriesModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-slate-800">
+                {seriesEditingId != null ? 'Edit Series' : 'Add Series'}
+              </h3>
+              <button
+                type="button"
+                onClick={closeSeriesModal}
+                className="rounded p-1 text-slate-400 hover:bg-slate-100"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {/* Doc Type — required */}
+              <div>
+                <label className="mb-1.5 block text-sm text-slate-600">
+                  Document Type <span className="text-red-500">*</span>
+                </label>
+                <SearchSelect
+                  value={seriesForm.docType}
+                  onChange={(v) => setSeriesForm((f) => ({ ...f, docType: v }))}
+                  placeholder="— select document type —"
+                  options={DOC_TYPE_OPTIONS}
+                />
+              </div>
+
+              {/* Prefix */}
+              <div>
+                <label className="mb-1.5 block text-sm text-slate-600">Prefix</label>
+                <input
+                  type="text"
+                  value={seriesForm.prefix}
+                  onChange={(e) => setSeriesForm((f) => ({ ...f, prefix: e.target.value }))}
+                  placeholder={DOC_TYPE_OPTIONS.find((o) => o.value === seriesForm.docType)?.label || ''}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 h-[38px]"
+                />
+                {seriesForm.docType && (
+                  <p className="mt-1 text-xs text-slate-400">
+                    Example:{' '}
+                    <span className="font-mono">
+                      {seriesForm.prefix || 'SI-'}{' '}
+                      {DOC_TYPE_OPTIONS.find((o) => o.value === seriesForm.docType)?.label}
+                    </span>
+                  </p>
+                )}
+              </div>
+
+              {/* Fiscal Year — optional */}
+              <div>
+                <label className="mb-1.5 block text-sm text-slate-600">
+                  Fiscal Year <span className="text-slate-300">(optional)</span>
+                </label>
+                <div className="mt-1">
+                  <SearchSelect
+                    value={seriesForm.fiscalYearId}
+                    onChange={(v) => setSeriesForm((f) => ({ ...f, fiscalYearId: v }))}
+                    placeholder="— global counter (no FY) —"
+                    options={fiscalYears.map((fy) => ({
+                      value: String(fy.id),
+                      label: fy.label || `FY ${fy.startDate}`,
+                      sublabel: fy.status === 'closed' ? 'closed' : 'active',
+                    }))}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-slate-400">
+                  If set, this series resets each fiscal year. Leave empty for a global counter that never resets.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeSeriesModal}
+                className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void seriesSave()}
+                disabled={seriesSaving}
+                className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+              >
+                {seriesSaving ? 'Saving…' : seriesEditingId != null ? 'Save Changes' : 'Create Series'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── 7. Account ───────────────────────────────────────── */}
       <Section
         title="Account"
