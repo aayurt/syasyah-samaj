@@ -239,8 +239,9 @@ test.describe.serial('S10 — Membership application form', () => {
     await membersLink.click()
     await page.waitForLoadState('networkidle')
 
-    // Switch to Application Form view
-    const appFormBtn = page.getByRole('button', { name: 'Application Form' })
+    // Switch to Application Form view (label is localized: आवेदन फाराम in
+    // Nepali mode, Application Form in English — match either real label).
+    const appFormBtn = page.getByRole('button', { name: /आवेदन फाराम|Application Form/ })
     await expect(appFormBtn).toBeVisible({ timeout: 10_000 })
     await appFormBtn.click()
 
