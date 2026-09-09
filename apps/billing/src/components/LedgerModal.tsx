@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api, fmt } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
+import { useT } from '../lib/i18n'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Account, Document, LedgerRow } from '../lib/types'
 import VoucherViewModal from './VoucherViewModal'
@@ -12,6 +13,7 @@ type Props = {
 }
 
 export default function LedgerModal({ accountId, accountName, onClose }: Props) {
+  const t = useT()
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
   const [ledger, setLedger] = useState<LedgerRow[] | null>(null)
@@ -26,7 +28,7 @@ export default function LedgerModal({ accountId, accountName, onClose }: Props) 
       })
       setVoucher(d)
     } catch {
-      setError('Could not load the source transaction.')
+      setError(t('ledger.couldNotLoadSource'))
     }
   }
 
@@ -39,7 +41,7 @@ export default function LedgerModal({ accountId, accountName, onClose }: Props) 
         )
         setLedger(res.docs)
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Failed to load ledger')
+        setError(err instanceof Error ? err.message : t('ledger.failedToLoad'))
       }
     })()
   })
@@ -48,35 +50,35 @@ export default function LedgerModal({ accountId, accountName, onClose }: Props) 
     <div className="mt-6 rounded-lg border border-slate-200 bg-white">
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
         <div className="text-sm font-medium text-slate-700">
-          Ledger — {accountName}
+          {t('ledger.title')} — {accountName}
         </div>
         <button
           onClick={onClose}
           className="text-xs text-slate-400 hover:text-slate-700"
         >
-          close
+          {t('ledger.close')}
         </button>
       </div>
       {error ? (
         <p className="px-4 py-6 text-center text-sm text-red-600">{error}</p>
       ) : ledger === null ? (
         <p className="px-4 py-6 text-center text-sm text-slate-400">
-          Loading…
+          {t('ledger.loading')}
         </p>
       ) : ledger.length === 0 ? (
         <p className="px-4 py-6 text-center text-sm text-slate-400">
-          No postings for this account.
+          {t('ledger.noPostings')}
         </p>
       ) : (
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-4 py-2">Number</th>
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Narration</th>
-              <th className="px-4 py-2 text-right">Debit</th>
-              <th className="px-4 py-2 text-right">Credit</th>
-              <th className="px-4 py-2 text-right">Running</th>
+              <th className="px-4 py-2">{t('ledger.number')}</th>
+              <th className="px-4 py-2">{t('ledger.date')}</th>
+              <th className="px-4 py-2">{t('ledger.narration')}</th>
+              <th className="px-4 py-2 text-right">{t('ledger.debit')}</th>
+              <th className="px-4 py-2 text-right">{t('ledger.credit')}</th>
+              <th className="px-4 py-2 text-right">{t('ledger.running')}</th>
             </tr>
           </thead>
           <tbody>
@@ -88,7 +90,7 @@ export default function LedgerModal({ accountId, accountName, onClose }: Props) 
                       type="button"
                       onClick={() => openVoucher(l.docId)}
                       className="text-blue-600 hover:underline"
-                      title="Open source transaction"
+                      title={t('ledger.openSource')}
                     >
                       {l.docNumber}
                     </button>

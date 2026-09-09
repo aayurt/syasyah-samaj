@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Check, FileText, Search, X } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
+import { useT } from '../lib/i18n'
 import { useTenantQuery } from '../lib/tenant'
 import { bsToAdString } from '../lib/nepaliDate'
 import { effectiveAmount, type Document } from '../lib/types'
@@ -33,6 +34,7 @@ export default function OutstandingInvoices({
   selectedInvoiceId,
   onSelect,
 }: Props) {
+  const t = useT()
   const [invoices, setInvoices] = useState<OutstandingInvoice[]>([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
@@ -185,9 +187,9 @@ export default function OutstandingInvoices({
         <div className="flex items-center gap-2">
           <FileText size={16} className="text-slate-500" />
           <div className="text-sm font-medium text-slate-700">
-            {docType === 'receipt-voucher' ? 'Outstanding Sales Invoices' : 'Outstanding Purchase Invoices'}
+            {docType === 'receipt-voucher' ? t('outstandingInvoices.outstandingSales') : t('outstandingInvoices.outstandingPurchase')}
           </div>
-          {loading && <span className="text-xs text-slate-400">Loading…</span>}
+          {loading && <span className="text-xs text-slate-400">{t('outstandingInvoices.loading')}</span>}
         </div>
         {!loading && invoices.length > 0 && (
           <button
@@ -200,7 +202,7 @@ export default function OutstandingInvoices({
             }`}
           >
             <Search size={12} />
-            {hasFilters ? 'Filtered' : 'Filter'}
+            {hasFilters ? t('outstandingInvoices.filtered') : t('outstandingInvoices.filter')}
           </button>
         )}
       </div>
@@ -214,7 +216,7 @@ export default function OutstandingInvoices({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by invoice number or date…"
+              placeholder={t('outstandingInvoices.searchPlaceholder')}
               className="w-full rounded border border-slate-200 bg-slate-50 py-2 pl-9 pr-8 text-sm outline-none focus:border-slate-400 focus:bg-white"
             />
             {search && (
@@ -231,7 +233,7 @@ export default function OutstandingInvoices({
           {showFilters && (
             <div className="flex flex-wrap items-end gap-3 rounded-md border border-slate-100 bg-slate-50 p-3">
               <div>
-                <label className="text-[11px] font-medium text-slate-500">From</label>
+                <label className="text-[11px] font-medium text-slate-500">{t('outstandingInvoices.from')}</label>
                 <NepaliDateInput
                   compact
                   value={dateFrom}
@@ -240,7 +242,7 @@ export default function OutstandingInvoices({
                 />
               </div>
               <div>
-                <label className="text-[11px] font-medium text-slate-500">To</label>
+                <label className="text-[11px] font-medium text-slate-500">{t('outstandingInvoices.to')}</label>
                 <NepaliDateInput
                   compact
                   value={dateTo}
@@ -250,7 +252,7 @@ export default function OutstandingInvoices({
               </div>
               {(dateFrom || dateTo) && (
                 <div className="flex items-center gap-1.5">
-                  <label className="text-[11px] font-medium text-slate-500">Match</label>
+                  <label className="text-[11px] font-medium text-slate-500">{t('outstandingInvoices.match')}</label>
                   <div className="flex overflow-hidden rounded border border-slate-200">
                     <button
                       type="button"
@@ -271,7 +273,7 @@ export default function OutstandingInvoices({
               )}
               {hasFilters && (
                 <button type="button" onClick={() => { setSearch(''); setDateFrom(''); setDateTo('') }}
-                  className="text-[11px] text-slate-400 hover:text-slate-600">Clear all</button>
+                  className="text-[11px] text-slate-400 hover:text-slate-600">{t('outstandingInvoices.clearAll')}</button>
               )}
             </div>
           )}
@@ -279,12 +281,12 @@ export default function OutstandingInvoices({
       )}
 
       {!loading && invoices.length > 0 && filtered.length === 0 && hasFilters && (
-        <p className="text-sm text-slate-400">No invoices match your filters.</p>
+        <p className="text-sm text-slate-400">{t('outstandingInvoices.noInvoicesMatch')}</p>
       )}
 
       {!loading && invoices.length === 0 && (
         <p className="text-sm text-slate-400">
-          No {invoiceType.replace('-', ' ')}s found for this party.
+          {t('outstandingInvoices.noInvoicesFound', '{type} found for this party.').replace('{type}', invoiceType.replace('-', ' '))}
         </p>
       )}
 
@@ -303,7 +305,7 @@ export default function OutstandingInvoices({
             }`}>
               {selectedInvoiceId === null && <div className="h-2 w-2 rounded-full bg-white" />}
             </div>
-            <div className="text-sm text-slate-700">No specific invoice (general payment)</div>
+            <div className="text-sm text-slate-700">{t('outstandingInvoices.noSpecificInvoice')}</div>
           </button>
 
           {filtered.map((inv) => {
@@ -349,19 +351,19 @@ export default function OutstandingInvoices({
                       )}
                     </div>
                     {isPaid && (
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Paid</span>
+                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">{t('outstandingInvoices.paid')}</span>
                     )}
                     {isPartial && (
-                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Partial ({pct}%)</span>
+                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">{t('outstandingInvoices.partial')} ({pct}%)</span>
                     )}
                     {!isPaid && !isPartial && (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">Unpaid</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">{t('outstandingInvoices.unpaid')}</span>
                     )}
                   </div>
                   <div className="text-xs text-slate-400 mt-0.5">
-                    of Rs. {fmt(total)}
+                    {t('outstandingInvoices.of')} Rs. {fmt(total)}
                     {paid > 0.01 && (
-                      <span className="ml-1 text-emerald-600">· Rs. {fmt(paid)} paid</span>
+                      <span className="ml-1 text-emerald-600">· Rs. {fmt(paid)} {t('outstandingInvoices.paidLower')}</span>
                     )}
                   </div>
                 </div>
@@ -371,7 +373,7 @@ export default function OutstandingInvoices({
 
           {hasFilters && (
             <div className="text-center text-[11px] text-slate-400 pt-1">
-              {filtered.length} of {invoices.length} invoices
+              {t('outstandingInvoices.invoicesCount', filtered.length + ' of ' + invoices.length + ' invoices').replace('{filtered}', String(filtered.length)).replace('{total}', String(invoices.length))}
             </div>
           )}
         </div>
@@ -379,11 +381,11 @@ export default function OutstandingInvoices({
 
       {!loading && selectedInv && (
         <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          <span className="font-medium">Remaining after payment:</span>{' '}
+          <span className="font-medium">{t('outstandingInvoices.remainingAfterPayment')}</span>{' '}
           Rs. {fmt(selectedInv.outstanding)} of Rs. {fmt(Number(selectedInv.grossTotal) || 0)}
           {selectedInv.outstanding < (Number(selectedInv.grossTotal) || 0) && (
             <span className="ml-2 text-emerald-600">
-              (Rs. {fmt((Number(selectedInv.grossTotal) || 0) - selectedInv.outstanding)} already paid)
+              (Rs. {fmt((Number(selectedInv.grossTotal) || 0) - selectedInv.outstanding)} {t('outstandingInvoices.alreadyPaid')})
             </span>
           )}
         </div>

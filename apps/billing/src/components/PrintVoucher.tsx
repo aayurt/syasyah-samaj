@@ -1,5 +1,6 @@
 import type { Document, TaxLine, Account } from '../lib/types'
 import { DOC_TYPE_LABELS } from '../lib/types'
+import { useT } from '../lib/i18n'
 
 /* ── Amount in words (Nepali/Indian numbering) ──────────────────── */
 
@@ -61,6 +62,7 @@ interface Props {
 }
 
 export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAddress, orgPan, orgContact, orgEmail, orgLogo }: Props) {
+  const t = useT()
   const label = DOC_TYPE_LABELS[doc.docType] || doc.docType
   const additiveTaxLines = (doc.taxLines || []).filter((tl) => tl.nature === 'additive')
   const withholdingTaxLines = (doc.taxLines || []).filter((tl) => tl.nature === 'withholding')
@@ -97,7 +99,7 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
         onClick={() => window.print()}
         className="no-print mb-4 rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
       >
-        🖨️ Print Voucher
+        🖨️ {t('printVoucher.printVoucher')}
       </button>
 
       {/* ── Company Header ─────────────────────────────────── */}
@@ -122,7 +124,7 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
           {orgEmail && <span>{orgEmail}</span>}
         </div>
         <p className="mt-1 text-[10px] uppercase tracking-widest text-slate-400">
-          Tax Invoice / Voucher
+          {t('printVoucher.taxInvoiceVoucher')}
         </p>
       </div>
 
@@ -132,8 +134,8 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
           <div>
             <h2 className="text-base font-bold text-slate-800">{label}</h2>
             <div className="mt-1 space-y-0.5 text-xs text-slate-600">
-              <div><span className="font-medium">Number:</span> {doc.number || '— draft —'}</div>
-              <div><span className="font-medium">Date:</span> {doc.date}</div>
+              <div><span className="font-medium">{t('printVoucher.number')}</span> {doc.number || '— draft —'}</div>
+              <div><span className="font-medium">{t('printVoucher.date')}</span> {doc.date}</div>
             </div>
           </div>
           <div className="text-right">
@@ -151,7 +153,7 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
         {partyName && partyName !== '—' && (
           <div className="mt-3 border-t border-dashed border-slate-300 pt-2">
             <div className="text-xs text-slate-500">
-              {['sales-invoice', 'receipt-voucher', 'credit-note'].includes(doc.docType) ? 'Bill To' : 'Pay To'}
+              {['sales-invoice', 'receipt-voucher', 'credit-note'].includes(doc.docType) ? t('printVoucher.billTo') : t('printVoucher.payTo')}
             </div>
             <div className="mt-0.5 text-sm font-semibold text-slate-800">{partyName}</div>
           </div>
@@ -165,10 +167,10 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
             <thead>
               <tr className="border-b border-slate-300 bg-slate-50 text-left uppercase tracking-wide text-slate-500">
                 <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">Description</th>
-                <th className="w-14 px-3 py-2 text-right">Qty</th>
-                <th className="w-20 px-3 py-2 text-right">Rate</th>
-                <th className="w-24 px-3 py-2 text-right">Amount</th>
+                <th className="px-3 py-2">{t('printVoucher.description')}</th>
+                <th className="w-14 px-3 py-2 text-right">{t('printVoucher.qty')}</th>
+                <th className="w-20 px-3 py-2 text-right">{t('printVoucher.rate')}</th>
+                <th className="w-24 px-3 py-2 text-right">{t('printVoucher.amount')}</th>
               </tr>
             </thead>
             <tbody>
@@ -194,10 +196,10 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-slate-300 bg-slate-50 text-left uppercase tracking-wide text-slate-500">
-                <th className="px-3 py-2">Account</th>
-                <th className="w-24 px-3 py-2 text-right">Debit</th>
-                <th className="w-24 px-3 py-2 text-right">Credit</th>
-                <th className="px-3 py-2">Memo</th>
+                <th className="px-3 py-2">{t('printVoucher.account')}</th>
+                <th className="w-24 px-3 py-2 text-right">{t('printVoucher.debit')}</th>
+                <th className="w-24 px-3 py-2 text-right">{t('printVoucher.credit')}</th>
+                <th className="px-3 py-2">{t('printVoucher.memo')}</th>
               </tr>
             </thead>
             <tbody>
@@ -225,13 +227,13 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
         <div className="print-border border-t-0 p-3 text-xs">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <span className="text-slate-500">From Account:</span>{' '}
+              <span className="text-slate-500">{t('printVoucher.fromAccount')}</span>{' '}
               <span className="font-medium text-slate-800">
                 {accounts.find((a) => a.id === Number(doc.fromAccount))?.name || `#${doc.fromAccount}`}
               </span>
             </div>
             <div>
-              <span className="text-slate-500">To Account:</span>{' '}
+              <span className="text-slate-500">{t('printVoucher.toAccount')}</span>{' '}
               <span className="font-medium text-slate-800">
                 {accounts.find((a) => a.id === Number(doc.toAccount))?.name || `#${doc.toAccount}`}
               </span>
@@ -245,23 +247,23 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
         <div className="flex justify-end">
           <div className="w-64 space-y-1 text-xs">
             <div className="flex justify-between">
-              <span className="text-slate-500">Sub Total</span>
+              <span className="text-slate-500">{t('printVoucher.subTotal')}</span>
               <span className="font-mono">Rs. {netTotal.toLocaleString()}</span>
             </div>
             {additiveTaxLines.map((tl, i) => (
               <div key={i} className="flex justify-between">
-                <span className="text-slate-500">Tax ({tl.rate}%)</span>
+                <span className="text-slate-500">{t('printVoucher.tax')} ({tl.rate}%)</span>
                 <span className="font-mono">Rs. {(tl.amount || 0).toLocaleString()}</span>
               </div>
             ))}
             {totalWithholding > 0 && (
               <div className="flex justify-between text-amber-600">
-                <span>TDS Withheld</span>
+                <span>{t('printVoucher.tdsWithheld')}</span>
                 <span className="font-mono">(Rs. {totalWithholding.toLocaleString()})</span>
               </div>
             )}
             <div className="flex justify-between border-t border-slate-300 pt-1 font-bold text-slate-900">
-              <span>Total Amount</span>
+              <span>{t('printVoucher.totalAmount')}</span>
               <span className="font-mono">Rs. {grandTotal.toLocaleString()}</span>
             </div>
           </div>
@@ -269,14 +271,14 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
 
         {/* Amount in words */}
         <div className="mt-3 border-t border-dashed border-slate-300 pt-2 text-xs">
-          <span className="font-medium text-slate-600">Amount in Words: </span>
+          <span className="font-medium text-slate-600">{t('printVoucher.amountInWords')} </span>
           <span className="italic text-slate-800">{amountInWords}</span>
         </div>
 
         {/* Narration */}
         {doc.narration && (
           <div className="mt-2 text-xs">
-            <span className="font-medium text-slate-600">Remarks: </span>
+            <span className="font-medium text-slate-600">{t('printVoucher.remarks')} </span>
             <span className="text-slate-700">{doc.narration}</span>
           </div>
         )}
@@ -286,20 +288,20 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
       <div className="print-border border-t-0 rounded-b-lg p-4">
         <div className="flex justify-between pt-8 text-xs text-slate-500">
           <div className="text-center">
-            <div className="w-32 border-t border-slate-400 pt-1">Prepared By</div>
+            <div className="w-32 border-t border-slate-400 pt-1">{t('printVoucher.preparedBy')}</div>
           </div>
           <div className="text-center">
-            <div className="w-32 border-t border-slate-400 pt-1">Approved By</div>
+            <div className="w-32 border-t border-slate-400 pt-1">{t('printVoucher.approvedBy')}</div>
           </div>
           <div className="text-center">
-            <div className="w-32 border-t border-slate-400 pt-1">Received By</div>
+            <div className="w-32 border-t border-slate-400 pt-1">{t('printVoucher.receivedBy')}</div>
           </div>
         </div>
       </div>
 
       {/* Footer */}
       <div className="mt-2 text-center text-[9px] text-slate-400">
-        Generated by {orgName || 'स्यस्यः धुकू'} · {new Date().toLocaleString()}
+        {t('printVoucher.generatedBy')} {orgName || 'स्यस्यः धुकू'} · {new Date().toLocaleString()}
       </div>
     </div>
   )

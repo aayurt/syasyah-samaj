@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { fmt } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
+import { useT } from '../lib/i18n'
 import { DOC_TYPE_LABELS } from '../lib/types'
 import type { Document } from '../lib/types'
 
@@ -15,6 +16,7 @@ export default function VoucherViewModal({
   voucher: Document | null
   onClose: () => void
 }) {
+  const t = useT()
   const { formatDate } = useCalendar()
   if (!voucher) return null
   return (
@@ -38,29 +40,29 @@ export default function VoucherViewModal({
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-700"
-            aria-label="Close"
+            aria-label={t('voucherView.close')}
           >
             <X size={16} />
           </button>
         </div>
         <div className="mt-3 space-y-1 text-sm text-slate-700">
           <p>
-            <span className="text-slate-400">Status:</span>{' '}
+            <span className="text-slate-400">{t('voucherView.status')}</span>{' '}
             <span className="font-medium capitalize">{voucher.status}</span>
           </p>
           {voucher.narration && (
             <p>
-              <span className="text-slate-400">Narration:</span>{' '}
+              <span className="text-slate-400">{t('voucherView.narration')}</span>{' '}
               {voucher.narration}
             </p>
           )}
-          <p className="pt-1 text-slate-400">Lines</p>
+          <p className="pt-1 text-slate-400">{t('voucherView.lines')}</p>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="py-1 pr-2">Account</th>
-                <th className="py-1 pr-2 text-right">Debit</th>
-                <th className="py-1 pr-2 text-right">Credit</th>
+                <th className="py-1 pr-2">{t('voucherView.account')}</th>
+                <th className="py-1 pr-2 text-right">{t('voucherView.debit')}</th>
+                <th className="py-1 pr-2 text-right">{t('voucherView.credit')}</th>
               </tr>
             </thead>
             <tbody>
@@ -69,7 +71,7 @@ export default function VoucherViewModal({
                   <td className="py-1 pr-2 text-slate-700">
                     {typeof l.account === 'object' && l.account
                       ? (l.account as { name?: string }).name
-                      : `Account #${l.account}`}
+                      : `${t('voucherView.account')} #${l.account}`}
                   </td>
                   <td className="py-1 pr-2 text-right font-mono text-slate-700">
                     {l.debit ? fmt(l.debit) : ''}
@@ -82,7 +84,7 @@ export default function VoucherViewModal({
               {(voucher.lines || []).map((l, i) => (
                 <tr key={`l-${i}`} className="border-t border-slate-50">
                   <td className="py-1 pr-2 text-slate-700">
-                    {l.description || 'Item line'}
+                    {l.description || t('voucherView.itemLine')}
                   </td>
                   <td className="py-1 pr-2 text-right font-mono text-slate-700">
                     {l.amount ? fmt(l.amount) : ''}
@@ -93,10 +95,10 @@ export default function VoucherViewModal({
             </tbody>
           </table>
           <p className="flex justify-between pt-1 text-slate-500">
-            <span>Net {fmt(voucher.netTotal ?? 0)}</span>
-            <span>Tax {fmt(voucher.taxTotal ?? 0)}</span>
+            <span>{t('voucherView.net')} {fmt(voucher.netTotal ?? 0)}</span>
+            <span>{t('voucherView.tax')} {fmt(voucher.taxTotal ?? 0)}</span>
             <span className="font-medium text-slate-900">
-              Total {fmt(voucher.grossTotal ?? 0)}
+              {t('voucherView.total')} {fmt(voucher.grossTotal ?? 0)}
             </span>
           </p>
         </div>

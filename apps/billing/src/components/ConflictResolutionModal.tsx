@@ -4,6 +4,7 @@ import { DOC_TYPE_LABELS } from '../lib/types'
 import type { OutboxEntry } from '../lib/offline/types'
 import { getEngine } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
+import { useT } from '../lib/i18n'
 
 interface Props {
   entry: OutboxEntry
@@ -17,6 +18,7 @@ interface Props {
  * user choose "Keep Mine", "Keep Server", or merge individual fields.
  */
 export default function ConflictResolutionModal({ entry, onClose, onResolved }: Props) {
+  const t = useT()
   const { formatDateTime } = useCalendar()
   const [loading, setLoading] = useState(true)
   const [serverDoc, setServerDoc] = useState<Record<string, unknown> | null>(null)
@@ -37,7 +39,7 @@ export default function ConflictResolutionModal({ entry, onClose, onResolved }: 
         // Initialize merged with offline values
         setMerged({ ...offlineBody })
       } catch {
-        if (!cancelled) setError('Could not fetch server version')
+        if (!cancelled) setError(t('conflictResolution.fetchServerError'))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -84,10 +86,10 @@ export default function ConflictResolutionModal({ entry, onClose, onResolved }: 
       if (result.status === 'pushed') {
         onResolved()
       } else {
-        setError(result.message ?? 'Unknown error')
+        setError(result.message ?? t('conflictResolution.unknownError'))
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to apply')
+      setError(err instanceof Error ? err.message : t('conflictResolution.failedToApply'))
     } finally {
       setApplying(false)
     }
@@ -95,7 +97,7 @@ export default function ConflictResolutionModal({ entry, onClose, onResolved }: 
 
   const formatValue = (v: unknown): string => {
     if (v === null || v === undefined) return '—'
-    if (typeof v === 'boolean') return v ? 'Yes' : 'No'
+    if (typeof v === 'boolean') return v ? t('conflictResolution.yes') : t('conflictResolution.no')
     if (typeof v === 'number') return v.toLocaleString()
     if (typeof v === 'object') {
       if (Array.isArray(v)) return `[${v.length} items]`
@@ -115,7 +117,7 @@ export default function ConflictResolutionModal({ entry, onClose, onResolved }: 
         <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
           <div>
             <div className="text-base font-semibold text-slate-900">
-              Resolve Conflict — {label}
+              {t('conflictResolution.title')} — {label}
             </div>
             <div className="mt-0.5 text-xs text-slate-500">
               {entry.method} {entry.path} · queued {formatDateTime(entry.queuedAt)}
@@ -136,7 +138,7 @@ export default function ConflictResolutionModal({ entry, onClose, onResolved }: 
           {loading ? (
             <div className="flex items-center justify-center py-12 text-sm text-slate-500">
               <Loader2 size={16} className="mr-2 animate-spin" />
-              Fetching server version…
+              {t('conflictResolution.fetchingServer')}
             </div>
           ) : error && !serverDoc ? (
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -151,14 +153,14 @@ export default function ConflictResolutionModal({ entry, onClose, onResolved }: 
                   className="flex items-center gap-1.5 rounded border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
                 >
                   <ArrowLeft size={12} />
-                  Keep All Mine
+                  {t('conflictResolution.keepAllMine')}
                 </button>
                 <button
                   onClick={chooseServer}
                   className="flex items-center gap-1.5 rounded border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
                 >
                   <ArrowRight size={12} />
-                  Keep All Server
+                  {t('conflictResolution.keepAllServer')}
                 </button>
               </div>
 
@@ -166,10 +168,10 @@ export default function ConflictResolutionModal({ entry, onClose, onResolved }: 
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-400">
-                    <th className="w-40 py-2 pr-3">Field</th>
-                    <th className="w-[35%] py-2 px-3">Your Version (Offline)</th>
-                    <th className="w-[35%] py-2 px-3">Server Version</th>
-                    <th className="w-24 py-2 pl-3 text-center">Pick</th>
+                    <th className="w-40 py-2 pr-3">{t('conflictResolution.field')}</th>
+                    <th className="w-[35%] py-2 px-3">{t('conflictResolution.yourVersionOffline')}</th>
+                    <th className="w-[35%] py-2 px-3">{t('conflictResolution.serverVersion')}</th>
+                    <th className="w-24 py-2 pl-3 text-center">{t('conflictResolution.pick')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -203,17 +205,17 @@ export default function ConflictResolutionModal({ entry, onClose, onResolved }: 
                             <div className="flex justify-center gap-1">
                               <button
                                 onClick={() => pickField(field, 'mine')}
-                                title="Use your version"
+                                title={t('conflictResolution.useYourVersion')}
                                 className="rounded border border-blue-200 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 hover:bg-blue-100"
                               >
-                                Mine
+                                {t('conflictResolution.mine')}
                               </button>
                               <button
                                 onClick={() => pickField(field, 'server')}
-                                title="Use server version"
+                                title={t('conflictResolution.useServerVersion')}
                                 className="rounded border border-emerald-200 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 hover:bg-emerald-100"
                               >
-                                Server
+                                {t('conflictResolution.server')}
                               </button>
                             </div>
                           )}
@@ -237,7 +239,7 @@ export default function ConflictResolutionModal({ entry, onClose, onResolved }: 
               onClick={onClose}
               className="rounded border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
             >
-              Cancel
+              {t('conflictResolution.cancel')}
             </button>
             <button
               onClick={() => void applyResolution()}
@@ -247,12 +249,12 @@ export default function ConflictResolutionModal({ entry, onClose, onResolved }: 
               {applying ? (
                 <>
                   <Loader2 size={13} className="animate-spin" />
-                  Applying…
+                  {t('conflictResolution.applying')}
                 </>
               ) : (
                 <>
                   <Check size={13} />
-                  Apply Resolution
+                  {t('conflictResolution.applyResolution')}
                 </>
               )}
             </button>
