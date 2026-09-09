@@ -104,6 +104,7 @@ function Section({
   onSave?: () => void
   onCancel?: () => void
 }) {
+  const t = useT()
   return (
     <div className="rounded-lg border border-slate-200 bg-white">
       <button

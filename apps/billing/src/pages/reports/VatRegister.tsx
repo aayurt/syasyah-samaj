@@ -10,7 +10,6 @@ import { useTenant, useTenantQuery } from '../../lib/tenant'
 import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
 import { useT } from '../../lib/i18n'
-import { useT } from '../../lib/i18n'
 import NepaliDateInput from '../../components/NepaliDateInput'
 import type { Document, Party } from '../../lib/types'
 import {
