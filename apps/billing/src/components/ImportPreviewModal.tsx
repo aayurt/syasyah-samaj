@@ -7,6 +7,7 @@ import {
   type DedupResult,
   type ImportAction,
 } from '../lib/importExport'
+import { useT } from '../lib/i18n'
 import { useTenantQuery } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
 
@@ -25,6 +26,7 @@ export default function ImportPreviewModal({
   onClose: () => void
   onImported: () => void
 }) {
+  const t = useT()
   const tenantQuery = useTenantQuery()
   const [step, setStep] = useState<Step>('classify')
   const [dedup, setDedup] = useState<DedupResult<AnyDoc> | null>(null)
@@ -105,7 +107,7 @@ export default function ImportPreviewModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-3">
           <h2 className="text-sm font-semibold text-slate-800">
-            Import Preview — {collection} ({docs.length} records)
+            `${t("importPreview.title")} — {collection} ({docs.length} records)`
           </h2>
           <button onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
             <X size={16} />
@@ -115,7 +117,7 @@ export default function ImportPreviewModal({
         <div className="p-6">
           {loading && (
             <div className="flex items-center gap-3 py-8 text-sm text-slate-500">
-              <Loader2 size={16} className="animate-spin" /> Analyzing records…
+              <Loader2 size={16} className="animate-spin" /> {t('importPreview.analyzing')}
             </div>
           )}
 
@@ -125,17 +127,17 @@ export default function ImportPreviewModal({
               <div className="mb-4 space-y-1 text-sm">
                 {totalNew > 0 && (
                   <div className="flex items-center gap-2 text-emerald-700">
-                    <CheckCircle2 size={14} /> {totalNew} new (will be created)
+                    <CheckCircle2 size={14} /> {t('importPreview.newWillBeCreated').replace('{n}', String(totalNew))}
                   </div>
                 )}
                 {totalSimilar > 0 && (
                   <div className="flex items-center gap-2 text-amber-700">
-                    <AlertTriangle size={14} /> {totalSimilar} similar (review below)
+                    <AlertTriangle size={14} /> {t('importPreview.similarReview').replace('{n}', String(totalSimilar))}
                   </div>
                 )}
                 {totalExact > 0 && (
                   <div className="flex items-center gap-2 text-red-600">
-                    <AlertTriangle size={14} /> {totalExact} exact duplicates (will skip by default)
+                    <AlertTriangle size={14} /> {t('importPreview.exactDuplicatesSkip').replace('{n}', String(totalExact))}
                   </div>
                 )}
               </div>
@@ -144,15 +146,15 @@ export default function ImportPreviewModal({
               {totalNew > 0 && (
                 <div className="mb-4 max-h-40 overflow-y-auto rounded border border-slate-200">
                   <div className="bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
-                    New Records ({totalNew})
+                    {t('importPreview.newRecords').replace('{n}', String(totalNew))}
                   </div>
                   {dedup.newRecords.slice(0, 10).map((doc, i) => (
                     <div key={i} className="flex items-center justify-between border-t border-slate-100 px-3 py-2 text-xs">
                       <span className="text-slate-700">{String(doc.fullName || doc.name || doc.email || `Record ${i + 1}`)}</span>
-                      <span className="text-emerald-600">Will create</span>
+                      <span className="text-emerald-600">{t('importPreview.willCreate')}</span>
                     </div>
                   ))}
-                  {totalNew > 10 && <div className="px-3 py-1.5 text-xs text-slate-400">…and {totalNew - 10} more</div>}
+                  {totalNew > 10 && <div className="px-3 py-1.5 text-xs text-slate-400">{t('importPreview.andMore').replace('{n}', String(totalNew - 10))}</div>}
                 </div>
               )}
 
@@ -160,7 +162,7 @@ export default function ImportPreviewModal({
               {totalSimilar > 0 && (
                 <div className="mb-4 max-h-60 overflow-y-auto rounded border border-amber-200">
                   <div className="bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
-                    Similar Records ({totalSimilar}) — choose action for each
+                    {t('importPreview.similarRecords').replace('{n}', String(totalSimilar))}
                   </div>
                   {dedup.similarRecords.map((pair, i) => {
                     const key = docs.length * 2 + i
@@ -187,7 +189,7 @@ export default function ImportPreviewModal({
                                     : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
                                 }`}
                               >
-                                {a === 'skip' ? 'Skip' : a === 'update' ? 'Update' : 'Create New'}
+                                {a === 'skip' ? t('importPreview.skip') : a === 'update' ? t('importPreview.update') : t('importPreview.createNew')}
                               </button>
                             ))}
                           </div>
@@ -202,14 +204,14 @@ export default function ImportPreviewModal({
               {totalExact > 0 && (
                 <div className="mb-4 max-h-40 overflow-y-auto rounded border border-red-200">
                   <div className="bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700">
-                    Exact Duplicates ({totalExact})
+                    {t('importPreview.exactDuplicates').replace('{n}', String(totalExact))}
                   </div>
                   {dedup.exactDuplicates.slice(0, 5).map((pair, i) => (
                     <div key={i} className="flex items-center justify-between border-t border-red-100 px-3 py-2 text-xs">
                       <span className="text-slate-700">
                         {String(pair.imported.fullName || pair.imported.name || pair.imported.email)}
                       </span>
-                      <span className="text-red-500">Duplicate — skip</span>
+                      <span className="text-red-500">{t('importPreview.duplicateSkip')}</span>
                     </div>
                   ))}
                 </div>
@@ -217,7 +219,7 @@ export default function ImportPreviewModal({
 
               {/* Import button */}
               <div className="flex items-center justify-between pt-2">
-                <span className="text-xs text-slate-500">{willImport} records will be imported</span>
+                <span className="text-xs text-slate-500">{t('importPreview.recordsWillBeImported').replace('{n}', String(willImport))}</span>
                 <div className="flex gap-2">
                   <button onClick={onClose} className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
                     Cancel
@@ -227,7 +229,7 @@ export default function ImportPreviewModal({
                     disabled={willImport === 0}
                     className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
                   >
-                    Import {willImport} Records
+                    {t('importPreview.importRecords').replace('{n}', String(willImport))}
                   </button>
                 </div>
               </div>
@@ -237,20 +239,20 @@ export default function ImportPreviewModal({
           {step === 'executing' && (
             <div className="py-8 text-center text-sm text-slate-500">
               <Loader2 size={20} className="mx-auto mb-3 animate-spin text-crimson-600" />
-              Importing {progress.done}/{progress.total}…
+              {t('importPreview.importing').replace('{done}', String(progress.done)).replace('{total}', String(progress.total))}
             </div>
           )}
 
           {step === 'done' && result && (
             <div className="space-y-3 py-4 text-sm">
               <div className="flex items-center gap-2 text-emerald-700">
-                <CheckCircle2 size={14} /> {result.created} records created
+                <CheckCircle2 size={14} /> {t('importPreview.recordsCreated').replace('{n}', String(result.created))}
               </div>
               <div className="flex items-center gap-2 text-blue-700">
-                <CheckCircle2 size={14} /> {result.updated} records updated
+                <CheckCircle2 size={14} /> {t('importPreview.recordsUpdated').replace('{n}', String(result.updated))}
               </div>
               <div className="flex items-center gap-2 text-slate-500">
-                {result.skipped} records skipped
+                {t('importPreview.recordsSkipped').replace('{n}', String(result.skipped))}
               </div>
               {result.errors.length > 0 && (
                 <div className="rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">

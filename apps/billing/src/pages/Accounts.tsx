@@ -9,17 +9,18 @@ import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useSearchParams } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
 import type { Account, AccountGroup, AccountType, OpeningBalance } from '../lib/types'
 
 const TYPES: AccountType[] = ['asset', 'liability', 'equity', 'income', 'expense']
 const TYPE_LABELS: Record<string, string> = {
-  asset: 'Assets',
-  liability: 'Liabilities',
-  equity: 'Equity',
-  income: 'Income',
-  expense: 'Expenses',
+  asset: 'trialBalance.typeAssets',
+  liability: 'trialBalance.typeLiabilities',
+  equity: 'trialBalance.typeEquity',
+  income: 'trialBalance.typeIncome',
+  expense: 'trialBalance.typeExpenses',
 }
 
 const emptyForm = {
@@ -31,6 +32,7 @@ const emptyForm = {
 }
 
 export default function Accounts() {
+  const t = useT()
   const { cacheVersion } = useSyncState()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
@@ -196,7 +198,7 @@ export default function Accounts() {
   return (
     <div className="mx-auto max-w-5xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-900">Chart of Accounts</h1>
+        <h1 className="text-lg font-semibold text-slate-900">{t('accounts.title', 'Chart of Accounts')}</h1>
         <div className="flex items-center gap-2">
           <button
             onClick={() => downloadCsv('accounts.csv', ['Code', 'Name', 'Type', 'Class', 'Opening Balance'],
@@ -270,9 +272,9 @@ export default function Accounts() {
                 onChange={(e) => setForm({ ...form, class: e.target.value })}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
               >
-                <option value="other">Other</option>
-                <option value="cash">Cash</option>
-                <option value="bank">Bank</option>
+                <option value="other">{t('accounts.classOther', 'Other')}</option>
+                <option value="cash">{t('accounts.classCash', 'Cash')}</option>
+                <option value="bank">{t('accounts.classBank', 'Bank')}</option>
               </select>
             </label>
             <label className="text-sm text-slate-700">

@@ -6,20 +6,22 @@ import { exportReportPdf } from '../lib/pdf'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
+import { useT } from '../lib/i18n'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import type { Account, Document, LedgerRow, TrialBalanceRow } from '../lib/types'
 import VoucherViewModal from '../components/VoucherViewModal'
 
 const TYPE_ORDER = ['asset', 'liability', 'equity', 'income', 'expense']
 const TYPE_LABELS: Record<string, string> = {
-  asset: 'Assets',
-  liability: 'Liabilities',
-  equity: 'Equity',
-  income: 'Income',
-  expense: 'Expenses',
+  asset: 'trialBalance.typeAssets',
+  liability: 'trialBalance.typeLiabilities',
+  equity: 'trialBalance.typeEquity',
+  income: 'trialBalance.typeIncome',
+  expense: 'trialBalance.typeExpenses',
 }
 
 export default function TrialBalance() {
+  const t = useT()
   const { cacheVersion, online } = useSyncState()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
@@ -96,13 +98,13 @@ export default function TrialBalance() {
   const pdf = () =>
     exportReportPdf({
       filename: 'trial-balance.pdf',
-      title: 'Trial Balance',
+      title: t('trialBalance.title', 'Trial Balance'),
       subtitle: balanced
         ? 'Debits and credits are in balance'
         : 'Out of balance — verify your postings',
       meta: [['Generated', new Date().toLocaleString()]],
       tables: grouped.map((g) => ({
-        title: TYPE_LABELS[g.type],
+        title: t(TYPE_LABELS[g.type] as any, g.type),
         columns: ['Account', 'Debit', 'Credit', 'Balance'],
         rows: g.rows.map((r) => [
           r.account.code ? `${r.account.code} · ${r.account.name}` : r.account.name,
@@ -117,7 +119,7 @@ export default function TrialBalance() {
   return (
     <div className="mx-auto max-w-5xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-900">Trial Balance</h1>
+        <h1 className="text-lg font-semibold text-slate-900">{t('trialBalance.title', 'Trial Balance')}</h1>
         <div className="print:hidden flex items-center gap-2">
           <button
             onClick={() =>
@@ -125,7 +127,7 @@ export default function TrialBalance() {
                 'trial-balance.csv',
                 ['Type', 'Account', 'Debit', 'Credit', 'Balance'],
                 rows.map((r) => [
-                  TYPE_LABELS[r.account.type] || r.account.type,
+                  t(TYPE_LABELS[r.account.type] as any, r.account.type),
                   r.account.name,
                   r.debit,
                   r.credit,
@@ -152,7 +154,7 @@ export default function TrialBalance() {
             className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
           >
             <Printer size={14} />
-            Print
+            {t('common.print', 'Print')}
           </button>
         </div>
       </div>
@@ -179,30 +181,30 @@ export default function TrialBalance() {
         }`}
       >
         {balanced
-          ? '✓ Debits and credits are in balance.'
-          : `✗ Out of balance — debits ${fmt(totals.debit)} vs credits ${fmt(
-              totals.credit,
-            )}.`}
+          ? t('trialBalance.balanceInBalance', '✓ Debits and credits are in balance.')
+          : t('trialBalance.balanceOutOfBalance', '✗ Out of balance — debits {debit} vs credits {credit}.')
+              .replace('{debit}', fmt(totals.debit))
+              .replace('{credit}', fmt(totals.credit))}
       </div>
 
       <div data-tour="trial-report" className="mt-4 rounded-lg border border-slate-200 bg-white">
         {grouped.length === 0 && (
           <p className="px-4 py-8 text-center text-sm text-slate-400">
-            No posted entries yet.
+            {t('trialBalance.noPostedEntries', 'No posted entries yet.')}
           </p>
         )}
         {grouped.map((g) => (
           <div key={g.type} className="border-b border-slate-100 last:border-0">
             <div className="bg-slate-50 px-4 py-2 text-sm font-medium text-slate-600">
-              {TYPE_LABELS[g.type]}
+              {t(TYPE_LABELS[g.type] as any, g.type)}
             </div>
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-2">Account</th>
-                  <th className="px-4 py-2 text-right">Debit</th>
-                  <th className="px-4 py-2 text-right">Credit</th>
-                  <th className="px-4 py-2 text-right">Balance</th>
+                  <th className="px-4 py-2">{t('reports.columnAccount', 'Account')}</th>
+                  <th className="px-4 py-2 text-right">{t('reports.columnDebit', 'Debit')}</th>
+                  <th className="px-4 py-2 text-right">{t('reports.columnCredit', 'Credit')}</th>
+                  <th className="px-4 py-2 text-right">{t('reports.columnBalance', 'Balance')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -238,7 +240,7 @@ export default function TrialBalance() {
           </div>
         ))}
         <div className="flex justify-between px-4 py-3 text-sm font-semibold text-amber-700">
-          <span>Totals</span>
+          <span>{t('reports.total', 'Totals')}</span>
           <span className="flex gap-8">
             <span className="font-mono">{fmt(totals.debit)}</span>
             <span className="font-mono">{fmt(totals.credit)}</span>
@@ -253,13 +255,13 @@ export default function TrialBalance() {
         <div className="mt-6 rounded-lg border border-slate-200 bg-white">
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div className="text-sm font-medium text-slate-700">
-              Ledger — {ledgerName}
+              {t('trialBalance.ledger', 'Ledger — {name}').replace('{name}', ledgerName)}
             </div>
             <button
               onClick={() => setLedgerAccount('')}
               className="text-xs text-slate-400 hover:text-slate-700"
             >
-              close
+              {t('trialBalance.close', 'close')}
             </button>
           </div>
           {ledger === null ? (
@@ -268,18 +270,18 @@ export default function TrialBalance() {
             </p>
           ) : ledger.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-slate-400">
-              No postings for this account.
+              {t('trialBalance.noPostings', 'No postings for this account.')}
             </p>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-2">Number</th>
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">Narration</th>
-                  <th className="px-4 py-2 text-right">Debit</th>
-                  <th className="px-4 py-2 text-right">Credit</th>
-                  <th className="px-4 py-2 text-right">Running</th>
+                  <th className="px-4 py-2">{t('trialBalance.columnNumber', 'Number')}</th>
+                  <th className="px-4 py-2">{t('common.date', 'Date')}</th>
+                  <th className="px-4 py-2">{t('common.memo', 'Narration')}</th>
+                  <th className="px-4 py-2 text-right">{t('common.debit', 'Debit')}</th>
+                  <th className="px-4 py-2 text-right">{t('common.credit', 'Credit')}</th>
+                  <th className="px-4 py-2 text-right">{t('trialBalance.columnRunning', 'Running')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -324,7 +326,7 @@ export default function TrialBalance() {
 
       {!ledgerAccount && accounts.length > 0 && (
         <p className="mt-3 text-xs text-slate-400">
-          Tip: click an account to open its ledger.
+          {t('trialBalance.tip', 'Tip: click an account to open its ledger.')}
         </p>
       )}
 

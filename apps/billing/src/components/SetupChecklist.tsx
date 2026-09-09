@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { CheckCircle2, ChevronRight, Circle, Sparkles } from 'lucide-react'
+import { useT } from '../lib/i18n'
 import { SETUP_STEPS, useSetupStatus, type SetupStatus } from '../lib/setup'
 
 type SetupStepKey = 'company' | 'fiscalYear' | 'chart' | 'defaults'
@@ -11,6 +12,7 @@ type SetupStepKey = 'company' | 'fiscalYear' | 'chart' | 'defaults'
  * Voucher posting is disabled until `complete` (see the voucher forms).
  */
 export default function SetupChecklist() {
+  const t = useT()
   const setup = useSetupStatus()
   if (setup.loading || setup.complete) return null
 
@@ -19,13 +21,13 @@ export default function SetupChecklist() {
       <div className="border-b border-crimson-100 px-4 py-3">
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-crimson-600" />
-          <h2 className="text-sm font-semibold text-slate-800">Set up your books</h2>
+          <h2 className="text-sm font-semibold text-slate-800">{t('setupChecklist.title')}</h2>
           <span className="ml-auto rounded-full bg-crimson-600 px-2 py-0.5 text-[11px] font-semibold text-white">
-            {setup.missingCount} step{setup.missingCount === 1 ? '' : 's'} left
+            {t('setupChecklist.stepsLeft').replace('{n}', String(setup.missingCount))}
           </span>
         </div>
         <p className="mt-0.5 text-xs text-slate-500">
-          Posting stays disabled until all four are done — you can still save drafts.
+          {t('setupChecklist.postingDisabled')}
         </p>
       </div>
       <ol className="divide-y divide-slate-100">

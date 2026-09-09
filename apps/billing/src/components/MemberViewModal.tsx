@@ -1,4 +1,5 @@
 import { Printer, X } from 'lucide-react'
+import { useT } from '../lib/i18n'
 
 /* ─────────────────────────────────────────────────────────────
    Types
@@ -73,6 +74,7 @@ export default function MemberViewModal({
   onClose: () => void
   onEdit: (m: Member) => void
 }) {
+  const t = useT()
   const img = member.profileImage
   const photoUrl =
     img && typeof img === 'object' && 'url' in img
@@ -97,7 +99,7 @@ export default function MemberViewModal({
         >
           {/* ── Header bar ──────────────────────────────── */}
           <div className="flex items-center justify-between border-b border-slate-200 px-6 py-3">
-            <h2 className="text-sm font-semibold text-slate-800">Member Details</h2>
+            <h2 className="text-sm font-semibold text-slate-800">{t('memberView.title')}</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onEdit(member)}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, Search, X } from 'lucide-react'
+import { useT } from '../lib/i18n'
 import Popover from './Popover'
 
 export interface SearchSelectOption {
@@ -25,9 +26,12 @@ export default function SearchSelect({
   options,
   value,
   onChange,
-  placeholder = '— select —',
-  emptyLabel = '— clear selection —',
+  placeholder,
+  emptyLabel,
 }: SearchSelectProps) {
+  const t = useT()
+  const resolvedPlaceholder = placeholder || t('searchSelect.select')
+  const resolvedEmptyLabel = emptyLabel || '— clear selection —'
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -81,7 +85,7 @@ export default function SearchSelect({
             )}
           </>
         ) : (
-          <span className="flex-1">{placeholder}</span>
+          <span className="flex-1">{resolvedPlaceholder}</span>
         )}
         <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -97,7 +101,7 @@ export default function SearchSelect({
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search…"
+                placeholder={t("searchSelect.search")}
                 className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
               />
               {query && (
@@ -115,14 +119,14 @@ export default function SearchSelect({
               onClick={() => { onChange(''); setOpen(false) }}
               className="flex w-full items-center px-3 py-2 text-left text-sm text-slate-400 hover:bg-slate-50"
             >
-              {emptyLabel}
+              {resolvedEmptyLabel}
             </button>
           )}
 
           {/* Options */}
           <div className="max-h-56 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="px-3 py-3 text-center text-xs text-slate-400">No options match</p>
+              <p className="px-3 py-3 text-center text-xs text-slate-400">{t('searchSelect.noOptionsMatch')}</p>
             ) : (
               filtered.map((o) => (
                 <button

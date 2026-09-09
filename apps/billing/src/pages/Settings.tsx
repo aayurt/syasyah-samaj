@@ -31,7 +31,7 @@ import { useFiscalYear } from '../lib/fiscalYear'
 import { useTenant } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
 import type { Account, AccountGroup, AccountType, BillingSettings, FiscalYear } from '../lib/types'
-import { useLang } from '../lib/i18n'
+import { useLang, useT } from '../lib/i18n'
 import NepaliDateInput from '../components/NepaliDateInput'
 import AccountSelect from '../components/AccountSelect'
 import SearchSelect from '../components/SearchSelect'
@@ -39,6 +39,7 @@ import SearchSelect from '../components/SearchSelect'
 /* ─── Language toggle ──────────────────────────────────────── */
 function LanguageToggle() {
   const { lang, setLang } = useLang()
+  const t = useT()
   return (
     <div className="space-y-3">
       <div className="grid gap-2 sm:grid-cols-2">
@@ -72,8 +73,8 @@ function LanguageToggle() {
         ))}
       </div>
       <p className="text-xs text-slate-400">
-        The interface language is stored in your browser and used across all pages.{' '}
-        <span className="font-medium">Data input stays English</span> — only labels and messages translate.
+        {t('hint.langDescription')}{' '}
+        <span className="font-medium">{t('hint.langDataStays')}</span> — {t('hint.langOnlyLabels')}
       </p>
     </div>
   )
@@ -131,9 +132,9 @@ function Section({
           {onSave && (
             <div className="mt-4 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
               <div className="mr-auto flex items-center gap-2">
-                {saved && <span className="text-sm text-emerald-600">✓ Saved</span>}
+                {saved && <span className="text-sm text-emerald-600">{t('msg.saved')}</span>}
                 {hasChanges && !saved && (
-                  <span className="text-sm text-amber-500">Unsaved changes</span>
+                  <span className="text-sm text-amber-500">{t('msg.unsaved')}</span>
                 )}
               </div>
               {onCancel && hasChanges && (
@@ -142,7 +143,7 @@ function Section({
                   onClick={onCancel}
                   className="rounded px-4 py-1.5 text-sm text-slate-500 hover:bg-slate-100"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               )}
               <button
@@ -151,7 +152,7 @@ function Section({
                 disabled={!hasChanges}
                 className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Save
+                {t('common.save')}
               </button>
             </div>
           )}
@@ -201,6 +202,7 @@ const inputCls =
 /* ─── Component ────────────────────────────────────────────── */
 export default function Settings() {
   const { cacheVersion } = useSyncState()
+  const t = useT()
   const [settings, setSettings] = useState<BillingSettings | null>(null)
   const loaded = useRef(false)
   const navigate = useNavigate()
@@ -1007,7 +1009,7 @@ export default function Settings() {
 
   return (
     <div data-tour="settings" className="mx-auto max-w-4xl space-y-3">
-      <h1 className="text-lg font-semibold text-slate-900">Settings</h1>
+      <h1 className="text-lg font-semibold text-slate-900">{t('settings.pageTitle')}</h1>
 
       {error && (
         <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -1017,7 +1019,7 @@ export default function Settings() {
 
       {/* ── 1. Calendar ──────────────────────────────────────── */}
       <Section
-        title="Calendar"
+        title={t('settings.calendar')}
         subtitle={calSummary}
         icon={Calendar}
         open={!!openSections.calendar}
@@ -1028,7 +1030,7 @@ export default function Settings() {
         onCancel={cancelCalendar}
       >
         <div className="flex items-center gap-3 mb-4">
-          <span className="text-sm text-slate-600">Calendar type</span>
+          <span className="text-sm text-slate-600">{t('cal.type')}</span>
           <div className="flex gap-2">
             {(['AD', 'BS'] as const).map((t) => (
               <button
@@ -1048,7 +1050,7 @@ export default function Settings() {
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-sm text-slate-600">Date Format</label>
+            <label className="text-sm text-slate-600">{t('cal.dateFormat')}</label>
             <div className="mt-1">
               <SearchSelect
                 value={dateFormat}
@@ -1065,26 +1067,26 @@ export default function Settings() {
               />
             </div>
             <div className="mt-2 rounded bg-slate-50 px-3 py-2 text-sm text-slate-700">
-              <span className="text-xs text-slate-400">Preview: </span>
+              <span className="text-xs text-slate-400">{t('cal.preview')}: </span>
               <span className="font-medium">
                 {formatDate(new Date().toISOString(), calendarType, dateFormat)}
               </span>
             </div>
           </div>
           <div>
-            <label className="text-sm text-slate-600">Time Format</label>
+            <label className="text-sm text-slate-600">{t('cal.timeFormat')}</label>
             <div className="mt-1">
               <SearchSelect
                 value={timeFormat}
                 onChange={(v) => setTimeFormat(v as '12h' | '24h')}
                 options={[
-                  { value: '12h', label: '12-hour', sublabel: '1:30 PM' },
-                  { value: '24h', label: '24-hour', sublabel: '13:30' },
+                  { value: '12h', label: t('cal.h12'), sublabel: '1:30 PM' },
+                  { value: '24h', label: t('cal.h24'), sublabel: '13:30' },
                 ]}
               />
             </div>
             <div className="mt-2 rounded bg-slate-50 px-3 py-2 text-sm text-slate-700">
-              <span className="text-xs text-slate-400">Preview: </span>
+              <span className="text-xs text-slate-400">{t('cal.preview')}: </span>
               <span className="font-medium">
                 {formatDate(new Date().toISOString(), calendarType, 'HH:mm', timeFormat)}
               </span>
@@ -1095,8 +1097,8 @@ export default function Settings() {
 
       {/* ── 2. Company Profile ───────────────────────────────── */}
       <Section
-        title="Company Profile"
-        subtitle={companyName || 'Set name, PAN, contact — shown on invoices'}
+        title={t('settings.companyProfile')}
+        subtitle={companyName || t('hint.company')}
         icon={Building2}
         open={!!openSections.company}
         onToggle={() => toggle('company')}
@@ -1107,7 +1109,7 @@ export default function Settings() {
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <label className="text-sm text-slate-600">Company Name</label>
+            <label className="text-sm text-slate-600">{t('settings.companyName')}</label>
             <input
               type="text"
               value={companyName}
@@ -1117,7 +1119,7 @@ export default function Settings() {
             />
           </div>
           <div>
-            <label className="text-sm text-slate-600">PAN Number</label>
+            <label className="text-sm text-slate-600">{t('settings.panNumber')}</label>
             <input
               type="text"
               value={companyPan}
@@ -1127,7 +1129,7 @@ export default function Settings() {
             />
           </div>
           <div>
-            <label className="text-sm text-slate-600">Contact Number</label>
+            <label className="text-sm text-slate-600">{t('settings.contactNumber')}</label>
             <input
               type="tel"
               value={companyContact}
@@ -1137,7 +1139,7 @@ export default function Settings() {
             />
           </div>
           <div>
-            <label className="text-sm text-slate-600">Email</label>
+            <label className="text-sm text-slate-600">{t('common.email')}</label>
             <input
               type="email"
               value={companyEmail}
@@ -1147,7 +1149,7 @@ export default function Settings() {
             />
           </div>
           <div>
-            <label className="text-sm text-slate-600">Logo URL</label>
+            <label className="text-sm text-slate-600">{t('settings.logoUrl')}</label>
             <input
               type="text"
               value={companyLogo}
@@ -1157,7 +1159,7 @@ export default function Settings() {
             />
           </div>
           <div className="sm:col-span-2">
-            <label className="text-sm text-slate-600">Address</label>
+            <label className="text-sm text-slate-600">{t('settings.address')}</label>
             <textarea
               value={companyAddress}
               onChange={(e) => setCompanyAddress(e.target.value)}
@@ -1169,7 +1171,7 @@ export default function Settings() {
         </div>
         {companyLogo && (
           <div className="mt-3 flex items-center gap-3">
-            <span className="text-xs text-slate-400">Preview:</span>
+            <span className="text-xs text-slate-400">{t('cal.preview')}:</span>
             <img
               src={companyLogo}
               alt="Logo"
@@ -1182,11 +1184,11 @@ export default function Settings() {
 
       {/* ── 3. Fiscal Settings ───────────────────────────────── */}
       <Section
-        title="Fiscal Settings"
+        title={t('settings.fiscalSettings')}
         subtitle={
           selectedFiscalYear
-            ? `Working year: ${selectedFiscalYear.label || selectedFiscalYear.startDate}${selectedFiscalYear.status === 'closed' ? ' (closed)' : ''}`
-            : 'Fiscal years and period freeze'
+            ? `${t('fy.workingYear')}: ${selectedFiscalYear.label || selectedFiscalYear.startDate}${selectedFiscalYear.status === 'closed' ? ` (${t('hint.fyStatusClosed')})` : ''}`
+            : t('hint.fiscalYears')
         }
         icon={Wallet}
         open={!!openSections.fiscal}
@@ -1195,7 +1197,7 @@ export default function Settings() {
         <div className="p-5">
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-700">Fiscal Years</p>
+              <p className="text-sm font-medium text-slate-700">{t('settings.fiscalYears')}</p>
               <p className="text-xs text-slate-400">
                 Active years are editable · Closed years are read-only · The working year drives transaction numbering.
               </p>
@@ -1205,12 +1207,12 @@ export default function Settings() {
               onClick={openFyModal}
               className="flex items-center gap-1.5 rounded-md bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
             >
-              <Plus size={14} /> Add Year
+              <Plus size={14} /> {t('settings.addYear')}
             </button>
           </div>
 
           {fiscalLoading ? (
-            <div className="py-6 text-center text-sm text-slate-400">Loading fiscal years…</div>
+            <div className="py-6 text-center text-sm text-slate-400">{t('hint.loadingFiscal')}</div>
           ) : fiscalYears.length === 0 ? (
             <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
               No fiscal years defined. Click <span className="font-medium">Add Year</span> to create the first period.
@@ -1220,12 +1222,12 @@ export default function Settings() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="px-3 py-2">Working</th>
-                    <th className="px-3 py-2">Label</th>
-                    <th className="px-3 py-2">Start (AD)</th>
-                    <th className="px-3 py-2">End (AD)</th>
-                    <th className="px-3 py-2">Status</th>
-                    <th className="px-3 py-2 text-right">Actions</th>
+                    <th className="px-3 py-2">{t('settings.working')}</th>
+                    <th className="px-3 py-2">{t('settings.label')}</th>
+                    <th className="px-3 py-2">{t('settings.start')}</th>
+                    <th className="px-3 py-2">{t('settings.end')}</th>
+                    <th className="px-3 py-2">{t('common.status')}</th>
+                    <th className="px-3 py-2 text-right">{t('settings.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1240,7 +1242,7 @@ export default function Settings() {
                         <td className="px-3 py-2">
                           {y.status === 'closed' ? (
                             <span
-                              title="Closed years cannot be the working year — reopen the year first."
+                              title={t("settings.closedTooltip")}
                               className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-300"
                             >
                               <Check size={12} />
@@ -1248,7 +1250,7 @@ export default function Settings() {
                           ) : (
                             <button
                               type="button"
-                              title="Set as working year"
+                              title={t("settings.setWorkingYear")}
                               onClick={() => fySetActive(y)}
                               className={`flex h-5 w-5 items-center justify-center rounded-full border ${
                                 isActiveFlag
@@ -1266,11 +1268,11 @@ export default function Settings() {
                         <td className="px-3 py-2">
                           {y.status === 'closed' ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
-                              <Lock size={10} /> Closed
+                              <Lock size={10} /> {t("hint.closedLabel")}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                              <Unlock size={10} /> Active
+                              <Unlock size={10} /> {t("hint.activeLabel")}
                             </span>
                           )}
                         </td>
@@ -1280,7 +1282,7 @@ export default function Settings() {
                               <button
                                 type="button"
                                 onClick={() => fyReopen(y)}
-                                title="Open this fiscal year"
+                                title={t("settings.openThisYear")}
                                 className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600"
                               >
                                 <Unlock size={14} />
@@ -1289,7 +1291,7 @@ export default function Settings() {
                               <button
                                 type="button"
                                 onClick={() => fyClose(y)}
-                                title="Close this fiscal year (read-only)"
+                                title={t("settings.closeThisYear")}
                                 className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-amber-600"
                               >
                                 <Lock size={14} />
@@ -1298,7 +1300,7 @@ export default function Settings() {
                             <button
                               type="button"
                               onClick={() => openFyEdit(y)}
-                              title="Edit fiscal year"
+                              title={t("settings.editFiscalYear")}
                               className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                             >
                               <Pencil size={14} />
@@ -1306,7 +1308,7 @@ export default function Settings() {
                             <button
                               type="button"
                               onClick={() => fyDelete(y)}
-                              title="Delete fiscal year"
+                              title={t("settings.deleteFiscalYear")}
                               className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
                             >
                               <Trash2 size={14} />
@@ -1333,28 +1335,28 @@ export default function Settings() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-slate-800">{fyEditing ? 'Edit Fiscal Year' : 'Add Fiscal Year'}</h3>
+              <h3 className="text-base font-semibold text-slate-800">{fyEditing ? t("settings.editFiscalYear") : t("settings.addYear")}</h3>
               <button type="button" onClick={() => { setFyModalOpen(false); setFyEditing(null) }} className="rounded p-1 text-slate-400 hover:bg-slate-100">
                 <X size={16} />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-sm text-slate-600">Label (e.g. 2083-84)</label>
+                <label className="mb-1.5 block text-sm text-slate-600">{t("settings.labelExample")}</label>
                 <input
                   value={fyForm.label}
                   onChange={(e) => setFyForm((f) => ({ ...f, label: e.target.value }))}
-                  placeholder="Auto from start date if empty"
+                  placeholder={t("settings.autoFromStart")}
                   className={inputCls}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-sm text-slate-600">Start date</label>
+                  <label className="mb-1.5 block text-sm text-slate-600">{t("settings.startDate")}</label>
                   <NepaliDateInput compact value={fyForm.startDate} onChange={(v) => setFyForm((f) => ({ ...f, startDate: v }))} />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm text-slate-600">End date</label>
+                  <label className="mb-1.5 block text-sm text-slate-600">{t("settings.endDate")}</label>
                   <NepaliDateInput compact value={fyForm.endDate} onChange={(v) => setFyForm((f) => ({ ...f, endDate: v }))} />
                 </div>
               </div>
@@ -1366,7 +1368,7 @@ export default function Settings() {
                     checked={fyForm.status === 'active'}
                     onChange={() => setFyForm((f) => ({ ...f, status: 'active' }))}
                   />
-                  Active
+                  {t("hint.fyStatusActive")}
                 </label>
                 <label className="flex items-center gap-2 text-sm text-slate-600">
                   <input
@@ -1375,7 +1377,7 @@ export default function Settings() {
                     checked={fyForm.status === 'closed'}
                     onChange={() => setFyForm((f) => ({ ...f, status: 'closed', makeActive: false }))}
                   />
-                  Closed
+                  {t("hint.fyStatusClosed")}
                 </label>
                 <label className="flex items-center gap-2 text-sm text-slate-600">
                   <input
@@ -1384,7 +1386,7 @@ export default function Settings() {
                     disabled={fyForm.status === 'closed'}
                     onChange={(e) => setFyForm((f) => ({ ...f, makeActive: e.target.checked }))}
                   />
-                  Set as working year
+                  {t("hint.setWorking")}
                 </label>
               </div>
             </div>
@@ -1394,7 +1396,7 @@ export default function Settings() {
                 onClick={() => { setFyModalOpen(false); setFyEditing(null) }}
                 className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -1402,7 +1404,7 @@ export default function Settings() {
                 disabled={fySaving}
                 className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
               >
-                {fySaving ? 'Saving…' : fyEditing ? 'Save Changes' : 'Create Year'}
+                {fySaving ? t("hint.savingLabel") : fyEditing ? t("hint.saveChangesLabel") : t("hint.createYearLabel")}
               </button>
             </div>
           </div>
