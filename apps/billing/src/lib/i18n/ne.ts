@@ -162,6 +162,8 @@ export const ne = {
     noAccounts: 'अहिलेसम्म कुनै खाता छैन। आफ्नो पहिलो खाता थप्नुहोस् ।',
     noTransactions: 'अहिलेसम्म कुनै लेनदेन छैन।',
     loading: 'लोड गरिरहेको छ…',
+    signIn: 'साइन इन',
+    signingIn: 'साइन इन हुँदै…',
   },
 
   // ── Buttons inside modals ──
@@ -698,6 +700,8 @@ export const ne = {
     needAdmin: 'बिलिंग प्रयोग गर्न तपाईंलाई प्रशासन खाता चाहिन्छ।',
     signOut: 'साइन आउट',
     loading: 'लोड गरिरहेको छ…',
+    signIn: 'साइन इन',
+    signingIn: 'साइन इन हुँदै…',
   },
 
   // ── Journal page ──

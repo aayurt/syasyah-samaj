@@ -143,7 +143,7 @@ export default function Login() {
           disabled={loading}
           className="mt-6 w-full rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
         >
-          {loading ? t('login.loading', 'Signing in…') : t('login.notAuthorized', 'Sign in')}
+          {loading ? t('login.signingIn', 'Signing in…') : t('login.signIn', 'Sign in')}
         </button>
       </form>
     </div>

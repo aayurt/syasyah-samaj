@@ -160,6 +160,8 @@ export const en = {
     noAccounts: 'No accounts yet. Add your first account above.',
     noTransactions: 'No transactions yet.',
     loading: 'Loading…',
+    signIn: 'Sign in',
+    signingIn: 'Signing in…',
   },
 
   // ── Buttons inside modals ──
@@ -698,6 +700,8 @@ export const en = {
     needAdmin: 'You need an admin account to use Billing.',
     signOut: 'Sign out',
     loading: 'Loading…',
+    signIn: 'Sign in',
+    signingIn: 'Signing in…',
   },
 
   // ── Journal page ──
