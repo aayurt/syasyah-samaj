@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CreditCard, Download, Edit3, FileText, Image, MoreVertical, Plus, Table2, Trash2, X } from 'lucide-react'
+import { CreditCard, Download, Edit3, FileText, Image, MoreVertical, Plus, Printer, Table2, Trash2, X } from 'lucide-react'
 import { api, useSyncState, fmt } from '../lib/api'
 import { API_BASE } from '../lib/base'
 import SearchSelect from '../components/SearchSelect'
@@ -280,6 +280,246 @@ function PhotoUpload({
 }
 
 /* ─────────────────────────────────────────────────────────────
+   Print CSS — scoped to this page
+   ───────────────────────────────────────────────────────────── */
+
+const PRINT_CSS = `
+/* Hide everything on screen */
+.print-sheet { display: none !important; }
+
+/* Screen-only: hide in print */
+@media print {
+  .screen-only, nav, header, .app-sidebar, .app-header, [role="banner"], footer, .no-print,
+  button, .pf-photo-label { display: none !important; }
+
+  .print-sheet { display: block !important; }
+
+  /* Reset page */
+  @page { size: A4 portrait; margin: 15mm 12mm; }
+  html, body { background: white !important; margin: 0 !important; padding: 0 !important; }
+
+  /* A4 sheet */
+  .print-sheet {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: #000 !important;
+    font-family: inherit !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+  }
+
+  .pf-header {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    border-bottom: 2px solid #000 !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 12px !important;
+  }
+  .pf-logo { width: 48px !important; height: 48px !important; object-fit: contain !important; }
+  .pf-org { flex: 1 !important; }
+  .pf-org-name-ne { font-size: 14pt !important; font-weight: 700 !important; color: #000 !important; }
+  .pf-org-name-en { font-size: 10pt !important; color: #333 !important; }
+  .pf-org-phone { font-size: 9pt !important; color: #555 !important; }
+  .pf-photo-box {
+    width: 100px !important;
+    height: 120px !important;
+    border: 1px solid #000 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 9pt !important;
+    color: #000 !important;
+    flex-shrink: 0 !important;
+    overflow: hidden !important;
+  }
+  .pf-photo-img { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+
+  .pf-title {
+    text-align: center !important;
+    font-size: 13pt !important;
+    font-weight: 700 !important;
+    color: #c00 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 3px !important;
+    text-decoration-thickness: 1.5px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .pf-section { margin-bottom: 10px !important; }
+  .pf-section-title {
+    font-size: 10pt !important;
+    font-weight: 700 !important;
+    border-bottom: 1px dotted #999 !important;
+    padding-bottom: 2px !important;
+    margin-bottom: 6px !important;
+    color: #000 !important;
+  }
+
+  .pf-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 4px 20px !important; }
+  .pf-block { margin-bottom: 2px !important; }
+
+  .pf-field { display: flex !important; align-items: baseline !important; gap: 4px !important; margin-bottom: 3px !important; }
+  .pf-label { font-weight: 600 !important; white-space: nowrap !important; font-size: 10pt !important; color: #000 !important; }
+  .pf-label::after { content: ' :' !important; }
+  .pf-value {
+    flex: 1 !important;
+    border-bottom: 1px dotted #333 !important;
+    min-height: 1.2em !important;
+    padding-left: 2px !important;
+    font-size: 10pt !important;
+    color: #000 !important;
+  }
+
+  .pf-sig-block {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-top: 20px !important;
+    padding-top: 10px !important;
+  }
+  .pf-sig-item { width: 30% !important; }
+  .pf-sig-line { border-bottom: 1px solid #000 !important; height: 30px !important; }
+  .pf-sig-label { font-size: 9pt !important; color: #000 !important; margin-top: 2px !important; }
+
+  .pf-footer {
+    border: 1px solid #000 !important;
+    padding: 8px !important;
+    text-align: center !important;
+    font-size: 9pt !important;
+    color: #000 !important;
+    margin-top: 14px !important;
+  }
+}
+`
+
+/* ─────────────────────────────────────────────────────────────
+   PrintableForm — static paper replica for @media print
+   ───────────────────────────────────────────────────────────── */
+
+function PrintableForm({ data, photoUrl }: { data: FormState; photoUrl: string }) {
+  const fld = (label: string, value: string) => (
+    <span className="pf-field">
+      <span className="pf-label">{label}</span>
+      <span className="pf-value">{value || '\u00A0'}</span>
+    </span>
+  )
+
+  return (
+    <div className="print-sheet">
+      {/* ── Org header ─────────────────────────────────── */}
+      <div className="pf-header">
+        <img src="/logo.png" alt="Logo" className="pf-logo" />
+        <div className="pf-org">
+          <div className="pf-org-name-ne">स्यस्यः समाज, यल</div>
+          <div className="pf-org-name-en">Syasyah Samaj, Yala</div>
+          <div className="pf-org-phone">Phone: 01-XXXXXXX</div>
+        </div>
+        {/* Photo box */}
+        <div className="pf-photo-box">
+          {photoUrl ? (
+            <img src={photoUrl} alt="फोटो" className="pf-photo-img" />
+          ) : null}
+          <span className="pf-photo-label">फोटो</span>
+        </div>
+      </div>
+
+      {/* ── Red title ─────────────────────────────────── */}
+      <div className="pf-title">
+        साधारण/स्थायी/आजीवन दुज़: (सदस्य) आवेदन फाराम
+      </div>
+
+      {/* ── Section A: Identity ──────────────────────── */}
+      <div className="pf-section">
+        <div className="pf-section-title">Identity (पहिचान)</div>
+        <div className="pf-grid">
+          {fld('ना (नाम)', data.fullName)}
+          {fld('नागरिकता ल्या: (नं.)', data.citizenshipNo)}
+          {fld('नागरिकता का.मु दि (मिति)', data.citizenshipIssuedDateBs)}
+          {fld('नागरिकता का.मु जिल्ला', data.citizenshipDistrict)}
+        </div>
+      </div>
+
+      {/* ── Section B: Address ──────────────────────── */}
+      <div className="pf-section">
+        <div className="pf-section-title">Address &amp; Contact (ठेगाना)</div>
+        <div className="pf-block">
+          {fld('स्थायी ठेगाना', data.addressPermanent)}
+        </div>
+        <div className="pf-block">
+          {fld('अस्थाई ठेगाना', data.addressTemporary)}
+        </div>
+        <div className="pf-grid">
+          {fld('इमेल ठेगाना', data.email)}
+          {fld('फोन ल्या:', data.phoneNumber)}
+          {fld('मोबाइल ल्या:', data.mobile)}
+        </div>
+      </div>
+
+      {/* ── Section C: Personal ──────────────────────── */}
+      <div className="pf-section">
+        <div className="pf-section-title">Personal (व्यक्तिगत)</div>
+        <div className="pf-grid">
+          {fld('रक्ता', data.bloodGroup)}
+          {fld('विशिष्टता', data.specialQualification)}
+          {fld('पेशा', data.occupation)}
+          {fld('कार्यालयको नाम', data.officeName)}
+        </div>
+      </div>
+
+      {/* ── Section D: Family ────────────────────────── */}
+      <div className="pf-section">
+        <div className="pf-section-title">Family (पारिवारिक)</div>
+        <div className="pf-grid">
+          {fld('बाजेको नाम', data.grandfatherName)}
+          {fld('बाबुको नाम', data.fatherName)}
+          {fld('ससुराको नाम', data.fatherInLawName)}
+          {fld('पति/पत्नीको नाम', data.spouseName)}
+          {fld('छोराको नाम', data.sonName)}
+          {fld('छोरीको नाम', data.daughterName)}
+        </div>
+      </div>
+
+      {/* ── Section E: Membership ────────────────────── */}
+      <div className="pf-section">
+        <div className="pf-section-title">Membership &amp; Fee (दुज़ तथा शुल्क)</div>
+        <div className="pf-grid">
+          {fld('दुज़', data.membershipTypeId)}
+          {fld('आवेदन मिति (बि.सं.)', data.appliedDateBs)}
+        </div>
+      </div>
+
+      {/* ── Signature / रसिद / मिति block ────────────── */}
+      <div className="pf-sig-block">
+        <div className="pf-sig-item">
+          <div className="pf-sig-line" />
+          <div className="pf-sig-label">दस्तखत</div>
+        </div>
+        <div className="pf-sig-item">
+          <div className="pf-sig-line" />
+          <div className="pf-sig-label">रसिद नं.</div>
+        </div>
+        <div className="pf-sig-item">
+          <div className="pf-sig-line" />
+          <div className="pf-sig-label">मिति</div>
+        </div>
+      </div>
+
+      {/* ── Footer note ─────────────────────────────── */}
+      <div className="pf-footer">
+        दस्तखत: नागरिकताका फोटो कापि संलग्न यानादिस ।
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────
    Application Form Component
    ───────────────────────────────────────────────────────────── */
 
@@ -297,6 +537,7 @@ function ApplicationForm({
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [searchMember, setSearchMember] = useState('')
+  const [printPreview, setPrintPreview] = useState<'data' | 'blank' | null>(null)
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -373,238 +614,276 @@ function ApplicationForm({
     }
   }
 
+  const handlePrint = (mode: 'data' | 'blank') => {
+    setPrintPreview(mode)
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        window.print()
+        setPrintPreview(null)
+      }, 150)
+    })
+  }
+
+  const printData = printPreview === 'blank' ? { ...blankForm } : form
+
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-6">
-      {/* ── Org header ─────────────────────────────────── */}
-      <div className="mb-6 flex items-center gap-4 border-b-2 border-slate-300 pb-4">
-        <img src="/logo.png" alt="Logo" className="h-14 w-14 object-contain" />
-        <div className="flex-1">
-          <h2 className="text-lg font-bold text-slate-800">स्यस्यः समाज, यल</h2>
-          <p className="text-sm text-slate-600">Syasyah Samaj, Yala</p>
-          <p className="text-xs text-slate-500">Phone: 01-XXXXXXX</p>
-        </div>
-        {/* Photo upload in top-right */}
-        <PhotoUpload
-          imageId={form.profileImageId}
-          imageUrl={form.profileImageUrl}
-          onUpload={(id, url) => { set('profileImageId', id); set('profileImageUrl', url) }}
-        />
-      </div>
+      {/* ── Print CSS (injected) ───────────────────────── */}
+      <style>{PRINT_CSS}</style>
 
-      {/* ── Red title ─────────────────────────────────── */}
-      <div className="mb-5 text-center">
-        <h2 className="text-base font-bold text-red-700 underline decoration-red-600 decoration-2 underline-offset-4">
-          साधारण/स्थायी/आजीवन दुज़: (सदस्य) आवेदन फाराम
-        </h2>
-      </div>
-
-      {/* ── Edit-existing picker ────────────────────────── */}
-      <div className="mb-5 rounded border border-amber-200 bg-amber-50 p-3">
-        <div className="flex items-center justify-between gap-3">
+      {/* ── Screen-only: org header ────────────────────── */}
+      <div className="screen-only">
+        <div className="mb-6 flex items-center gap-4 border-b-2 border-slate-300 pb-4">
+          <img src="/logo.png" alt="Logo" className="h-14 w-14 object-contain" />
           <div className="flex-1">
-            <label className="mb-1 block text-xs font-medium text-slate-600">
-              {editingMemberId ? 'Editing existing member' : 'Edit existing member (optional)'}
-            </label>
-            <input
-              value={searchMember}
-              onChange={(e) => setSearchMember(e.target.value)}
-              placeholder="Search by name or email to edit…"
-              className="h-[34px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
-            />
+            <h2 className="text-lg font-bold text-slate-800">स्यस्यः समाज, यल</h2>
+            <p className="text-sm text-slate-600">Syasyah Samaj, Yala</p>
+            <p className="text-xs text-slate-500">Phone: 01-XXXXXXX</p>
           </div>
-          {editingMemberId && (
-            <button
-              type="button"
-              onClick={startNew}
-              className="mt-5 rounded border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
-            >
-              New
-            </button>
+          {/* Photo upload in top-right */}
+          <PhotoUpload
+            imageId={form.profileImageId}
+            imageUrl={form.profileImageUrl}
+            onUpload={(id, url) => { set('profileImageId', id); set('profileImageUrl', url) }}
+          />
+        </div>
+
+        {/* ── Red title ─────────────────────────────────── */}
+        <div className="mb-5 text-center">
+          <h2 className="text-base font-bold text-red-700 underline decoration-red-600 decoration-2 underline-offset-4">
+            साधारण/स्थायी/आजीवन दुज़: (सदस्य) आवेदन फाराम
+          </h2>
+        </div>
+
+        {/* ── Edit-existing picker ────────────────────────── */}
+        <div className="mb-5 rounded border border-amber-200 bg-amber-50 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                {editingMemberId ? 'Editing existing member' : 'Edit existing member (optional)'}
+              </label>
+              <input
+                value={searchMember}
+                onChange={(e) => setSearchMember(e.target.value)}
+                placeholder="Search by name or email to edit…"
+                className="h-[34px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+              />
+            </div>
+            {editingMemberId && (
+              <button
+                type="button"
+                onClick={startNew}
+                className="mt-5 rounded border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+              >
+                New
+              </button>
+            )}
+          </div>
+          {filteredMembers.length > 0 && (
+            <div className="mt-2 max-h-40 overflow-y-auto rounded border border-slate-200 bg-white">
+              {filteredMembers.slice(0, 10).map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => loadMember(m)}
+                  className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-slate-50"
+                >
+                  <span className="font-medium text-slate-800">{m.fullName}</span>
+                  <span className="text-xs text-slate-400">{m.email}</span>
+                  {m.membershipType && (
+                    <span className="ml-auto text-xs text-slate-500">{m.membershipType.name}</span>
+                  )}
+                </button>
+              ))}
+            </div>
           )}
         </div>
-        {filteredMembers.length > 0 && (
-          <div className="mt-2 max-h-40 overflow-y-auto rounded border border-slate-200 bg-white">
-            {filteredMembers.slice(0, 10).map((m) => (
-              <button
-                key={m.id}
-                onClick={() => loadMember(m)}
-                className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-slate-50"
-              >
-                <span className="font-medium text-slate-800">{m.fullName}</span>
-                <span className="text-xs text-slate-400">{m.email}</span>
-                {m.membershipType && (
-                  <span className="ml-auto text-xs text-slate-500">{m.membershipType.name}</span>
-                )}
-              </button>
-            ))}
-          </div>
+
+        {/* ── Error ─────────────────────────────────────── */}
+        {error && (
+          <p className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
         )}
+
+        <form onSubmit={handleSave} className="space-y-6">
+          {/* ── Section A: Identity ──────────────────────── */}
+          <Section title="Identity (पहिचान)">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <FieldLabel label="Full Name (नाम)" />
+                <TextInput value={form.fullName} onChange={(v) => set('fullName', v)} placeholder="e.g. Ram Bahadur Shrestha" />
+              </div>
+              <div>
+                <FieldLabel label="Citizenship No. (नागरिकता ल्या:)" />
+                <TextInput value={form.citizenshipNo} onChange={(v) => set('citizenshipNo', v)} placeholder="e.g. 12-34-56-78901" />
+              </div>
+              <div>
+                <FieldLabel label="Citizenship Issued Date (BS)" sublabel="YYYY-MM-DD" />
+                <TextInput value={form.citizenshipIssuedDateBs} onChange={(v) => set('citizenshipIssuedDateBs', v)} placeholder="2080-01-15" />
+              </div>
+              <div>
+                <FieldLabel label="Citizenship District (जिल्ला)" />
+                <Select
+                  value={form.citizenshipDistrict}
+                  onChange={(v) => set('citizenshipDistrict', v)}
+                  options={DISTRICTS.map((d) => ({ value: d.value, label: d.label }))}
+                  placeholder="— Select district —"
+                />
+              </div>
+            </div>
+          </Section>
+
+          {/* ── Section B: Address & Contact ─────────────── */}
+          <Section title="Address & Contact (ठेगाना)">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <FieldLabel label="Permanent Address (स्थायी ठेगाना)" />
+                <TextArea value={form.addressPermanent} onChange={(v) => set('addressPermanent', v)} placeholder="Ward, VDC/Municipality, District" />
+              </div>
+              <div className="sm:col-span-2">
+                <FieldLabel label="Temporary Address (अस्थाई ठेगाना)" />
+                <TextArea value={form.addressTemporary} onChange={(v) => set('addressTemporary', v)} placeholder="Current residence address" />
+              </div>
+              <div>
+                <FieldLabel label="Email (इमेल)" />
+                <TextInput value={form.email} onChange={(v) => set('email', v)} placeholder="e.g. ram@example.com" />
+              </div>
+              <div>
+                <FieldLabel label="Phone (फोन)" />
+                <TextInput value={form.phoneNumber} onChange={(v) => set('phoneNumber', v)} placeholder="e.g. 01-XXXXXXX" />
+              </div>
+              <div>
+                <FieldLabel label="Mobile (मोबाइल)" />
+                <TextInput value={form.mobile} onChange={(v) => set('mobile', v)} placeholder="e.g. 98XXXXXXXX" />
+              </div>
+            </div>
+          </Section>
+
+          {/* ── Section C: Personal ──────────────────────── */}
+          <Section title="Personal (व्यक्तिगत)">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <FieldLabel label="Blood Group (रक्ता)" />
+                <Select
+                  value={form.bloodGroup}
+                  onChange={(v) => set('bloodGroup', v)}
+                  options={BLOOD_GROUPS.map((g) => ({ value: g, label: g }))}
+                  placeholder="— Select —"
+                />
+              </div>
+              <div>
+                <FieldLabel label="Special Qualification (विशिष्टता)" />
+                <TextInput value={form.specialQualification} onChange={(v) => set('specialQualification', v)} placeholder="e.g. MBA, PhD" />
+              </div>
+              <div>
+                <FieldLabel label="Occupation (पेशा)" />
+                <TextInput value={form.occupation} onChange={(v) => set('occupation', v)} placeholder="e.g. Engineer" />
+              </div>
+              <div>
+                <FieldLabel label="Office Name (कार्यालयको नाम)" />
+                <TextInput value={form.officeName} onChange={(v) => set('officeName', v)} placeholder="e.g. Nepal Telecom" />
+              </div>
+            </div>
+          </Section>
+
+          {/* ── Section D: Family ────────────────────────── */}
+          <Section title="Family (पारिवारिक)">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <FieldLabel label="Grandfather's Name (बाजेको नाम)" />
+                <TextInput value={form.grandfatherName} onChange={(v) => set('grandfatherName', v)} />
+              </div>
+              <div>
+                <FieldLabel label="Father's Name (बाबुको नाम)" />
+                <TextInput value={form.fatherName} onChange={(v) => set('fatherName', v)} />
+              </div>
+              <div>
+                <FieldLabel label="Father-in-law's Name (ससुराको नाम)" />
+                <TextInput value={form.fatherInLawName} onChange={(v) => set('fatherInLawName', v)} />
+              </div>
+              <div>
+                <FieldLabel label="Spouse's Name (पति/पत्नीको नाम)" />
+                <TextInput value={form.spouseName} onChange={(v) => set('spouseName', v)} />
+              </div>
+              <div>
+                <FieldLabel label="Son's Name (छोराको नाम)" />
+                <TextInput value={form.sonName} onChange={(v) => set('sonName', v)} />
+              </div>
+              <div>
+                <FieldLabel label="Daughter's Name (छोरीको नाम)" />
+                <TextInput value={form.daughterName} onChange={(v) => set('daughterName', v)} />
+              </div>
+            </div>
+          </Section>
+
+          {/* ── Section E: Membership & Fee ──────────────── */}
+          <Section title="Membership & Fee (दुज़ तथा शुल्क)">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <FieldLabel label="Membership Type (दुज़)" />
+                <SearchSelect
+                  value={form.membershipTypeId}
+                  onChange={(v) => set('membershipTypeId', v)}
+                  placeholder="— Select type —"
+                  options={membershipTypes.map((t) => ({
+                    value: t.id,
+                    label: t.name,
+                    sublabel: fmt(t.fee),
+                  }))}
+                />
+              </div>
+              <div>
+                <FieldLabel label="Application Date (BS)" sublabel="YYYY-MM-DD" />
+                <TextInput value={form.appliedDateBs} onChange={(v) => set('appliedDateBs', v)} placeholder="2082-05-15" />
+              </div>
+            </div>
+          </Section>
+
+          {/* ── Footer note ─────────────────────────────── */}
+          <div className="rounded border border-dashed border-slate-300 bg-slate-50 p-3 text-center text-xs text-slate-500">
+            दस्तखत: नागरिकताका फोटो कापि संलग्न यानादिस ।
+          </div>
+
+          {/* ── Save + Print ──────────────────────────── */}
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex h-[38px] items-center gap-1.5 rounded bg-crimson-600 px-5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : editingMemberId ? 'Update Member' : 'Save Application'}
+            </button>
+            {editingMemberId && (
+              <button
+                type="button"
+                onClick={() => handlePrint('data')}
+                className="inline-flex h-[38px] items-center gap-1.5 rounded border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                <Printer size={14} /> प्रिन्ट
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => handlePrint('blank')}
+              className="inline-flex h-[38px] items-center gap-1.5 rounded border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <Printer size={14} /> खाली फाराम प्रिन्ट
+            </button>
+            {editingMemberId && (
+              <button
+                type="button"
+                onClick={startNew}
+                className="text-sm text-slate-500 hover:text-slate-700"
+              >
+                Start New
+              </button>
+            )}
+          </div>
+        </form>
       </div>
 
-      {/* ── Error ─────────────────────────────────────── */}
-      {error && (
-        <p className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      {/* ── Print-only: paper replica ───────────────────── */}
+      {printPreview && (
+        <PrintableForm data={printData} photoUrl={printPreview === 'data' ? form.profileImageUrl : ''} />
       )}
-
-      <form onSubmit={handleSave} className="space-y-6">
-        {/* ── Section A: Identity ──────────────────────── */}
-        <Section title="Identity (पहिचान)">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <FieldLabel label="Full Name (नाम)" />
-              <TextInput value={form.fullName} onChange={(v) => set('fullName', v)} placeholder="e.g. Ram Bahadur Shrestha" />
-            </div>
-            <div>
-              <FieldLabel label="Citizenship No. (नागरिकता ल्या:)" />
-              <TextInput value={form.citizenshipNo} onChange={(v) => set('citizenshipNo', v)} placeholder="e.g. 12-34-56-78901" />
-            </div>
-            <div>
-              <FieldLabel label="Citizenship Issued Date (BS)" sublabel="YYYY-MM-DD" />
-              <TextInput value={form.citizenshipIssuedDateBs} onChange={(v) => set('citizenshipIssuedDateBs', v)} placeholder="2080-01-15" />
-            </div>
-            <div>
-              <FieldLabel label="Citizenship District (जिल्ला)" />
-              <Select
-                value={form.citizenshipDistrict}
-                onChange={(v) => set('citizenshipDistrict', v)}
-                options={DISTRICTS.map((d) => ({ value: d.value, label: d.label }))}
-                placeholder="— Select district —"
-              />
-            </div>
-          </div>
-        </Section>
-
-        {/* ── Section B: Address & Contact ─────────────── */}
-        <Section title="Address & Contact (ठेगाना)">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <FieldLabel label="Permanent Address (स्थायी ठेगाना)" />
-              <TextArea value={form.addressPermanent} onChange={(v) => set('addressPermanent', v)} placeholder="Ward, VDC/Municipality, District" />
-            </div>
-            <div className="sm:col-span-2">
-              <FieldLabel label="Temporary Address (अस्थाई ठेगाना)" />
-              <TextArea value={form.addressTemporary} onChange={(v) => set('addressTemporary', v)} placeholder="Current residence address" />
-            </div>
-            <div>
-              <FieldLabel label="Email (इमेल)" />
-              <TextInput value={form.email} onChange={(v) => set('email', v)} placeholder="e.g. ram@example.com" />
-            </div>
-            <div>
-              <FieldLabel label="Phone (फोन)" />
-              <TextInput value={form.phoneNumber} onChange={(v) => set('phoneNumber', v)} placeholder="e.g. 01-XXXXXXX" />
-            </div>
-            <div>
-              <FieldLabel label="Mobile (मोबाइल)" />
-              <TextInput value={form.mobile} onChange={(v) => set('mobile', v)} placeholder="e.g. 98XXXXXXXX" />
-            </div>
-          </div>
-        </Section>
-
-        {/* ── Section C: Personal ──────────────────────── */}
-        <Section title="Personal (व्यक्तिगत)">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <FieldLabel label="Blood Group (रक्ता)" />
-              <Select
-                value={form.bloodGroup}
-                onChange={(v) => set('bloodGroup', v)}
-                options={BLOOD_GROUPS.map((g) => ({ value: g, label: g }))}
-                placeholder="— Select —"
-              />
-            </div>
-            <div>
-              <FieldLabel label="Special Qualification (विशिष्टता)" />
-              <TextInput value={form.specialQualification} onChange={(v) => set('specialQualification', v)} placeholder="e.g. MBA, PhD" />
-            </div>
-            <div>
-              <FieldLabel label="Occupation (पेशा)" />
-              <TextInput value={form.occupation} onChange={(v) => set('occupation', v)} placeholder="e.g. Engineer" />
-            </div>
-            <div>
-              <FieldLabel label="Office Name (कार्यालयको नाम)" />
-              <TextInput value={form.officeName} onChange={(v) => set('officeName', v)} placeholder="e.g. Nepal Telecom" />
-            </div>
-          </div>
-        </Section>
-
-        {/* ── Section D: Family ────────────────────────── */}
-        <Section title="Family (पारिवारिक)">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <FieldLabel label="Grandfather's Name (बाजेको नाम)" />
-              <TextInput value={form.grandfatherName} onChange={(v) => set('grandfatherName', v)} />
-            </div>
-            <div>
-              <FieldLabel label="Father's Name (बाबुको नाम)" />
-              <TextInput value={form.fatherName} onChange={(v) => set('fatherName', v)} />
-            </div>
-            <div>
-              <FieldLabel label="Father-in-law's Name (ससुराको नाम)" />
-              <TextInput value={form.fatherInLawName} onChange={(v) => set('fatherInLawName', v)} />
-            </div>
-            <div>
-              <FieldLabel label="Spouse's Name (पति/पत्नीको नाम)" />
-              <TextInput value={form.spouseName} onChange={(v) => set('spouseName', v)} />
-            </div>
-            <div>
-              <FieldLabel label="Son's Name (छोराको नाम)" />
-              <TextInput value={form.sonName} onChange={(v) => set('sonName', v)} />
-            </div>
-            <div>
-              <FieldLabel label="Daughter's Name (छोरीको नाम)" />
-              <TextInput value={form.daughterName} onChange={(v) => set('daughterName', v)} />
-            </div>
-          </div>
-        </Section>
-
-        {/* ── Section E: Membership & Fee ──────────────── */}
-        <Section title="Membership & Fee (दुज़ तथा शुल्क)">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <FieldLabel label="Membership Type (दुज़)" />
-              <SearchSelect
-                value={form.membershipTypeId}
-                onChange={(v) => set('membershipTypeId', v)}
-                placeholder="— Select type —"
-                options={membershipTypes.map((t) => ({
-                  value: t.id,
-                  label: t.name,
-                  sublabel: fmt(t.fee),
-                }))}
-              />
-            </div>
-            <div>
-              <FieldLabel label="Application Date (BS)" sublabel="YYYY-MM-DD" />
-              <TextInput value={form.appliedDateBs} onChange={(v) => set('appliedDateBs', v)} placeholder="2082-05-15" />
-            </div>
-          </div>
-        </Section>
-
-        {/* ── Footer note ─────────────────────────────── */}
-        <div className="rounded border border-dashed border-slate-300 bg-slate-50 p-3 text-center text-xs text-slate-500">
-          दस्तखत: नागरिकताका फोटो कापि संलग्न यानादिस ।
-        </div>
-
-        {/* ── Save ────────────────────────────────────── */}
-        <div className="flex items-center gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="inline-flex h-[38px] items-center gap-1.5 rounded bg-crimson-600 px-5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
-          >
-            {saving ? 'Saving…' : editingMemberId ? 'Update Member' : 'Save Application'}
-          </button>
-          {editingMemberId && (
-            <button
-              type="button"
-              onClick={startNew}
-              className="text-sm text-slate-500 hover:text-slate-700"
-            >
-              Start New
-            </button>
-          )}
-        </div>
-      </form>
     </div>
   )
 }
