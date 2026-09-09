@@ -5,6 +5,7 @@ import { downloadCsv } from '../lib/csv'
 import { pushToast } from '../lib/toast'
 import { todayAD } from '../lib/nepaliDate'
 import { useTenant } from '../lib/tenant'
+import { useT } from '../lib/i18n'
 import NepaliDateInput from '../components/NepaliDateInput'
 
 type Account = {
@@ -31,6 +32,7 @@ type TransferGroup = {
 const today = todayAD
 
 export default function Transfers() {
+  const t = useT()
   const { tenants, isCentral } = useTenant()
 
   // ── Form state ──────────────────────────────────────────────────
@@ -171,7 +173,7 @@ export default function Transfers() {
   if (!isCentral) {
     return (
       <div className="py-12 text-center text-sm text-slate-400">
-        Cross-illaka transfers are performed by central roles only.
+        {t('transfers.title', 'Cross-Illaka Transfers')}
       </div>
     )
   }
@@ -181,12 +183,12 @@ export default function Transfers() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-800">Cross-Illaka Transfers</h1>
+        <h1 className="text-lg font-semibold text-slate-800">{t('transfers.title', 'Transfers')}</h1>
         <button
           onClick={() =>
             downloadCsv(
               'transfers.csv',
-              ['Ref', 'Date', 'Legs', 'Narration'],
+              ['Ref', t('common.date', 'Date'), 'Legs', t('journal.columnNarration', 'Narration')],
               groups.map((g) => [
                 g.ref,
                 g.date,
@@ -204,13 +206,13 @@ export default function Transfers() {
 
       {/* New transfer */}
       <form onSubmit={handleSubmit} className="rounded-lg border border-slate-200 bg-white p-4">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">New Transfer</h3>
+        <h3 className="mb-3 text-sm font-semibold text-slate-700">{t('transfers.newTransfer', 'New Transfer')}</h3>
         {error && (
           <p className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
         )}
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-6">
           <div className="lg:col-span-2">
-            <label className="mb-1 block text-xs font-medium text-slate-500">From Illaka</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">{t('transfers.fromIllaka', 'From illaka')}</label>
             <select value={fromTenant} onChange={(e) => setFromTenant(e.target.value)}
               className="h-[42px] w-full min-h-[42px] rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500">
               <option value="">Select illaka…</option>
@@ -220,7 +222,7 @@ export default function Transfers() {
             </select>
           </div>
           <div className="lg:col-span-2">
-            <label className="mb-1 block text-xs font-medium text-slate-500">To Illaka</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">{t('transfers.toIllaka', 'To illaka')}</label>
             <select value={toTenant} onChange={(e) => setToTenant(e.target.value)}
               className="h-[42px] w-full min-h-[42px] rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500">
               <option value="">Select illaka…</option>
@@ -230,17 +232,17 @@ export default function Transfers() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500">Amount (Rs)</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">{t('transfers.amount', 'Amount')} (Rs)</label>
             <input type="number" min={0} step={0.01} placeholder="0.00" value={amount}
               onChange={(e) => setAmount(e.target.value)}
               className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500">Date</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">{t('common.date', 'Date')}</label>
             <NepaliDateInput compact value={date} onChange={setDate} />
           </div>
           <div className="lg:col-span-2">
-            <label className="mb-1 block text-xs font-medium text-slate-500">From Account ({tenantLabel.get(fromTenant) ? `of ${tenantLabel.get(fromTenant)}` : 'select illaka'})</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">{t('common.account', 'From Account')} ({tenantLabel.get(fromTenant) ? `of ${tenantLabel.get(fromTenant)}` : 'select illaka'})</label>
             <select value={fromAccount} onChange={(e) => setFromAccount(e.target.value)} disabled={!fromTenant}
               className="h-[42px] w-full min-h-[42px] rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-400">
               <option value="">Select account…</option>
@@ -250,7 +252,7 @@ export default function Transfers() {
             </select>
           </div>
           <div className="lg:col-span-2">
-            <label className="mb-1 block text-xs font-medium text-slate-500">To Account ({tenantLabel.get(toTenant) ? `of ${tenantLabel.get(toTenant)}` : 'select illaka'})</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">{t('common.account', 'To Account')} ({tenantLabel.get(toTenant) ? `of ${tenantLabel.get(toTenant)}` : 'select illaka'})</label>
             <select value={toAccount} onChange={(e) => setToAccount(e.target.value)} disabled={!toTenant}
               className="h-[42px] w-full min-h-[42px] rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-400">
               <option value="">Select account…</option>
@@ -260,7 +262,7 @@ export default function Transfers() {
             </select>
           </div>
           <div className="lg:col-span-1">
-            <label className="mb-1 block text-xs font-medium text-slate-500">Narration</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">{t('journal.columnNarration', 'Narration')}</label>
             <input type="text" placeholder="Optional note…" value={narration}
               onChange={(e) => setNarration(e.target.value)}
               className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500" />
@@ -269,7 +271,7 @@ export default function Transfers() {
             <button type="submit" disabled={submitting}
               className="inline-flex h-[42px] w-full items-center justify-center gap-1.5 rounded bg-crimson-600 px-4 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
               <ArrowRight size={14} />
-              {submitting ? 'Posting…' : 'Transfer'}
+              {submitting ? t('vouchers.posting', 'Posting…') : t('transfers.newTransfer', 'Transfer')}
             </button>
           </div>
         </div>
@@ -278,21 +280,21 @@ export default function Transfers() {
       {/* Recent transfers */}
       <div className="rounded-lg border border-slate-200 bg-white">
         <div className="border-b border-slate-200 px-4 py-3 text-sm text-slate-500">
-          Recent transfers{loading ? '' : ` (${groups.length})`}
+          {t('transfers.title', 'Recent transfers')}{loading ? '' : ` (${groups.length})`}
         </div>
         {loading && groups.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-slate-400">Loading…</p>
         ) : groups.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-slate-400">No transfers yet.</p>
+          <p className="px-4 py-8 text-center text-sm text-slate-400">{t('transfers.noTransfers', 'No transfers yet.')}</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
               <tr>
                 <th className="px-4 py-3">Ref</th>
-                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">{t('common.date', 'Date')}</th>
                 <th className="px-4 py-3">Route</th>
-                <th className="px-4 py-3">Narration</th>
-                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">{t('journal.columnNarration', 'Narration')}</th>
+                <th className="px-4 py-3">{t('common.status', 'Status')}</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -316,7 +318,7 @@ export default function Transfers() {
                     <td className="max-w-[220px] truncate px-4 py-3 text-slate-500">{g.legs[0]?.narration || '—'}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${voided ? 'bg-slate-100 text-slate-500 line-through' : 'bg-emerald-100 text-emerald-700'}`}>
-                        {voided ? 'Reversed' : 'Posted'}
+                        {voided ? t('status.void', 'Reversed') : t('status.posted', 'Posted')}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">

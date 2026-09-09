@@ -8,6 +8,7 @@ import { useTenant, useTenantQuery } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
 import type { Account, AccountType, OpeningBalance } from '../lib/types'
 import DataStatus from '../components/DataStatus'
+import { useT } from '../lib/i18n'
 import { TableSkeleton } from '../components/Skeleton'
 import SearchBox from '../components/SearchBox'
 
@@ -35,6 +36,7 @@ export default function SetupOpeningBalances() {
   const tenantQuery = useTenantQuery()
   const { cacheVersion } = useSyncState()
     const { years, selectedYear, selectYear, loading: yearsLoading } = useFiscalYear()
+  const t = useT()
   const { formatDate } = useCalendar()
 
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -176,9 +178,9 @@ export default function SetupOpeningBalances() {
   if (!year) {
     return (
       <div className="mx-auto max-w-xl">
-        <h1 className="text-lg font-semibold text-slate-900">Opening Balances</h1>
+        <h1 className="text-lg font-semibold text-slate-900">{t('openingBalances.title', 'Opening Balances')}</h1>
         <p className="mt-4 text-sm text-slate-500">
-          Create a fiscal year in Settings before setting opening balances.
+          {t('openingBalances.noData', 'Create a fiscal year in Settings before setting opening balances.')}
         </p>
       </div>
     )
@@ -194,11 +196,11 @@ export default function SetupOpeningBalances() {
           >
             <ArrowLeft size={18} />
           </button>
-          <h1 className="text-lg font-semibold text-slate-900">Opening Balances</h1>
-        </div>
-      </div>
+          <h1 className="text-lg font-semibold text-slate-900">{t('openingBalances.title', 'Opening Balances')}</h1>
+                </div>
+              </div>
 
-      <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-500">
         Company-level opening balance for each account at the start of the selected fiscal year.
         For per-party opening balances, edit the party in <span className="font-medium">Parties</span>.
       </p>
@@ -255,10 +257,10 @@ export default function SetupOpeningBalances() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="px-4 py-2">Code</th>
-                    <th className="px-4 py-2">Name</th>
+                    <th className="px-4 py-2">{t('items.code', 'Code')}</th>
+                    <th className="px-4 py-2">{t('items.name', 'Name')}</th>
                     <th className="px-4 py-2">Group</th>
-                    <th className="px-4 py-2 text-right">Opening balance</th>
+                    <th className="px-4 py-2 text-right">{t('openingBalances.title', 'Opening balance')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -296,7 +298,7 @@ export default function SetupOpeningBalances() {
 
         {accounts.length === 0 && (
           <p className="mt-6 text-center text-sm text-slate-400">
-            No accounts yet. Set up your chart of accounts first.
+            {t('empty.noAccounts', 'No accounts yet.')}
           </p>
         )}
       </div>
@@ -308,7 +310,7 @@ export default function SetupOpeningBalances() {
           disabled={saving || !selectedYearId || Object.keys(errors).length > 0}
           className="flex items-center gap-1.5 rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40"
         >
-          <Save size={14} /> {saving ? 'Saving…' : 'Save Opening Balances'}
+          <Save size={14} /> {saving ? t('msg.saving', 'Saving…') : t('openingBalances.save', 'Save Opening Balances')}
         </button>
       </div>
     </div>

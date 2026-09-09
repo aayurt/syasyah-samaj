@@ -15,6 +15,7 @@ import { useCalendar } from '../lib/calendar'
 import { StatusPill } from './Dashboard'
 import SearchBox from '../components/SearchBox'
 import DataStatus from '../components/DataStatus'
+import { useT } from '../lib/i18n'
 import { TableSkeleton } from '../components/Skeleton'
 
 const ALL_TYPES = Object.entries(DOC_TYPE_LABELS).map(([value, label]) => ({ value, label }))
@@ -34,6 +35,7 @@ export default function Posting() {
     ...tenantQuery,
   })
   useSyncState()
+  const t = useT()
   const { formatDate } = useCalendar()
 
   const [type, setType] = useState('')
@@ -128,8 +130,8 @@ export default function Posting() {
     <div className="mx-auto max-w-6xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">Posting</h1>
-          <p className="text-sm text-slate-500">Review draft transactions and post them to the ledger.</p>
+          <h1 className="text-lg font-semibold text-slate-900">{t('posting.title', 'Posting')}</h1>
+          <p className="text-sm text-slate-500">{t('posting.selectEntry', 'Review draft transactions and post them to the ledger.')}</p>
         </div>
         <button
           onClick={postSelected}
@@ -137,7 +139,7 @@ export default function Posting() {
           className="flex items-center gap-1.5 rounded-md bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-800 disabled:opacity-40"
         >
           <CheckCheck size={15} />
-          {bulkLoading ? 'Posting…' : `Post ${selected.size} Draft${selected.size === 1 ? '' : 's'}`}
+          {bulkLoading ? t('posting.post', 'Posting…') : t('posting.post', 'Post')}
         </button>
       </div>
       <div className="mt-2"><DataStatus /></div>
@@ -161,10 +163,10 @@ export default function Posting() {
           onChange={(e) => { setType(e.target.value); setSelected(new Set()) }}
           className="w-48 rounded border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-amber-500 focus:outline-none"
         >
-          <option value="">All types</option>
+          <option value="">{t('common.all', 'All types')}</option>
           {ALL_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
-        <div className="w-64"><SearchBox value={q} onChange={setQ} placeholder="Search number, party, narration…" /></div>
+        <div className="w-64"><SearchBox value={q} onChange={setQ} placeholder={t('vouchers.searchPlaceholder', 'Search number, party, narration…')} /></div>
         <div className="text-xs text-slate-400">as of {formatDate(todayAD())}</div>
       </div>
 
@@ -176,13 +178,13 @@ export default function Posting() {
                 <th className="px-3 py-2">
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} className="accent-amber-700" />
                 </th>
-                <th className="px-3 py-2">Number</th>
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">Party</th>
-                <th className="px-3 py-2">Narration</th>
-                <th className="px-3 py-2 text-right">Amount</th>
-                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">{t('journal.columnNumber', 'Number')}</th>
+                <th className="px-3 py-2">{t('common.date', 'Date')}</th>
+                <th className="px-3 py-2">{t('common.type', 'Type')}</th>
+                <th className="px-3 py-2">{t('vouchers.columnParty', 'Party')}</th>
+                <th className="px-3 py-2">{t('journal.columnNarration', 'Narration')}</th>
+                <th className="px-3 py-2 text-right">{t('common.amount', 'Amount')}</th>
+                <th className="px-3 py-2">{t('common.status', 'Status')}</th>
                 <th className="px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>
@@ -215,7 +217,7 @@ export default function Posting() {
                         className="flex items-center gap-1 rounded border border-amber-600 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-40"
                       >
                         <FilePenLine size={12} />
-                        {busy.has(d.id) ? 'Posting…' : 'Post'}
+                        {busy.has(d.id) ? t('posting.post', 'Posting…') : t('posting.post', 'Post')}
                       </button>
                     </div>
                   </td>
@@ -224,7 +226,7 @@ export default function Posting() {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={9} className="px-3 py-10 text-center text-slate-400">
-                    {drafts.length === 0 ? 'No draft transactions — everything is posted.' : 'No drafts match your filters.'}
+                    {drafts.length === 0 ? t('posting.noEntries', 'No entries to post.') : t('posting.noEntries', 'No drafts match your filters.')}
                   </td>
                 </tr>
               )}

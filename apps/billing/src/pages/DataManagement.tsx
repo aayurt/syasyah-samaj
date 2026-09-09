@@ -12,6 +12,7 @@ import {
 import { api } from '../lib/api'
 import { DATA_COLLECTIONS, runCleanup, runSeedDemo } from '../lib/dataOps'
 import { useTenant } from '../lib/tenant'
+import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import type { BillingSettings } from '../lib/types'
 
@@ -54,6 +55,7 @@ const TYPED_CONFIRMATION = 'DELETE ALL TRANSACTIONS'
 
 export default function DataManagement() {
   const navigate = useNavigate()
+  const t = useT()
   const { tenantId, isCentral } = useTenant()
 
   const [settings, setSettings] = useState<BillingSettings | null>(null)
@@ -130,7 +132,7 @@ export default function DataManagement() {
       <div className="mb-6">
         <h1 className="flex items-center gap-2 text-xl font-semibold text-slate-800">
           <Database size={20} className="text-slate-400" />
-          Data Management
+          {t('dataManagement.title', 'Data Management')}
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           Destroy or bootstrap a tenant's transactional data. Masters (ilakas, accounts, parties,
@@ -145,7 +147,7 @@ export default function DataManagement() {
             <Trash2 size={20} />
           </div>
           <div className="flex-1">
-            <h2 className="text-base font-semibold text-slate-800">Cleanup data</h2>
+            <h2 className="text-base font-semibold text-slate-800">{t('dataManagement.title', 'Cleanup data')}</h2>
             <p className="mt-1 text-sm text-slate-500">
               Delete every voucher and ledger row for the selected tenant. Posted and voided
               documents are final (posting rules) and stay as history — void them in the Posting
@@ -206,7 +208,7 @@ export default function DataManagement() {
               className="inline-flex items-center gap-2 rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
             >
               {cleaning ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
-              {cleaning ? 'Cleaning…' : 'Cleanup data'}
+              {cleaning ? t('msg.saving', 'Cleaning…') : t('dataManagement.title', 'Cleanup data')}
             </button>
           </div>
         </div>
@@ -243,7 +245,7 @@ export default function DataManagement() {
             <Sparkles size={20} />
           </div>
           <div className="flex-1">
-            <h2 className="text-base font-semibold text-slate-800">Demo data</h2>
+            <h2 className="text-base font-semibold text-slate-800">{t('dataManagement.seedDemo', 'Demo data')}</h2>
             <p className="mt-1 text-sm text-slate-500">
               Bootstrap a starter chart of accounts, default mappings, a 13% VAT, sample parties
               and items, and 5 draft vouchers that land in the Posting queue — great for trying
@@ -266,7 +268,7 @@ export default function DataManagement() {
               className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
             >
               {seeding ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
-              {seeding ? 'Seeding…' : 'Add demo data'}
+              {seeding ? t('msg.saving', 'Seeding…') : t('dataManagement.seedDemo', 'Add demo data')}
             </button>
             {!tenantId && (
               <span className="text-xs text-slate-400">

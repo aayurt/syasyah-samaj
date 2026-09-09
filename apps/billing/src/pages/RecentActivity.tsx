@@ -14,6 +14,7 @@ import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
+import { useT } from '../lib/i18n'
 
 const DOC_LABELS: Record<string, string> = {
   'journal-voucher': 'Journal Entry',
@@ -88,6 +89,7 @@ export default function RecentActivity() {
   const navigate = useNavigate()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
+  const t = useT()
   const { formatDate } = useCalendar()
   const { cacheVersion } = useSyncState()
   const [rows, setRows] = useState<Activity[]>([])
@@ -170,7 +172,7 @@ export default function RecentActivity() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><ArrowLeft size={18} /></button>
-          <h1 className="text-lg font-semibold text-slate-900">Recent Activity</h1>
+          <h1 className="text-lg font-semibold text-slate-900">{t('recentActivity.title', 'Recent Activity')}</h1>
         </div>
       </div>
       <div className="mt-2"><DataStatus /></div>
@@ -180,7 +182,7 @@ export default function RecentActivity() {
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {loading && rows.length === 0 ? <ReportSkeleton sections={1} /> : (
         <div className="mt-4 space-y-5">
-          {rows.length === 0 && <p className="rounded-lg border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-400">No activity recorded yet.</p>}
+          {rows.length === 0 && <p className="rounded-lg border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-400">{t('recentActivity.noActivity', 'No recent activity.')}</p>}
           {Object.entries(groups).map(([day, dayRows]) => (
             <div key={day}>
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">

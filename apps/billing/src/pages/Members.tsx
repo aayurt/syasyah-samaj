@@ -10,6 +10,7 @@ import { pushToast } from '../lib/toast'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
+import { useT } from '../lib/i18n'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import SearchBox from '../components/SearchBox'
 import { DISTRICTS } from '../lib/districts'
@@ -894,6 +895,7 @@ function ApplicationForm({
 
 export default function Members() {
   const { cacheVersion } = useSyncState()
+  const t = useT()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const [members, setMembers] = useState<Member[]>([])
@@ -1089,7 +1091,7 @@ export default function Members() {
       {/* ── Header with segmented control ──────────────── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-slate-800">Members</h1>
+          <h1 className="text-lg font-semibold text-slate-800">{t('members.title', 'Members')}</h1>
           {/* Segmented control */}
           <div className="flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
             <button
@@ -1100,7 +1102,7 @@ export default function Members() {
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              <Table2 size={14} /> Table
+              <Table2 size={14} /> {t('members.table', 'Table')}
             </button>
             <button
               onClick={() => setViewMode('application')}
@@ -1110,7 +1112,7 @@ export default function Members() {
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              <FileText size={14} /> Application Form
+              <FileText size={14} /> {t('members.applicationForm', 'Application Form')}
             </button>
           </div>
         </div>
@@ -1130,9 +1132,9 @@ export default function Members() {
                 onClick={() => setShowForm(!showForm)}
                 className="flex items-center gap-1.5 rounded bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
               >
-                <Plus size={14} /> Add Member
+                <Plus size={14} /> {t('members.newMember', 'Add Member')}
               </button>
-              <SearchBox value={query} onChange={setQuery} placeholder="Search members…" />
+              <SearchBox value={query} onChange={setQuery} placeholder={t('members.title', 'Search members…')} />
             </>
           )}
         </div>
@@ -1154,7 +1156,7 @@ export default function Members() {
           {showForm && (
             <form onSubmit={handleCreate} className="rounded-lg border border-slate-200 bg-white p-4">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-700">New Member</h3>
+                <h3 className="text-sm font-semibold text-slate-700">{t('members.newMember', 'New Member')}</h3>
                 <button type="button" onClick={() => { setShowForm(false); setFormError('') }} className="text-slate-400 hover:text-slate-600">
                   <X size={16} />
                 </button>
@@ -1218,7 +1220,7 @@ export default function Members() {
                   type="submit" disabled={submitting}
                   className="inline-flex h-[38px] items-center gap-1.5 rounded bg-crimson-600 px-4 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
                 >
-                  {submitting ? 'Creating…' : 'Create Member'}
+                  {submitting ? t('msg.saving', 'Creating…') : t('members.newMember', 'Create Member')}
                 </button>
                 <button type="button" onClick={() => { setShowForm(false); setFormError('') }} className="text-sm text-slate-500 hover:text-slate-700">
                   Cancel
@@ -1231,7 +1233,7 @@ export default function Members() {
           {editingId && (
             <form onSubmit={handleUpdate} className="rounded-lg border border-crimson-200 bg-crimson-50/30 p-4">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-700">Edit Member</h3>
+                <h3 className="text-sm font-semibold text-slate-700">{t('members.title', 'Edit Member')}</h3>
                 <button type="button" onClick={() => setEditingId(null)} className="text-slate-400 hover:text-slate-600">
                   <X size={16} />
                 </button>
@@ -1293,7 +1295,7 @@ export default function Members() {
                   type="submit" disabled={editSubmitting}
                   className="inline-flex h-[38px] items-center gap-1.5 rounded bg-crimson-600 px-4 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
                 >
-                  {editSubmitting ? 'Saving…' : 'Save Changes'}
+                  {editSubmitting ? t('msg.saving', 'Saving…') : t('common.save', 'Save Changes')}
                 </button>
                 <button type="button" onClick={() => setEditingId(null)} className="text-sm text-slate-500 hover:text-slate-700">
                   Cancel
@@ -1307,19 +1309,19 @@ export default function Members() {
             <TableSkeleton rows={6} />
           ) : filtered.length === 0 ? (
             <div className="py-12 text-center text-sm text-slate-400">
-              {query ? 'No members match your search.' : 'No members yet.'}
+              {query ? t('members.noMembers', 'No members match your search.') : t('members.noMembers', 'No members yet.')}
             </div>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
               <table className="w-full text-sm">
                 <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                   <tr>
-                    <SortableTh label="Name" sortKey="fullName" sort={sort} onSort={toggleSort} />
-                    <SortableTh label="Email" sortKey="email" sort={sort} onSort={toggleSort} />
-                    <SortableTh label="Type" sortKey="membershipType" sort={sort} onSort={toggleSort} />
-                    <SortableTh label="Status" sortKey="paymentStatus" sort={sort} onSort={toggleSort} />
-                    <SortableTh label="Renewal" sortKey="renewalDate" sort={sort} onSort={toggleSort} />
-                    <SortableTh label="Updated" sortKey="updatedAt" sort={sort} onSort={toggleSort} />
+                    <SortableTh label={t('common.name', 'Name')} sortKey="fullName" sort={sort} onSort={toggleSort} />
+                    <SortableTh label={t('common.email', 'Email')} sortKey="email" sort={sort} onSort={toggleSort} />
+                    <SortableTh label={t('common.type', 'Type')} sortKey="membershipType" sort={sort} onSort={toggleSort} />
+                    <SortableTh label={t('common.status', 'Status')} sortKey="paymentStatus" sort={sort} onSort={toggleSort} />
+                    <SortableTh label={t('members.title', 'Renewal')} sortKey="renewalDate" sort={sort} onSort={toggleSort} />
+                    <SortableTh label={t('members.title', 'Updated')} sortKey="updatedAt" sort={sort} onSort={toggleSort} />
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -1357,7 +1359,7 @@ export default function Members() {
                               className="inline-flex items-center gap-1.5 rounded bg-crimson-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
                             >
                               <CreditCard size={12} />
-                              {paying === m.id ? 'Processing…' : 'Pay Fee'}
+                              {paying === m.id ? t('msg.saving', 'Processing…') : t('members.payFee', 'Pay Fee')}
                             </button>
                           )}
                           <div className="relative">
@@ -1376,20 +1378,20 @@ export default function Members() {
                                     onClick={() => startEdit(m)}
                                     className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
                                   >
-                                    <Edit3 size={12} /> Edit Member
+                                    <Edit3 size={12} /> {t('common.edit', 'Edit Member')}
                                   </button>
                                   <button
                                     onClick={() => handleDelete(m)}
                                     className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
                                   >
-                                    <Trash2 size={12} /> Delete Member
+                                    <Trash2 size={12} /> {t('common.delete', 'Delete Member')}
                                   </button>
                                   {m.lastReceipt && (
                                     <button
                                       onClick={() => { setOpenMenu(null); window.open(`/print/receipt/${m.lastReceipt!.id}`, '_blank') }}
                                       className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
                                     >
-                                      <Download size={12} /> View Receipt
+                                      <Download size={12} /> {t('common.view', 'View Receipt')}
                                     </button>
                                   )}
                                   <button
@@ -1397,7 +1399,7 @@ export default function Members() {
                                     disabled={paying === m.id || m.paymentStatus === 'paid'}
                                     className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
                                   >
-                                    <CreditCard size={12} /> Pay Fee
+                                    <CreditCard size={12} /> {t('members.payFee', 'Pay Fee')}
                                   </button>
                                 </div>
                               </>

@@ -5,6 +5,7 @@ import { api, fmt, list } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useT } from '../lib/i18n'
 import { todayAD } from '../lib/nepaliDate'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
@@ -76,6 +77,7 @@ export default function AuditLog() {
   const navigate = useNavigate()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
+  const t = useT()
   const { formatDate } = useCalendar()
   const [logs, setLogs] = useState<AuditLogEntry[]>([])
   const [total, setTotal] = useState(0)
@@ -124,7 +126,7 @@ export default function AuditLog() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><ArrowLeft size={18} /></button>
-          <h1 className="text-lg font-semibold text-slate-900">Audit Log</h1>
+          <h1 className="text-lg font-semibold text-slate-900">{t('audit.title', 'Audit Log')}</h1>
         </div>
         <div className="print:hidden flex items-center gap-2">
           <button onClick={csv} disabled={loading || logs.length === 0} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Download size={14} /> CSV</button>
@@ -166,15 +168,15 @@ export default function AuditLog() {
               {total} audit log{total !== 1 ? 's' : ''}
             </div>
             {logs.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-slate-400">No audit logs found.</p>
+              <p className="px-4 py-8 text-center text-sm text-slate-400">{t('audit.noLogs', 'No audit logs yet.')}</p>
             ) : (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="px-4 py-2">Timestamp</th>
-                    <th className="px-4 py-2">Action</th>
+                    <th className="px-4 py-2">{t('audit.timestamp', 'Timestamp')}</th>
+                    <th className="px-4 py-2">{t('audit.action', 'Action')}</th>
                     <th className="px-4 py-2">Entity</th>
-                    <th className="px-4 py-2">User</th>
+                    <th className="px-4 py-2">{t('audit.user', 'User')}</th>
                     <th className="px-4 py-2 w-8"></th>
                   </tr>
                 </thead>
@@ -216,7 +218,7 @@ export default function AuditLog() {
                 <div className="text-sm font-medium text-slate-700">
                   {log.action} · {log.entityType} · {log.entityLabel || log.entityId}
                 </div>
-                <button onClick={() => toggle(log.id)} className="text-xs text-slate-400 hover:text-slate-700">close</button>
+                <button onClick={() => toggle(log.id)} className="text-xs text-slate-400 hover:text-slate-700">{t('common.close', 'close')}</button>
               </div>
               <JsonDiff before={log.before} after={log.after} />
               {log.meta && (

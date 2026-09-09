@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CheckCircle, FileText, Plus, Receipt, Send, Trash2, XCircle, DollarSign } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import { todayAD } from '../lib/nepaliDate'
 import type { ExpenseClaim, Party, Account } from '../lib/types'
@@ -21,6 +22,7 @@ type LineDraft = { description: string; amount: string; accountId: string }
 
 export default function ExpenseClaims() {
   const tenantQuery = useTenantQuery()
+  const t = useT()
   const { isCentral } = useTenant()
 
   // ── List ───────────────────────────────────────────────────────
@@ -158,11 +160,11 @@ export default function ExpenseClaims() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-800">
           <Receipt size={18} className="mr-1.5 inline text-slate-400" />
-          Expense Claims
+          {t('expenseClaims.title', 'Expense Claims')}
         </h1>
         <button onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-1.5 rounded bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700">
-          <Plus size={14} /> New Claim
+          <Plus size={14} /> {t('expenseClaims.newClaim', 'New Claim')}
         </button>
       </div>
 
@@ -170,7 +172,7 @@ export default function ExpenseClaims() {
       {billableCount > 0 && (
         <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
           <DollarSign size={16} className="text-amber-600" />
-          <span className="text-sm text-amber-800">{billableCount} billable claim(s) ready to invoice</span>
+          <span className="text-sm text-amber-800">{billableCount} {t('expenseClaims.title', 'billable claim(s)')}</span>
           <div className="ml-auto w-48">
             <SearchSelect
               value={billingParty}
@@ -181,7 +183,7 @@ export default function ExpenseClaims() {
           </div>
           <button onClick={handleBillToCustomer} disabled={!billingParty || actionId === 'bill'}
             className="rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50">
-            {actionId === 'bill' ? 'Creating…' : 'Create Invoice'}
+            {actionId === 'bill' ? t('msg.saving', 'Creating…') : t('common.add', 'Create Invoice')}
           </button>
         </div>
       )}
@@ -201,29 +203,29 @@ export default function ExpenseClaims() {
       {/* ── Create form ──────────────────────────────────────── */}
       {showForm && (
         <form onSubmit={handleSubmit} className="rounded-lg border border-slate-200 bg-white p-4">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700">New Expense Claim</h3>
+          <h3 className="mb-3 text-sm font-semibold text-slate-700">{t('expenseClaims.newClaim', 'New Expense Claim')}</h3>
           {error && <p className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Claimant</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500">{t('expenseClaims.title', 'Claimant')}</label>
               <input value={claimant} onChange={(e) => setClaimant(e.target.value)} placeholder="Employee name"
                 className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Date</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500">{t('common.date', 'Date')}</label>
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
                 className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500" />
             </div>
             <div className="flex items-end gap-3">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={billable} onChange={(e) => setBillable(e.target.checked)} className="rounded" />
-                Billable to customer
+                {t('expenseClaims.title', 'Billable to customer')}
               </label>
             </div>
           </div>
           {billable && (
             <div className="mt-2">
-              <label className="mb-1 block text-xs font-medium text-slate-500">Customer</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500">{t('parties.customer', 'Customer')}</label>
               <SearchSelect
                 value={partyId}
                 onChange={setPartyId}
@@ -236,8 +238,8 @@ export default function ExpenseClaims() {
           {/* Lines */}
           <div className="mt-3">
             <div className="mb-1 flex items-center justify-between">
-              <label className="text-xs font-medium text-slate-500">Expense Lines</label>
-              <button type="button" onClick={addLine} className="text-xs text-crimson-600 hover:underline">+ Add line</button>
+              <label className="text-xs font-medium text-slate-500">{t('expenseClaims.title', 'Expense Lines')}</label>
+              <button type="button" onClick={addLine} className="text-xs text-crimson-600 hover:underline">{t('vouchers.addLine', '+ Add line')}</button>
             </div>
             <div className="space-y-2">
               {lines.map((line, i) => (
@@ -272,9 +274,9 @@ export default function ExpenseClaims() {
           <div className="mt-4 flex items-center gap-3">
             <button type="submit" disabled={submitting}
               className="inline-flex h-[42px] items-center gap-1.5 rounded bg-crimson-600 px-4 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
-              {submitting ? 'Creating…' : 'Create Claim'}
+              {submitting ? t('msg.saving', 'Creating…') : t('expenseClaims.newClaim', 'Create Claim')}
             </button>
-            <button type="button" onClick={() => { setShowForm(false); resetForm() }} className="text-sm text-slate-500 hover:text-slate-700">Cancel</button>
+            <button type="button" onClick={() => { setShowForm(false); resetForm() }} className="text-sm text-slate-500 hover:text-slate-700">{t('common.cancel', 'Cancel')}</button>
           </div>
         </form>
       )}
@@ -282,25 +284,25 @@ export default function ExpenseClaims() {
       {/* ── Claims list ──────────────────────────────────────── */}
       <div className="rounded-lg border border-slate-200 bg-white">
         <div className="border-b border-slate-200 px-4 py-3 text-sm text-slate-500">
-          Claims{loading ? '' : ` (${filtered.length})`}
+          {t('expenseClaims.title', 'Claims')}{loading ? '' : ` (${filtered.length})`}
         </div>
         {loading && claims.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-slate-400">Loading…</p>
         ) : filtered.length === 0 ? (
           <div className="px-4 py-12 text-center">
             <Receipt size={32} className="mx-auto mb-2 text-slate-300" />
-            <p className="text-sm text-slate-400">No expense claims yet.</p>
+            <p className="text-sm text-slate-400">{t('expenseClaims.noClaims', 'No expense claims yet.')}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
               <tr>
                 <th className="px-4 py-3">Number</th>
-                <th className="px-4 py-3">Claimant</th>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3 text-right">Amount</th>
-                <th className="px-4 py-3">Billable</th>
-                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">{t('expenseClaims.title', 'Claimant')}</th>
+                <th className="px-4 py-3">{t('common.date', 'Date')}</th>
+                <th className="px-4 py-3 text-right">{t('common.amount', 'Amount')}</th>
+                <th className="px-4 py-3">{t('expenseClaims.title', 'Billable')}</th>
+                <th className="px-4 py-3">{t('common.status', 'Status')}</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>

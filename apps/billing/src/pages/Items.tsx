@@ -11,6 +11,7 @@ import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
 import { useSearchParams } from 'react-router-dom'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useT } from '../lib/i18n'
 import type { Item, StockLedgerRow, StockLevel } from '../lib/types'
 
 const emptyForm = {
@@ -27,6 +28,7 @@ export default function Items() {
   const { cacheVersion } = useSyncState()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
+  const t = useT()
   const { formatDate } = useCalendar()
   const [items, setItems] = useState<Item[]>([])
   const [levels, setLevels] = useState<StockLevel[]>([])
@@ -200,10 +202,10 @@ export default function Items() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-900">Inventory</h1>
+        <h1 className="text-lg font-semibold text-slate-900">{t('items.title', 'Inventory')}</h1>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => downloadCsv('inventory.csv', ['Code', 'Name', 'Unit', 'Sale Price', 'Purchase Price', 'Reorder Level'],
+            onClick={() => downloadCsv('inventory.csv', [t('items.code', 'Code'), t('items.name', 'Name'), 'Unit', t('items.salePrice', 'Sale Price'), t('items.purchasePrice', 'Purchase Price'), t('items.reorderLevel', 'Reorder Level')],
               visible.map((i) => [i.code || '', i.name, i.unit || '', i.salePrice || 0, i.purchasePrice || 0, i.reorderLevel || 0]))
             }
             disabled={visible.length === 0}
@@ -216,7 +218,7 @@ export default function Items() {
             className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             <Plus size={14} />
-            New item
+            {t('items.newItem', 'New item')}
           </button>
         </div>
       </div>
@@ -230,7 +232,7 @@ export default function Items() {
       {low.length > 0 && (
         <div className="mt-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <TriangleAlert size={15} />
-          <span className="font-medium">Reorder needed:</span>
+          <span className="font-medium">{t('items.reorderLevel', 'Reorder needed:')}</span>
           <span>
             {low.map((l) => l.item.name).join(', ')} — on hand below reorder
             level.
@@ -244,11 +246,11 @@ export default function Items() {
           className="mt-4 rounded-lg border border-slate-200 bg-white p-4"
         >
           <h3 className="mb-3 text-sm font-semibold text-slate-700">
-            {editing ? 'Edit Item' : 'New Item'}
+            {editing ? t('common.edit', 'Edit') + ' ' + t('items.title', 'Item') : t('items.newItem', 'New Item')}
           </h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <label className="text-sm text-slate-700">
-              Name *
+              {t('items.name', 'Name')} *
               <input
                 required
                 value={form.name}
@@ -257,7 +259,7 @@ export default function Items() {
               />
             </label>
             <label className="text-sm text-slate-700">
-              Code
+              {t('items.code', 'Code')}
               <input
                 value={form.code}
                 onChange={(e) => setForm({ ...form, code: e.target.value })}
@@ -289,7 +291,7 @@ export default function Items() {
               />
             </label>
             <label className="text-sm text-slate-700">
-              Purchase price
+              {t('items.purchasePrice', 'Purchase price')}
               <input
                 type="number"
                 min="0"
@@ -302,7 +304,7 @@ export default function Items() {
               />
             </label>
             <label className="text-sm text-slate-700">
-              Sale price
+              {t('items.salePrice', 'Sale price')}
               <input
                 type="number"
                 min="0"
@@ -315,7 +317,7 @@ export default function Items() {
               />
             </label>
             <label className="text-sm text-slate-700">
-              Reorder level
+              {t('items.reorderLevel', 'Reorder level')}
               <input
                 type="number"
                 min="0"
@@ -334,14 +336,14 @@ export default function Items() {
               disabled={saving}
               className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
             >
-              {saving ? 'Saving…' : editing ? 'Update' : 'Save'}
+              {saving ? t('msg.saving', 'Saving…') : editing ? t('common.edit', 'Update') : t('common.save', 'Save')}
             </button>
             <button
               type="button"
               onClick={() => { setShowForm(false); setEditing(null); setStockLocked(false) }}
               className="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </button>
           </div>
         </form>
@@ -363,18 +365,18 @@ export default function Items() {
           <SearchBox
             value={query}
             onChange={setQuery}
-            placeholder="Search item, code, unit…"
+            placeholder={t('items.name', 'Search item…')}
           />
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <SortableTh label="Item" sortKey="name" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('items.name', 'Item')} sortKey="name" sort={sort} onSort={toggleSort} />
               <SortableTh label="Unit" sortKey="unit" sort={sort} onSort={toggleSort} />
               <SortableTh label="On hand" sortKey="onHand" sort={sort} onSort={toggleSort} align="right" />
               <SortableTh label="Avg cost" sortKey="avgCost" sort={sort} onSort={toggleSort} align="right" />
               <SortableTh label="Value" sortKey="value" sort={sort} onSort={toggleSort} align="right" />
-              <SortableTh label="Sale price" sortKey="salePrice" sort={sort} onSort={toggleSort} align="right" />
+              <SortableTh label={t('items.salePrice', 'Sale price')} sortKey="salePrice" sort={sort} onSort={toggleSort} align="right" />
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
@@ -382,7 +384,7 @@ export default function Items() {
             {visible.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
-                  No items yet — add your first inventory item.
+                  {t('items.noItems', 'No items yet.')}
                 </td>
               </tr>
             )}
@@ -430,17 +432,17 @@ export default function Items() {
                     <ActionMenu
                       items={[
                         {
-                          label: 'Edit',
+                          label: t('common.edit', 'Edit'),
                           icon: <Pencil size={13} />,
                           onClick: () => startEdit(it),
                         },
                         {
-                          label: 'Stock ledger',
+                          label: t('items.title', 'Stock ledger'),
                           icon: <TriangleAlert size={13} />,
                           onClick: () => showLedger(it),
                         },
                         {
-                          label: 'Delete',
+                          label: t('common.delete', 'Delete'),
                           icon: <Trash2 size={13} />,
                           danger: true,
                           onClick: () => remove(it.id),
@@ -471,7 +473,7 @@ export default function Items() {
               onClick={() => setLedgerItem(null)}
               className="text-xs text-slate-400 hover:text-slate-700"
             >
-              close
+              {t('common.close', 'close')}
             </button>
           </div>
           {ledger === null ? (
@@ -480,14 +482,14 @@ export default function Items() {
             </p>
           ) : ledger.rows.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-slate-400">
-              No stock movements yet.
+              {t('daybooks.noEntries', 'No stock movements yet.')}
             </p>
           ) : (
             <>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="px-4 py-2">Date</th>
+                    <th className="px-4 py-2">{t('common.date', 'Date')}</th>
                     <th className="px-4 py-2">Doc</th>
                     <th className="px-4 py-2 text-right">In</th>
                     <th className="px-4 py-2 text-right">Out</th>

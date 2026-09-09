@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, Copy } from 'lucide-react'
 import { authClient, isAdminUser } from '../lib/auth'
+import { useT } from '../lib/i18n'
 
 // Public demo credentials — shown on the login card so anyone can try the
 // app. To revoke, remove this demo user from the database (or change the
@@ -15,6 +16,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const t = useT()
   const [copied, setCopied] = useState<'email' | 'password' | null>(null)
 
   const copy = async (field: 'email' | 'password', value: string) => {
@@ -84,7 +86,7 @@ export default function Login() {
       >
         <h1 className="text-xl font-semibold text-slate-900">स्यस्यः धुकू</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Sign in with your admin account
+          {t('login.needAdmin', 'Sign in with your admin account')}
         </p>
 
         {/* ── Demo login (public) ─────────────────────────────── */}
@@ -141,7 +143,7 @@ export default function Login() {
           disabled={loading}
           className="mt-6 w-full rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
         >
-          {loading ? 'Signing in…' : 'Sign in'}
+          {loading ? t('login.loading', 'Signing in…') : t('login.notAuthorized', 'Sign in')}
         </button>
       </form>
     </div>

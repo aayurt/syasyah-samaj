@@ -4,6 +4,7 @@ import { api, fmt } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
 import { todayAD } from '../lib/nepaliDate'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import type { RecurringSchedule, RecurringFrequency, DocType, Party } from '../lib/types'
 import SearchSelect from '../components/SearchSelect'
@@ -36,6 +37,7 @@ type LineDraft = { description: string; qty: string; rate: string }
 export default function RecurringBilling() {
   const tenantQuery = useTenantQuery()
   const { tenants } = useTenant()
+  const t = useT()
   const { formatDate } = useCalendar()
 
   // ── Schedule list ──────────────────────────────────────────────
@@ -189,34 +191,34 @@ export default function RecurringBilling() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-800">
           <CalendarClock size={18} className="mr-1.5 inline text-slate-400" />
-          Recurring Billing
+          {t('recurringBilling.title', 'Recurring Billing')}
         </h1>
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-1.5 rounded bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
         >
           <Plus size={14} />
-          New Schedule
+          {t('recurringBilling.newSchedule', 'New Schedule')}
         </button>
       </div>
 
       {/* ── Create form ────────────────────────────────────── */}
       {showForm && (
         <form onSubmit={handleSubmit} className="rounded-lg border border-slate-200 bg-white p-4">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700">New Recurring Schedule</h3>
+          <h3 className="mb-3 text-sm font-semibold text-slate-700">{t('recurringBilling.newSchedule', 'New Recurring Schedule')}</h3>
           {error && (
             <p className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
           )}
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div className="md:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-slate-500">Schedule Name</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500">{t('recurringBilling.title', 'Schedule Name')}</label>
               <input
                 value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Monthly office rent"
                 className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Document Type</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500">{t('common.type', 'Document Type')}</label>
               <SearchSelect
                 value={docType}
                 onChange={(v) => setDocType(v as DocType)}
@@ -224,7 +226,7 @@ export default function RecurringBilling() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Frequency</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500">{t('recurringBilling.title', 'Frequency')}</label>
               <SearchSelect
                 value={frequency}
                 onChange={(v) => setFrequency(v as RecurringFrequency)}
@@ -232,12 +234,12 @@ export default function RecurringBilling() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Day of Month</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500">{t('recurringBilling.title', 'Day of Month')}</label>
               <input type="number" min={1} max={31} value={dayOfMonth} onChange={(e) => setDayOfMonth(e.target.value)}
                 className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Party</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500">{t('vouchers.columnParty', 'Party')}</label>
               <SearchSelect
                 value={partyId}
                 onChange={setPartyId}
@@ -246,12 +248,12 @@ export default function RecurringBilling() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Start Date</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500">{t('common.date', 'Start Date')}</label>
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
                 className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">End Date (optional)</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500">{t('common.date', 'End Date')} ({t('common.cancel', 'optional')})</label>
               <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
                 className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500" />
             </div>
@@ -265,9 +267,9 @@ export default function RecurringBilling() {
           {/* Line items */}
           <div className="mt-3">
             <div className="mb-1 flex items-center justify-between">
-              <label className="text-xs font-medium text-slate-500">Template Lines</label>
+              <label className="text-xs font-medium text-slate-500">{t('recurringBilling.title', 'Template Lines')}</label>
               <button type="button" onClick={addLine}
-                className="text-xs text-crimson-600 hover:underline">+ Add line</button>
+                className="text-xs text-crimson-600 hover:underline">{t('vouchers.addLine', '+ Add line')}</button>
             </div>
             <div className="space-y-2">
               {lines.map((line, i) => (
@@ -292,7 +294,7 @@ export default function RecurringBilling() {
           </div>
 
           <div className="mt-3">
-            <label className="mb-1 block text-xs font-medium text-slate-500">Narration</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500">{t('journal.columnNarration', 'Narration')}</label>
             <input value={narration} onChange={(e) => setNarration(e.target.value)} placeholder="Optional note…"
               className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500" />
           </div>
@@ -300,10 +302,10 @@ export default function RecurringBilling() {
           <div className="mt-4 flex items-center gap-3">
             <button type="submit" disabled={submitting}
               className="inline-flex h-[42px] items-center gap-1.5 rounded bg-crimson-600 px-4 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
-              {submitting ? 'Creating…' : 'Create Schedule'}
+              {submitting ? t('msg.saving', 'Creating…') : t('recurringBilling.newSchedule', 'Create Schedule')}
             </button>
             <button type="button" onClick={() => { setShowForm(false); resetForm() }}
-              className="text-sm text-slate-500 hover:text-slate-700">Cancel</button>
+              className="text-sm text-slate-500 hover:text-slate-700">{t('common.cancel', 'Cancel')}</button>
           </div>
         </form>
       )}
@@ -311,27 +313,27 @@ export default function RecurringBilling() {
       {/* ── Schedule list ──────────────────────────────────── */}
       <div className="rounded-lg border border-slate-200 bg-white">
         <div className="border-b border-slate-200 px-4 py-3 text-sm text-slate-500">
-          Schedules{loading ? '' : ` (${schedules.length})`}
+          {t('recurringBilling.title', 'Schedules')}{loading ? '' : ` (${schedules.length})`}
         </div>
         {loading && schedules.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-slate-400">Loading…</p>
         ) : schedules.length === 0 ? (
           <div className="px-4 py-12 text-center">
             <CalendarClock size={32} className="mx-auto mb-2 text-slate-300" />
-            <p className="text-sm text-slate-400">No recurring schedules yet.</p>
+            <p className="text-sm text-slate-400">{t('recurringBilling.noSchedules', 'No recurring schedules yet.')}</p>
             <p className="mt-1 text-xs text-slate-400">Create one to auto-generate invoices on a schedule.</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
               <tr>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Party</th>
-                <th className="px-4 py-3">Frequency</th>
-                <th className="px-4 py-3">Next Run</th>
-                <th className="px-4 py-3">Generated</th>
-                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">{t('common.name', 'Name')}</th>
+                <th className="px-4 py-3">{t('common.type', 'Type')}</th>
+                <th className="px-4 py-3">{t('vouchers.columnParty', 'Party')}</th>
+                <th className="px-4 py-3">{t('recurringBilling.title', 'Frequency')}</th>
+                <th className="px-4 py-3">{t('recurringBilling.title', 'Next Run')}</th>
+                <th className="px-4 py-3">{t('recurringBilling.title', 'Generated')}</th>
+                <th className="px-4 py-3">{t('common.status', 'Status')}</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>

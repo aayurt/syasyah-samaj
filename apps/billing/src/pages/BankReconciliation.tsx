@@ -5,6 +5,7 @@ import { api, fmt, list } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useT } from '../lib/i18n'
 import type { Account } from '../lib/types'
 import NepaliDateInput from '../components/NepaliDateInput'
 
@@ -49,6 +50,7 @@ export default function BankReconciliation() {
   const navigate = useNavigate()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
+  const t = useT()
   const { formatDate } = useCalendar()
 
   // Data
@@ -211,7 +213,7 @@ export default function BankReconciliation() {
             <ArrowLeft size={18} />
           </button>
           <h1 className="text-lg font-semibold text-slate-900">
-            Bank Reconciliation
+            {t('bankRec.title', 'Bank Reconciliation')}
           </h1>
         </div>
       </div>
@@ -225,7 +227,7 @@ export default function BankReconciliation() {
       {/* ── Account selector ───────────────────────────────────── */}
       <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
         <label className="text-sm font-medium text-slate-700">
-          Select Bank Account
+          {t('bankRec.title', 'Select Bank Account')}
         </label>
         <select
           value={selectedAccount}
@@ -254,7 +256,7 @@ export default function BankReconciliation() {
             <div className="flex items-center gap-2 mb-3">
               <Upload size={16} className="text-slate-400" />
               <h3 className="text-sm font-medium text-slate-700">
-                Import Bank Statement
+                {t('bankRec.import', 'Import Bank Statement')}
               </h3>
             </div>
             <p className="mb-3 text-xs text-slate-500">
@@ -304,7 +306,7 @@ export default function BankReconciliation() {
                 disabled={importing || !csvText.trim()}
                 className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
               >
-                {importing ? 'Importing…' : 'Import Statement'}
+                {importing ? t('msg.saving', 'Importing…') : t('bankRec.import', 'Import Statement')}
               </button>
               {importResult && (
                 <span className="text-sm text-emerald-600">
@@ -317,11 +319,11 @@ export default function BankReconciliation() {
           {/* ── Statements list ────────────────────────────────── */}
           <div className="mt-4 rounded-lg border border-slate-200 bg-white">
             <div className="border-b border-slate-200 px-4 py-3 text-sm font-medium text-slate-700">
-              Imported Statements ({statements.length})
+              {t('bankRec.import', 'Imported Statements')} ({statements.length})
             </div>
             {statements.length === 0 ? (
               <p className="px-4 py-6 text-center text-sm text-slate-400">
-                No statements imported yet. Paste CSV data above and click Import.
+                {t('bankRec.noData', 'No bank data yet.')}
               </p>
             ) : (
               <table className="w-full text-sm">
@@ -369,7 +371,7 @@ export default function BankReconciliation() {
                           disabled={reconciling}
                           className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-40"
                         >
-                          {reconciling ? 'Matching…' : 'Reconcile'}
+                          {reconciling ? t('msg.saving', 'Matching…') : t('bankRec.match', 'Reconcile')}
                         </button>
                       </td>
                     </tr>
@@ -385,7 +387,7 @@ export default function BankReconciliation() {
               <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                 <div>
                   <h3 className="text-sm font-medium text-slate-700">
-                    Statement Detail
+                    {t('bankRec.title', 'Statement Detail')}
                   </h3>
                   <p className="text-xs text-slate-400">
                     {selectedStatement.periodStart || '—'} to{' '}
@@ -418,7 +420,7 @@ export default function BankReconciliation() {
               {/* Summary bar */}
               <div className="grid grid-cols-4 gap-px border-b border-slate-200 bg-slate-200">
                 <div className="bg-white px-4 py-3 text-center">
-                  <div className="text-xs text-slate-500">Total Rows</div>
+                  <div className="text-xs text-slate-500">{t('aging.total', 'Total Rows')}</div>
                   <div className="font-mono text-sm font-semibold text-slate-800">
                     {stmtRows.length}
                   </div>
@@ -447,11 +449,11 @@ export default function BankReconciliation() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="px-4 py-2">Status</th>
-                    <th className="px-4 py-2">Date</th>
-                    <th className="px-4 py-2">Description</th>
-                    <th className="px-4 py-2">Reference</th>
-                    <th className="px-4 py-2 text-right">Amount</th>
+                    <th className="px-4 py-2">{t('common.status', 'Status')}</th>
+                    <th className="px-4 py-2">{t('common.date', 'Date')}</th>
+                    <th className="px-4 py-2">{t('vouchers.description', 'Description')}</th>
+                    <th className="px-4 py-2">{t('common.memo', 'Reference')}</th>
+                    <th className="px-4 py-2 text-right">{t('common.amount', 'Amount')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -499,7 +501,7 @@ export default function BankReconciliation() {
           {reconcileResult && (
             <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
               <h3 className="text-sm font-medium text-slate-700 mb-3">
-                Reconciliation Result
+                {t('bankRec.title', 'Reconciliation Result')}
               </h3>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div className="rounded-lg bg-emerald-50 p-3 text-center">
@@ -552,7 +554,7 @@ export default function BankReconciliation() {
                       disabled={creatingVouchers}
                       className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
                     >
-                      {creatingVouchers ? 'Creating…' : `Create ${reconcileResult.unmatched.length} Voucher(s)`}
+                      {creatingVouchers ? t('msg.saving', 'Creating…') : t('bankRec.import', 'Create Voucher(s)')}
                     </button>
                   </div>
                   <table className="w-full text-sm">
@@ -591,7 +593,7 @@ export default function BankReconciliation() {
 
               {reconcileResult.unmatched.length === 0 && (
                 <div className="mt-3 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                  ✓ All statement rows matched — reconciliation complete!
+                  {t('bankRec.match', '✓ All statement rows matched — reconciliation complete!')}
                 </div>
               )}
             </div>
@@ -601,7 +603,7 @@ export default function BankReconciliation() {
           {voucherResult && (
             <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
               <h3 className="text-sm font-medium text-slate-700 mb-3">
-                Vouchers Created
+                {t('vouchers.title', 'Vouchers Created')}
               </h3>
               <div className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700 mb-3">
                 ✓ Created {voucherResult.vouchers.length} voucher(s) totaling {fmt(voucherResult.totalAmount)}
@@ -640,7 +642,7 @@ export default function BankReconciliation() {
                   onClick={() => navigate('/vouchers')}
                   className="text-sm text-slate-600 hover:text-slate-800 hover:underline"
                 >
-                  → View all vouchers
+                  → {t('vouchers.title', 'View all vouchers')}
                 </button>
               </div>
             </div>

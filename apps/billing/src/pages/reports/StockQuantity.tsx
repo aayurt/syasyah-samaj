@@ -8,6 +8,7 @@ import { useCalendar } from '../../lib/calendar'
 import { useTenant, useTenantQuery } from '../../lib/tenant'
 import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
+import { useT } from '../../lib/i18n'
 import type { Item, StockLevel } from '../../lib/types'
 import NepaliDateInput from '../../components/NepaliDateInput'
 
@@ -41,6 +42,7 @@ export default function StockQuantity() {
   const navigate = useNavigate()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
+  const t = useT()
   const { formatDate } = useCalendar()
   const [rows, setRows] = useState<StockRow[]>([])
   const [loading, setLoading] = useState(false)
@@ -118,7 +120,7 @@ export default function StockQuantity() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/reports')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><ArrowLeft size={18} /></button>
-          <h1 className="text-lg font-semibold text-slate-900">Stock Quantity Report</h1>
+          <h1 className="text-lg font-semibold text-slate-900">{t('reports.stockQuantity', 'Stock Quantity') }</h1>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={csv} disabled={loading} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Download size={14} /> CSV</button>

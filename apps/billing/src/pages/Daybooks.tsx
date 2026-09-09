@@ -7,6 +7,7 @@ import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useT } from '../lib/i18n'
 import { useFiscalYear } from '../lib/fiscalYear'
 import { DOC_TYPE_LABELS } from '../lib/types'
 import type { DaybookResponse, DaybookType, Document } from '../lib/types'
@@ -35,6 +36,7 @@ export default function Daybooks() {
   const { formatDate } = useCalendar()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
+  const t = useT()
   const { selectedYear } = useFiscalYear()
 
   const openVoucher = async (docId: number | string | null | undefined) => {
@@ -143,7 +145,7 @@ export default function Daybooks() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold text-slate-900">Daybooks</h1>
+        <h1 className="text-lg font-semibold text-slate-900">{t('daybooks.title', 'Daybooks')}</h1>
         <div className="print:hidden flex items-center gap-2">
           <button
             onClick={csv}
@@ -188,11 +190,11 @@ export default function Daybooks() {
         ))}
         <span className="ml-auto flex items-center gap-3">
           <label className="text-sm text-slate-700">
-            From
+            {t('vouchers.from', 'From')}
             <NepaliDateInput compact value={from} onChange={(v) => setFrom(v)} />
           </label>
           <label className="text-sm text-slate-700">
-            To
+            {t('vouchers.to', 'To')}
             <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
           </label>
         </span>
@@ -215,14 +217,14 @@ export default function Daybooks() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Transaction</th>
-              <th className="px-4 py-2">Narration</th>
-              <th className="px-4 py-2">Account</th>
-              <th className="px-4 py-2 text-right">Debit</th>
-              <th className="px-4 py-2 text-right">Credit</th>
+              <th className="px-4 py-2">{t('common.date', 'Date')}</th>
+              <th className="px-4 py-2">{t('vouchers.columnType', 'Transaction')}</th>
+              <th className="px-4 py-2">{t('journal.columnNarration', 'Narration')}</th>
+              <th className="px-4 py-2">{t('common.account', 'Account')}</th>
+              <th className="px-4 py-2 text-right">{t('journal.columnDebit', 'Debit')}</th>
+              <th className="px-4 py-2 text-right">{t('journal.columnCredit', 'Credit')}</th>
               {isCash && (
-                <th className="px-4 py-2 text-right">Running</th>
+                <th className="px-4 py-2 text-right">{t('daybooks.title', 'Running')}</th>
               )}
             </tr>
           </thead>
@@ -233,7 +235,7 @@ export default function Daybooks() {
                   colSpan={isCash ? 7 : 6}
                   className="px-4 py-6 text-center text-slate-400"
                 >
-                  No postings in this daybook for the selected period.
+                  {t('daybooks.noEntries', 'No entries yet.')}
                 </td>
               </tr>
             )}
@@ -286,7 +288,7 @@ export default function Daybooks() {
                   colSpan={4}
                   className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
                 >
-                  Totals
+                  {t('vouchers.totals', 'Totals')}
                 </td>
                 <td className="px-4 py-2 text-right font-mono font-semibold text-slate-800">
                   {fmt(data.totals.debit)}

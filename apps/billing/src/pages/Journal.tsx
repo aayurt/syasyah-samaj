@@ -12,6 +12,7 @@ import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
 import { useSearchParams } from 'react-router-dom'
+import { useT } from '../lib/i18n'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
 import type { Account, Document, JournalEntry } from '../lib/types'
@@ -54,6 +55,7 @@ export default function Journal() {
   const [saving, setSaving] = useState(false)
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(false)
+  const t = useT()
   const { formatDate } = useCalendar()
 
   const load = async () => {
@@ -223,10 +225,10 @@ export default function Journal() {
   return (
     <div className="mx-auto max-w-5xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-900">Journal</h1>
+        <h1 className="text-lg font-semibold text-slate-900">{t('journal.title', 'Journal')}</h1>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => downloadCsv('journal.csv', ['Number', 'Date', 'Narration', 'Debit', 'Credit', 'Status'],
+            onClick={() => downloadCsv('journal.csv', [t('journal.columnNumber'), t('journal.columnDate'), t('journal.columnNarration'), t('journal.columnDebit'), t('journal.columnCredit'), t('journal.columnStatus')],
               filtered.map((e) => {
                 const lines = Array.isArray(e.lines) ? e.lines : []
                 const debit = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0)
@@ -244,7 +246,7 @@ export default function Journal() {
             className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             <Plus size={14} />
-            New entry
+            {t('common.add', 'New entry')}
           </button>
         </div>
       </div>
@@ -275,12 +277,12 @@ export default function Journal() {
               onChange={(v) => setForm({ ...form, date: v })}
             />
             <label className="col-span-2 text-sm text-slate-700 md:col-span-3">
-              Narration
+              {t('journal.columnNarration', 'Narration')}
               <input
                 value={form.narration}
                 onChange={(e) => setForm({ ...form, narration: e.target.value })}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                placeholder="e.g. Rent for March, member donation…"
+                placeholder={t('journal.searchPlaceholder', 'Search narration…')}
               />
             </label>
           </div>
@@ -289,10 +291,10 @@ export default function Journal() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="py-2 pr-2">Account</th>
-                  <th className="w-28 py-2 pr-2">Debit</th>
-                  <th className="w-28 py-2 pr-2">Credit</th>
-                  <th className="py-2 pr-2">Memo</th>
+                  <th className="py-2 pr-2">{t('common.account', 'Account')}</th>
+                  <th className="w-28 py-2 pr-2">{t('journal.columnDebit', 'Debit')}</th>
+                  <th className="w-28 py-2 pr-2">{t('journal.columnCredit', 'Credit')}</th>
+                  <th className="py-2 pr-2">{t('common.memo', 'Memo')}</th>
                   <th className="w-8 py-2"></th>
                 </tr>
               </thead>
@@ -308,7 +310,7 @@ export default function Journal() {
                         }
                         className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500"
                       >
-                        <option value="">— select account —</option>
+                        <option value="">{t('vouchers.selectAccount', '— select account —')}</option>
                         {accounts.map((a) => (
                           <option key={a.id} value={a.id}>
                             {a.code ? `${a.code} · ` : ''}
@@ -359,7 +361,7 @@ export default function Journal() {
                         type="button"
                         onClick={() => removeLine(l.key)}
                         className="text-slate-400 hover:text-red-600"
-                        aria-label="Remove line"
+                        aria-label={t('common.delete', 'Remove')}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -370,7 +372,7 @@ export default function Journal() {
               <tfoot>
                 <tr className="border-t border-slate-100">
                   <td className="py-2 pr-2 text-xs uppercase tracking-wide text-slate-500">
-                    Totals
+                    {t('vouchers.totals', 'Totals')}
                   </td>
                   <td className="py-2 pr-2 text-right font-mono text-slate-800">
                     {fmt(totals.debit)}
@@ -386,8 +388,8 @@ export default function Journal() {
                     }`}
                   >
                     {Math.abs(totals.diff) < 0.001
-                      ? '✓ balanced'
-                      : `difference ${fmt(totals.diff)}`}
+                      ? t('vouchers.balanced', '✓ balanced')
+                      : `${t('vouchers.difference', 'difference')} ${fmt(totals.diff)}`}
                   </td>
                   <td></td>
                 </tr>
@@ -403,7 +405,7 @@ export default function Journal() {
               }
               className="text-xs font-medium text-slate-500 hover:text-slate-800"
             >
-              + Add line
+              {t('vouchers.addLine', '+ Add line')}
             </button>
           </div>
 
@@ -414,7 +416,7 @@ export default function Journal() {
               disabled={saving || selectedYear?.status === 'closed'}
               className="rounded border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
-              {saving ? 'Saving…' : 'Save draft'}
+              {saving ? t('msg.saving', 'Saving…') : t('vouchers.saveDraft', 'Save draft')}
             </button>
             <button
               type="button"
@@ -423,18 +425,18 @@ export default function Journal() {
               className="rounded bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
               title={
                 Math.abs(totals.diff) >= 0.001
-                  ? 'Entry must be balanced to post'
-                  : 'Post this entry to the ledger'
+                  ? t('journal.title', 'Journal')
+                  : t('vouchers.post', 'Post')
               }
             >
-              Post
+              {t('vouchers.post', 'Post')}
             </button>
             <button
               type="button"
               onClick={() => setShowForm(false)}
               className="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </button>
           </div>
         </form>
@@ -447,7 +449,7 @@ export default function Journal() {
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="text-xs uppercase tracking-wide text-slate-500">
-            Filter
+            {t('common.filter', 'Filter')}
           </span>
           {['', 'draft', 'posted', 'void'].map((s) => (
             <button
@@ -459,14 +461,14 @@ export default function Journal() {
                   : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              {s === '' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+              {s === '' ? t('common.all', 'All') : s === 'draft' ? t('status.draft', 'Draft') : s === 'posted' ? t('status.posted', 'Posted') : s === 'void' ? t('status.void', 'Void') : s}
           </button>
           ))}
         </div>
         <SearchBox
           value={query}
           onChange={setQuery}
-          placeholder="Search narration…"
+          placeholder={t('journal.searchPlaceholder', 'Search narration…')}
         />
       </div>
 
@@ -474,12 +476,12 @@ export default function Journal() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <SortableTh label="Number" sortKey="docNumber" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Date" sortKey="date" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Narration" sortKey="narration" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Debit" sortKey="debit" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Credit" sortKey="credit" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Status" sortKey="status" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('journal.columnNumber', 'Number')} sortKey="docNumber" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('journal.columnDate', 'Date')} sortKey="date" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('journal.columnNarration', 'Narration')} sortKey="narration" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('journal.columnDebit', 'Debit')} sortKey="debit" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('journal.columnCredit', 'Credit')} sortKey="credit" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('journal.columnStatus', 'Status')} sortKey="status" sort={sort} onSort={toggleSort} />
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
@@ -487,7 +489,7 @@ export default function Journal() {
             {visible.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
-                  No entries.
+                  {t('journal.noEntries', 'No journal entries yet.')}
                 </td>
               </tr>
             )}
@@ -540,7 +542,7 @@ export default function Journal() {
                       <ActionMenu
                         items={[
                           {
-                            label: 'Void',
+                            label: t('status.void', 'Void'),
                             danger: true,
                             onClick: () => voidEntry(e.id),
                           },

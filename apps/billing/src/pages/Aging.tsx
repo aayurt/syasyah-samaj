@@ -8,6 +8,7 @@ import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useT } from '../lib/i18n'
 import type { AgingResponse, AgingRow } from '../lib/types'
 
 const BUCKETS = ['0-30', '31-60', '61-90', '90+'] as const
@@ -21,6 +22,7 @@ export default function Aging() {
   const [error, setError] = useState('')
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
+  const t = useT()
   const { formatDate } = useCalendar()
 
   const load = async (s: 'ar' | 'ap') => {
@@ -79,7 +81,7 @@ export default function Aging() {
     <div className="mx-auto max-w-6xl">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">
-          Aging — {sideLabel}
+          {t('aging.title', 'Aging')} — {sideLabel}
         </h1>
         <div className="flex items-center gap-2">
           <div className="flex gap-2">
@@ -93,7 +95,7 @@ export default function Aging() {
                     : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                {s === 'ar' ? 'Receivables' : 'Payables'}
+                {s === 'ar' ? t('aging.title', 'Receivables') : t('aging.title', 'Payables')}
               </button>
             ))}
           </div>
@@ -154,20 +156,20 @@ export default function Aging() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-4 py-2">Party</th>
+              <th className="px-4 py-2">{t('aging.party', 'Party')}</th>
               {BUCKETS.map((b) => (
                 <th key={b} className="px-4 py-2 text-right">
                   {b} days
                 </th>
               ))}
-              <th className="px-4 py-2 text-right">Total</th>
+              <th className="px-4 py-2 text-right">{t('aging.total', 'Total')}</th>
             </tr>
           </thead>
           <tbody>
             {(!data || data.parties.length === 0) && (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
-                  No open {side === 'ar' ? 'receivables' : 'payables'}.
+                  {t('bankRec.noData', 'No data yet.')}
                 </td>
               </tr>
             )}
@@ -221,7 +223,7 @@ export default function Aging() {
             <tfoot>
               <tr className="border-t border-slate-200 bg-slate-50">
                 <td className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                  Totals
+                  {t('aging.total', 'Totals')}
                 </td>
                 {BUCKETS.map((b) => (
                   <td
@@ -247,24 +249,24 @@ export default function Aging() {
         <div className="mt-6 rounded-lg border border-slate-200 bg-white">
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div className="text-sm font-medium text-slate-700">
-              Open documents — {rows[0]?.party.name ?? ''}
+              {t('bankRec.title', 'Open documents')} — {rows[0]?.party.name ?? ''}
             </div>
             <button
               onClick={() => setSelected(null)}
               className="text-xs text-slate-400 hover:text-slate-700"
             >
-              close
+              {t('common.close', 'close')}
             </button>
           </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-4 py-2">Number</th>
-                <th className="px-4 py-2">Type</th>
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2 text-right">Days</th>
-                <th className="px-4 py-2 text-right">Amount</th>
-                <th className="px-4 py-2">Bucket</th>
+                <th className="px-4 py-2">{t('journal.columnNumber', 'Number')}</th>
+                <th className="px-4 py-2">{t('common.type', 'Type')}</th>
+                <th className="px-4 py-2">{t('common.date', 'Date')}</th>
+                <th className="px-4 py-2 text-right">{t('aging.days30', 'Days')}</th>
+                <th className="px-4 py-2 text-right">{t('common.amount', 'Amount')}</th>
+                <th className="px-4 py-2">{t('aging.title', 'Bucket')}</th>
               </tr>
             </thead>
             <tbody>

@@ -19,6 +19,7 @@ import { useDataEpochWatcher, runSeedDemo, runSeedSelective, SEED_KEYS } from '.
 import type { SeedKey } from '../lib/dataOps'
 import { useFiscalYear } from '../lib/fiscalYear'
 import { useTenant } from '../lib/tenant'
+import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import { adToBsString } from '../lib/nepaliDate'
 import type { Account, BillingSettings, Document } from '../lib/types'
@@ -70,6 +71,7 @@ const CORE_DEFAULTS: { key: keyof BillingSettings; label: string }[] = [
 export default function SetupWizard() {
   useDataEpochWatcher()
   const navigate = useNavigate()
+  const t = useT()
   const { tenantId, isIllaka } = useTenant()
   const { years, refresh: refreshYears } = useFiscalYear()
 
@@ -319,7 +321,7 @@ export default function SetupWizard() {
       {/* Progress: numbered rail */}
       <div className="mb-8">
         <div className="text-center">
-          <h1 className="text-xl font-semibold text-slate-800">Get the books ready</h1>
+          <h1 className="text-xl font-semibold text-slate-800">{t('setup.title', 'Get the books ready')}</h1>
           <p className="mt-1 text-sm text-slate-500">
             Complete the required steps below before you start posting.
           </p>
@@ -593,7 +595,7 @@ export default function SetupWizard() {
             onClick={() => setStepIdx((i) => Math.max(i - 1, 0))}
             className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 disabled:opacity-40"
           >
-            <ArrowLeft size={15} /> Back
+            <ArrowLeft size={15} /> {t('setup.back', 'Back')}
           </button>
 
           <div className="flex items-center gap-2">
@@ -671,7 +673,7 @@ export default function SetupWizard() {
                 onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
                 className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
-                Next <ArrowRight size={15} />
+                {t('setup.next', 'Next')} <ArrowRight size={15} />
               </button>
             )}
           </div>
@@ -689,7 +691,7 @@ export default function SetupWizard() {
             onClick={finish}
             className="mt-2 rounded bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-700"
           >
-            Start using Billing
+            {t('setup.finish', 'Start using Billing')}
           </button>
         </div>
       )}
