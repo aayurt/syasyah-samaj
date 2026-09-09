@@ -1,8 +1,16 @@
 'use client'
 
 import React from 'react'
-import { motion } from 'framer-motion'
+import { motion, type MotionProps } from 'framer-motion'
 import { MapPin, Phone, Mail, Droplet, User as UserIcon } from 'lucide-react'
+
+// framer-motion@11.11.17 builds motion.div's prop types from React's `ReactHTML` /
+// `DetailedHTMLFactory`, which are no longer exported by @types/react@19. Under
+// skipLibCheck the broken import silently degrades and `motion.div` only accepts
+// MotionProps (no className). Re-attach the standard div attributes until the
+// framer-motion / @types/react pair is aligned.
+type MotionDivProps = MotionProps & React.HTMLAttributes<HTMLDivElement>
+const MotionDiv = motion.div as unknown as React.FC<MotionDivProps>
 
 interface DigitalIDCardProps {
   member: {
@@ -59,7 +67,7 @@ export const DigitalIDCard: React.FC<DigitalIDCardProps> = ({ member, issuedDate
   }
 
   return (
-    <motion.div
+    <MotionDiv
       initial={{ opacity: 0, scale: 0.9, rotateY: -15 }}
       animate={{ opacity: 1, scale: 1, rotateY: 0 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
@@ -126,6 +134,6 @@ export const DigitalIDCard: React.FC<DigitalIDCardProps> = ({ member, issuedDate
           <span className="text-xs font-bold text-warning">{validUntil || member.renewalDate || 'Lifetime'}</span>
         </div>
       </div>
-    </motion.div>
+    </MotionDiv>
   )
 }
