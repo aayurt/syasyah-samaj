@@ -755,6 +755,72 @@ export const JournalEntries: CollectionConfig = {
         }
       },
     },
+    // ── POST /api/journal-entries/:id/void ────────────────────────────
+    {
+      path: '/:id/void',
+      method: 'post',
+      handler: async (req) => {
+        if (!isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string
+        if (!id) {
+          return Response.json({ error: 'Missing entry id' }, { status: 400 })
+        }
+        try {
+          const body = (await req.json?.()) as { remark?: string }
+          const remark = body?.remark || ''
+          const entry = await req.payload.findByID({ collection: 'journal-entries', id, depth: 0, overrideAccess: true })
+          if (!entry) return Response.json({ error: 'Journal entry not found.' }, { status: 404 })
+          if ((entry as any).status !== 'posted') return Response.json({ error: `Cannot void entry with status "${(entry as any).status}". Only posted entries can be voided.` }, { status: 400 })
+          if (!remark) return Response.json({ error: 'A remark is required to void an entry.' }, { status: 400 })
+          const txn = await req.payload.db.beginTransaction()
+          const txId = txn ?? undefined
+          try {
+            const voidDate = new Date().toISOString().slice(0, 10)
+            const reversedLines = ((entry as any).lines || []).map((l: any) => ({ account: l.account, debit: l.credit || undefined, credit: l.debit || undefined, memo: `Reversal of entry #${id}` }))
+            const reversal = await req.payload.create({ collection: 'journal-entries', data: { date: voidDate, narration: `[VOID] ${(entry as any).narration || ''} — ${remark}`, status: 'posted', tenant: (entry as any).tenant, lines: reversedLines, referenceDoc: (entry as any).referenceDoc } as any, req: { transactionID: txId, overrideAccess: true } as any, overrideAccess: true })
+            await req.payload.update({ collection: 'journal-entries', id, data: { status: 'void', narration: `[VOID] ${(entry as any).narration || ''}` } as any, req: { transactionID: txId, overrideAccess: true } as any, overrideAccess: true })
+            try { await req.payload.create({ collection: 'audit-logs', overrideAccess: true, data: { action: 'void', entityType: 'journal-entries', entityId: String(id), entityLabel: `VOID entry #${id}`, tenant: (entry as any).tenant, userName: (req.user as any)?.email || 'system', userRole: (req.user as any)?.role || '', after: { originalId: id, reversalId: reversal.id, remark } } } as any) } catch { /* */ }
+            if (txId) await req.payload.db.commitTransaction(txId)
+            return Response.json({ message: 'Entry voided successfully', reversalId: reversal.id })
+          } catch (err) { try { if (txId) await req.payload.db.rollbackTransaction(txId) } catch { /* */ }; throw err }
+        } catch (err) { return Response.json({ error: (err as Error).message || 'Void failed' }, { status: 400 }) }
+      },
+    },
+    // ── POST /api/journal-entries/:id/reopen ──────────────────────────
+    {
+      path: '/:id/reopen',
+      method: 'post',
+      handler: async (req) => {
+        if (!isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string
+        if (!id) {
+          return Response.json({ error: 'Missing entry id' }, { status: 400 })
+        }
+        try {
+          const body = (await req.json?.()) as { remark?: string }
+          const remark = body?.remark || ''
+          const entry = await req.payload.findByID({ collection: 'journal-entries', id, depth: 0, overrideAccess: true })
+          if (!entry) return Response.json({ error: 'Journal entry not found.' }, { status: 404 })
+          if ((entry as any).status !== 'posted') return Response.json({ error: `Cannot reopen entry with status "${(entry as any).status}". Only posted entries can be reopened.` }, { status: 400 })
+          if (!remark) return Response.json({ error: 'A remark is required to reopen an entry.' }, { status: 400 })
+          const txn = await req.payload.db.beginTransaction()
+          const txId = txn ?? undefined
+          try {
+            const reopenDate = new Date().toISOString().slice(0, 10)
+            const reversedLines = ((entry as any).lines || []).map((l: any) => ({ account: l.account, debit: l.credit || undefined, credit: l.debit || undefined, memo: `Reversal of entry #${id}` }))
+            const reversal = await req.payload.create({ collection: 'journal-entries', data: { date: reopenDate, narration: `[REOPEN] ${(entry as any).narration || ''} — ${remark}`, status: 'posted', tenant: (entry as any).tenant, lines: reversedLines, referenceDoc: (entry as any).referenceDoc } as any, req: { transactionID: txId, overrideAccess: true } as any, overrideAccess: true })
+            await req.payload.update({ collection: 'journal-entries', id, data: { status: 'draft' } as any, req: { transactionID: txId, overrideAccess: true } as any, overrideAccess: true })
+            try { await req.payload.create({ collection: 'audit-logs', overrideAccess: true, data: { action: 'reopen', entityType: 'journal-entries', entityId: String(id), entityLabel: `REOPEN entry #${id}`, tenant: (entry as any).tenant, userName: (req.user as any)?.email || 'system', userRole: (req.user as any)?.role || '', after: { originalId: id, reversalId: reversal.id, remark } } } as any) } catch { /* */ }
+            if (txId) await req.payload.db.commitTransaction(txId)
+            return Response.json({ message: 'Entry reopened successfully', reversalId: reversal.id })
+          } catch (err) { try { if (txId) await req.payload.db.rollbackTransaction(txId) } catch { /* */ }; throw err }
+        } catch (err) { return Response.json({ error: (err as Error).message || 'Reopen failed' }, { status: 400 }) }
+      },
+    },
   ],
   hooks: {
     beforeValidate: [

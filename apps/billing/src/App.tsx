@@ -82,7 +82,7 @@ const navGroups: { title?: string; items: NavItem[] }[] = [
   {
     title: 'Bookkeeping',
     items: [
-      { to: '/vouchers', label: 'Transactions', icon: FileText },
+      { to: '/transaction-entry', label: 'Transaction Entry', icon: FileText },
       { to: '/journal', label: 'Journal', icon: BookOpenText },
       { to: '/transfers', label: 'Transfers', icon: ArrowLeftRight },
       { to: '/posting', label: 'Posting', icon: FileCheck2 },
@@ -459,6 +459,7 @@ function Shell({ email }: { email: string }) {
             <Route path="/" element={<Dashboard />} />
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/opening-balances" element={<SetupOpeningBalances />} />
+            <Route path="/transaction-entry" element={<Vouchers />} />
             <Route path="/vouchers" element={<Vouchers />} />
             <Route path="/vouchers/new" element={<VoucherForm mode="create" />} />
             <Route path="/vouchers/new/:docType" element={<VoucherForm mode="create" />} />

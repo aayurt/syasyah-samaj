@@ -20,6 +20,8 @@ import {
   Unlock,
   Wallet,
   X,
+  Type,
+  CalendarDays,
 } from 'lucide-react'
 import { api, fmt, protectGlobalsFields, useSyncState } from '../lib/api'
 import { authClient, clearCachedSession } from '../lib/auth'
@@ -116,6 +118,22 @@ function Section({
 }
 
 /* ─── Constants ────────────────────────────────────────────── */
+// Document type options for number series.
+// Duplicated from src/collections/DocSequences/index.ts (DOC_TYPE_OPTIONS).
+// Keep in sync with the backend source.
+const DOC_TYPE_OPTIONS = [
+  { label: 'Sales Invoice', value: 'sales-invoice' },
+  { label: 'Purchase Invoice', value: 'purchase-invoice' },
+  { label: 'Receipt Voucher', value: 'receipt-voucher' },
+  { label: 'Payment Voucher', value: 'payment-voucher' },
+  { label: 'Journal Voucher', value: 'journal-voucher' },
+  { label: 'Contra Voucher', value: 'contra-voucher' },
+  { label: 'Credit Note', value: 'credit-note' },
+  { label: 'Debit Note', value: 'debit-note' },
+  { label: 'GRN', value: 'grn' },
+  { label: 'Delivery Challan', value: 'delivery-challan' },
+]
+
 const ACCOUNT_FIELDS: { key: keyof BillingSettings; label: string }[] = [
   { key: 'receivableAccount', label: 'Accounts Receivable' },
   { key: 'payableAccount', label: 'Accounts Payable' },
@@ -282,10 +300,100 @@ export default function Settings() {
   const [defAccountsSaved, setDefAccountsSaved] = useState(false)
 
   // ── Doc sequences ──
-  const [sequences, setSequences] = useState<{ key: string; lastNumber: number; id?: number }[]>([])
+  // Full series records (docType, prefix, fiscalYearId, name, key, lastNumber, id).
+  // Used by the Number Series card for add/edit/delete.
+  const [sequences, setSequences] = useState<{
+    id: number
+    key: string
+    name: string
+    docType: string
+    prefix: string
+    fiscalYearId: number | null
+    fiscalYearLabel?: string | null
+    lastNumber: number
+  }[]>([])
   const [resetKey, setResetKey] = useState('')
   const [resetValue, setResetValue] = useState('')
   const [resetting, setResetting] = useState(false)
+
+  // ── Series form (add/edit modal) ──
+  const [seriesModalOpen, setSeriesModalOpen] = useState(false)
+  const [seriesEditingId, setSeriesEditingId] = useState<number | null>(null)
+  const [seriesSaving, setSeriesSaving] = useState(false)
+  const [seriesForm, setSeriesForm] = useState({
+    docType: '',
+    prefix: '',
+    fiscalYearId: '' as string,
+  })
+
+  const openSeriesNew = () => {
+    setSeriesForm({ docType: '', prefix: '', fiscalYearId: '' })
+    setSeriesEditingId(null)
+    setSeriesModalOpen(true)
+  }
+
+  const openSeriesEdit = (s: (typeof sequences)[0]) => {
+    setSeriesForm({
+      docType: s.docType,
+      prefix: s.prefix,
+      fiscalYearId: s.fiscalYearId ? String(s.fiscalYearId) : '',
+    })
+    setSeriesEditingId(s.id)
+    setSeriesModalOpen(true)
+  }
+
+  const closeSeriesModal = () => {
+    setSeriesModalOpen(false)
+    setSeriesEditingId(null)
+  }
+
+  const seriesSave = async () => {
+    if (!seriesForm.docType) {
+      pushToast('error', 'Missing doc type', 'Select a document type for the series.')
+      return
+    }
+    setSeriesSaving(true)
+    try {
+      const body: Record<string, unknown> = {
+        docType: seriesForm.docType,
+        prefix: seriesForm.prefix || undefined,
+      }
+      if (seriesForm.fiscalYearId) body.fiscalYear = Number(seriesForm.fiscalYearId)
+
+      if (seriesEditingId != null) {
+        // ── EDIT ──
+        await api(`/doc-sequences/${seriesEditingId}`, { method: 'PATCH', body })
+        pushToast('success', 'Series updated', DOC_TYPE_OPTIONS.find((o) => o.value === seriesForm.docType)?.label || seriesForm.docType)
+      } else {
+        // ── CREATE ──
+        await api('/doc-sequences', { method: 'POST', body })
+        pushToast('success', 'Series created', DOC_TYPE_OPTIONS.find((o) => o.value === seriesForm.docType)?.label || seriesForm.docType)
+      }
+      closeSeriesModal()
+      await loadSequences()
+      window.dispatchEvent(new Event('billing-settings-changed'))
+    } catch (err) {
+      pushToast('error', seriesEditingId != null ? 'Failed to update series' : 'Failed to create series', err instanceof Error ? err.message : String(err))
+    } finally {
+      setSeriesSaving(false)
+    }
+  }
+
+  const seriesDelete = async (s: (typeof sequences)[0]) => {
+    if (s.lastNumber > 0) {
+      pushToast('error', 'Cannot delete', 'Documents already posted using this series.')
+      return
+    }
+    if (!window.confirm(`Delete series "${s.name}"? This cannot be undone.`)) return
+    try {
+      await api(`/doc-sequences/${s.id}`, { method: 'DELETE' })
+      pushToast('success', 'Series deleted', s.name)
+      await loadSequences()
+      window.dispatchEvent(new Event('billing-settings-changed'))
+    } catch (err) {
+      pushToast('error', 'Failed to delete series', err instanceof Error ? err.message : String(err))
+    }
+  }
 
   // ── Error ──
   const [error, setError] = useState('')
@@ -352,11 +460,31 @@ export default function Settings() {
 
   const loadSequences = async () => {
     try {
-      const res = await api<{ docs: { key: string; lastNumber: number; id?: number }[] }>(
-        '/doc-sequences',
-        { query: { limit: 100, sort: 'key' } },
+      const res = await api<{
+        docs: {
+          id: number
+          key: string
+          name: string
+          docType: string
+          prefix: string
+          fiscalYear?: number | { id: number; label?: string | null } | null
+          lastNumber: number
+        }[]
+      }>('/doc-sequences', { query: { limit: 100, sort: 'key', depth: 1 } })
+      const docs = res.docs || []
+      setSequences(
+        docs.map((d) => ({
+          id: d.id,
+          key: d.key,
+          name: d.name || d.key,
+          docType: d.docType || '',
+          prefix: d.prefix || '',
+          fiscalYearId: d.fiscalYear && typeof d.fiscalYear === 'object' ? d.fiscalYear.id : typeof d.fiscalYear === 'number' ? d.fiscalYear : null,
+          fiscalYearLabel:
+            d.fiscalYear && typeof d.fiscalYear === 'object' ? d.fiscalYear.label ?? null : null,
+          lastNumber: d.lastNumber,
+        })),
       )
-      setSequences(res.docs || [])
     } catch { /* non-critical */ }
   }
 
@@ -1656,56 +1784,109 @@ export default function Settings() {
         )}
       </Section>
 
-      {/* ── 6. Transaction Numbering ─────────────────────────── */}
+      {/* ── 6. Number Series / क्रमांक शृंखला ─────────────────────── */}
       <Section
-        title="Transaction Numbering"
-        subtitle={sequences.length ? `${sequences.length} sequences` : 'No sequences yet'}
+        title="Number Series / क्रमांक शृंखला"
+        subtitle={sequences.length ? `${sequences.length} series` : 'No series yet — add one below'}
         icon={Hash}
         open={!!openSections.sequences}
         onToggle={() => toggle('sequences')}
       >
+        {/* Add button */}
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-xs text-slate-400">
+            {sequences.length} series · Prefix per document type · FY-scoped series reset each year
+          </span>
+          <button
+            type="button"
+            onClick={openSeriesNew}
+            className="flex items-center gap-1.5 rounded-md bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
+          >
+            <Plus size={14} /> Add Series
+          </button>
+        </div>
+
+        {/* Series table */}
         {sequences.length === 0 ? (
-          <p className="text-sm text-slate-400">
-            No sequences yet. Numbers are created automatically when transactions are posted.
-          </p>
+          <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
+            No number series defined yet. Click <span className="font-medium">Add Series</span> to create one.
+            Each series assigns a prefix to a document type — e.g. <span className="font-mono">SI-</span> for Sales Invoice.
+          </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-3 py-2">Key</th>
-                <th className="px-3 py-2">Doc Type</th>
-                <th className="px-3 py-2">Fiscal Year</th>
-                <th className="px-3 py-2 text-right">Last</th>
-                <th className="px-3 py-2 text-right">Next</th>
-                <th className="px-3 py-2 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sequences.map((seq) => {
-                const [docType, fy] = seq.key.split(':')
-                return (
-                  <tr key={seq.key} className="border-b border-slate-50 last:border-0">
-                    <td className="px-3 py-2 font-mono text-xs text-slate-600">{seq.key}</td>
-                    <td className="px-3 py-2 text-slate-700">{docType || '—'}</td>
-                    <td className="px-3 py-2 text-slate-600">{fy || '—'}</td>
-                    <td className="px-3 py-2 text-right font-mono text-slate-800">{seq.lastNumber}</td>
-                    <td className="px-3 py-2 text-right font-mono font-medium text-emerald-700">
-                      {seq.lastNumber + 1}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <button
-                        onClick={() => { setResetKey(seq.key); setResetValue('0') }}
-                        className="flex items-center gap-1 rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50"
-                      >
-                        <RotateCcw size={10} /> Reset
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto rounded border border-slate-200">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <th className="px-3 py-2">Name</th>
+                  <th className="px-3 py-2">Doc Type</th>
+                  <th className="px-3 py-2">Prefix</th>
+                  <th className="px-3 py-2">FY</th>
+                  <th className="px-3 py-2 text-right">Last #</th>
+                  <th className="px-3 py-2 text-right">Next #</th>
+                  <th className="px-3 py-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sequences.map((s) => {
+                  const next = s.lastNumber + 1
+                  return (
+                    <tr key={s.id} className="border-b border-slate-100 last:border-0">
+                      <td className="px-3 py-2 font-medium text-slate-800">{s.name}</td>
+                      <td className="px-3 py-2">
+                        <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                          <Type size={10} />
+                          {DOC_TYPE_OPTIONS.find((o) => o.value === s.docType)?.label || s.docType}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 font-mono text-xs text-slate-600">
+                        {s.prefix || '<none>'}
+                      </td>
+                      <td className="px-3 py-2 text-slate-600">
+                        {s.fiscalYearLabel || s.fiscalYearId ? (
+                          <span className="inline-flex items-center gap-1 text-xs">
+                            <CalendarDays size={10} className="text-slate-400" />
+                            {s.fiscalYearLabel || `FY ${s.fiscalYearId}`}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400">Global</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono text-slate-800">{s.lastNumber}</td>
+                      <td className="px-3 py-2 text-right font-mono font-medium text-emerald-700">{next}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openSeriesEdit(s)}
+                            title="Edit series"
+                            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => seriesDelete(s)}
+                            disabled={s.lastNumber > 0}
+                            title={s.lastNumber > 0 ? 'Cannot delete — documents already posted using this series.' : 'Delete series'}
+                            className={`rounded p-1 transition-colors ${
+                              s.lastNumber > 0
+                                ? 'text-slate-300 cursor-not-allowed'
+                                : 'text-slate-400 hover:bg-red-50 hover:text-red-500'
+                            }`}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
+
+        {/* Reset bar (existing functionality) */}
         {resetKey && (
           <div className="mt-3 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
             <span className="text-sm text-slate-700">
@@ -1748,7 +1929,107 @@ export default function Settings() {
             </button>
           </div>
         )}
+
+        <p className="mt-3 text-xs text-slate-400">
+          Series determine document numbers like <span className="font-mono">{DOC_TYPE_OPTIONS[0].label}</span> →{' '}
+          <span className="font-mono">SI-2083-84-0001</span>. FY-scoped series reset each fiscal year.
+          Series with posted documents cannot be deleted.
+        </p>
       </Section>
+
+      {/* ── Add / Edit Series Modal ─────────────────────────── */}
+      {seriesModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-slate-800">
+                {seriesEditingId != null ? 'Edit Series' : 'Add Series'}
+              </h3>
+              <button
+                type="button"
+                onClick={closeSeriesModal}
+                className="rounded p-1 text-slate-400 hover:bg-slate-100"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {/* Doc Type — required */}
+              <div>
+                <label className="mb-1.5 block text-sm text-slate-600">
+                  Document Type <span className="text-red-500">*</span>
+                </label>
+                <SearchSelect
+                  value={seriesForm.docType}
+                  onChange={(v) => setSeriesForm((f) => ({ ...f, docType: v }))}
+                  placeholder="— select document type —"
+                  options={DOC_TYPE_OPTIONS}
+                />
+              </div>
+
+              {/* Prefix */}
+              <div>
+                <label className="mb-1.5 block text-sm text-slate-600">Prefix</label>
+                <input
+                  type="text"
+                  value={seriesForm.prefix}
+                  onChange={(e) => setSeriesForm((f) => ({ ...f, prefix: e.target.value }))}
+                  placeholder={DOC_TYPE_OPTIONS.find((o) => o.value === seriesForm.docType)?.label || ''}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 h-[38px]"
+                />
+                {seriesForm.docType && (
+                  <p className="mt-1 text-xs text-slate-400">
+                    Example:{' '}
+                    <span className="font-mono">
+                      {seriesForm.prefix || 'SI-'}{' '}
+                      {DOC_TYPE_OPTIONS.find((o) => o.value === seriesForm.docType)?.label}
+                    </span>
+                  </p>
+                )}
+              </div>
+
+              {/* Fiscal Year — optional */}
+              <div>
+                <label className="mb-1.5 block text-sm text-slate-600">
+                  Fiscal Year <span className="text-slate-300">(optional)</span>
+                </label>
+                <div className="mt-1">
+                  <SearchSelect
+                    value={seriesForm.fiscalYearId}
+                    onChange={(v) => setSeriesForm((f) => ({ ...f, fiscalYearId: v }))}
+                    placeholder="— global counter (no FY) —"
+                    options={fiscalYears.map((fy) => ({
+                      value: String(fy.id),
+                      label: fy.label || `FY ${fy.startDate}`,
+                      sublabel: fy.status === 'closed' ? 'closed' : 'active',
+                    }))}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-slate-400">
+                  If set, this series resets each fiscal year. Leave empty for a global counter that never resets.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeSeriesModal}
+                className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void seriesSave()}
+                disabled={seriesSaving}
+                className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+              >
+                {seriesSaving ? 'Saving…' : seriesEditingId != null ? 'Save Changes' : 'Create Series'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 7. Account ───────────────────────────────────────── */}
       <Section

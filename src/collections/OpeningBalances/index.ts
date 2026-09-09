@@ -80,6 +80,158 @@ export const OpeningBalances: CollectionConfig = {
         return Response.json({ docs, total: docs.length })
       },
     },
+    // ── POST /api/opening-balances/save-wizard ────────────────────────
+    // Bulk save opening balances from the wizard UI.
+    {
+      path: '/save-wizard',
+      method: 'post',
+      handler: async (req) => {
+        if (!isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        try {
+          const body = (await req.json?.()) as {
+            fiscalYear: number
+            tenant: number
+            balances: Array<{ account: number; amount: number }>
+          }
+          if (!body.fiscalYear || !body.tenant || !Array.isArray(body.balances)) {
+            return Response.json({ error: 'fiscalYear, tenant, and balances array are required.' }, { status: 400 })
+          }
+
+          // Validate: debits must equal credits (sum of all amounts should be ~0)
+          const totalDebit = body.balances
+            .filter((b) => b.amount > 0)
+            .reduce((sum, b) => sum + round2(b.amount), 0)
+          const totalCredit = body.balances
+            .filter((b) => b.amount < 0)
+            .reduce((sum, b) => sum + round2(Math.abs(b.amount)), 0)
+          if (Math.abs(totalDebit - totalCredit) > 0.01) {
+            return Response.json({
+              error: `Opening balances are not balanced: debits ${totalDebit.toFixed(2)} vs credits ${totalCredit.toFixed(2)}. Difference: ${Math.abs(totalDebit - totalCredit).toFixed(2)}`,
+              totalDebit,
+              totalCredit,
+              difference: round2(Math.abs(totalDebit - totalCredit)),
+            }, { status: 400 })
+          }
+
+          // Check fiscal year is not closed
+          const fy = await req.payload.findByID({
+            collection: 'fiscal-years',
+            id: body.fiscalYear,
+            depth: 0,
+            overrideAccess: true,
+          })
+          if (!fy) {
+            return Response.json({ error: 'Fiscal year not found.' }, { status: 404 })
+          }
+          if ((fy as any).status === 'closed') {
+            return Response.json({ error: 'Cannot set opening balances for a closed fiscal year.' }, { status: 400 })
+          }
+
+          // Delete existing balances for this FY + tenant, then insert new ones
+          const existing = await req.payload.find({
+            collection: 'opening-balances',
+            where: {
+              and: [
+                { fiscalYear: { equals: body.fiscalYear } },
+                { tenant: { equals: body.tenant } },
+              ],
+            },
+            limit: 1000,
+            depth: 0,
+            overrideAccess: true,
+          })
+
+          let saved = 0
+          let skipped = 0
+
+          // Remove existing entries
+          for (const doc of existing.docs as any[]) {
+            await req.payload.delete({
+              collection: 'opening-balances',
+              id: doc.id,
+              overrideAccess: true,
+            })
+          }
+
+          // Insert new entries (only non-zero balances)
+          for (const b of body.balances) {
+            if (Math.abs(b.amount) < 0.01) {
+              skipped++
+              continue
+            }
+            await req.payload.create({
+              collection: 'opening-balances',
+              data: {
+                account: b.account,
+                fiscalYear: body.fiscalYear,
+                amount: round2(b.amount),
+                tenant: body.tenant,
+              } as any,
+              overrideAccess: true,
+            })
+            saved++
+          }
+
+          return Response.json({
+            message: `Opening balances saved: ${saved} accounts, ${skipped} zero-balance skipped.`,
+            saved,
+            skipped,
+            totalDebit,
+            totalCredit,
+          })
+        } catch (err) {
+          return Response.json({ error: (err as Error).message || 'Save failed' }, { status: 400 })
+        }
+      },
+    },
+    // ── GET /api/opening-balances/validate ────────────────────────────
+    // Check if opening balances are balanced for a fiscal year.
+    {
+      path: '/validate',
+      method: 'get',
+      handler: async (req) => {
+        if (!isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const { searchParams } = new URL(req.url || '/')
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
+        const year = searchParams.get('fiscalYear')
+          ? Number(searchParams.get('fiscalYear'))
+          : undefined
+
+        if (!year) {
+          return Response.json({ error: 'fiscalYear parameter is required.' }, { status: 400 })
+        }
+
+        const where: any = { fiscalYear: { equals: year } }
+        if (tenant) where.tenant = { equals: tenant }
+
+        const res = await req.payload.find({
+          collection: 'opening-balances',
+          where,
+          limit: 1000,
+          depth: 0,
+        })
+
+        const totalDebit = (res.docs as any[])
+          .filter((d) => toNum(d.amount) > 0)
+          .reduce((sum, d) => sum + round2(toNum(d.amount)), 0)
+        const totalCredit = (res.docs as any[])
+          .filter((d) => toNum(d.amount) < 0)
+          .reduce((sum, d) => sum + round2(Math.abs(toNum(d.amount))), 0)
+
+        const balanced = Math.abs(totalDebit - totalCredit) <= 0.01
+        return Response.json({
+          balanced,
+          totalDebit: round2(totalDebit),
+          totalCredit: round2(totalCredit),
+          difference: round2(Math.abs(totalDebit - totalCredit)),
+          accountCount: (res.docs as any[]).length,
+        })
+      },
+    },
   ],
   fields: [
     {

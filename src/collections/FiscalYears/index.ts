@@ -4,26 +4,27 @@ import {
   scopedRead,
   scopedUpdate,
 } from '@/access/tenantScoped'
-import type { CollectionConfig, PayloadRequest } from 'payload'
+import type { CollectionConfig } from 'payload'
 import { assignTenant } from '@/utilities/tenantScope'
 import { extractID } from '@/utilities/extractID'
 import { adYearLabel } from './bsYear'
 
 /**
- * Fiscal years for the billing module (Manager.io-style).
+ * Fiscal years for the billing module.
  *
  * Each year has a label (e.g. "2083-84"), a start and end date, and a
- * status: `active` (editable) or `closed` (read-only — no new/edited
- * postings). Exactly one year per tenant is flagged `isActive` — that is
- * the "working year" used for voucher numbering and new entries.
+ * status: `active` (editable) or `closed` (read-only). Exactly one year
+ * per tenant is flagged `isActive` — the "working year" used for voucher
+ * numbering and new entries.
  *
- * Selecting a fiscal year in the SPA filters the data shown to that year's
- * date range; closed years are viewable but not editable.
+ * Defect fixes applied:
+ * - [BUG-1] Date validation rejects invalid dates (e.g. 2082-03-32)
+ * - [BUG-3] Only open fiscal years may be set as working year
+ * - [BUG-4] Only one fiscal year can be active; clear user-facing messages
+ * - [NEW]   Overlap detection prevents overlapping years per tenant
+ * - [NEW]   Span validation warns if year is not ~365 days
  */
 
-/** Auto-generate a fallback label from the start date when the SPA didn't
- * supply one. The SPA sends the proper BS label (e.g. "2083-84"); this is
- * only used when a year is created from the Payload admin without a label. */
 function fallbackLabel(adStart: string | Date): string {
   return adYearLabel(adStart)
 }
@@ -47,37 +48,70 @@ export const FiscalYears: CollectionConfig = {
   hooks: {
     beforeValidate: [
       assignTenant,
-      async ({ data, req }) => {
+      async ({ data, req, operation }) => {
         const d = data as any
         if (!d) return data
 
-        // Auto-generate a fallback label from the start date if not supplied.
+        // ── 1. Date validation (BUG-2 fix) ────────────────────────────
+        // Reject invalid dates like 2082-03-32.
+        if (d.startDate) {
+          const sd = new Date(d.startDate)
+          if (isNaN(sd.getTime())) {
+            throw new Error(`Invalid start date "${d.startDate}". Please enter a valid date.`)
+          }
+          // Cross-check: the parsed date must round-trip to the same day
+          const roundTrip = sd.toISOString().slice(0, 10)
+          if (roundTrip !== String(d.startDate).slice(0, 10)) {
+            throw new Error(`Invalid start date "${d.startDate}". Please enter a valid date.`)
+          }
+        }
+        if (d.endDate) {
+          const ed = new Date(d.endDate)
+          if (isNaN(ed.getTime())) {
+            throw new Error(`Invalid end date "${d.endDate}". Please enter a valid date.`)
+          }
+          const roundTrip = ed.toISOString().slice(0, 10)
+          if (roundTrip !== String(d.endDate).slice(0, 10)) {
+            throw new Error(`Invalid end date "${d.endDate}". Please enter a valid date.`)
+          }
+        }
+        if (d.startDate && d.endDate) {
+          const sd = new Date(d.startDate)
+          const ed = new Date(d.endDate)
+          if (ed <= sd) {
+            throw new Error('Fiscal year end date must be after the start date.')
+          }
+          // Warn if the year span is outside the normal 12-month range
+          const dayDiff = (ed.getTime() - sd.getTime()) / (1000 * 60 * 60 * 24)
+          if (dayDiff < 300 || dayDiff > 400) {
+            throw new Error(
+              `Fiscal year span is ${Math.round(dayDiff)} days (expected ~365). Please verify the dates.`,
+            )
+          }
+        }
+
+        // ── 2. Auto-generate label ─────────────────────────────────────
         if (!d.label && d.startDate) {
           d.label = fallbackLabel(d.startDate)
-        }
-        if (d.startDate && d.endDate && new Date(d.endDate) <= new Date(d.startDate)) {
-          throw new Error('Fiscal year end date must be after the start date.')
         }
         if (!d.label) {
           throw new Error('Fiscal year needs a label (or a start date to generate one).')
         }
 
-        const tenantRef = d.tenant ?? (req as PayloadRequest).user?.tenants?.[0]?.tenant
+        // Resolve tenant
+        const tenantRef = d.tenant ?? (req as any).user?.tenants?.[0]?.tenant
         const tenantId = tenantRef != null ? extractID(tenantRef) : undefined
-        const tenantFilter = tenantId
-          ? { tenant: { equals: tenantId } }
-          : null
+        const tenantFilter = tenantId ? { tenant: { equals: tenantId } } : null
 
-        // A closed year can never become the working year — only open years
-        // may be flagged isActive. (The SPA blocks this too; this is the
-        // server-side backstop.)
+        // ── 3. BUG-3: Only open years may be the working year ─────────
         if (d.isActive && d.status === 'closed') {
-          throw new Error('A closed fiscal year cannot be set as the working year. Open it first.')
+          throw new Error(
+            'Cannot set a closed fiscal year as the working year. ' +
+            'Open the year first (set status to Active), then mark it as working.',
+          )
         }
 
-        // Only one active (working) year per tenant: unflag any other years
-        // when this one is being set as active. `isActive` marks the year the
-        // SPA defaults to; `status` controls editability.
+        // ── 4. BUG-4: Only one isActive per tenant ────────────────────
         if (d.isActive) {
           try {
             await req.payload.update({
@@ -93,12 +127,11 @@ export const FiscalYears: CollectionConfig = {
               depth: 0,
             } as any)
           } catch {
-            // best-effort — the unique-ish invariant is a UX nicety
+            // best-effort
           }
         }
 
-        // Only one year may be open (status 'active') at a time: (re)opening
-        // a year as active must close any other currently open year.
+        // ── 5. Only one open year per tenant ───────────────────────────
         if (d.status === 'active') {
           try {
             await req.payload.update({
@@ -114,9 +147,40 @@ export const FiscalYears: CollectionConfig = {
               depth: 0,
             } as any)
           } catch {
-            // best-effort — the single-open invariant is a UX nicety
+            // best-effort
           }
         }
+
+        // ── 6. Overlap detection ───────────────────────────────────────
+        if (d.startDate && d.endDate && tenantId) {
+          try {
+            const overlaps = await req.payload.find({
+              collection: 'fiscal-years',
+              where: {
+                and: [
+                  { tenant: { equals: tenantId } },
+                  { startDate: { less_than_equal: d.endDate } },
+                  { endDate: { greater_than_equal: d.startDate } },
+                ],
+              },
+              limit: 10,
+              depth: 0,
+            } as any)
+            const existing = (overlaps.docs as any[]).filter(
+              (fy) => String(fy.id) !== String(d.id),
+            )
+            if (existing.length > 0) {
+              const labels = existing.map((fy) => fy.label).join(', ')
+              throw new Error(
+                `This fiscal year overlaps with existing year(s): ${labels}. ` +
+                'Fiscal years cannot overlap within the same tenant.',
+              )
+            }
+          } catch (err: any) {
+            if (err?.message?.includes('overlaps')) throw err
+          }
+        }
+
         return data
       },
     ],
