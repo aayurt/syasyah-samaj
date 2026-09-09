@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCalendar } from '../lib/calendar'
+import { useT } from '../lib/i18n'
 import {
   adToBsString,
   bsMonthLength,
@@ -42,6 +43,7 @@ export default function NepaliDateInput({
   compact = false,
 }: Props) {
   const { calendarType } = useCalendar()
+  const t = useT()
   const [inputMode, setInputMode] = useState<'AD' | 'BS'>(calendarType)
   const [calOpen, setCalOpen] = useState(false)
   // The month shown in the BS calendar popup (0-based month).
@@ -246,7 +248,7 @@ export default function NepaliDateInput({
               <span className={bs ? 'text-slate-700' : 'text-slate-400'}>
                 {bs
                   ? `${bs.day} ${BS_MONTHS[bs.month]} ${bs.year}`
-                  : 'Select date'}
+                  : t('common.selectDate', 'Select date')}
               </span>
               <Calendar size={12} className="shrink-0 text-slate-400" />
             </button>

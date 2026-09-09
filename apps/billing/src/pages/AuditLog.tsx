@@ -129,7 +129,7 @@ export default function AuditLog() {
           <h1 className="text-lg font-semibold text-slate-900">{t('audit.title', 'Audit Log')}</h1>
         </div>
         <div className="print:hidden flex items-center gap-2">
-          <button onClick={csv} disabled={loading || logs.length === 0} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Download size={14} /> CSV</button>
+          <button onClick={csv} disabled={loading || logs.length === 0} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Download size={14} /> {t('common.csv', 'CSV')}</button>
         </div>
       </div>
       <div className="mt-2"><DataStatus /></div>

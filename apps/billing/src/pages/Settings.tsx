@@ -1643,8 +1643,8 @@ export default function Settings() {
 
       {/* ── 5b. Chart of Accounts ─────────────────────────────── */}
       <Section
-        title="Chart of Accounts"
-        subtitle={`${coaAccounts.length} accounts · ${coaGroups.length} groups`}
+        title={t('settings.chartOfAccounts', 'Chart of Accounts')}
+        subtitle={t('settings.coaSummary', '{a} accounts · {g} groups').replace('{a}', String(coaAccounts.length)).replace('{g}', String(coaGroups.length))}
         icon={FolderTree}
         open={!!openSections.coa}
         onToggle={() => toggle('coa')}

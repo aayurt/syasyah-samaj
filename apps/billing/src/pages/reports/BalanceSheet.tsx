@@ -159,9 +159,9 @@ export default function BalanceSheet() {
           <h1 className="text-lg font-semibold text-slate-900">{t('reports.balanceSheet', 'Balance Sheet')}</h1>
         </div>
         <div className="print:hidden flex items-center gap-2">
-          <button onClick={csv} disabled={loading || !data} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Download size={14} /> CSV</button>
-          <button onClick={pdf} disabled={loading || !data} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><FileText size={14} /> PDF</button>
-          <button onClick={() => window.print()} disabled={loading} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Printer size={14} /> Print</button>
+          <button onClick={csv} disabled={loading || !data} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Download size={14} /> {t('common.csv', 'CSV')}</button>
+          <button onClick={pdf} disabled={loading || !data} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><FileText size={14} /> {t('common.pdf', 'PDF')}</button>
+          <button onClick={() => window.print()} disabled={loading} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Printer size={14} /> {t('common.print', 'Print')}</button>
         </div>
       </div>
       <div className="mt-2"><DataStatus /></div>

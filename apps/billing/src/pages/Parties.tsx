@@ -244,9 +244,9 @@ export default function Parties() {
                 }
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
               >
-                {TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {TYPE_LABELS[t]}
+                {TYPES.map((pt) => (
+                  <option key={pt} value={pt}>
+                    {t(`parties.${pt}`, TYPE_LABELS[pt])}
                   </option>
                 ))}
               </select>
@@ -356,17 +356,17 @@ export default function Parties() {
           <span className="text-xs uppercase tracking-wide text-slate-500">
             {t('parties.filterLabel', 'Filter')}
           </span>
-          {['', ...TYPES].map((t) => (
+          {['', ...TYPES].map((ft) => (
             <button
-              key={t}
-              onClick={() => setFilter(t)}
+              key={ft}
+              onClick={() => setFilter(ft)}
               className={`rounded px-2.5 py-1 text-xs font-medium ${
-                filter === t
+                filter === ft
                   ? 'bg-crimson-600 text-white'
                   : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              {t === '' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1)}
+              {ft === '' ? t('common.all', 'All') : t(`parties.${ft}`, ft.charAt(0).toUpperCase() + ft.slice(1))}
           </button>
           ))}
         </div>
@@ -381,13 +381,13 @@ export default function Parties() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <SortableTh label="Name" sortKey="name" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Type" sortKey="type" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Email" sortKey="email" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Phone" sortKey="phone" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Tax ID" sortKey="taxId" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Opening" sortKey="opening" sort={sort} onSort={toggleSort} align="right" />
-              <th className="px-4 py-2">Accounts</th>
+              <SortableTh label={t('parties.colName', 'Name')} sortKey="name" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('parties.colType', 'Type')} sortKey="type" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('parties.colEmail', 'Email')} sortKey="email" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('parties.colPhone', 'Phone')} sortKey="phone" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('parties.colTaxId', 'Tax ID')} sortKey="taxId" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('parties.colOpening', 'Opening')} sortKey="opening" sort={sort} onSort={toggleSort} align="right" />
+              <th className="px-4 py-2">{t('parties.colAccounts', 'Accounts')}</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
@@ -405,7 +405,7 @@ export default function Parties() {
                   {p.name}
                 </td>
                 <td className="px-4 py-2 text-slate-500">
-                  {TYPE_LABELS[p.type] || p.type}
+                  {t(`parties.${p.type}`, TYPE_LABELS[p.type] || p.type)}
                 </td>
                 <td className="px-4 py-2 text-slate-600">{p.email || '—'}</td>
                 <td className="px-4 py-2 text-slate-600">{p.phone || '—'}</td>
