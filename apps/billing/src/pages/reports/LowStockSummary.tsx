@@ -11,6 +11,7 @@ import { useT } from '../../lib/i18n'
 import type { Item, StockLevel } from '../../lib/types'
 
 export default function LowStockSummary() {
+  const t = useT()
   const navigate = useNavigate()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()

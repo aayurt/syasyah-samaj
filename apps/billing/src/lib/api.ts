@@ -7,6 +7,7 @@ import {
   reportCacheKey,
 } from './offline/syncEngine'
 import { pushToast } from './toast'
+import { toNepaliDigits } from './nepaliNumbers'
 
 /** Human noun per collection, used in CRUD toasts. */
 const NOUNS: Record<string, string> = {
@@ -256,10 +257,18 @@ export async function api<T = unknown>(
     }
   }
 
+  // A `where` filter cannot be answered from cache: the cached collection is
+  // the unfiltered copy, so serving it silently ignores the filter (e.g. the
+  // command palette's name-contains search returned the same rows for any
+  // query). tenant/sort/depth/limit stay cache-safe — the cache is
+  // tenant-scoped and sort is applied client-side below.
+  const cacheSafeQuery = options.query
+    ? Object.keys(options.query).every((k) => ['tenant', 'sort', 'depth', 'limit'].includes(k))
+    : true
   // Cache-first: a warm collection list renders immediately. Fresh data is
   // pulled on demand via the resync button — reads never trigger a network
   // fetch on their own.
-  if (plainList && !options.immediate) {
+  if (plainList && !options.immediate && cacheSafeQuery) {
     const cached = await engine.readCollection(slug, tenant)
     if (cached) {
       return {
@@ -468,10 +477,19 @@ export const list = <T>(
     query: { limit: 1000, depth: 1, ...query },
   })
 
-export const fmt = (n: number | undefined | null): string =>
-  (n ?? 0).toLocaleString('en-US', {
+export const fmt = (n: number | undefined | null): string => {
+  const western = (n ?? 0).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+  // Nepali digits setting is read synchronously from the localStorage globals
+  // cache (same pattern as readGlobalsCache above) — fmt stays sync and cheap.
+  // The cache is kept fresh by every api('/globals/billing-settings') read and
+  // the Settings save path, so the toggle applies on the next render.
+  if (readGlobalsCache()?.nepaliDigitsEnabled) {
+    return toNepaliDigits(western)
+  }
+  return western
+}
 
 export { getEngine, useSyncState }

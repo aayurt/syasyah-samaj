@@ -126,6 +126,24 @@ export const BillingSettings: GlobalConfig = {
               'Allow the demo-data seeder (Setup wizard / Data Management) to create sample charts, parties, items and draft vouchers. When off, the seed actions are rejected.',
           },
         },
+        {
+          name: 'nepaliDigitsEnabled',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: {
+            description:
+              'Display amounts with Nepali digits (०१२३) using Indian-style grouping (11,55,538) across the app.',
+          },
+        },
+        {
+          name: 'nepaliWordsOnPrintEnabled',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: {
+            description:
+              'Show the amount-in-words line in Nepali words (रूपैयाँ/पैसा) on voucher previews and prints. When off, English words are used.',
+          },
+        },
       ],
     },
     {

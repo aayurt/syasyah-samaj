@@ -1,6 +1,9 @@
-import type { Document, TaxLine, Account } from '../lib/types'
+import { useEffect, useState } from 'react'
+import type { Document, TaxLine, Account, BillingSettings } from '../lib/types'
 import { DOC_TYPE_LABELS } from '../lib/types'
 import { useT } from '../lib/i18n'
+import { api } from '../lib/api'
+import { numberToNepaliWords } from '../lib/nepaliNumbers'
 
 /* ── Amount in words (Nepali/Indian numbering) ──────────────────── */
 
@@ -70,7 +73,17 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
   const totalWithholding = withholdingTaxLines.reduce((s, tl) => s + (tl.amount || 0), 0)
   const netTotal = doc.netTotal || doc.grossTotal || 0
   const grandTotal = doc.grossTotal || 0
-  const amountInWords = numToWords(grandTotal)
+  // Amount-in-words language: Nepali when nepaliWordsOnPrintEnabled is on
+  // (read from the cache-first globals — instant, no skeleton on warm cache).
+  const [nepaliWords, setNepaliWords] = useState(false)
+  useEffect(() => {
+    let alive = true
+    api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
+      .then((s) => { if (alive) setNepaliWords(!!s.nepaliWordsOnPrintEnabled) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
+  const amountInWords = nepaliWords ? numberToNepaliWords(grandTotal) : numToWords(grandTotal)
 
   return (
     <div className="print-voucher">

@@ -247,6 +247,12 @@ export const ne = {
     startDate: 'सुरु मिति',
     endDate: 'अन्त मिति',
     thresholdAmount: 'सीमा रकम (रु.)',
+    nepaliDigits: 'नेपाली अंक (०१२३)',
+    nepaliDigitsHint: 'रकम देवनागरी अंक र भारतीय शैलीको समूहीकरणमा देखाउनु',
+    nepaliDigitsHintOn: 'सक्रिय — रकम देवनागरी अंकमा भारतीय शैलीको समूहीकरणसहित देखिन्छ (११,५५,५३८)',
+    nepaliWords: 'शब्दमा रकम नेपालीमा (छापिने)',
+    nepaliWordsHint: 'भाउचर प्रिभ्यू र छापिने कागजातमा शब्दमा रकम अंग्रेजीमै रहन्छ',
+    nepaliWordsHintOn: 'सक्रिय — भाउचर प्रिभ्यू र छापिने कागजातमा शब्दमा रकम नेपाली शब्दमा देखिन्छ',
     tutorialAndSignOut: 'टुटोरियल र साइन आउट',
     documentType: 'कागजात प्रकार',
     prefix: 'उपसर्ग',
@@ -545,9 +551,6 @@ export const ne = {
     colTaxId: 'कर पहिचान',
     colOpening: 'सुरु',
     colAccounts: 'खाताहरू',
-    customer: 'ग्राहक',
-    vendor: 'विक्रेता',
-    both: 'ग्राहक र विक्रेता',
   },
 
   // ── Dashboard page ──

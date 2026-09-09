@@ -187,7 +187,7 @@ export default function Daybooks() {
             key={tb.value}
             onClick={() => setType(tb.value)}
             className={`rounded px-3 py-1.5 text-sm font-medium ${
-              type === t.value
+              type === tb.value
                 ? 'bg-crimson-600 text-white'
                 : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
             }`}

@@ -362,6 +362,8 @@ export interface BillingSettings {
   simplifiedInvoiceEnabled?: boolean
   simplifiedInvoiceThreshold?: number
   demoSeedEnabled?: boolean
+  nepaliDigitsEnabled?: boolean
+  nepaliWordsOnPrintEnabled?: boolean
   dataEpoch?: number
   membershipFeeAccount?: number | Account | null
   donationAccount?: number | Account | null

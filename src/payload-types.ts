@@ -3935,6 +3935,14 @@ export interface BillingSetting {
    */
   demoSeedEnabled?: boolean | null;
   /**
+   * Display amounts with Nepali digits (०१२३) using Indian-style grouping (11,55,538) across the app.
+   */
+  nepaliDigitsEnabled?: boolean | null;
+  /**
+   * Show the amount-in-words line in Nepali words (रूपैयाँ/पैसा) on voucher previews and prints. When off, English words are used.
+   */
+  nepaliWordsOnPrintEnabled?: boolean | null;
+  /**
    * Company or organization name shown on invoices and reports.
    */
   companyName?: string | null;
@@ -4102,6 +4110,8 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   simplifiedInvoiceEnabled?: T;
   simplifiedInvoiceThreshold?: T;
   demoSeedEnabled?: T;
+  nepaliDigitsEnabled?: T;
+  nepaliWordsOnPrintEnabled?: T;
   companyName?: T;
   companyPan?: T;
   companyContact?: T;

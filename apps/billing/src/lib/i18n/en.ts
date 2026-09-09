@@ -245,6 +245,12 @@ export const en = {
     startDate: 'Start date',
     endDate: 'End date',
     thresholdAmount: 'Threshold amount (Rs.)',
+    nepaliDigits: 'Nepali digits (०१२३)',
+    nepaliDigitsHint: 'Show amounts with Devanagari digits and Indian-style grouping',
+    nepaliDigitsHintOn: 'Enabled — amounts show Devanagari digits with Indian-style grouping (११,५५,५३८)',
+    nepaliWords: 'Amount in words in Nepali (on print)',
+    nepaliWordsHint: 'Amount in words on voucher previews and prints stays in English',
+    nepaliWordsHintOn: 'Enabled — voucher previews and prints show शब्दमा रकम in Nepali words',
     tutorialAndSignOut: 'Tutorial & sign out',
     documentType: 'Document Type',
     prefix: 'Prefix',
@@ -545,9 +551,6 @@ export const en = {
     colTaxId: 'Tax ID',
     colOpening: 'Opening',
     colAccounts: 'Accounts',
-    customer: 'Customer',
-    vendor: 'Vendor',
-    both: 'Customer & Vendor',
   },
 
   // ── Dashboard page ──

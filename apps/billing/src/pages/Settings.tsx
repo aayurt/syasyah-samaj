@@ -300,12 +300,16 @@ export default function Settings() {
   const [simplifiedInvEnabled, setSimplifiedInvEnabled] = useState(true)
   const [simplifiedInvThreshold, setSimplifiedInvThreshold] = useState('5000')
   const [demoSeedEnabled, setDemoSeedEnabled] = useState(true)
-  const savedFeatures = useRef({ bankRec: false, simplifiedInv: true, threshold: '5000', demoSeed: true })
+  const [nepaliDigitsEnabled, setNepaliDigitsEnabled] = useState(false)
+  const [nepaliWordsOnPrintEnabled, setNepaliWordsOnPrintEnabled] = useState(false)
+  const savedFeatures = useRef({ bankRec: false, simplifiedInv: true, threshold: '5000', demoSeed: true, nepaliDigits: false, nepaliWords: false })
   const featuresDirty =
     bankRecEnabled !== savedFeatures.current.bankRec ||
     simplifiedInvEnabled !== savedFeatures.current.simplifiedInv ||
     simplifiedInvThreshold !== savedFeatures.current.threshold ||
-    demoSeedEnabled !== savedFeatures.current.demoSeed
+    demoSeedEnabled !== savedFeatures.current.demoSeed ||
+    nepaliDigitsEnabled !== savedFeatures.current.nepaliDigits ||
+    nepaliWordsOnPrintEnabled !== savedFeatures.current.nepaliWords
   const [featuresSaved, setFeaturesSaved] = useState(false)
 
 
@@ -478,11 +482,15 @@ export default function Settings() {
       const si = res.simplifiedInvoiceEnabled !== false
       const st = String(res.simplifiedInvoiceThreshold || 5000)
       const ds = res.demoSeedEnabled !== false
+      const nd = !!res.nepaliDigitsEnabled
+      const nw = !!res.nepaliWordsOnPrintEnabled
       setBankRecEnabled(br)
       setSimplifiedInvEnabled(si)
       setSimplifiedInvThreshold(st)
       setDemoSeedEnabled(ds)
-      savedFeatures.current = { bankRec: br, simplifiedInv: si, threshold: st, demoSeed: ds }
+      setNepaliDigitsEnabled(nd)
+      setNepaliWordsOnPrintEnabled(nw)
+      savedFeatures.current = { bankRec: br, simplifiedInv: si, threshold: st, demoSeed: ds, nepaliDigits: nd, nepaliWords: nw }
 
       // Default account assignments
       const da: Record<string, string> = {}
@@ -833,6 +841,8 @@ export default function Settings() {
       simplifiedInvoiceEnabled: simplifiedInvEnabled,
       simplifiedInvoiceThreshold: parseFloat(simplifiedInvThreshold) || 5000,
       demoSeedEnabled,
+      nepaliDigitsEnabled,
+      nepaliWordsOnPrintEnabled,
     }
     try {
       const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
@@ -843,7 +853,7 @@ export default function Settings() {
       window.dispatchEvent(new Event('billing-settings-changed'))
       protectGlobalsFields(Object.keys(body))
     } catch { /* ignore */ }
-    savedFeatures.current = { bankRec: bankRecEnabled, simplifiedInv: simplifiedInvEnabled, threshold: simplifiedInvThreshold, demoSeed: demoSeedEnabled }
+    savedFeatures.current = { bankRec: bankRecEnabled, simplifiedInv: simplifiedInvEnabled, threshold: simplifiedInvThreshold, demoSeed: demoSeedEnabled, nepaliDigits: nepaliDigitsEnabled, nepaliWords: nepaliWordsOnPrintEnabled }
     setFeaturesSaved(true)
     setTimeout(() => setFeaturesSaved(false), 2000)
     // Fire-and-forget: sync to server in background
@@ -856,6 +866,8 @@ export default function Settings() {
     setSimplifiedInvEnabled(s.simplifiedInv)
     setSimplifiedInvThreshold(s.threshold)
     setDemoSeedEnabled(s.demoSeed)
+    setNepaliDigitsEnabled(s.nepaliDigits)
+    setNepaliWordsOnPrintEnabled(s.nepaliWords)
   }
 
   // ── Default account assignments ──
@@ -1572,6 +1584,50 @@ export default function Settings() {
                 {demoSeedEnabled
                   ? 'Enabled — Setup wizard & Data Management can add demo data'
                   : 'Disabled — demo data seeding is rejected'}
+              </div>
+            </div>
+          </label>
+
+          {/* Nepali digits */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={nepaliDigitsEnabled}
+                onChange={(e) => setNepaliDigitsEnabled(e.target.checked)}
+                className="peer sr-only"
+              />
+              <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+              <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+            </div>
+            <div>
+              <div className="text-sm text-slate-700">{t('settings.nepaliDigits', 'Nepali digits (०१२३)')}</div>
+              <div className="text-xs text-slate-400">
+                {nepaliDigitsEnabled
+                  ? t('settings.nepaliDigitsHintOn', 'Enabled — amounts show Devanagari digits with Indian-style grouping (११,५५,५३८)')
+                  : t('settings.nepaliDigitsHint', 'Show amounts with Devanagari digits and Indian-style grouping')}
+              </div>
+            </div>
+          </label>
+
+          {/* Nepali amount-in-words on print */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={nepaliWordsOnPrintEnabled}
+                onChange={(e) => setNepaliWordsOnPrintEnabled(e.target.checked)}
+                className="peer sr-only"
+              />
+              <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+              <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+            </div>
+            <div>
+              <div className="text-sm text-slate-700">{t('settings.nepaliWords', 'Amount in words in Nepali (on print)')}</div>
+              <div className="text-xs text-slate-400">
+                {nepaliWordsOnPrintEnabled
+                  ? t('settings.nepaliWordsHintOn', 'Enabled — voucher previews and prints show शब्दमा रकम in Nepali words')
+                  : t('settings.nepaliWordsHint', 'Amount in words on voucher previews and prints stays in English')}
               </div>
             </div>
           </label>

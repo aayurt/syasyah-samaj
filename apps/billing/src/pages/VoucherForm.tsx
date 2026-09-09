@@ -23,6 +23,7 @@ import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
 import { todayAD } from '../lib/nepaliDate'
 import { useSetupStatus } from '../lib/setup'
+import { numberToNepaliWords } from '../lib/nepaliNumbers'
 import {
   DOC_TYPE_LABELS,
   type Account,
@@ -203,6 +204,11 @@ export default function VoucherForm({ mode }: Props) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [simplifiedInv, setSimplifiedInv] = useState({ enabled: true, threshold: 5000 })
+  // Amount-in-words in Nepali (print/preview) — from BillingSettings.
+  const [nepaliWordsOnPrint, setNepaliWordsOnPrint] = useState(false)
+  /** In-words line honoring the nepaliWordsOnPrintEnabled toggle. */
+  const amountInWordsFor = (n: number): string =>
+    nepaliWordsOnPrint ? numberToNepaliWords(n) : amountInWords(n)
 
   // Form state
   const [docType, setDocType] = useState<DocType>((urlDocType as DocType) || 'sales-invoice')
@@ -307,10 +313,13 @@ export default function VoucherForm({ mode }: Props) {
   /* ── Load billing settings (cache-first globals) ─────────────── */
   useEffect(() => {
     api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
-      .then((s) => setSimplifiedInv({
-        enabled: s.simplifiedInvoiceEnabled !== false,
-        threshold: s.simplifiedInvoiceThreshold || 5000,
-      }))
+      .then((s) => {
+        setSimplifiedInv({
+          enabled: s.simplifiedInvoiceEnabled !== false,
+          threshold: s.simplifiedInvoiceThreshold || 5000,
+        })
+        setNepaliWordsOnPrint(!!s.nepaliWordsOnPrintEnabled)
+      })
       .catch(() => {})
   }, [])
 
@@ -1175,7 +1184,7 @@ export default function VoucherForm({ mode }: Props) {
               </div>
               {grandTotal > 0 && (
                 <p className="pt-2 text-sm font-medium text-slate-600 bg-slate-50 rounded px-3 py-2">
-                  In words: {amountInWords(grandTotal)}
+                  In words: {amountInWordsFor(grandTotal)}
                 </p>
               )}
             </div>
@@ -1482,7 +1491,7 @@ export default function VoucherForm({ mode }: Props) {
                   <div className="text-sm text-slate-500">{t('vouchers.totalAmountVatInclusive', 'Total Amount (VAT Inclusive)')}</div>
                   <div className="mt-1 font-mono text-2xl font-bold text-slate-900">Rs. {fmt(grandTotal)}</div>
                   <p className="mt-2 text-sm font-medium text-slate-600">
-                    {t('vouchers.inWords', 'In words:')} {amountInWords(grandTotal)}
+                    {t('vouchers.inWords', 'In words:')} {amountInWordsFor(grandTotal)}
                   </p>
                   <p className="mt-1 text-xs text-slate-400">{t('vouchers.includesAllTaxes', 'Includes all applicable taxes')}</p>
                 </div>
@@ -1522,7 +1531,7 @@ export default function VoucherForm({ mode }: Props) {
                     <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
                   </div>
                   <p className="pt-2 text-sm font-medium text-slate-600">
-                    In words: {amountInWords(grandTotal)}
+                    In words: {amountInWordsFor(grandTotal)}
                   </p>
                 </div>
               )}
