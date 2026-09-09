@@ -10,6 +10,7 @@ import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useSearchParams } from 'react-router-dom'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { useT } from '../lib/i18n'
 import type { Account, Party } from '../lib/types'
 
 const TYPES: Party['type'][] = ['customer', 'vendor', 'both']
@@ -32,6 +33,7 @@ const emptyForm = {
 }
 
 export default function Parties() {
+  const t = useT()
   const { cacheVersion } = useSyncState()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
@@ -184,7 +186,7 @@ export default function Parties() {
   return (
     <div className="mx-auto max-w-5xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-900">Parties</h1>
+        <h1 className="text-lg font-semibold text-slate-900">{t('parties.title', 'Parties')}</h1>
         <div className="flex items-center gap-2">
           <button
             onClick={() => downloadCsv('parties.csv', ['Name', 'Type', 'Phone', 'Email', 'Opening Balance'],
@@ -200,7 +202,7 @@ export default function Parties() {
             className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             <Plus size={14} />
-            New party
+            {t('parties.newParty', 'New party')}
           </button>
         </div>
       </div>
@@ -221,11 +223,11 @@ export default function Parties() {
           className="mt-4 rounded-lg border border-slate-200 bg-white p-4"
         >
           <h3 className="mb-3 text-sm font-semibold text-slate-700">
-            {editing ? 'Edit Party' : 'New Party'}
+            {editing ? t('parties.editParty', 'Edit Party') : t('parties.createParty', 'New Party')}
           </h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <label className="text-sm text-slate-700">
-              Name *
+              {t('parties.nameRequired', 'Name *')}
               <input
                 required
                 value={form.name}
@@ -234,7 +236,7 @@ export default function Parties() {
               />
             </label>
             <label className="text-sm text-slate-700">
-              Type
+              {t('common.type', 'Type')}
               <select
                 value={form.type}
                 onChange={(e) =>
@@ -250,7 +252,7 @@ export default function Parties() {
               </select>
             </label>
             <label className="text-sm text-slate-700">
-              Email
+              {t('parties.email', 'Email')}
               <input
                 type="email"
                 value={form.email}
@@ -259,7 +261,7 @@ export default function Parties() {
               />
             </label>
             <label className="text-sm text-slate-700">
-              Phone
+              {t('parties.phone', 'Phone')}
               <input
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -267,7 +269,7 @@ export default function Parties() {
               />
             </label>
             <label className="text-sm text-slate-700">
-              Tax ID / PAN
+              {t('parties.taxId', 'Tax ID / PAN')}
               <input
                 value={form.taxId}
                 onChange={(e) => setForm({ ...form, taxId: e.target.value })}
@@ -275,7 +277,7 @@ export default function Parties() {
               />
             </label>
             <label className="text-sm text-slate-700">
-              Opening balance
+              {t('parties.openingBalance', 'Opening balance')}
               <input
                 type="number"
                 step="0.01"
@@ -287,13 +289,13 @@ export default function Parties() {
               />
             </label>
             <label className="text-sm text-slate-700">
-              AR account (optional)
+              {t('parties.arAccount', 'AR account (optional)')}
               <select
                 value={form.receivableAccount}
                 onChange={(e) => setForm({ ...form, receivableAccount: e.target.value })}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
               >
-                <option value="">Default (global AR)</option>
+                <option value="">{t('parties.defaultAr', 'Default (global AR)')}</option>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.code ? `${a.code} — ` : ''}{a.name}
@@ -302,13 +304,13 @@ export default function Parties() {
               </select>
             </label>
             <label className="text-sm text-slate-700">
-              AP account (optional)
+              {t('parties.apAccount', 'AP account (optional)')}
               <select
                 value={form.payableAccount}
                 onChange={(e) => setForm({ ...form, payableAccount: e.target.value })}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
               >
-                <option value="">Default (global AP)</option>
+                <option value="">{t('parties.defaultAp', 'Default (global AP)')}</option>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.code ? `${a.code} — ` : ''}{a.name}
@@ -317,7 +319,7 @@ export default function Parties() {
               </select>
             </label>
             <label className="col-span-2 text-sm text-slate-700 md:col-span-3">
-              Address
+              {t('parties.address', 'Address')}
               <textarea
                 rows={2}
                 value={form.address}
@@ -332,7 +334,7 @@ export default function Parties() {
               disabled={saving}
               className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
             >
-              {saving ? 'Saving…' : editing ? 'Update' : 'Save'}
+              {saving ? t('common.saving', 'Saving…') : editing ? t('parties.update', 'Update') : t('common.save', 'Save')}
             </button>
             <button
               type="button"
@@ -352,7 +354,7 @@ export default function Parties() {
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="text-xs uppercase tracking-wide text-slate-500">
-            Filter
+            {t('parties.filterLabel', 'Filter')}
           </span>
           {['', ...TYPES].map((t) => (
             <button
@@ -371,7 +373,7 @@ export default function Parties() {
         <SearchBox
           value={query}
           onChange={setQuery}
-          placeholder="Search name, email, phone…"
+          placeholder={t('parties.searchPlaceholder', 'Search name, email, phone…')}
         />
       </div>
 
@@ -393,7 +395,7 @@ export default function Parties() {
             {visible.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
-                  No parties yet.
+                  {t('parties.noParties', 'No parties yet.')}
                 </td>
               </tr>
             )}

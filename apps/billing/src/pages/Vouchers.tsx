@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react'
 import { api, fmt, getEngine, list, useSyncState } from '../lib/api'
+import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import { todayAD } from '../lib/nepaliDate'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
@@ -168,6 +169,7 @@ const emptyForm = (): FormState => ({
 })
 
 export default function Vouchers() {
+  const t = useT()
   const navigate = useNavigate()
   const { cacheVersion } = useSyncState()
   const { tenantId } = useTenant()
@@ -932,7 +934,7 @@ export default function Vouchers() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-900">Transactions</h1>
+        <h1 className="text-lg font-semibold text-slate-900">{t('vouchers.title', 'Transactions')}</h1>
         <button
           data-tour="new-voucher"
           onClick={() => navigate(typeFilter ? `/vouchers/new/${typeFilter}` : '/vouchers/new')}
@@ -941,7 +943,7 @@ export default function Vouchers() {
           className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Plus size={14} />
-          New transaction
+          {t('vouchers.newTransaction', 'New transaction')}
         </button>
       </div>
 
@@ -977,7 +979,7 @@ export default function Vouchers() {
             <div className="mb-3 flex items-center justify-between rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
               <span className="flex items-center gap-1.5">
                 <Pencil size={13} />
-                Editing draft — changes apply to this transaction
+                {t('vouchers.editingDraft', 'Editing draft \u2014 changes apply to this transaction')}
               </span>
               <button
                 type="button"
@@ -988,13 +990,13 @@ export default function Vouchers() {
                 }}
                 className="text-xs font-medium underline"
               >
-                Cancel edit
+                {t('vouchers.cancelEdit', 'Cancel edit')}
               </button>
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <label className="text-sm text-slate-700">
-              Type
+              {t('common.type', 'Type')}
               <select
                 value={form.docType}
                 onChange={(e) => {
@@ -1015,14 +1017,14 @@ export default function Vouchers() {
               </select>
             </label>
             <NepaliDateInput
-              label="Date"
+              label={t('common.date', 'Date')}
               required
               value={form.date}
               onChange={(v) => setForm({ ...form, date: v })}
             />
             {meta.needsParty && (
               <label className="text-sm text-slate-700">
-                Party
+                {t('vouchers.party', 'Party')}
                 <select
                   required
                   value={form.party}
@@ -1049,7 +1051,7 @@ export default function Vouchers() {
             {isContra && (
               <>
                 <label className="text-sm text-slate-700">
-                  From account (credited)
+                  {t('vouchers.fromAccount', 'From account (credited)')}
                   <select
                     required
                     value={form.fromAccount}
@@ -1067,7 +1069,7 @@ export default function Vouchers() {
                   </select>
                 </label>
                 <label className="text-sm text-slate-700">
-                  To account (debited)
+                  {t('vouchers.toAccount', 'To account (debited)')}
                   <select
                     required
                     value={form.toAccount}
@@ -1104,7 +1106,7 @@ export default function Vouchers() {
             {isCash && (
               <>
                 <label className="text-sm text-slate-700">
-                  Payment method
+                  {t('vouchers.paymentMethod', 'Payment method')}
                   <select
                     value={form.paymentMethod}
                     onChange={(e) =>
@@ -1118,7 +1120,7 @@ export default function Vouchers() {
                 </label>
                 {form.paymentMethod === 'bank' && (
                   <label className="text-sm text-slate-700">
-                    Bank account
+                    {t('vouchers.bankAccountLabel', 'Bank account')}
                     <select
                       value={form.bankAccount}
                       onChange={(e) =>
@@ -1143,7 +1145,7 @@ export default function Vouchers() {
                 value={form.narration}
                 onChange={(e) => setForm({ ...form, narration: e.target.value })}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                placeholder="Description of the transaction…"
+                placeholder={t('vouchers.narrationPlaceholder', 'Description of the transaction…')}
               />
             </label>
           </div>
@@ -1161,12 +1163,12 @@ export default function Vouchers() {
                 ) : (
                   <ToggleLeft size={28} className="text-slate-300" />
                 )}
-                TDS is applicable
+                {t('vouchers.tdsApplicable', 'TDS is applicable')}
               </button>
               {tdsEnabled && (
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <label className="text-sm text-slate-700">
-                    TDS Account *
+                    {t('vouchers.tdsAccount', 'TDS Account *')}
                     <select
                       required
                       value={tdsAccountId}
@@ -1188,7 +1190,7 @@ export default function Vouchers() {
                     </select>
                   </label>
                   <label className="text-sm text-slate-700">
-                    TDS Type *
+                    {t('vouchers.tdsType', 'TDS Type *')}
                     <select
                       required
                       value={tdsTypeId}
@@ -1209,7 +1211,7 @@ export default function Vouchers() {
                     </select>
                   </label>
                   <label className="text-sm text-slate-700">
-                    TDS Amount *
+                    {t('vouchers.tdsAmount', 'TDS Amount *')}
                     <input
                       type="number"
                       required
@@ -1222,7 +1224,7 @@ export default function Vouchers() {
                     />
                     {tdsRate > 0 && (
                       <span className="mt-1 block text-xs text-slate-400">
-                        Calculated: {tdsRate}% × {fmt(totals.gross)} = {fmt(tdsAutoAmount)}
+                        {t('vouchers.calculated', 'Calculated:')} {tdsRate}% × {fmt(totals.gross)} = {fmt(tdsAutoAmount)}
                       </span>
                     )}
                   </label>
@@ -1238,23 +1240,23 @@ export default function Vouchers() {
                   <div className="w-full">
                     <div className="flex flex-wrap items-end gap-3">
                       <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                        Taxes {isCash ? '(TDS withholding)' : '(VAT / GST / TDS)'}
+                        {t('vouchers.taxes', 'Taxes')} {isCash ? t('vouchers.tdsWithholding', '(TDS withholding)') : t('vouchers.vatGstTds', '(VAT / GST / TDS)')}
                       </div>
                       <button
                         type="button"
                         onClick={addTaxLine}
                         className="text-xs font-medium text-slate-500 hover:text-slate-800"
                       >
-                        + Add tax
+                        {t('vouchers.addTax', '+ Add tax')}
                       </button>
                     </div>
                     {form.taxLines.length > 0 && (
                       <table className="mt-2 w-full text-sm">
                         <thead>
                           <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
-                            <th className="py-1 pr-2">Tax type</th>
-                            <th className="py-1 pr-2">Nature</th>
-                            <th className="w-24 py-1 pr-2">Rate %</th>
+                            <th className="py-1 pr-2">{t('vouchers.taxType', 'Tax type')}</th>
+                            <th className="py-1 pr-2">{t('vouchers.nature', 'Nature')}</th>
+                            <th className="w-24 py-1 pr-2">{t('vouchers.ratePercent', 'Rate %')}</th>
                             <th className="w-28 py-1 pr-2 text-right">Amount</th>
                             <th className="w-8 py-1"></th>
                           </tr>
@@ -1388,9 +1390,9 @@ export default function Vouchers() {
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
                       {isInventory && (
-                        <th className="w-40 py-2 pr-2">Item</th>
+                        <th className="w-40 py-2 pr-2">{t('vouchers.item', 'Item')}</th>
                       )}
-                      <th className="py-2 pr-2">Description</th>
+                      <th className="py-2 pr-2">{t('vouchers.description', 'Description')}</th>
                       <th className="w-20 py-2 pr-2">Qty</th>
                       <th className="w-28 py-2 pr-2">Rate</th>
                       <th className="w-28 py-2 pr-2">Amount</th>
@@ -1497,7 +1499,7 @@ export default function Vouchers() {
                         colSpan={isInventory ? 2 : 1}
                         className="py-2 pr-2 text-xs uppercase tracking-wide text-slate-500"
                       >
-                        Totals
+                        {t('vouchers.totals', 'Totals')}
                       </td>
                       <td className="py-2 pr-2"></td>
                       <td className="py-2 pr-2"></td>
@@ -1512,7 +1514,7 @@ export default function Vouchers() {
                           colSpan={isInventory ? 3 : 2}
                           className="py-1 pr-2 text-right"
                         >
-                          Net {fmt(totals.net)} · Tax {fmt(totals.tax)}
+                          {t('vouchers.net', 'Net')} {fmt(totals.net)} · {t('vouchers.tax', 'Tax')} {fmt(totals.tax)}
                         </td>
                         <td className="py-1 pr-2 text-right font-mono">
                           {fmt(totals.gross)}
@@ -1530,13 +1532,13 @@ export default function Vouchers() {
                 }
                 className="mt-2 text-xs font-medium text-slate-500 hover:text-slate-800"
               >
-                + Add line
+                {t('vouchers.addLine', '+ Add line')}
               </button>
             </div>
           ) : isContra ? (
             <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/50 p-4">
               <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                Contra transfer
+                {t('vouchers.contraTransfer', 'Contra transfer')}
               </div>
               <div className="mt-2 space-y-1 text-sm text-slate-700">
                 <p>
@@ -1568,10 +1570,10 @@ export default function Vouchers() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="py-2 pr-2">Account</th>
-                    <th className="w-28 py-2 pr-2">Debit</th>
-                    <th className="w-28 py-2 pr-2">Credit</th>
-                    <th className="py-2 pr-2">Memo</th>
+                    <th className="py-2 pr-2">{t('common.account', 'Account')}</th>
+                    <th className="w-28 py-2 pr-2">{t('common.debit', 'Debit')}</th>
+                    <th className="w-28 py-2 pr-2">{t('common.credit', 'Credit')}</th>
+                    <th className="py-2 pr-2">{t('common.memo', 'Memo')}</th>
                     <th className="w-8 py-2"></th>
                   </tr>
                 </thead>
@@ -1662,7 +1664,7 @@ export default function Vouchers() {
                 <tfoot>
                   <tr className="border-t border-slate-100">
                     <td className="py-2 pr-2 text-xs uppercase tracking-wide text-slate-500">
-                      Totals
+                      {t('vouchers.totals', 'Totals')}
                     </td>
                     <td className="py-2 pr-2 text-right font-mono text-slate-800">
                       {fmt(jTotals.debit)}
@@ -1678,8 +1680,8 @@ export default function Vouchers() {
                       }`}
                     >
                       {Math.abs(jTotals.diff) < 0.001
-                        ? '✓ balanced'
-                        : `difference ${fmt(jTotals.diff)}`}
+                        ? t('vouchers.balanced', '✓ balanced')
+                        : `${t('vouchers.difference', 'difference')} ${fmt(jTotals.diff)}`}
                     </td>
                     <td></td>
                   </tr>
@@ -1695,7 +1697,7 @@ export default function Vouchers() {
                 }
                 className="mt-2 text-xs font-medium text-slate-500 hover:text-slate-800"
               >
-                + Add line
+                {t('vouchers.addLine', '+ Add line')}
               </button>
             </div>
           )}
@@ -1714,10 +1716,10 @@ export default function Vouchers() {
                 className="rounded border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
               >
                 {saving
-                  ? 'Saving…'
+                  ? t('common.saving', 'Saving…')
                   : editingId !== null
-                    ? 'Save changes'
-                    : 'Save draft'}
+                    ? t('vouchers.saveChanges', 'Save changes')
+                    : t('vouchers.saveDraft', 'Save draft')}
               </button>
               <button
                 type="button"
@@ -1732,7 +1734,7 @@ export default function Vouchers() {
                       : 'Entry must be balanced to post'
                 }
               >
-                {saving ? 'Posting…' : 'Save & post'}
+                {saving ? t('vouchers.posting', 'Posting…') : t('vouchers.savePost', 'Save & post')}
               </button>
               <button
                 type="button"
@@ -1742,7 +1744,7 @@ export default function Vouchers() {
                 }}
                 className="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
               >
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </button>
             </div>
           </div>
@@ -1759,10 +1761,10 @@ export default function Vouchers() {
         {/* Status pills */}
         <div className="flex items-center rounded-lg border border-slate-300 bg-white p-0.5" role="group" aria-label="Filter by status">
           {[
-            { v: '', label: 'All' },
-            { v: 'draft', label: 'Draft' },
-            { v: 'posted', label: 'Posted' },
-            { v: 'void', label: 'Void' },
+            { v: '', label: t('vouchers.filterAll', 'All') },
+            { v: 'draft', label: t('vouchers.filterDraft', 'Draft') },
+            { v: 'posted', label: t('vouchers.filterPosted', 'Posted') },
+            { v: 'void', label: t('vouchers.filterVoid', 'Void') },
           ].map((s) => (
             <button
               key={s.v}
@@ -1784,7 +1786,7 @@ export default function Vouchers() {
           <SearchBox
             value={query}
             onChange={setQuery}
-            placeholder="Search number, party, narration…"
+            placeholder={t('vouchers.searchPlaceholder', 'Search number, party, narration…')}
           />
         </div>
 
@@ -1796,7 +1798,7 @@ export default function Vouchers() {
             aria-label="Filter by transaction type"
             className="h-[34px] rounded-lg border border-slate-300 bg-white pl-2.5 pr-8 text-xs text-slate-700 outline-none focus:border-slate-500"
           >
-            <option value="">Type: All</option>
+            <option value="">{t('vouchers.typeAll', 'Type: All')}</option>
             {DOC_TYPES.map((t) => (
               <option key={t.value} value={t.value}>Type: {t.label}</option>
             ))}
@@ -1824,7 +1826,7 @@ export default function Vouchers() {
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setDateOpen(false)} />
                 <div className="absolute right-0 z-40 mt-1 w-64 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
-                  <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Date range</div>
+                  <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('vouchers.dateRange', 'Date range')}</div>
                   <div className="mt-2 space-y-2">
                     <label className="block text-xs text-slate-600">
                       From
@@ -1868,7 +1870,7 @@ export default function Vouchers() {
       {selected.size > 0 && (
         <div className="mt-3 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2">
           <span className="text-sm font-medium text-blue-700">
-            {selected.size} selected
+            {selected.size} {t('vouchers.selected', 'selected')}
           </span>
           {visible.some((d) => selected.has(d.id) && d.status === 'draft') && (
             <button
@@ -1892,7 +1894,7 @@ export default function Vouchers() {
             onClick={() => setSelected(new Set())}
             className="ml-auto text-xs text-blue-600 hover:underline"
           >
-            Clear selection
+            {t('vouchers.clearSelection', 'Clear selection')}
           </button>
         </div>
       )}
@@ -1910,23 +1912,23 @@ export default function Vouchers() {
                   className="h-4 w-4 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500"
                 />
               </th>
-              <SortableTh label="Date" sortKey="date" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Updated" sortKey="updatedAt" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Transaction No." sortKey="number" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Transaction Type" sortKey="type" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Party" sortKey="party" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Amount" sortKey="amount" sort={sort} onSort={toggleSort} align="right" />
-              <SortableTh label="Status" sortKey="status" sort={sort} onSort={toggleSort} />
-              <th className="px-4 py-2 text-center">Payment</th>
-              <th className="px-4 py-2 text-center">Voided</th>
-              <th className="px-4 py-2 text-right">Actions</th>
+              <SortableTh label={t('vouchers.columnDate', 'Date')} sortKey="date" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('vouchers.columnUpdated', 'Updated')} sortKey="updatedAt" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('vouchers.columnNumber', 'Transaction No.')} sortKey="number" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('vouchers.columnType', 'Transaction Type')} sortKey="type" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('vouchers.columnParty', 'Party')} sortKey="party" sort={sort} onSort={toggleSort} />
+              <SortableTh label={t('vouchers.columnAmount', 'Amount')} sortKey="amount" sort={sort} onSort={toggleSort} align="right" />
+              <SortableTh label={t('vouchers.columnStatus', 'Status')} sortKey="status" sort={sort} onSort={toggleSort} />
+              <th className="px-4 py-2 text-center">{t('vouchers.columnPayment', 'Payment')}</th>
+              <th className="px-4 py-2 text-center">{t('vouchers.columnVoided', 'Voided')}</th>
+              <th className="px-4 py-2 text-right">{t('vouchers.columnActions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
             {visible.length === 0 && (
               <tr>
                 <td colSpan={11} className="px-4 py-6 text-center text-slate-400">
-                  No transactions yet.
+                  {t('vouchers.noTransactions', 'No transactions yet.')}
                 </td>
               </tr>
             )}
@@ -2024,7 +2026,7 @@ export default function Vouchers() {
                             className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
                           >
                             <Eye size={13} />
-                            View
+                            {t('vouchers.view', 'View')}
                           </button>
                           {d.status === 'draft' && (
                             <button
@@ -2032,7 +2034,7 @@ export default function Vouchers() {
                               className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
                             >
                               <Pencil size={13} />
-                              Edit draft
+                              {t('vouchers.editDraft', 'Edit draft')}
                             </button>
                           )}
                           {d.status === 'draft' && (
@@ -2044,7 +2046,7 @@ export default function Vouchers() {
                               className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
                             >
                               <Trash2 size={13} />
-                              Delete draft
+                              {t('vouchers.deleteDraft', 'Delete draft')}
                             </button>
                           )}
                           {d.status === 'posted' && d.docType === 'sales-invoice' && (
@@ -2056,7 +2058,7 @@ export default function Vouchers() {
                               className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
                             >
                               <Printer size={13} />
-                              Export PDF
+                              {t('vouchers.exportPdf', 'Export PDF')}
                             </button>
                           )}
                           {d.status === 'posted' && (
@@ -2162,7 +2164,7 @@ export default function Vouchers() {
                   <div className="border-b border-slate-200 bg-slate-50 px-8 py-5 text-center rounded-t-xl print:bg-white print:rounded-none">
                     <h1 className="text-xl font-bold tracking-tight text-slate-900">स्यस्यः धुकू</h1>
                     <p className="mt-0.5 text-xs text-slate-400">
-                      {isSimplified ? 'Tax Invoice (VAT Inclusive)' : 'Tax Invoice / Transaction'}
+                      {isSimplified ? t('vouchers.taxInvoiceSimplified', 'Tax Invoice (VAT Inclusive)') : t('vouchers.taxInvoice', 'Tax Invoice / Transaction')}
                     </p>
                   </div>
                 )
@@ -2194,12 +2196,12 @@ export default function Vouchers() {
               <div className="border-b border-slate-200 px-8 py-4">
                 <div className="grid grid-cols-2 gap-6 text-sm">
                   <div>
-                    <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Bill To</span>
+                    <span className="text-xs font-medium uppercase tracking-wide text-slate-400">{t('vouchers.billTo', 'Bill To')}</span>
                     <p className="mt-1 font-semibold text-slate-900">{partyName(viewDoc) || '—'}</p>
                   </div>
                   {viewDoc.paymentMethod && (
                     <div className="text-right">
-                      <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Payment</span>
+                      <span className="text-xs font-medium uppercase tracking-wide text-slate-400">{t('vouchers.payment', 'Payment')}</span>
                       <p className="mt-1 capitalize text-slate-700">{viewDoc.paymentMethod}</p>
                     </div>
                   )}
@@ -2213,7 +2215,7 @@ export default function Vouchers() {
                     <thead>
                       <tr className="border-b-2 border-slate-300 text-left text-xs uppercase tracking-wide text-slate-500">
                         <th className="w-8 py-2.5">#</th>
-                        <th className="py-2.5">Item / Description</th>
+                        <th className="py-2.5">{t('vouchers.description', 'Description')}</th>
                         <th className="w-16 py-2.5 text-right">Qty</th>
                         <th className="w-24 py-2.5 text-right">Rate</th>
                         <th className="w-28 py-2.5 text-right">Amount</th>
@@ -2244,26 +2246,26 @@ export default function Vouchers() {
                         <div className="text-sm text-slate-500">Total Amount (VAT Inclusive)</div>
                         <div className="mt-1 font-mono text-2xl font-bold text-slate-900">Rs. {fmt(grandTotal)}</div>
                         <p className="mt-2 text-sm font-medium text-slate-600">
-                          In words: {numWords(grandTotal)}
+                          {t('vouchers.inWords', 'In words:')} {numWords(grandTotal)}
                         </p>
-                        <p className="mt-1 text-xs text-slate-400">Includes all applicable taxes</p>
+                        <p className="mt-1 text-xs text-slate-400">{t('vouchers.includesAllTaxes', 'Includes all applicable taxes')}</p>
                       </div>
                     ) : (
                       /* ── Full breakdown ──────────────────── */
                       <div className="ml-auto w-72 space-y-1.5 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-slate-500">Sub Total</span>
+                          <span className="text-slate-500">{t('vouchers.subTotal', 'Sub Total')}</span>
                           <span className="font-mono text-slate-700">{fmt(subTotal)}</span>
                         </div>
                         {discountAmt > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-slate-500">Discount</span>
+                            <span className="text-slate-500">{t('vouchers.discount', 'Discount')}</span>
                             <span className="font-mono text-red-600">−{fmt(discountAmt)}</span>
                           </div>
                         )}
                         {discountAmt > 0 && (
                           <div className="flex justify-between border-t border-slate-200 pt-1.5">
-                            <span className="text-slate-500">Taxable Amount</span>
+                            <span className="text-slate-500">{t('vouchers.taxableAmount', 'Taxable Amount')}</span>
                             <span className="font-mono text-slate-700">{fmt(taxable)}</span>
                           </div>
                         )}
@@ -2280,7 +2282,7 @@ export default function Vouchers() {
                           </div>
                         )}
                         <div className="flex justify-between border-t-2 border-slate-300 pt-2 text-base">
-                          <span className="font-bold text-slate-900">Total</span>
+                          <span className="font-bold text-slate-900">{t('vouchers.total', 'Total')}</span>
                           <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
                         </div>
                         <p className="pt-1 text-sm font-medium text-slate-600">
@@ -2339,7 +2341,7 @@ export default function Vouchers() {
               {/* ── Narration ──────────────────────────────── */}
               {viewDoc.narration && (
                 <div className="border-t border-slate-200 px-8 py-3">
-                  <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Remarks</span>
+                  <span className="text-xs font-medium uppercase tracking-wide text-slate-400">{t('vouchers.remarks', 'Remarks')}</span>
                   <p className="mt-0.5 text-sm text-slate-600">{viewDoc.narration}</p>
                 </div>
               )}
@@ -2521,7 +2523,7 @@ export default function Vouchers() {
                       </button>
                       <button onClick={() => editDraft(viewDoc)}
                         className="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                        Edit Draft
+                        {t('vouchers.editDraft', 'Edit Draft')}
                       </button>
                     </div>
                   )}
@@ -2531,7 +2533,7 @@ export default function Vouchers() {
                     <>
                       <button onClick={() => setPrintDoc(viewDoc)}
                         className="flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                        <Printer size={14} /> Print
+                        <Printer size={14} /> {t('common.print', 'Print')}
                       </button>
                       <button
                         onClick={async () => {
@@ -2573,7 +2575,7 @@ export default function Vouchers() {
                   )}
                   <button onClick={() => setViewDoc(null)}
                     className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700">
-                    Close
+                    {t('common.close', 'Close')}
                   </button>
                 </div>
               </div>
@@ -2588,7 +2590,7 @@ export default function Vouchers() {
           <div className="mx-4 w-full max-w-2xl rounded-xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Void Items</h2>
+                <h2 className="text-lg font-semibold text-slate-900">{t('vouchers.voidItems', 'Void Items')}</h2>
                 <p className="text-sm text-slate-500">
                   {voidDialogDoc.number || 'Draft'} — {voidDialogDoc.docType}
                 </p>
@@ -2601,7 +2603,7 @@ export default function Vouchers() {
 
             <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
               <p className="mb-3 text-sm text-slate-600">
-                Select items to void. A credit/debit note will be created for the voided amounts.
+                {t('vouchers.selectItemsToVoid', 'Select items to void. A credit/debit note will be created for the voided amounts.')}
               </p>
               <table className="w-full text-sm">
                 <thead>
@@ -2668,7 +2670,7 @@ export default function Vouchers() {
                                   vi.itemIndex === idx ? { ...vi, reason: e.target.value } : vi
                                 ))
                               }}
-                              placeholder="Reason for void"
+                              placeholder="{t('vouchers.reasonForVoid', 'Reason for void')}"
                               className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
                             />
                           )}
@@ -2682,7 +2684,7 @@ export default function Vouchers() {
               {voidItems.length > 0 && (
                 <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-amber-800">Total void amount:</span>
+                    <span className="font-medium text-amber-800">{t('vouchers.totalVoidAmount', 'Total void amount:')}</span>
                     <span className="font-semibold text-amber-900">
                       Rs. {fmt(voidItems.reduce((sum, vi) => {
                         const line = voidDialogDoc.lines?.[vi.itemIndex]
@@ -2707,7 +2709,7 @@ export default function Vouchers() {
                 disabled={voidItems.length === 0 || voidLoading}
                 className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
-                {voidLoading ? 'Voiding...' : voidItems.length === (voidDialogDoc.lines || []).length ? 'Full Void' : 'Create Credit/Debit Note & Void'}
+                {voidLoading ? t('vouchers.voiding', 'Voiding…') : voidItems.length === (voidDialogDoc.lines || []).length ? t('vouchers.fullVoid', 'Full Void') : t('vouchers.createNoteAndVoid', 'Create Credit/Debit Note & Void')}
               </button>
             </div>
           </div>
