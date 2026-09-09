@@ -327,16 +327,14 @@ export default function NepaliDateInput({
         >
           Today
         </button>
-      </div>
-      {value && (
-        <div className="mt-0.5 pl-1">
-          <span className="text-[11px] text-slate-400">
+        {value && (
+          <span className="shrink-0 text-[11px] text-slate-400">
             {inputMode === 'BS'
               ? `AD: ${value}`
               : `BS: ${adToBsString(value)}`}
           </span>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

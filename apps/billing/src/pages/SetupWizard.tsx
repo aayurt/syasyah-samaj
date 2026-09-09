@@ -351,7 +351,7 @@ export default function SetupWizard() {
       </div>
 
       {/* Active step card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start gap-4">
           <div className="rounded-lg bg-crimson-50 p-3 text-crimson-600">
             <step.icon size={22} />
@@ -464,7 +464,7 @@ export default function SetupWizard() {
 
           {step.key === 'seeds' && (
             <div className="space-y-3">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
                 <div className="flex items-center gap-3 text-sm text-slate-600">
                   <Database size={18} className="text-slate-400" />
                   <div>

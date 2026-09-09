@@ -320,7 +320,7 @@ export default function Dashboard() {
         {kpis.map((k) => (
           <div
             key={k.label}
-            className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4"
+            className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-5"
           >
             <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${k.bg}`}>
               <k.icon size={18} className={k.color} />
@@ -347,7 +347,7 @@ export default function Dashboard() {
       {/* ── Second row: Cash Position + Outstanding Dues ──────── */}
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Cash Position */}
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
           <div className="flex items-center gap-2 mb-3">
             <Wallet size={16} className="text-slate-400" />
             <h3 className="text-sm font-medium text-slate-700">{t('dashboard.cashPosition', 'Cash Position')}</h3>
@@ -405,7 +405,7 @@ export default function Dashboard() {
         </div>
 
         {/* Outstanding Dues */}
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
           <div className="flex items-center gap-2 mb-3">
             <Clock3 size={16} className="text-slate-400" />
             <h3 className="text-sm font-medium text-slate-700">
@@ -488,7 +488,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Trend Chart: {t('dashboard.revenueVsExpenses', 'Revenue vs Expenses (12 months)')} ──────── */}
-      <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+      <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <TrendingUp size={16} className="text-slate-400" />

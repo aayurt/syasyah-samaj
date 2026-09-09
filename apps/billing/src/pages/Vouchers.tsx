@@ -973,7 +973,7 @@ export default function Vouchers() {
             e.preventDefault()
             submit(false)
           }}
-          className="mt-4 rounded-lg border border-slate-200 bg-white p-4"
+          className="mt-4 rounded-lg border border-slate-200 bg-white p-5"
         >
           {editingId !== null && (
             <div className="mb-3 flex items-center justify-between rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
@@ -1152,7 +1152,7 @@ export default function Vouchers() {
 
           {/* ── TDS Toggle ─────────────────────────────── */}
           {isTaxable && (
-            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
               <button
                 type="button"
                 onClick={() => setTdsEnabled((e) => !e)}
@@ -1536,7 +1536,7 @@ export default function Vouchers() {
               </button>
             </div>
           ) : isContra ? (
-            <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/50 p-4">
+            <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/50 p-5">
               <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
                 {t('vouchers.contraTransfer', 'Contra transfer')}
               </div>

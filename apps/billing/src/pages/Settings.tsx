@@ -1192,7 +1192,7 @@ export default function Settings() {
         open={!!openSections.fiscal}
         onToggle={() => toggle('fiscal')}
       >
-        <div className="p-4">
+        <div className="p-5">
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-700">Fiscal Years</p>

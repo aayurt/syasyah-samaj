@@ -14,6 +14,7 @@ import { useT } from '../lib/i18n'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import SearchBox from '../components/SearchBox'
 import { DISTRICTS } from '../lib/districts'
+import MemberViewModal from '../components/MemberViewModal'
 
 /* ─────────────────────────────────────────────────────────────
    Types
@@ -628,7 +629,7 @@ function ApplicationForm({
   const printData = printPreview === 'blank' ? { ...blankForm } : form
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6">
+    <div className="rounded-lg border border-slate-200 bg-white p-5">
       {/* ── Print CSS (injected) ───────────────────────── */}
       <style>{PRINT_CSS}</style>
 
@@ -920,6 +921,7 @@ export default function Members() {
   const [editError, setEditError] = useState('')
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('table')
+  const [viewingMember, setViewingMember] = useState<Member | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -1154,7 +1156,7 @@ export default function Members() {
         <>
           {/* ── Create form ─────────────────────────────────── */}
           {showForm && (
-            <form onSubmit={handleCreate} className="rounded-lg border border-slate-200 bg-white p-4">
+            <form onSubmit={handleCreate} className="rounded-lg border border-slate-200 bg-white p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-700">{t('members.newMember', 'New Member')}</h3>
                 <button type="button" onClick={() => { setShowForm(false); setFormError('') }} className="text-slate-400 hover:text-slate-600">
@@ -1231,7 +1233,7 @@ export default function Members() {
 
           {/* ── Edit form ─────────────────────────────────── */}
           {editingId && (
-            <form onSubmit={handleUpdate} className="rounded-lg border border-crimson-200 bg-crimson-50/30 p-4">
+            <form onSubmit={handleUpdate} className="rounded-lg border border-crimson-200 bg-crimson-50/30 p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-700">{t('members.title', 'Edit Member')}</h3>
                 <button type="button" onClick={() => setEditingId(null)} className="text-slate-400 hover:text-slate-600">
@@ -1375,6 +1377,12 @@ export default function Members() {
                                 <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />
                                 <div className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
                                   <button
+                                    onClick={() => { setOpenMenu(null); setViewingMember(m) }}
+                                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                  >
+                                    <FileText size={12} /> {t('common.view', 'View Details')}
+                                  </button>
+                                  <button
                                     onClick={() => startEdit(m)}
                                     className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
                                   >
@@ -1414,6 +1422,13 @@ export default function Members() {
             </div>
           )}
         </>
+      )}
+      {viewingMember && (
+        <MemberViewModal
+          member={viewingMember}
+          onClose={() => setViewingMember(null)}
+          onEdit={(m) => { setViewingMember(null); startEdit(m) }}
+        />
       )}
     </div>
   )

@@ -600,7 +600,7 @@ export default function VoucherForm({ mode }: Props) {
 
       {/* ── Doc Type Cards ──────────────────────────────────── */}
       {mode === 'create' && (
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
           <label className="mb-3 block text-sm font-medium text-slate-700">What are you recording?</label>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
             {(Object.keys(DOC_TYPE_META) as DocType[]).map((dt) => {
@@ -1275,7 +1275,7 @@ export default function VoucherForm({ mode }: Props) {
 
       {/* ── Amount (receipt/payment only) ──────────────────── */}
       {isCash && !isItem && (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
           <label className="text-sm font-medium text-slate-700">
             Amount <span className="text-red-500">*</span>
           </label>
@@ -1583,7 +1583,7 @@ export default function VoucherForm({ mode }: Props) {
       {/* ── Add Party Popup ──────────────────────────────── */}
       {showPartyPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-slate-900">Add New Party</h2>
             <p className="mt-1 text-sm text-slate-500">Create a new customer or vendor</p>
             <div className="mt-4 space-y-3">
@@ -1647,7 +1647,7 @@ export default function VoucherForm({ mode }: Props) {
       {/* ── Add Item Popup ────────────────────────────────── */}
       {showItemPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-slate-900">Add New Item</h2>
             <p className="mt-1 text-sm text-slate-500">Create a new inventory item</p>
             <div className="mt-4 space-y-3">

@@ -204,7 +204,7 @@ export default function RecurringBilling() {
 
       {/* ── Create form ────────────────────────────────────── */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="rounded-lg border border-slate-200 bg-white p-4">
+        <form onSubmit={handleSubmit} className="rounded-lg border border-slate-200 bg-white p-5">
           <h3 className="mb-3 text-sm font-semibold text-slate-700">{t('recurringBilling.newSchedule', 'New Recurring Schedule')}</h3>
           {error && (
             <p className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>

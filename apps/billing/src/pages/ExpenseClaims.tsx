@@ -202,7 +202,7 @@ export default function ExpenseClaims() {
 
       {/* ── Create form ──────────────────────────────────────── */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="rounded-lg border border-slate-200 bg-white p-4">
+        <form onSubmit={handleSubmit} className="rounded-lg border border-slate-200 bg-white p-5">
           <h3 className="mb-3 text-sm font-semibold text-slate-700">{t('expenseClaims.newClaim', 'New Expense Claim')}</h3>
           {error && <p className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">

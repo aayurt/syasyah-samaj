@@ -150,7 +150,7 @@ export default function Posting() {
           { label: 'Filtered', value: String(filtered.length) },
           { label: 'Draft Value', value: fmt(grossTotal) },
         ].map((k) => (
-          <div key={k.label} className="rounded-lg border border-slate-200 bg-white p-4">
+          <div key={k.label} className="rounded-lg border border-slate-200 bg-white p-5">
             <div className="text-xs uppercase tracking-wide text-slate-500">{k.label}</div>
             <div className="mt-1 font-mono text-lg font-semibold text-amber-700">{k.value}</div>
           </div>

@@ -225,7 +225,7 @@ export default function BankReconciliation() {
       )}
 
       {/* ── Account selector ───────────────────────────────────── */}
-      <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+      <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
         <label className="text-sm font-medium text-slate-700">
           {t('bankRec.title', 'Select Bank Account')}
         </label>
@@ -252,7 +252,7 @@ export default function BankReconciliation() {
       {selectedAccount && (
         <>
           {/* ── Import section ─────────────────────────────────── */}
-          <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+          <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
             <div className="flex items-center gap-2 mb-3">
               <Upload size={16} className="text-slate-400" />
               <h3 className="text-sm font-medium text-slate-700">
@@ -499,7 +499,7 @@ export default function BankReconciliation() {
 
           {/* ── Reconciliation result ──────────────────────────── */}
           {reconcileResult && (
-            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
               <h3 className="text-sm font-medium text-slate-700 mb-3">
                 {t('bankRec.title', 'Reconciliation Result')}
               </h3>
@@ -601,7 +601,7 @@ export default function BankReconciliation() {
 
           {/* ── Voucher creation result ──────────────────────────── */}
           {voucherResult && (
-            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
               <h3 className="text-sm font-medium text-slate-700 mb-3">
                 {t('vouchers.title', 'Vouchers Created')}
               </h3>

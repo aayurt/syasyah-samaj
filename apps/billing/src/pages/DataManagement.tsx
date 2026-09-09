@@ -11,10 +11,12 @@ import {
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { DATA_COLLECTIONS, runCleanup, runSeedDemo } from '../lib/dataOps'
-import { useTenant } from '../lib/tenant'
+import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import type { BillingSettings } from '../lib/types'
+import { fetchAllDocs, buildExportJson, downloadBlob, parseImportFile } from '../lib/importExport'
+import ImportPreviewModal from '../components/ImportPreviewModal'
 
 /**
  * Data Management — bulk operations that shape a tenant's books.
@@ -57,6 +59,7 @@ export default function DataManagement() {
   const navigate = useNavigate()
   const t = useT()
   const { tenantId, isCentral } = useTenant()
+  const tenantQuery = useTenantQuery()
 
   const [settings, setSettings] = useState<BillingSettings | null>(null)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
@@ -67,6 +70,7 @@ export default function DataManagement() {
 
   const [seeding, setSeeding] = useState(false)
   const [seedResult, setSeedResult] = useState<{ chart?: { groups: number; accounts: number }; partyCount?: number; draftCount?: number } | null>(null)
+  const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[] } | null>(null)
 
   useEffect(() => {
     api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
@@ -141,7 +145,7 @@ export default function DataManagement() {
       </div>
 
       {/* ── Cleanup ─────────────────────────────────────────────── */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="rounded-lg bg-red-50 p-3 text-red-600">
             <Trash2 size={20} />
@@ -157,7 +161,7 @@ export default function DataManagement() {
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Removes</p>
             <ul className="mt-2 space-y-1">
               {DATA_COLLECTIONS.map((c) => (
@@ -168,7 +172,7 @@ export default function DataManagement() {
               ))}
             </ul>
           </div>
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Keeps</p>
             <ul className="mt-2 space-y-1">
               {KEPT.map((k) => (
@@ -190,7 +194,7 @@ export default function DataManagement() {
           </div>
         )}
 
-        <div className="mt-5 rounded-lg border border-red-100 bg-red-50/50 p-4">
+        <div className="mt-5 rounded-lg border border-red-100 bg-red-50/50 p-5">
           <label className="flex items-center gap-2 text-sm font-medium text-red-700">
             <AlertTriangle size={15} />
             Type <span className="font-mono font-semibold">{TYPED_CONFIRMATION}</span> to confirm
@@ -214,7 +218,7 @@ export default function DataManagement() {
         </div>
 
         {cleanupResult && (
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-5 text-sm">
             <p className="font-medium text-slate-700">
               Removed {totalRemoved} row(s) · voucher counters reset to 0
             </p>
@@ -239,7 +243,7 @@ export default function DataManagement() {
       </section>
 
       {/* ── Demo seed ───────────────────────────────────────────── */}
-      <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="rounded-lg bg-crimson-50 p-3 text-crimson-600">
             <Sparkles size={20} />
@@ -279,7 +283,7 @@ export default function DataManagement() {
         )}
 
         {seedResult && (
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
             <p>
               Chart: {seedResult.chart?.groups ?? 0} groups, {seedResult.chart?.accounts ?? 0} accounts ·
               {seedResult.partyCount ?? 0} parties · {seedResult.draftCount ?? 0} draft vouchers.
@@ -293,6 +297,87 @@ export default function DataManagement() {
           </div>
         )}
       </section>
+
+      {/* ── Import / Export ─────────────────────────────────────── */}
+      <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="rounded-lg bg-blue-50 p-3 text-blue-600">
+            <Database size={20} />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-base font-semibold text-slate-800">Import / Export</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Export your data as JSON for backup, or import data from another system.
+              Imported records are compared against existing data — you choose what to keep.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Export */}
+          <div className="rounded-lg border border-slate-200 p-5">
+            <h3 className="text-sm font-semibold text-slate-700">Export Data</h3>
+            <p className="mt-1 text-xs text-slate-500">Download all records for a collection as JSON.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {['members', 'parties', 'items', 'accounts', 'documents'].map((slug) => (
+                <button
+                  key={slug}
+                  onClick={async () => {
+                    try {
+                      pushToast('info', 'Exporting…', `Fetching ${slug}`)
+                      const docs = await fetchAllDocs(slug, tenantQuery)
+                      const blob = buildExportJson(slug, docs)
+                      downloadBlob(`${slug}-export.json`, blob)
+                      pushToast('success', 'Exported', `${docs.length} ${slug} records`)
+                    } catch (err) {
+                      pushToast('error', 'Export failed', err instanceof Error ? err.message : String(err))
+                    }
+                  }}
+                  className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  {slug}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Import */}
+          <div className="rounded-lg border border-slate-200 p-5">
+            <h3 className="text-sm font-semibold text-slate-700">Import Data</h3>
+            <p className="mt-1 text-xs text-slate-500">Upload a JSON export file. Duplicates are detected automatically.</p>
+            <div className="mt-3">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+                <Database size={12} /> Choose JSON file
+                <input
+                  type="file"
+                  accept=".json"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    try {
+                      const parsed = await parseImportFile<Record<string, unknown>>(file)
+                      setImportData({ collection: parsed.collection, docs: parsed.docs })
+                    } catch (err) {
+                      pushToast('error', 'Parse failed', err instanceof Error ? err.message : String(err))
+                    }
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {importData && (
+        <ImportPreviewModal
+          collection={importData.collection}
+          docs={importData.docs}
+          onClose={() => setImportData(null)}
+          onImported={() => setImportData(null)}
+        />
+      )}
     </div>
   )
 }

@@ -120,7 +120,7 @@ const navGroups: { title?: string; titleKey?: string; items: NavItem[] }[] = [
       { to: '/trial-balance', label: 'Trial Balance', labelKey: 'nav.trialBalance', icon: ListChecks },
       { to: '/reports/pnl', label: 'Profit & Loss', labelKey: 'nav.profitLoss', icon: BarChart3 },
       { to: '/reports/balance-sheet', label: 'Balance Sheet', labelKey: 'nav.balanceSheet', icon: Scale },
-      { to: '/reports', label: 'Reports', labelKey: 'nav.reportsHub', icon: ClipboardList },
+      { to: '/reports', label: 'Reports', labelKey: 'nav.reportsHub', icon: ClipboardList, end: true },
     ],
   },
   {

@@ -243,7 +243,7 @@ export default function Items() {
       {showForm && (
         <form
           onSubmit={save}
-          className="mt-4 rounded-lg border border-slate-200 bg-white p-4"
+          className="mt-4 rounded-lg border border-slate-200 bg-white p-5"
         >
           <h3 className="mb-3 text-sm font-semibold text-slate-700">
             {editing ? t('common.edit', 'Edit') + ' ' + t('items.title', 'Item') : t('items.newItem', 'New Item')}

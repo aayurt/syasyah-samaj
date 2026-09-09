@@ -213,7 +213,7 @@ export default function AuditLog() {
 
           {/* Expanded diffs */}
           {logs.filter((l) => expanded.has(l.id)).map((log) => (
-            <div key={`diff-${log.id}`} className="mt-2 rounded-lg border border-slate-200 bg-white p-4">
+            <div key={`diff-${log.id}`} className="mt-2 rounded-lg border border-slate-200 bg-white p-5">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-medium text-slate-700">
                   {log.action} · {log.entityType} · {log.entityLabel || log.entityId}
