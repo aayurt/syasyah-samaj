@@ -130,7 +130,7 @@ export default function FiscalYearSwitcher() {
         ref={addBtnRef}
         onClick={handleAddYearClick}
         title={t('fy.addYear', 'Add new fiscal year')}
-        className="pointer-events-auto absolute -right-8 top-1/2 -translate-y-1/2 rounded-full bg-crimson-600 text-white p-1 hover:bg-crimson-700 focus:outline-none focus:ring-1 focus:ring-crimson-500"
+        className="pointer-events-auto absolute -right-6 top-1/2 -translate-y-1/2 rounded-full bg-crimson-600 text-white p-1 hover:bg-crimson-700 focus:outline-none focus:ring-1 focus:ring-crimson-500"
       >
         <Plus size={14} />
       </button>
