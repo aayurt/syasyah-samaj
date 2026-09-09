@@ -1543,7 +1543,7 @@ export interface Member {
   user?: (number | null) | User;
   expiryDate?: string | null;
   idCardDetails?: {
-    bloodGroup?: string | null;
+    bloodGroup?: ('A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-') | null;
     emergencyContact?: string | null;
   };
   /**
@@ -1559,6 +1559,155 @@ export interface Member {
    */
   lastReceipt?: (number | null) | Document;
   paymentStatus?: ('unpaid' | 'paid' | 'overdue') | null;
+  /**
+   * Membership application form fields (paper-form parity).
+   */
+  application?: {
+    /**
+     * Citizenship certificate number
+     */
+    citizenshipNo?: string | null;
+    /**
+     * Citizenship issued date (BS, YYYY-MM-DD)
+     */
+    citizenshipIssuedDateBs?: string | null;
+    /**
+     * District where citizenship was issued
+     */
+    citizenshipDistrict?:
+      | (
+          | 'taplejung'
+          | 'panchthar'
+          | 'ilam'
+          | 'jhapa'
+          | 'tehrathum'
+          | 'sankhuwasabha'
+          | 'bhojpur'
+          | 'solukhumbu'
+          | 'okhaldhunga'
+          | 'khotang'
+          | 'dhankuta'
+          | 'udayapur'
+          | 'saptari'
+          | 'morang'
+          | 'siraha'
+          | 'dhanusha'
+          | 'mahottari'
+          | 'sarlahi'
+          | 'rautahat'
+          | 'bara'
+          | 'parsa'
+          | 'sindhupalchok'
+          | 'kabhre-palanchowk'
+          | 'sindhuli'
+          | 'ramechhap'
+          | 'dolakha'
+          | 'bhaktapur'
+          | 'kathmandu'
+          | 'lalitpur'
+          | 'nuwakot'
+          | 'rasuwa'
+          | 'dhading'
+          | 'makwanpur'
+          | 'chitwan'
+          | 'gorkha'
+          | 'manang'
+          | 'mustang'
+          | 'kaski'
+          | 'lamjung'
+          | 'tanahu'
+          | 'myagdi'
+          | 'baglung'
+          | 'parbat'
+          | 'syangja'
+          | 'nawalparasi-east'
+          | 'nawalparasi-west'
+          | 'kapilvastu'
+          | 'rupandehi'
+          | 'palpa'
+          | 'gulmi'
+          | 'arghakhanchi'
+          | 'banke'
+          | 'bardiya'
+          | 'rolpa'
+          | 'pyuthan'
+          | 'dang'
+          | 'rukum-east'
+          | 'rukum-west'
+          | 'surkhet'
+          | 'dailekh'
+          | 'jumla'
+          | 'kalikot'
+          | 'mugu'
+          | 'humla'
+          | 'salyan'
+          | 'jajarkot'
+          | 'dolpa'
+          | 'humla-2'
+          | 'kailali'
+          | 'kanchanpur'
+          | 'dadeldhura'
+          | 'baitadi'
+          | 'darchula'
+          | 'achham'
+          | 'doti'
+          | 'bajura'
+          | 'bajhang'
+        )
+      | null;
+    /**
+     * Permanent address
+     */
+    addressPermanent?: string | null;
+    /**
+     * Temporary address
+     */
+    addressTemporary?: string | null;
+    /**
+     * Mobile number
+     */
+    mobile?: string | null;
+    /**
+     * Special qualifications
+     */
+    specialQualification?: string | null;
+    /**
+     * Occupation
+     */
+    occupation?: string | null;
+    /**
+     * Office/employer name
+     */
+    officeName?: string | null;
+    /**
+     * Father's name
+     */
+    fatherName?: string | null;
+    /**
+     * Grandfather's name
+     */
+    grandfatherName?: string | null;
+    /**
+     * Father-in-law's name
+     */
+    fatherInLawName?: string | null;
+    /**
+     * Spouse's name
+     */
+    spouseName?: string | null;
+    /**
+     * Son's name
+     */
+    sonName?: string | null;
+    /**
+     * Daughter's name
+     */
+    daughterName?: string | null;
+    /**
+     * Application date (BS, YYYY-MM-DD)
+     */
+    appliedDateBs?: string | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -3096,6 +3245,26 @@ export interface MembersSelect<T extends boolean = true> {
   renewalDate?: T;
   lastReceipt?: T;
   paymentStatus?: T;
+  application?:
+    | T
+    | {
+        citizenshipNo?: T;
+        citizenshipIssuedDateBs?: T;
+        citizenshipDistrict?: T;
+        addressPermanent?: T;
+        addressTemporary?: T;
+        mobile?: T;
+        specialQualification?: T;
+        occupation?: T;
+        officeName?: T;
+        fatherName?: T;
+        grandfatherName?: T;
+        fatherInLawName?: T;
+        spouseName?: T;
+        sonName?: T;
+        daughterName?: T;
+        appliedDateBs?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

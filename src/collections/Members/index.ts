@@ -9,6 +9,7 @@ import {
 } from '@/access/tenantScoped'
 import { assignTenant } from '@/utilities/tenantScope'
 import { postDocument } from '@/collections/Documents'
+import { DISTRICTS } from '@/lib/districts'
 
 export const Members: CollectionConfig = {
   slug: 'members',
@@ -277,7 +278,17 @@ export const Members: CollectionConfig = {
       fields: [
         {
           name: 'bloodGroup',
-          type: 'text',
+          type: 'select',
+          options: [
+            { label: 'A+', value: 'A+' },
+            { label: 'A-', value: 'A-' },
+            { label: 'B+', value: 'B+' },
+            { label: 'B-', value: 'B-' },
+            { label: 'AB+', value: 'AB+' },
+            { label: 'AB-', value: 'AB-' },
+            { label: 'O+', value: 'O+' },
+            { label: 'O-', value: 'O-' },
+          ],
         },
         {
           name: 'emergencyContact',
@@ -324,6 +335,37 @@ export const Members: CollectionConfig = {
       admin: {
         position: 'sidebar',
       },
+    },
+    // ── Application group (paper-form parity fields) ──
+    {
+      name: 'application',
+      type: 'group',
+      admin: {
+        description: 'Membership application form fields (paper-form parity).',
+      },
+      fields: [
+        { name: 'citizenshipNo', type: 'text', admin: { description: 'Citizenship certificate number' } },
+        { name: 'citizenshipIssuedDateBs', type: 'text', admin: { description: 'Citizenship issued date (BS, YYYY-MM-DD)' } },
+        {
+          name: 'citizenshipDistrict',
+          type: 'select',
+          options: DISTRICTS.map((d) => ({ label: d.label, value: d.value })),
+          admin: { description: 'District where citizenship was issued' },
+        },
+        { name: 'addressPermanent', type: 'textarea', admin: { description: 'Permanent address' } },
+        { name: 'addressTemporary', type: 'textarea', admin: { description: 'Temporary address' } },
+        { name: 'mobile', type: 'text', admin: { description: 'Mobile number' } },
+        { name: 'specialQualification', type: 'text', admin: { description: 'Special qualifications' } },
+        { name: 'occupation', type: 'text', admin: { description: 'Occupation' } },
+        { name: 'officeName', type: 'text', admin: { description: 'Office/employer name' } },
+        { name: 'fatherName', type: 'text', admin: { description: "Father's name" } },
+        { name: 'grandfatherName', type: 'text', admin: { description: "Grandfather's name" } },
+        { name: 'fatherInLawName', type: 'text', admin: { description: "Father-in-law's name" } },
+        { name: 'spouseName', type: 'text', admin: { description: "Spouse's name" } },
+        { name: 'sonName', type: 'text', admin: { description: "Son's name" } },
+        { name: 'daughterName', type: 'text', admin: { description: "Daughter's name" } },
+        { name: 'appliedDateBs', type: 'text', admin: { description: 'Application date (BS, YYYY-MM-DD)' } },
+      ],
     },
   ],
 }
