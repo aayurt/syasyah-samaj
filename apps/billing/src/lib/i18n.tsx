@@ -12,7 +12,7 @@ type LangContextValue = {
   setLang: (lang: Lang) => void
 }
 
-const LangContext = createContext<LangContextValue>({
+export const LangContext = createContext<LangContextValue>({
   lang: DEFAULT_LANG,
   setLang: () => {},
 })

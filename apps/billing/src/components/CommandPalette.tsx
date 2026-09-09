@@ -17,13 +17,14 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { api } from '../lib/api'
+import { useT } from '../lib/i18n'
 
 /* ------------------------------------------------------------------ */
 /*  Shortcut definitions                                              */
 /* ------------------------------------------------------------------ */
 
 interface Shortcut {
-  label: string
+  labelKey: string
   icon: LucideIcon
   route: string
   shortcut?: string
@@ -31,16 +32,16 @@ interface Shortcut {
 }
 
 const SHORTCUTS: Shortcut[] = [
-  { label: 'Sales Invoice', icon: ArrowUpRight, route: '/vouchers', shortcut: '⌥S', color: 'text-emerald-600' },
-  { label: 'Purchase Invoice', icon: ShoppingCart, route: '/vouchers', shortcut: '⌥P', color: 'text-emerald-600' },
-  { label: 'Payment', icon: Send, route: '/vouchers', shortcut: '⌥I', color: 'text-emerald-600' },
-  { label: 'Receipt', icon: Receipt, route: '/vouchers', shortcut: '⌥O', color: 'text-emerald-600' },
-  { label: 'Journal Entry', icon: BookOpenText, route: '/vouchers', shortcut: '⌥J', color: 'text-emerald-600' },
-  { label: 'Contra Entry', icon: RefreshCw, route: '/vouchers', shortcut: '⌥T', color: 'text-emerald-600' },
-  { label: 'Credit Note', icon: RotateCcw, route: '/vouchers', shortcut: '⌥C', color: 'text-emerald-600' },
-  { label: 'Add Item', icon: Boxes, route: '/inventory', shortcut: '⌥M', color: 'text-emerald-600' },
-  { label: 'Add Party', icon: Users, route: '/parties', shortcut: '⌥N', color: 'text-emerald-600' },
-  { label: 'Dashboard', icon: LayoutDashboard, route: '/', shortcut: '⌥D', color: 'text-emerald-600' },
+  { labelKey: 'palette.shortcutSalesInvoice', icon: ArrowUpRight, route: '/vouchers', shortcut: '⌥S', color: 'text-emerald-600' },
+  { labelKey: 'palette.shortcutPurchaseInvoice', icon: ShoppingCart, route: '/vouchers', shortcut: '⌥P', color: 'text-emerald-600' },
+  { labelKey: 'palette.shortcutPayment', icon: Send, route: '/vouchers', shortcut: '⌥I', color: 'text-emerald-600' },
+  { labelKey: 'palette.shortcutReceipt', icon: Receipt, route: '/vouchers', shortcut: '⌥O', color: 'text-emerald-600' },
+  { labelKey: 'palette.shortcutJournalEntry', icon: BookOpenText, route: '/vouchers', shortcut: '⌥J', color: 'text-emerald-600' },
+  { labelKey: 'palette.shortcutContraEntry', icon: RefreshCw, route: '/vouchers', shortcut: '⌥T', color: 'text-emerald-600' },
+  { labelKey: 'palette.shortcutCreditNote', icon: RotateCcw, route: '/vouchers', shortcut: '⌥C', color: 'text-emerald-600' },
+  { labelKey: 'palette.shortcutAddItem', icon: Boxes, route: '/inventory', shortcut: '⌥M', color: 'text-emerald-600' },
+  { labelKey: 'palette.shortcutAddParty', icon: Users, route: '/parties', shortcut: '⌥N', color: 'text-emerald-600' },
+  { labelKey: 'palette.shortcutDashboard', icon: LayoutDashboard, route: '/', shortcut: '⌥D', color: 'text-emerald-600' },
 ]
 
 /* ------------------------------------------------------------------ */
@@ -65,6 +66,7 @@ interface Props {
 }
 
 export default function CommandPalette({ open, onClose }: Props) {
+  const t = useT()
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
@@ -200,7 +202,7 @@ export default function CommandPalette({ open, onClose }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search for transactions, parties & inventory…"
+            placeholder={t('palette.searchPlaceholder')}
             className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 outline-none"
           />
           {query && (
@@ -223,11 +225,11 @@ export default function CommandPalette({ open, onClose }: Props) {
             loading ? (
               <div className="flex items-center justify-center py-8 text-sm text-slate-400">
                 <RefreshCw size={14} className="mr-2 animate-spin" />
-                Searching…
+                {t('palette.searching')}
               </div>
             ) : results.length === 0 ? (
               <div className="py-8 text-center text-sm text-slate-400">
-                No results for &ldquo;{query}&rdquo;
+                {t('palette.noResults')} &ldquo;{query}&rdquo;
               </div>
             ) : (
               <div className="space-y-1">
@@ -262,14 +264,14 @@ export default function CommandPalette({ open, onClose }: Props) {
             /* ---- Shortcut grid ---- */
             <>
               <div className="mb-2 px-1 text-xs font-medium text-slate-400">
-                Shortcuts (for adding data)
+                {t('palette.shortcuts')}
               </div>
               <div className="grid grid-cols-4 gap-2">
                 {SHORTCUTS.map((s, i) => {
                   const Icon = s.icon
                   return (
                     <button
-                      key={s.label}
+                      key={s.labelKey}
                       onClick={() => go(s.route)}
                       onMouseEnter={() => setActiveIdx(i)}
                       className={`flex flex-col items-center gap-2 rounded-lg border border-slate-100 px-3 py-4 text-center transition-colors ${
@@ -279,7 +281,7 @@ export default function CommandPalette({ open, onClose }: Props) {
                       }`}
                     >
                       <Icon size={20} className={s.color} />
-                      <span className="text-xs font-medium text-slate-700">{s.label}</span>
+                      <span className="text-xs font-medium text-slate-700">{t(s.labelKey)}</span>
                       {s.shortcut && (
                         <kbd className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-400">
                           {s.shortcut}
@@ -296,11 +298,11 @@ export default function CommandPalette({ open, onClose }: Props) {
         {/* Footer hint */}
         <div className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400">
           <kbd className="rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px]">⌘K</kbd>
-          {' '}to open · {' '}
+          {' '}{t('palette.footerHint').split('·')[0]}·{' '}
           <kbd className="rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px]">↑↓</kbd>
-          {' '}to navigate · {' '}
+          {' '}{t('palette.footerHint').split('·')[1]}·{' '}
           <kbd className="rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px]">↵</kbd>
-          {' '}to select
+          {' '}{t('palette.footerHint').split('·')[2]}
         </div>
       </div>
     </div>

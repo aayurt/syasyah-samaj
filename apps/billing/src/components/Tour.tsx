@@ -1,10 +1,11 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { useT } from '../lib/i18n'
 
 export interface TourStep {
-  title: string
-  body: string
+  titleKey: string
+  bodyKey: string
   /** Route to navigate to before highlighting the target. */
   route?: string
   /** CSS selector for the element to spotlight. */
@@ -14,49 +15,49 @@ export interface TourStep {
 
 export const TOUR_STEPS: TourStep[] = [
   {
-    title: 'Sidebar navigation',
-    body: 'Everything is grouped: Bookkeeping, Masters, Inventory, and Reports. Click the arrow to collapse it to icons and free up space.',
+    titleKey: 'tour.step1Title',
+    bodyKey: 'tour.step1Body',
     target: 'aside',
     placement: 'right',
   },
   {
-    title: 'Sync status',
-    body: 'This pill shows your connection — Synced when online, “n to sync” when changes are queued, Offline when disconnected. Click it to flush pending changes.',
+    titleKey: 'tour.step2Title',
+    bodyKey: 'tour.step2Body',
     target: '[data-tour="sync"]',
     placement: 'bottom',
   },
   {
     route: '/',
-    title: 'Dashboard',
-    body: 'Your at-a-glance overview: account count, journal entries, posted totals, and the trial balance check.',
+    titleKey: 'tour.step3Title',
+    bodyKey: 'tour.step3Body',
     target: '[data-tour="dashboard-stats"]',
     placement: 'bottom',
   },
   {
     route: '/vouchers',
-    title: 'Transactions',
-    body: 'Record every transaction here — sales invoices, purchase bills, payments and receipts, notes, and more. Start one with “New transaction”.',
+    titleKey: 'tour.step4Title',
+    bodyKey: 'tour.step4Body',
     target: '[data-tour="new-voucher"]',
     placement: 'bottom',
   },
   {
     route: '/vouchers',
-    title: 'Filter the list',
-    body: 'Narrow transactions by Type or by Status — each filter sits on its own line.',
+    titleKey: 'tour.step5Title',
+    bodyKey: 'tour.step5Body',
     target: '[data-tour="voucher-filters"]',
     placement: 'right',
   },
   {
     route: '/trial-balance',
-    title: 'Reports & ledgers',
-    body: 'Trial balance, account ledgers, AR/AP aging, P&L, balance sheet, and daybooks. The posting engine keeps debits and credits in balance automatically.',
+    titleKey: 'tour.step6Title',
+    bodyKey: 'tour.step6Body',
     target: '[data-tour="trial-report"]',
     placement: 'top',
   },
   {
     route: '/settings',
-    title: 'Settings',
-    body: 'Manage fiscal years: each period has a start/end date and is Active (editable) or Closed (read-only). Set the working year, and closed periods block new postings.',
+    titleKey: 'tour.step7Title',
+    bodyKey: 'tour.step7Body',
     target: '[data-tour="settings"]',
     placement: 'top',
   },
@@ -102,6 +103,7 @@ export default function Tour({
   open: boolean
   onClose: () => void
 }) {
+  const t = useT()
   const [step, setStep] = useState(0)
   const [rect, setRect] = useState<DOMRect | null>(null)
   const navigate = useNavigate()
@@ -122,12 +124,12 @@ export default function Tour({
       const el = s.target ? document.querySelector(s.target) : null
       setRect(el ? el.getBoundingClientRect() : null)
     }
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       const el = s.target ? document.querySelector(s.target) : null
       if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
       position()
     }, 150)
-    return () => clearTimeout(t)
+    return () => clearTimeout(timer)
   }, [open, step, location.pathname, navigate])
 
   // Reposition on scroll/resize so the spotlight tracks its target.
@@ -188,22 +190,22 @@ export default function Tour({
         className="fixed z-[60] w-[320px] rounded-xl bg-white p-4 shadow-2xl ring-1 ring-slate-200"
         style={style}
         role="dialog"
-        aria-label={current.title}
+        aria-label={t(current.titleKey)}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="text-sm font-semibold text-slate-900">
-            {current.title}
+            {t(current.titleKey)}
           </div>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-700"
-            aria-label="Close tour"
+            aria-label={t('tour.closeTour')}
           >
             <X size={15} />
           </button>
         </div>
         <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
-          {current.body}
+          {t(current.bodyKey)}
         </p>
         <div className="mt-3 flex items-center justify-between">
           <span className="text-xs text-slate-400">
@@ -216,14 +218,14 @@ export default function Tour({
                 className="flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
               >
                 <ChevronLeft size={12} />
-                Back
+                {t('tour.back')}
               </button>
             )}
             <button
               onClick={() => (last ? onClose() : setStep((s) => s + 1))}
               className="flex items-center gap-1 rounded bg-crimson-600 px-3 py-1 text-xs font-medium text-white hover:bg-crimson-700"
             >
-              {last ? 'Finish' : 'Next'}
+              {last ? t('tour.finish') : t('tour.next')}
               {!last && <ChevronRight size={12} />}
             </button>
           </div>

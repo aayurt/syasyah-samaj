@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { VERSION_PATH } from '../lib/appBase'
+import { useT } from '../lib/i18n'
 
 declare const __APP_VERSION__: string
 
@@ -15,6 +16,7 @@ const POLL_MS = 5 * 60 * 1000 // check every 5 minutes
  * offer a one-click reload that picks up the fresh shell + assets.
  */
 export default function UpdatePrompt() {
+  const t = useT()
   const [updateAvailable, setUpdateAvailable] = useState(false)
 
   useEffect(() => {
@@ -68,14 +70,14 @@ export default function UpdatePrompt() {
   return (
     <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg border border-crimson-200 bg-white px-4 py-3 shadow-lg">
       <p className="text-sm text-slate-700">
-        A new version of स्यस्यः धुकू is available.
+        {t('update.updateAvailable')}
       </p>
       <button
         onClick={reload}
         className="flex items-center gap-1.5 rounded bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
       >
         <RefreshCw size={14} />
-        Reload
+        {t('update.reload')}
       </button>
     </div>
   )

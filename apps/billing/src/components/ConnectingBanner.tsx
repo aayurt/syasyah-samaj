@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Wifi } from 'lucide-react'
 import { getEngine } from '../lib/offline'
+import { useT } from '../lib/i18n'
 
 /**
  * Subtle cold-boot banner: shows "Connecting…" while IndexedDB is empty
@@ -9,6 +10,7 @@ import { getEngine } from '../lib/offline'
  * first. Never shows if the cache is already warm.
  */
 export default function ConnectingBanner() {
+  const t = useT()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export default function ConnectingBanner() {
   return (
     <div className="flex items-center justify-center gap-2 bg-slate-800 px-4 py-1.5 text-xs text-slate-300">
       <Wifi size={12} className="animate-pulse" />
-      <span>Connecting to server…</span>
+      <span>{t('connecting.connecting')}</span>
     </div>
   )
 }

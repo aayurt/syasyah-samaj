@@ -13,6 +13,7 @@ import { useCalendar } from '../lib/calendar'
 import { getEngine, fmt, useSyncState } from '../lib/api'
 import type { OutboxEntry } from '../lib/offline/types'
 import { DOC_TYPE_LABELS } from '../lib/types'
+import { useT } from '../lib/i18n'
 import ConflictResolutionModal from './ConflictResolutionModal'
 
 /** Human-readable label for a queued write's collection. */
@@ -27,6 +28,7 @@ const COLLECTION_LABELS: Record<string, string> = {
 
 /** Render one queued write's request body as a readable draft. */
 function DraftBody({ entry, formatDate }: { entry: OutboxEntry; formatDate: (d: string) => string }) {
+  const t = useT()
   const b = (entry.body ?? {}) as Record<string, unknown>
   const isDoc =
     entry.path.replace(/^\/+|\/+$/g, '') === 'documents' ||
@@ -45,36 +47,36 @@ function DraftBody({ entry, formatDate }: { entry: OutboxEntry; formatDate: (d: 
       <div className="space-y-4">
         <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
           <div>
-            <dt className="text-xs uppercase tracking-wide text-slate-400">Type</dt>
+            <dt className="text-xs uppercase tracking-wide text-slate-400">{t('sync.draftType')}</dt>
             <dd className="mt-0.5 text-slate-700">{label}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-wide text-slate-400">Date</dt>
+            <dt className="text-xs uppercase tracking-wide text-slate-400">{t('sync.draftDate')}</dt>
             <dd className="mt-0.5 text-slate-700">
               {formatDate(String(b.date ?? ''))}
             </dd>
           </div>
           {b.party !== undefined && b.party !== '' && (
             <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-400">Party</dt>
+              <dt className="text-xs uppercase tracking-wide text-slate-400">{t('sync.draftParty')}</dt>
               <dd className="mt-0.5 text-slate-700">{idOf(b.party) || '—'}</dd>
             </div>
           )}
           {b.narration ? (
             <div className="col-span-2">
-              <dt className="text-xs uppercase tracking-wide text-slate-400">Narration</dt>
+              <dt className="text-xs uppercase tracking-wide text-slate-400">{t('sync.draftNarration')}</dt>
               <dd className="mt-0.5 text-slate-700">{String(b.narration)}</dd>
             </div>
           ) : null}
           {b.paymentMethod ? (
             <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-400">Payment</dt>
+              <dt className="text-xs uppercase tracking-wide text-slate-400">{t('sync.draftPayment')}</dt>
               <dd className="mt-0.5 capitalize text-slate-700">{String(b.paymentMethod)}</dd>
             </div>
           ) : null}
           {b.taxRate ? (
             <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-400">Tax rate</dt>
+              <dt className="text-xs uppercase tracking-wide text-slate-400">{t('sync.draftTaxRate')}</dt>
               <dd className="mt-0.5 text-slate-700">{String(b.taxRate)}%</dd>
             </div>
           ) : null}
@@ -83,11 +85,11 @@ function DraftBody({ entry, formatDate }: { entry: OutboxEntry; formatDate: (d: 
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
-                <th className="py-2 pr-2">Item</th>
-                <th className="py-2 pr-2">Description</th>
-                <th className="w-16 py-2 pr-2 text-right">Qty</th>
-                <th className="w-24 py-2 pr-2 text-right">Rate</th>
-                <th className="w-28 py-2 text-right">Amount</th>
+                <th className="py-2 pr-2">{t('sync.draftItem')}</th>
+                <th className="py-2 pr-2">{t('sync.draftDescription')}</th>
+                <th className="w-16 py-2 pr-2 text-right">{t('sync.draftQty')}</th>
+                <th className="w-24 py-2 pr-2 text-right">{t('sync.draftRate')}</th>
+                <th className="w-28 py-2 text-right">{t('sync.draftAmount')}</th>
               </tr>
             </thead>
             <tbody>
@@ -111,10 +113,10 @@ function DraftBody({ entry, formatDate }: { entry: OutboxEntry; formatDate: (d: 
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
-                <th className="py-2 pr-2">Account</th>
-                <th className="w-24 py-2 pr-2 text-right">Debit</th>
-                <th className="w-24 py-2 pr-2 text-right">Credit</th>
-                <th className="py-2 text-right">Memo</th>
+                <th className="py-2 pr-2">{t('sync.draftAccount')}</th>
+                <th className="w-24 py-2 pr-2 text-right">{t('sync.draftDebit')}</th>
+                <th className="w-24 py-2 pr-2 text-right">{t('sync.draftCredit')}</th>
+                <th className="py-2 text-right">{t('sync.draftMemo')}</th>
               </tr>
             </thead>
             <tbody>
@@ -158,7 +160,15 @@ function DraftBody({ entry, formatDate }: { entry: OutboxEntry; formatDate: (d: 
   )
 }
 
+/** Map an HTTP method to the appropriate sync translation key. */
+function queuedLabel(method: string): string {
+  if (method === 'POST') return 'sync.queuedCreate'
+  if (method === 'PATCH') return 'sync.queuedUpdate'
+  return 'sync.queuedDelete'
+}
+
 export default function SyncBanner() {
+  const t = useT()
   const state = useSyncState()
   const { formatDateTime, formatDate } = useCalendar()
   const navigate = useNavigate()
@@ -243,10 +253,10 @@ export default function SyncBanner() {
         <TriangleAlert size={13} />
         <span className="min-w-0 flex-1">
           <span className="font-medium">
-            Queued {c.method === 'POST' ? 'create' : c.method.toLowerCase()}
-            {c.path !== '/documents' ? ` ${c.path}` : ''} — could not sync:
+            {t(queuedLabel(c.method))}
+            {c.path !== '/documents' ? ` ${c.path}` : ''} — {t('sync.couldNotSync')}:
           </span>{' '}
-          {c.conflict?.message ?? 'server rejected it'}
+          {c.conflict?.message ?? t('sync.serverRejected')}
         </span>
         <span className="flex items-center gap-1">
           <button
@@ -255,7 +265,7 @@ export default function SyncBanner() {
             className="flex items-center gap-1 rounded border border-red-300 bg-white px-2 py-0.5 font-medium hover:bg-red-100"
           >
             <Eye size={11} />
-            Resolve
+            {t('sync.resolve')}
           </button>
           {canEdit(c) && (
             <button
@@ -276,7 +286,7 @@ export default function SyncBanner() {
               className="flex items-center gap-1 rounded border border-red-300 bg-white px-2 py-0.5 font-medium hover:bg-red-100"
             >
               <Pencil size={11} />
-              Edit
+              {t('sync.edit')}
             </button>
           )}
           <button
@@ -286,7 +296,7 @@ export default function SyncBanner() {
             className="flex items-center gap-1 rounded border border-red-300 bg-white px-2 py-0.5 font-medium hover:bg-red-100 disabled:opacity-50"
           >
             <RefreshCw size={11} />
-            Retry
+            {t('sync.retry')}
           </button>
           <button
             onClick={() => void action(() => getEngine().discard(c.seq))}
@@ -294,7 +304,7 @@ export default function SyncBanner() {
             className="flex items-center gap-1 rounded border border-red-300 bg-white px-2 py-0.5 font-medium hover:bg-red-100"
           >
             <Trash2 size={11} />
-            Discard
+            {t('sync.discard')}
           </button>
         </span>
       </div>,
@@ -308,7 +318,7 @@ export default function SyncBanner() {
         <div className="flex items-center gap-2">
           <CloudOff size={15} />
           <span>
-            Offline — new changes will be queued and synced when you reconnect.
+            {t('sync.offlineNotice')}
           </span>
         </div>
         <button
@@ -317,7 +327,7 @@ export default function SyncBanner() {
           className="flex items-center gap-1 rounded border border-amber-300 px-2 py-0.5 text-xs font-medium hover:bg-amber-100 disabled:opacity-50"
         >
           <RefreshCw size={12} className={syncing ? 'animate-spin' : ''} />
-          Retry
+          {t('sync.retry')}
         </button>
       </div>
     )
@@ -329,13 +339,13 @@ export default function SyncBanner() {
           <div className="flex items-center justify-between gap-3 px-6 py-2 text-sm text-sky-800">
             <span>
               {state.conflicts > 0 &&
-                `${state.conflicts} change${state.conflicts === 1 ? '' : 's'} need${state.conflicts === 1 ? 's' : ''} attention.`}
+                t('sync.needsAttention').replace('{n}', String(state.conflicts))}
               {state.pending > 0 && (
                 <>
                   {state.conflicts > 0 ? ' ' : ''}
                   {state.online
-                    ? `${state.pending} change${state.pending === 1 ? '' : 's'} waiting to sync.`
-                    : `Offline — ${state.pending} change${state.pending === 1 ? '' : 's'} queued locally.`}
+                    ? t('sync.waitingToSync').replace('{n}', String(state.pending))
+                    : t('sync.offlineQueued').replace('{n}', String(state.pending))}
                 </>
               )}
             </span>
@@ -345,7 +355,7 @@ export default function SyncBanner() {
               className="flex items-center gap-1 rounded border border-sky-300 px-2 py-0.5 text-xs font-medium hover:bg-sky-100 disabled:opacity-50"
             >
               <RefreshCw size={12} className={syncing ? 'animate-spin' : ''} />
-              {syncing ? 'Syncing…' : 'Sync now'}
+              {syncing ? t('sync.syncing') : t('sync.syncNow')}
             </button>
           </div>
         )}
