@@ -493,7 +493,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <TrendingUp size={16} className="text-slate-400" />
             <h3 className="text-sm font-medium text-slate-700">
-              Revenue vs Expenses (12 months)
+              {t('dashboard.revenueVsExpenses', 'Revenue vs Expenses (12 months)')}
             </h3>
           </div>
           <div className="flex items-center gap-3 text-xs">
@@ -519,16 +519,16 @@ export default function Dashboard() {
       {/* ── {t('dashboard.recentJournalEntries', 'Recent journal entries')} ────────────────────────────── */}
       <div className="mt-4 rounded-lg border border-slate-200 bg-white">
         <div className="border-b border-slate-200 px-4 py-3 text-sm font-medium text-slate-700">
-          Recent journal entries
+          {t('dashboard.recentJournalEntries', 'Recent journal entries')}
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Narration</th>
-              <th className="px-4 py-2">Debit</th>
-              <th className="px-4 py-2">Credit</th>
-              <th className="px-4 py-2">Status</th>
+              <th className="px-4 py-2">{t('common.date', 'Date')}</th>
+              <th className="px-4 py-2">{t('dashboard.narration', 'Narration')}</th>
+              <th className="px-4 py-2">{t('common.debit', 'Debit')}</th>
+              <th className="px-4 py-2">{t('common.credit', 'Credit')}</th>
+              <th className="px-4 py-2">{t('common.status', 'Status')}</th>
             </tr>
           </thead>
           <tbody>

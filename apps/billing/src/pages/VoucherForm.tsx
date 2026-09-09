@@ -15,6 +15,7 @@ import {
 import NepaliDateInput from '../components/NepaliDateInput'
 import OutstandingInvoices from '../components/OutstandingInvoices'
 import { api, fmt, useSyncState } from '../lib/api'
+import { useT } from '../lib/i18n'
 import { useCachedList } from '../lib/useCachedList'
 import { useCalendar } from '../lib/calendar'
 import { calcEval } from '../lib/calcEval'
@@ -154,12 +155,27 @@ function RequiredChecklist({ items }: { items: { label: string; filled: boolean 
 /* ── Component ─────────────────────────────────────────────────── */
 
 export default function VoucherForm({ mode }: Props) {
+  const t = useT()
   const navigate = useNavigate()
   const { id, docType: urlDocType } = useParams()
   const [searchParams] = useSearchParams()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
+  const docTypeLabels: Record<string, string> = {
+    'sales-quote': t('vouchers.shortLabelQuote', 'Quote'),
+    'sales-invoice': t('vouchers.shortLabelSalesInvoice', 'Sales Invoice'),
+    'purchase-invoice': t('vouchers.shortLabelPurchaseInvoice', 'Purchase Invoice'),
+    'payment-voucher': t('vouchers.shortLabelPayment', 'Payment'),
+    'receipt-voucher': t('vouchers.shortLabelReceipt', 'Receipt'),
+    'credit-note': t('vouchers.shortLabelCreditNote', 'Credit Note'),
+    'debit-note': t('vouchers.shortLabelDebitNote', 'Debit Note'),
+    'petty-cash-voucher': t('vouchers.shortLabelPettyCash', 'Petty Cash'),
+    grn: t('vouchers.shortLabelGrn', 'Goods Received (GRN)'),
+    'delivery-challan': t('vouchers.shortLabelDeliveryChallan', 'Delivery Challan'),
+    'journal-voucher': t('vouchers.shortLabelJournalEntry', 'Journal Entry'),
+    contra: t('vouchers.shortLabelContraEntry', 'Contra Entry'),
+  }
   const { selectedYear } = useFiscalYear()
   const isClosedYear = selectedYear?.status === 'closed'
   const setup = useSetupStatus()
@@ -591,7 +607,7 @@ export default function VoucherForm({ mode }: Props) {
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/vouchers')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><ArrowLeft size={18} /></button>
           <h1 className="text-lg font-semibold text-slate-900">
-            {mode === 'edit' ? `Edit ${meta}` : `New Transaction`}
+            {mode === 'edit' ? `${t('common.edit', 'Edit')} ${meta}` : t('vouchers.newTransaction', 'New Transaction')}
           </h1>
         </div>
       </div>
@@ -601,7 +617,7 @@ export default function VoucherForm({ mode }: Props) {
       {/* ── Doc Type Cards ──────────────────────────────────── */}
       {mode === 'create' && (
         <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <label className="mb-3 block text-sm font-medium text-slate-700">What are you recording?</label>
+          <label className="mb-3 block text-sm font-medium text-slate-700">{t('vouchers.questionLabel', 'What are you recording?')}</label>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
             {(Object.keys(DOC_TYPE_META) as DocType[]).map((dt) => {
               const m = DOC_TYPE_META[dt]
@@ -619,7 +635,7 @@ export default function VoucherForm({ mode }: Props) {
                 >
                   <span className="text-xl">{m.icon}</span>
                   <span className={`text-xs font-medium ${active ? m.textClasses : 'text-slate-600'}`}>
-                    {m.shortLabel}
+                    {docTypeLabels[dt] || m.shortLabel}
                   </span>
                 </button>
               )
@@ -640,7 +656,7 @@ export default function VoucherForm({ mode }: Props) {
           {(isItem || isCash) && (
             <div ref={partyRef} className="relative">
               <label className="text-sm font-medium text-slate-700">
-                Party{' '}
+                {t('vouchers.partyLabel', 'Party')}{' '}
                 {docType !== 'petty-cash-voucher' && (
                   <span className="text-red-500">*</span>
                 )}
@@ -651,7 +667,7 @@ export default function VoucherForm({ mode }: Props) {
                   value={showPartyDropdown ? partySearch : (selectedParty?.name || partySearch)}
                   onChange={(e) => { setPartySearch(e.target.value); setShowPartyDropdown(true); setParty('') }}
                   onFocus={() => { setShowPartyDropdown(true); setPartySearch('') }}
-                  placeholder="Search for party"
+                  placeholder={t('vouchers.searchParty', 'Search for party')}
                   className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 pr-8 text-sm outline-none focus:border-slate-500"
                 />
                 <ChevronDown className="pointer-events-none absolute right-2.5 top-[11px] h-4 w-4 text-slate-400" />
@@ -661,7 +677,7 @@ export default function VoucherForm({ mode }: Props) {
                   {filteredParties.length === 0 && <div className="px-3 py-2 text-sm text-slate-400">No parties found</div>}
                   <button type="button" onClick={() => { setShowPartyPopup(true); setShowPartyDropdown(false) }}
                     className="w-full border-t border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
-                    + Add new party
+                    {t('vouchers.addNewParty', '+ Add new party')}
                   </button>
                   {filteredParties.map((p) => (
                     <button
@@ -681,7 +697,7 @@ export default function VoucherForm({ mode }: Props) {
 
           {/* Invoice No */}
           <div>
-            <label className="text-sm font-medium text-slate-700">Invoice No</label>
+            <label className="text-sm font-medium text-slate-700">{t('vouchers.invoiceNo', 'Invoice No')}</label>
             <div className="mt-1 grid grid-cols-[auto_1fr] gap-2">
               <input
                 type="text"
@@ -689,7 +705,7 @@ export default function VoucherForm({ mode }: Props) {
                 onChange={(e) => setInvoicePrefix(e.target.value.toUpperCase())}
                 className="w-20 rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-center font-mono text-sm font-semibold uppercase outline-none focus:border-slate-500"
                 maxLength={8}
-                placeholder="Prefix"
+                placeholder={t('vouchers.prefixLabel', 'Prefix')}
               />
               <div className="flex items-center gap-2">
                 {numberManual ? (
@@ -697,7 +713,7 @@ export default function VoucherForm({ mode }: Props) {
                     type="text"
                     value={manualNumber}
                     onChange={(e) => setManualNumber(e.target.value)}
-                    placeholder="Type invoice number"
+                    placeholder={t('vouchers.typeInvoiceNumber', 'Type invoice number')}
                     className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm font-mono outline-none focus:border-slate-500"
                   />
                 ) : (
@@ -714,7 +730,7 @@ export default function VoucherForm({ mode }: Props) {
                       : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                   }`}
                 >
-                  {numberManual ? 'Manual' : 'Auto'}
+                  {numberManual ? t('vouchers.manualLabel', 'Manual') : t('vouchers.autoLabel', 'Auto')}
                 </button>
               </div>
             </div>
@@ -731,7 +747,7 @@ export default function VoucherForm({ mode }: Props) {
           {/* Invoice No for cash types */}
           {isCash && (
             <div className="sm:col-span-1">
-              <label className="text-sm font-medium text-slate-700">Invoice No</label>
+              <label className="text-sm font-medium text-slate-700">{t('vouchers.invoiceNo', 'Invoice No')}</label>
               <div className="mt-1 rounded border border-slate-200 bg-slate-50 px-3 min-h-[40px] py-2.5 font-mono text-sm text-slate-600">
                 {nextNumberPreview || `${invoicePrefix}-...`}
               </div>
@@ -748,12 +764,12 @@ export default function VoucherForm({ mode }: Props) {
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
                 <th className="w-12 px-4 py-3">#</th>
-                <th className="px-4 py-3">Name <span className="text-red-500">*</span></th>
-                <th className="w-20 px-4 py-3 text-right">Qty</th>
-                <th className="w-28 px-4 py-3 text-right">Rate</th>
+                <th className="px-4 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
+                <th className="w-20 px-4 py-3 text-right">{t('vouchers.qty', 'Qty')}</th>
+                <th className="w-28 px-4 py-3 text-right">{t('vouchers.rate', 'Rate')}</th>
                 <th className="w-28 px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    <span>Discount</span>
+                    <span>{t('vouchers.discount', 'Discount')}</span>
                     <button type="button" onClick={toggleDiscountMode}
                       className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100">
                       {discountMode === 'pct' ? 'Rs.' : '%'}
@@ -761,7 +777,7 @@ export default function VoucherForm({ mode }: Props) {
                     </button>
                   </div>
                 </th>
-                <th className="w-28 px-4 py-3 text-right">Amount</th>
+                <th className="w-28 px-4 py-3 text-right">{t('common.amount', 'Amount')}</th>
                 <th className="w-10 px-4 py-3"></th>
               </tr>
             </thead>
@@ -795,14 +811,14 @@ export default function VoucherForm({ mode }: Props) {
                               setLine(l.key, { item: '', description: e.target.value })
                             }}
                             onFocus={() => { setItemSearchRow(l.key); setItemSearchText('') }}
-                            placeholder="Enter Item name"
+                            placeholder={t('vouchers.enterItemName', 'Enter Item name')}
                             className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
                           />
                           {itemSearchRow === l.key && (
                             <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
                               <button type="button" onClick={() => { setNewItemTargetLine(l.key); setShowItemPopup(true); setItemSearchRow(null) }}
                                 className="w-full border-b border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
-                                + Add new item
+                                {t('vouchers.addNewItem', '+ Add new item')}
                               </button>
                               {itemSearchText && items.filter((it) => it.name.toLowerCase().includes(itemSearchText.toLowerCase())).slice(0, 5).map((it) => (
                                 <button key={it.id} type="button" onClick={() => {
@@ -827,27 +843,27 @@ export default function VoucherForm({ mode }: Props) {
                         <input
                           type="text" value={l.description}
                           onChange={(e) => setLine(l.key, { description: e.target.value })}
-                          placeholder="Enter Item name"
+                          placeholder={t('vouchers.enterItemName', 'Enter Item name')}
                           className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
                         />
                       )}
                       {lv && (
                         <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
                           <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">
-                            on hand {fmtQty(lv.onHand)}
+                            {t('vouchers.onHand', 'on hand')} {fmtQty(lv.onHand)}
                           </span>
                           {isPurchaseLine ? (
                             <span className="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-blue-700">
-                              → Inventory @ {fmt(lv.avgCost)}
+                              {t('vouchers.inventoryAt', '→ Inventory @')} {fmt(lv.avgCost)}
                             </span>
                           ) : isReturnLine ? (
                             <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700">
-                              restock @ {fmt(lv.avgCost)}
+                              {t('vouchers.restockAt', 'restock @')} {fmt(lv.avgCost)}
                             </span>
                           ) : (
                             <>
                               <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">
-                                cost {lineQty > 0 ? fmt(estCostTotal) : '—'}
+                                {t('vouchers.costLabel', 'cost')} {lineQty > 0 ? fmt(estCostTotal) : '—'}
                               </span>
                               {lineQty > 0 && lv.onHand >= 0 && (
                                 <span className={`rounded px-1.5 py-0.5 font-medium ${estProfit >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
@@ -906,7 +922,7 @@ export default function VoucherForm({ mode }: Props) {
             </tbody>
             <tfoot>
               <tr className="border-t border-slate-200 bg-slate-50">
-                <td colSpan={5} className="px-4 py-3 text-right text-sm font-medium text-slate-600">Sub Total</td>
+                <td colSpan={5} className="px-4 py-3 text-right text-sm font-medium text-slate-600">{t('vouchers.subTotal', 'Sub Total')}</td>
                 <td className="px-4 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineTotals)}</td>
                 <td></td>
               </tr>
@@ -915,7 +931,7 @@ export default function VoucherForm({ mode }: Props) {
           <div className="border-t border-slate-100 px-4 py-2">
             <button type="button" onClick={() => setLines((ls) => [...ls, emptyLine()])}
               className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700">
-              <Plus size={14} /> Add Item
+              <Plus size={14} /> {t('vouchers.addItem', 'Add Item')}
             </button>
           </div>
 
@@ -928,7 +944,7 @@ export default function VoucherForm({ mode }: Props) {
                 <div className={`relative h-6 w-10 rounded-full transition-colors ${globalDiscountEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
                   <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${globalDiscountEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
                 </div>
-                Discount on Total
+                {t('vouchers.discountOnTotal', 'Discount on Total')}
               </button>
               {globalDiscountEnabled && globalDiscountAmount > 0 && (
                 <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
@@ -980,7 +996,7 @@ export default function VoucherForm({ mode }: Props) {
                 <div className={`relative h-6 w-10 rounded-full transition-colors ${taxSectionOpen ? 'bg-emerald-500' : 'bg-slate-300'}`}>
                   <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${taxSectionOpen ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
                 </div>
-                Tax (VAT / GST)
+                {t('vouchers.taxVatGst', 'Tax (VAT / GST)')}
               </button>
               {taxSectionOpen && vatTotal > 0 && (
                 <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
@@ -991,10 +1007,10 @@ export default function VoucherForm({ mode }: Props) {
             {taxSectionOpen && (
               <div className="pb-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Additive taxes</span>
+                  <span className="text-xs text-slate-500">{t('vouchers.additiveTaxes', 'Additive taxes')}</span>
                   <button type="button" onClick={() => setTaxLines((ts) => [...ts, { key: crypto.randomUUID(), taxType: '', nature: 'additive' as TaxNature, rate: '' }])}
                     className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700">
-                    <Plus size={12} /> Add Tax Line
+                    <Plus size={12} /> {t('vouchers.addTax', '+ Add Tax Line')}
                   </button>
                 </div>
                 {taxLines.filter((tl) => tl.nature === 'additive').map((tl) => {
@@ -1009,7 +1025,7 @@ export default function VoucherForm({ mode }: Props) {
                           setTaxLines((ts) => ts.map((t) => t.key === tl.key ? { ...t, taxType: e.target.value, rate: selected ? String(selected.rate) : t.rate } : t))
                         }}
                         className="flex-1 rounded border border-slate-300 px-2 h-9 text-sm outline-none focus:border-slate-500">
-                        <option value="">Select tax type</option>
+                        <option value="">{t('vouchers.selectTaxType', 'Select tax type')}</option>
                         {taxTypes.filter((t) => t.nature === 'additive' && t.active !== false)
                           .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
                       </select>
@@ -1022,7 +1038,7 @@ export default function VoucherForm({ mode }: Props) {
                 })}
                 {vatTotal > 0 && (
                   <div className="flex justify-end border-t border-slate-100 pt-2 text-xs">
-                    <span className="text-slate-500">Total Tax: </span>
+                    <span className="text-slate-500">{t('vouchers.totalTaxLabel', 'Total Tax:')} </span>
                     <span className="ml-2 font-mono font-medium text-slate-700">{fmt(vatTotal)}</span>
                   </div>
                 )}
@@ -1036,7 +1052,7 @@ export default function VoucherForm({ mode }: Props) {
                 <div className={`relative h-6 w-10 rounded-full transition-colors ${tdsEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
                   <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${tdsEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
                 </div>
-                TDS (Tax Deducted at Source)
+                {t('vouchers.tdsFullLabel', 'TDS (Tax Deducted at Source)')}
               </button>
               {tdsEnabled && tdsAmount > 0 && (
                 <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
@@ -1051,7 +1067,7 @@ export default function VoucherForm({ mode }: Props) {
                   <select value={tdsTypeId}
                     onChange={(e) => { setTdsTypeId(e.target.value); setTdsAmountManual('') }}
                     className="h-9 flex-1 rounded border border-slate-300 px-2 text-sm outline-none focus:border-slate-500">
-                    <option value="">Select TDS type</option>
+                    <option value="">{t('vouchers.selectTdsType', 'Select TDS type')}</option>
                     {taxTypes.filter((t) => t.nature === 'withholding' && t.active !== false)
                       .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
                   </select>
@@ -1106,7 +1122,7 @@ export default function VoucherForm({ mode }: Props) {
                 {/* TDS Account (compact) */}
                 <select value={tdsAccountId} onChange={(e) => setTdsAccountId(e.target.value)}
                   className="h-9 w-full rounded border border-slate-300 px-2 text-sm outline-none focus:border-slate-500">
-                  <option value="">Select TDS account</option>
+                  <option value="">{t('vouchers.selectTdsAccount', 'Select TDS account')}</option>
                   {accounts.filter((a) => a.type === 'liability' || a.name.toLowerCase().includes('tds') || a.name.toLowerCase().includes('withhold'))
                     .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
@@ -1121,12 +1137,12 @@ export default function VoucherForm({ mode }: Props) {
       {isItem && (
         <div className="mt-4 rounded-lg border border-slate-200 bg-white">
           <div className="border-b border-slate-100 px-5 py-3">
-            <h3 className="text-sm font-semibold text-slate-700">Item Summary</h3>
+            <h3 className="text-sm font-semibold text-slate-700">{t('vouchers.itemSummary', 'Item Summary')}</h3>
           </div>
           <div className="px-5 py-4">
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-500">Items ({lines.filter((l) => l.item || l.description).length})</span>
+                <span className="text-slate-500">{t('vouchers.items', 'Items')} ({lines.filter((l) => l.item || l.description).length})</span>
                 <span className="font-mono text-slate-700">{fmt(lineTotals)}</span>
               </div>
               {globalDiscountEnabled && globalDiscountAmount > 0 && (
@@ -1154,7 +1170,7 @@ export default function VoucherForm({ mode }: Props) {
                 </div>
               )}
               <div className="flex justify-between border-t-2 border-slate-300 pt-3 mt-1">
-                <span className="text-base font-bold text-slate-900">Grand Total</span>
+                <span className="text-base font-bold text-slate-900">{t('vouchers.grandTotal', 'Grand Total')}</span>
                 <span className="font-mono text-lg font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
               </div>
               {grandTotal > 0 && (
@@ -1173,10 +1189,10 @@ export default function VoucherForm({ mode }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-4 py-3">Account <span className="text-red-500">*</span></th>
-                <th className="w-32 px-4 py-3 text-right">Debit</th>
-                <th className="w-32 px-4 py-3 text-right">Credit</th>
-                <th className="px-4 py-3">Memo</th>
+                <th className="px-4 py-3">{t('common.account', 'Account')} <span className="text-red-500">*</span></th>
+                <th className="w-32 px-4 py-3 text-right">{t('common.debit', 'Debit')}</th>
+                <th className="w-32 px-4 py-3 text-right">{t('common.credit', 'Credit')}</th>
+                <th className="px-4 py-3">{t('common.memo', 'Memo')}</th>
                 <th className="w-10 px-4 py-3"></th>
               </tr>
             </thead>
@@ -1209,11 +1225,11 @@ export default function VoucherForm({ mode }: Props) {
           <div className="border-t border-slate-100 px-4 py-2">
             <button type="button" onClick={() => setJournalLines((ls) => [...ls, emptyJLine()])}
               className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700">
-              <Plus size={14} /> Add line
+              <Plus size={14} /> {t('vouchers.addLine', '+ Add line')}
             </button>
           </div>
           <div className="flex justify-between border-t border-slate-200 px-4 py-3 text-sm font-medium">
-            <span className="text-slate-500">Totals</span>
+            <span className="text-slate-500">{t('vouchers.totals', 'Totals')}</span>
             <div className="flex gap-8 font-mono">
               <span>Dr {fmt(jTotals.debit)}</span>
               <span>Cr {fmt(jTotals.credit)}</span>
@@ -1230,7 +1246,7 @@ export default function VoucherForm({ mode }: Props) {
         <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <label className="text-sm text-slate-700">
-              From account (credited) <span className="text-red-500">*</span>
+              {t('vouchers.fromAccount', 'From account (credited)')} <span className="text-red-500">*</span>
               <select value={fromAccount} onChange={(e) => setFromAccount(e.target.value)}
                 className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
                 <option value="">— select —</option>
@@ -1238,7 +1254,7 @@ export default function VoucherForm({ mode }: Props) {
               </select>
             </label>
             <label className="text-sm text-slate-700">
-              To account (debited) <span className="text-red-500">*</span>
+              {t('vouchers.toAccount', 'To account (debited)')} <span className="text-red-500">*</span>
               <select value={toAccount} onChange={(e) => setToAccount(e.target.value)}
                 className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
                 <option value="">— select —</option>
@@ -1246,7 +1262,7 @@ export default function VoucherForm({ mode }: Props) {
               </select>
             </label>
             <label className="text-sm text-slate-700">
-              Amount <span className="text-red-500">*</span>
+              {t('common.amount', 'Amount')} <span className="text-red-500">*</span>
               <input type="number" min="0" step="0.01" value={contraAmount}
                 onChange={(e) => setContraAmount(e.target.value)}
                 onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setContraAmount(r) }}
@@ -1305,14 +1321,14 @@ export default function VoucherForm({ mode }: Props) {
       {/* ── Payment Fields (collapsible for cash types) ─────── */}
       {isCash && (
         <CollapsibleSection
-          title="Payment Details"
+          title={t('vouchers.paymentDetails', 'Payment Details')}
           open={paymentSectionOpen}
           onToggle={() => setPaymentSectionOpen((o) => !o)}
           badge={paymentMethod ? `${paymentMethod === 'bank' ? 'Bank' : 'Cash'}` : undefined}
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="text-sm text-slate-700">
-              Payment Method
+              {t('vouchers.paymentMethod', 'Payment Method')}
               <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}
                 className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
                 <option value="bank">Bank</option><option value="cash">Cash</option>
@@ -1320,7 +1336,7 @@ export default function VoucherForm({ mode }: Props) {
             </label>
             {paymentMethod === 'bank' && (
               <label className="text-sm text-slate-700">
-                Bank Account
+                {t('vouchers.bankAccountLabel', 'Bank Account')}
                 <select value={bankAccount} onChange={(e) => setBankAccount(e.target.value)}
                   className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
                   <option value="">— default —</option>
@@ -1335,25 +1351,25 @@ export default function VoucherForm({ mode }: Props) {
       {/* ── Notes (collapsible) ─────────────────────────────── */}
       <div className="mt-4">
         <CollapsibleSection
-          title="Notes / Remarks"
+          title={t('vouchers.notesRemarks', 'Notes / Remarks')}
           open={notesSectionOpen}
           onToggle={() => setNotesSectionOpen((o) => !o)}
         >
           <textarea rows={4} value={narration} onChange={(e) => setNarration(e.target.value)}
-            placeholder="Enter note or description..."
+            placeholder={t('vouchers.notePlaceholder', 'Enter note or description...')}
             className="w-full resize-none rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" />
         </CollapsibleSection>
       </div>
 
       {/* ── Attach Images ───────────────────────────────────── */}
       <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
-        <label className="text-sm font-medium text-slate-700">Attach Images</label>
+        <label className="text-sm font-medium text-slate-700">{t('vouchers.attachImages', 'Attach Images')}</label>
         <div className="mt-2 flex items-center gap-3">
           <button type="button"
             className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-500">
             <Camera size={24} />
           </button>
-          <span className="text-xs text-slate-400">Upload receipts, invoices, or supporting documents</span>
+          <span className="text-xs text-slate-400">{t('vouchers.uploadHint', 'Upload receipts, invoices, or supporting documents')}</span>
         </div>
       </div>
 
@@ -1386,7 +1402,7 @@ export default function VoucherForm({ mode }: Props) {
         {/* Party */}
         {(isItem || isCash) && (
           <div className="border-b border-slate-200 px-6 py-3">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Bill To</span>
+            <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{t('vouchers.billTo', 'Bill To')}</span>
             <p className="mt-0.5 text-sm font-semibold text-slate-900">{selectedParty?.name || partySearch || '—'}</p>
           </div>
         )}
@@ -1398,10 +1414,10 @@ export default function VoucherForm({ mode }: Props) {
               <thead>
                 <tr className="border-b-2 border-slate-200 text-left text-[10px] uppercase tracking-wide text-slate-400">
                   <th className="w-8 py-2">#</th>
-                  <th className="py-2">Item</th>
-                  <th className="w-16 py-2 text-right">Qty</th>
-                  <th className="w-24 py-2 text-right">Rate</th>
-                  <th className="w-28 py-2 text-right">Amount</th>
+                  <th className="py-2">{t('vouchers.item', 'Item')}</th>
+                  <th className="w-16 py-2 text-right">{t('vouchers.qty', 'Qty')}</th>
+                  <th className="w-24 py-2 text-right">{t('vouchers.rate', 'Rate')}</th>
+                  <th className="w-28 py-2 text-right">{t('common.amount', 'Amount')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1432,10 +1448,10 @@ export default function VoucherForm({ mode }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b-2 border-slate-200 text-left text-[10px] uppercase tracking-wide text-slate-400">
-                  <th className="py-2">Account</th>
-                  <th className="w-28 py-2 text-right">Debit</th>
-                  <th className="w-28 py-2 text-right">Credit</th>
-                  <th className="py-2">Memo</th>
+                  <th className="py-2">{t('common.account', 'Account')}</th>
+                  <th className="w-28 py-2 text-right">{t('common.debit', 'Debit')}</th>
+                  <th className="w-28 py-2 text-right">{t('common.credit', 'Credit')}</th>
+                  <th className="py-2">{t('common.memo', 'Memo')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1463,18 +1479,18 @@ export default function VoucherForm({ mode }: Props) {
               {isSimplified ? (
                 /* ── Simplified: VAT Inclusive ────────────── */
                 <div className="text-center">
-                  <div className="text-sm text-slate-500">Total Amount (VAT Inclusive)</div>
+                  <div className="text-sm text-slate-500">{t('vouchers.totalAmountVatInclusive', 'Total Amount (VAT Inclusive)')}</div>
                   <div className="mt-1 font-mono text-2xl font-bold text-slate-900">Rs. {fmt(grandTotal)}</div>
                   <p className="mt-2 text-sm font-medium text-slate-600">
-                    In words: {amountInWords(grandTotal)}
+                    {t('vouchers.inWords', 'In words:')} {amountInWords(grandTotal)}
                   </p>
-                  <p className="mt-1 text-xs text-slate-400">Includes all applicable taxes</p>
+                  <p className="mt-1 text-xs text-slate-400">{t('vouchers.includesAllTaxes', 'Includes all applicable taxes')}</p>
                 </div>
               ) : (
                 /* ── Full breakdown ──────────────────────── */
                 <div className="ml-auto w-64 space-y-1.5 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Sub Total</span>
+                    <span className="text-slate-500">{t('vouchers.subTotal', 'Sub Total')}</span>
                     <span className="font-mono text-slate-700">{fmt(isContra ? contraTotal : lineTotals)}</span>
                   </div>
                   {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
@@ -1491,7 +1507,7 @@ export default function VoucherForm({ mode }: Props) {
                   )}
                   {vatTotal > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Tax</span>
+                      <span className="text-slate-500">{t('vouchers.tax', 'Tax')}</span>
                       <span className="font-mono text-slate-700">+{fmt(vatTotal)}</span>
                     </div>
                   )}
@@ -1502,7 +1518,7 @@ export default function VoucherForm({ mode }: Props) {
                     </div>
                   )}
                   <div className="flex justify-between border-t-2 border-slate-300 pt-2 text-base">
-                    <span className="font-bold text-slate-900">Total</span>
+                    <span className="font-bold text-slate-900">{t('vouchers.total', 'Total')}</span>
                     <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
                   </div>
                   <p className="pt-2 text-sm font-medium text-slate-600">
@@ -1521,12 +1537,12 @@ export default function VoucherForm({ mode }: Props) {
           <div className="flex items-center gap-4">
             <button type="button" onClick={() => navigate('/vouchers')}
               className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </button>
             {/* Total summary */}
             {!isJournal && (
               <div className="hidden sm:block text-sm text-slate-500">
-                Total: <span className="font-mono font-semibold text-slate-800">Rs. {fmt(grandTotal)}</span>
+                {t('vouchers.total', 'Total')}: <span className="font-mono font-semibold text-slate-800">Rs. {fmt(grandTotal)}</span>
                 <span className="ml-3 text-xs text-slate-400">
                   ({fmt(lineTotals)}
                   {globalDiscountAmount > 0 && <> − Disc {fmt(globalDiscountAmount)}</>}
@@ -1556,11 +1572,11 @@ export default function VoucherForm({ mode }: Props) {
             <div className="flex gap-2">
               <button type="button" onClick={() => submit(false)} disabled={saving}
                 className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-                {saving ? 'Saving…' : docType === 'sales-quote' ? 'Save Quote' : 'Save draft'}
+                {saving ? t('common.saving', 'Saving…') : docType === 'sales-quote' ? t('vouchers.saveQuote', 'Save Quote') : t('vouchers.saveDraft', 'Save draft')}
               </button>
               {docType === 'sales-quote' ? (
                 <span className="hidden text-xs text-slate-400 sm:block">
-                  Quotes don't post — copy to an invoice when accepted
+                  {t('vouchers.quotesHint', "Quotes don't post — copy to an invoice when accepted")}
                 </span>
               ) : (
                 <button type="button" onClick={() => submit(true)} disabled={saving || !allRequiredFilled || setupBlocked}
@@ -1572,7 +1588,7 @@ export default function VoucherForm({ mode }: Props) {
                         : undefined
                   }
                   className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
-                  {saving ? 'Posting…' : 'Save & post'}
+                  {saving ? t('vouchers.posting', 'Posting…') : t('vouchers.savePost', 'Save & post')}
                 </button>
               )}
             </div>
@@ -1584,33 +1600,33 @@ export default function VoucherForm({ mode }: Props) {
       {showPartyPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-slate-900">Add New Party</h2>
-            <p className="mt-1 text-sm text-slate-500">Create a new customer or vendor</p>
+            <h2 className="text-lg font-semibold text-slate-900">{t('vouchers.addNewPartyTitle', 'Add New Party')}</h2>
+            <p className="mt-1 text-sm text-slate-500">{t('vouchers.addNewPartyDesc', 'Create a new customer or vendor')}</p>
             <div className="mt-4 space-y-3">
               <label className="text-sm text-slate-700">
-                Name *
+                {t('vouchers.nameRequired', 'Name *')}
                 <input type="text" required value={newPartyName}
                   onChange={(e) => setNewPartyName(e.target.value)}
                   className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  placeholder="Party name" autoFocus />
+                  placeholder={t('vouchers.partyNamePlaceholder', 'Party name')} autoFocus />
               </label>
               <label className="text-sm text-slate-700">
-                Type *
+                {t('common.type', 'Type')} *
                 <select value={newPartyType} onChange={(e) => setNewPartyType(e.target.value as 'customer' | 'vendor')}
                   className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
-                  <option value="customer">Customer</option>
-                  <option value="vendor">Vendor</option>
+                  <option value="customer">{t('parties.customer', 'Customer')}</option>
+                  <option value="vendor">{t('parties.vendor', 'Vendor')}</option>
                 </select>
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label className="text-sm text-slate-700">
-                  Phone
+                  {t('common.phone', 'Phone')}
                   <input type="tel" value={newPartyPhone}
                     onChange={(e) => setNewPartyPhone(e.target.value)}
                     className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500" />
                 </label>
                 <label className="text-sm text-slate-700">
-                  Email
+                  {t('common.email', 'Email')}
                   <input type="email" value={newPartyEmail}
                     onChange={(e) => setNewPartyEmail(e.target.value)}
                     className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500" />
@@ -1637,7 +1653,7 @@ export default function VoucherForm({ mode }: Props) {
                   setNewPartySaving(false)
                 }}
                 className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
-                {newPartySaving ? 'Creating…' : 'Create Party'}
+                {newPartySaving ? t('vouchers.creating', 'Creating…') : t('vouchers.createParty', 'Create Party')}
               </button>
             </div>
           </div>
@@ -1648,42 +1664,42 @@ export default function VoucherForm({ mode }: Props) {
       {showItemPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-slate-900">Add New Item</h2>
-            <p className="mt-1 text-sm text-slate-500">Create a new inventory item</p>
+            <h2 className="text-lg font-semibold text-slate-900">{t('vouchers.addNewItemTitle', 'Add New Item')}</h2>
+            <p className="mt-1 text-sm text-slate-500">{t('vouchers.addNewItemDesc', 'Create a new inventory item')}</p>
             <div className="mt-4 space-y-3">
               <label className="text-sm text-slate-700">
-                Name *
+                {t('vouchers.nameRequired', 'Name *')}
                 <input type="text" required value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
                   className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  placeholder="Item name" autoFocus />
+                  placeholder={t('vouchers.itemNamePlaceholder', 'Item name')} autoFocus />
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label className="text-sm text-slate-700">
-                  Code
+                  {t('settings.code', 'Code')}
                   <input type="text" value={newItemCode}
                     onChange={(e) => setNewItemCode(e.target.value)}
                     className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                    placeholder="SKU / code" />
+                    placeholder={t('vouchers.skuCode', 'SKU / code')} />
                 </label>
                 <label className="text-sm text-slate-700">
-                  Unit
+                  {t('vouchers.unitLabel', 'Unit')}
                   <input type="text" value={newItemUnit}
                     onChange={(e) => setNewItemUnit(e.target.value)}
                     className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                    placeholder="e.g. pcs, kg" />
+                    placeholder={t('vouchers.unitHint', 'e.g. pcs, kg')} />
                 </label>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <label className="text-sm text-slate-700">
-                  Sale Price
+                  {t('items.salePrice', 'Sale Price')}
                   <input type="number" min="0" step="0.01" value={newItemSalePrice}
                     onChange={(e) => setNewItemSalePrice(e.target.value)}
                     className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 font-mono text-sm outline-none focus:border-slate-500"
                     placeholder="0.00" />
                 </label>
                 <label className="text-sm text-slate-700">
-                  Purchase Price
+                  {t('items.purchasePrice', 'Purchase Price')}
                   <input type="number" min="0" step="0.01" value={newItemPurchasePrice}
                     onChange={(e) => setNewItemPurchasePrice(e.target.value)}
                     className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 font-mono text-sm outline-none focus:border-slate-500"
@@ -1693,7 +1709,7 @@ export default function VoucherForm({ mode }: Props) {
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" onClick={() => { setShowItemPopup(false); setNewItemName(''); setNewItemCode(''); setNewItemUnit(''); setNewItemSalePrice(''); setNewItemPurchasePrice('') }}
-                className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancel</button>
+                className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">{t('common.cancel', 'Cancel')}</button>
               <button type="button" disabled={!newItemName || newItemSaving}
                 onClick={async () => {
                   setNewItemSaving(true)
@@ -1719,11 +1735,11 @@ export default function VoucherForm({ mode }: Props) {
                     }
                     setShowItemPopup(false)
                     setNewItemName(''); setNewItemCode(''); setNewItemUnit(''); setNewItemSalePrice(''); setNewItemPurchasePrice('')
-                  } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to create item') }
+                  } catch (err: unknown) { setError(err instanceof Error ? err.message : t('vouchers.failedToCreateItem', 'Failed to create item')) }
                   setNewItemSaving(false)
                 }}
                 className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
-                {newItemSaving ? 'Creating…' : 'Create Item'}
+                {newItemSaving ? t('vouchers.creating', 'Creating…') : t('vouchers.createItem', 'Create Item')}
               </button>
             </div>
           </div>
