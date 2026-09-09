@@ -14,7 +14,7 @@ setup('authenticate as admin', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill(EMAIL)
   await page.getByLabel('Password').fill(PASSWORD)
-  await page.getByRole('button', { name: 'Sign in' }).click()
+  await page.getByRole('button', { name: /साइन इन|Sign in/ }).click()
   // Landing on Dashboard means the session is live.
   await page.waitForURL('**/')
   await expectDashboard(page)
@@ -32,5 +32,5 @@ setup('authenticate as admin', async ({ page }) => {
 })
 
 async function expectDashboard(page: import('@playwright/test').Page) {
-  await page.getByText('Dashboard', { exact: true }).first().waitFor({ timeout: 15_000 })
+  await page.getByText(/डैशबोर्ड|Dashboard/).first().waitFor({ timeout: 15_000 })
 }

@@ -268,6 +268,6 @@ test.describe.serial('S10 — Membership application form', () => {
     // Members → Members
     await expect(page.getByRole('link', { name: 'Members' })).toBeVisible({ timeout: 10_000 })
     // Dashboard → Dashboard
-    await expect(page.getByText('Dashboard', { exact: true }).first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText(/डैशबोर्ड|Dashboard/).first()).toBeVisible({ timeout: 10_000 })
   })
 })
