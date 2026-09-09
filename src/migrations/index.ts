@@ -16,7 +16,6 @@ import * as migration_20260819_p2_tally_vouchers_tax from './20260819_p2_tally_v
 import * as migration_20260826_sales_quotes from './20260826_sales_quotes';
 import * as migration_20260826_recurring_billing from './20260826_recurring_billing';
 import * as migration_20260826_expense_claims from './20260826_expense_claims';
-import * as migration_20260909_blood_group_fix from './20260909_blood_group_fix';
 
 export const migrations = [
   {
@@ -103,10 +102,5 @@ export const migrations = [
     up: migration_20260826_expense_claims.up,
     down: migration_20260826_expense_claims.down,
     name: '20260826_expense_claims'
-  },
-  {
-    up: migration_20260909_blood_group_fix.up,
-    down: migration_20260909_blood_group_fix.down,
-    name: '20260909_blood_group_fix'
   },
 ];

@@ -278,17 +278,10 @@ export const Members: CollectionConfig = {
       fields: [
         {
           name: 'bloodGroup',
-          type: 'select',
-          options: [
-            { label: 'A+', value: 'A+' },
-            { label: 'A-', value: 'A-' },
-            { label: 'B+', value: 'B+' },
-            { label: 'B-', value: 'B-' },
-            { label: 'AB+', value: 'AB+' },
-            { label: 'AB-', value: 'AB-' },
-            { label: 'O+', value: 'O+' },
-            { label: 'O-', value: 'O-' },
-          ],
+          type: 'text',
+          admin: {
+            description: 'Blood group (A+/A-/B+/B-/AB+/AB-/O+/O-)',
+          },
         },
         {
           name: 'emergencyContact',

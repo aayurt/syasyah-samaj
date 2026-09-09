@@ -1543,7 +1543,10 @@ export interface Member {
   user?: (number | null) | User;
   expiryDate?: string | null;
   idCardDetails?: {
-    bloodGroup?: ('A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-') | null;
+    /**
+     * Blood group (A+/A-/B+/B-/AB+/AB-/O+/O-)
+     */
+    bloodGroup?: string | null;
     emergencyContact?: string | null;
   };
   /**
