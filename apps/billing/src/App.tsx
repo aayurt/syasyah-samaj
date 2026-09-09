@@ -68,6 +68,7 @@ import { TenantProvider } from './lib/tenant'
 import { useBackgroundSync } from './lib/BackgroundSync'
 import { CalendarProvider } from './lib/calendar'
 import { FiscalYearProvider } from './lib/fiscalYear'
+import { LangProvider } from './lib/i18n'
 import { api } from './lib/api'
 import { useDataEpochWatcher } from './lib/dataOps'
 import { useSetupStatus } from './lib/setup'
@@ -174,7 +175,9 @@ export default function App() {
     <TenantProvider>
       <CalendarProvider>
         <FiscalYearProvider>
-          <Shell email={session.user.email} />
+          <LangProvider>
+            <Shell email={session.user.email} />
+          </LangProvider>
         </FiscalYearProvider>
       </CalendarProvider>
     </TenantProvider>

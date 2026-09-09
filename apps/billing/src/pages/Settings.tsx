@@ -31,9 +31,53 @@ import { useFiscalYear } from '../lib/fiscalYear'
 import { useTenant } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
 import type { Account, AccountGroup, AccountType, BillingSettings, FiscalYear } from '../lib/types'
+import { useLang } from '../lib/i18n'
 import NepaliDateInput from '../components/NepaliDateInput'
 import AccountSelect from '../components/AccountSelect'
 import SearchSelect from '../components/SearchSelect'
+
+/* ─── Language toggle ──────────────────────────────────────── */
+function LanguageToggle() {
+  const { lang, setLang } = useLang()
+  return (
+    <div className="space-y-3">
+      <div className="grid gap-2 sm:grid-cols-2">
+        {(['en', 'ne'] as const).map((l) => (
+          <button
+            key={l}
+            type="button"
+            onClick={() => setLang(l)}
+            className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors ${
+              lang === l
+                ? 'border-crimson-600 bg-crimson-50 ring-1 ring-crimson-600'
+                : 'border-slate-200 bg-white hover:bg-slate-50'
+            }`}
+          >
+            <div
+              className={`flex h-5 w-5 items-center justify-center rounded-full border ${
+                lang === l ? 'border-crimson-600 bg-crimson-600' : 'border-slate-300'
+              }`}
+            >
+              {lang === l && <Check size={12} className="text-white" />}
+            </div>
+            <div>
+              <div className="text-sm font-medium text-slate-900">
+                {l === 'en' ? 'English' : 'नेपाली'}
+              </div>
+              <div className="text-xs text-slate-400">
+                {l === 'en' ? 'English' : 'नेपाली (Devanagari)'}
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-slate-400">
+        The interface language is stored in your browser and used across all pages.{' '}
+        <span className="font-medium">Data input stays English</span> — only labels and messages translate.
+      </p>
+    </div>
+  )
+}
 
 /* ─── Accordion wrapper ────────────────────────────────────── */
 function Section({
@@ -1784,7 +1828,18 @@ export default function Settings() {
         )}
       </Section>
 
-      {/* ── 6. Number Series / क्रमांक शृंखला ─────────────────────── */}
+      {/* ── 6. Language / भाषा ─────────────────────────────────── */}
+      <Section
+        title="Language / भाषा"
+        subtitle="Choose the interface language"
+        icon={Type}
+        open={!!openSections.language}
+        onToggle={() => toggle('language')}
+      >
+        <LanguageToggle />
+      </Section>
+
+      {/* ── 7. Number Series / क्रमांक शृंखला ─────────────────────── */}
       <Section
         title="Number Series / क्रमांक शृंखला"
         subtitle={sequences.length ? `${sequences.length} series` : 'No series yet — add one below'}
