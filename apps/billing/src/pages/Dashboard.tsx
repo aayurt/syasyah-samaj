@@ -12,6 +12,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
+import { useT } from '../lib/i18n'
 import DataStatus from '../components/DataStatus'
 import SetupChecklist from '../components/SetupChecklist'
 import { useCalendar } from '../lib/calendar'
@@ -127,6 +128,7 @@ export function StatusPill({ status }: { status: string }) {
 /* ── Dashboard ──────────────────────────────────────────────────── */
 
 export default function Dashboard() {
+  const t = useT()
   const { cacheVersion, online } = useSyncState()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
@@ -254,33 +256,33 @@ export default function Dashboard() {
 
   const kpis = [
     {
-      label: 'Accounts',
+      label: t('dashboard.accounts', 'Accounts'),
       value: stats ? String(stats.accounts) : '–',
       icon: BookOpenText,
       color: 'text-blue-600',
       bg: 'bg-blue-50',
     },
     {
-      label: 'Journal Entries',
+      label: t('dashboard.journalEntries', 'Journal Entries'),
       value: stats ? String(stats.entries) : '–',
       icon: BookOpenText,
       color: 'text-amber-600',
       bg: 'bg-amber-50',
     },
     {
-      label: 'Posted',
+      label: t('dashboard.posted', 'Posted'),
       value: stats ? String(stats.posted) : '–',
       icon: TrendingUp,
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
     },
     {
-      label: 'Trial Balance',
+      label: t('dashboard.trialBalance', 'Trial Balance'),
       value: stats?.trial ? fmt(stats.trial.totals.debit) : '–',
       sub: stats?.trial
         ? stats.trial.balanced
-          ? '✓ balanced'
-          : '✗ out of balance'
+          ? t('dashboard.balanced', '✓ balanced')
+          : t('dashboard.outOfBalance', '✗ out of balance')
         : undefined,
       icon: TrendingDown,
       color: stats?.trial?.balanced ? 'text-emerald-600' : 'text-red-600',
@@ -299,7 +301,7 @@ export default function Dashboard() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="text-lg font-semibold text-slate-900">Dashboard</h1>
+      <h1 className="text-lg font-semibold text-slate-900">{t('dashboard.title', 'Dashboard')}</h1>
       <div className="mt-2">
         <DataStatus />
       </div>
@@ -348,13 +350,13 @@ export default function Dashboard() {
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-center gap-2 mb-3">
             <Wallet size={16} className="text-slate-400" />
-            <h3 className="text-sm font-medium text-slate-700">Cash Position</h3>
+            <h3 className="text-sm font-medium text-slate-700">{t('dashboard.cashPosition', 'Cash Position')}</h3>
           </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2">
               <div className="flex items-center gap-2">
                 <IndianRupee size={14} className="text-emerald-600" />
-                <span className="text-sm text-slate-700">Cash in Hand</span>
+                <span className="text-sm text-slate-700">{t('dashboard.cashInHand', 'Cash in Hand')}</span>
               </div>
               <span className="font-mono text-sm font-semibold text-emerald-700">
                 {fmt(totalCash)}
@@ -363,7 +365,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between rounded-lg bg-blue-50 px-3 py-2">
               <div className="flex items-center gap-2">
                 <CreditCard size={14} className="text-blue-600" />
-                <span className="text-sm text-slate-700">Bank Balance</span>
+                <span className="text-sm text-slate-700">{t('dashboard.bankBalance', 'Bank Balance')}</span>
               </div>
               <span className="font-mono text-sm font-semibold text-blue-700">
                 {fmt(totalBank)}
@@ -371,7 +373,7 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center justify-between border-t border-slate-100 pt-2">
               <span className="text-sm font-medium text-slate-700">
-                Total Liquid
+                {t('dashboard.totalLiquid', 'Total Liquid')}
               </span>
               <span className="font-mono text-sm font-semibold text-slate-800">
                 {fmt(totalCash + totalBank)}
@@ -397,7 +399,7 @@ export default function Dashboard() {
               to="/reports/cash-statement"
               className="text-xs text-blue-600 hover:underline"
             >
-              View Cash Statement →
+              {t('dashboard.viewCashStatement', 'View Cash Statement →')}
             </Link>
           </div>
         </div>
@@ -407,7 +409,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 mb-3">
             <Clock3 size={16} className="text-slate-400" />
             <h3 className="text-sm font-medium text-slate-700">
-              Outstanding Dues
+              {t('dashboard.outstandingDues', 'Outstanding Dues')}
             </h3>
           </div>
           <div className="space-y-3">
@@ -415,8 +417,8 @@ export default function Dashboard() {
               <div className="flex items-center gap-2">
                 <ArrowUpRight size={14} className="text-emerald-600" />
                 <span className="text-sm text-slate-700">
-                  Receivables
-                  <span className="ml-1 text-xs text-slate-400">(money owed to you)</span>
+                  {t('dashboard.receivables', 'Receivables')}
+                  <span className="ml-1 text-xs text-slate-400">({t('dashboard.moneyOwedToYou', 'money owed to you')})</span>
                 </span>
               </div>
               <span className="font-mono text-sm font-semibold text-emerald-700">
@@ -427,8 +429,8 @@ export default function Dashboard() {
               <div className="flex items-center gap-2">
                 <ArrowDownLeft size={14} className="text-red-600" />
                 <span className="text-sm text-slate-700">
-                  Payables
-                  <span className="ml-1 text-xs text-slate-400">(money you owe)</span>
+                  {t('dashboard.payables', 'Payables')}
+                  <span className="ml-1 text-xs text-slate-400">({t('dashboard.moneyYouOwe', 'money you owe')})</span>
                 </span>
               </div>
               <span className="font-mono text-sm font-semibold text-red-700">
@@ -437,7 +439,7 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center justify-between border-t border-slate-100 pt-2">
               <span className="text-sm font-medium text-slate-700">
-                Net Position
+                {t('dashboard.netPosition', 'Net Position')}
               </span>
               <span
                 className={`font-mono text-sm font-semibold ${arTotal - apTotal >= 0 ? 'text-emerald-700' : 'text-red-600'}`}
@@ -450,7 +452,7 @@ export default function Dashboard() {
             {arData?.totals?.buckets && (
               <div className="mt-2">
                 <div className="text-xs font-medium text-slate-500 mb-1">
-                  AR Aging
+                  {t('dashboard.arAging', 'AR Aging')}
                 </div>
                 <div className="flex gap-1">
                   {(['0-30', '31-60', '61-90', '90+'] as const).map((b) => {
@@ -479,13 +481,13 @@ export default function Dashboard() {
               to="/aging"
               className="text-xs text-blue-600 hover:underline"
             >
-              View Aging Report →
+              {t('dashboard.viewAgingReport', 'View Aging Report →')}
             </Link>
           </div>
         </div>
       </div>
 
-      {/* ── Trend Chart: Revenue vs Expenses (12 months) ──────── */}
+      {/* ── Trend Chart: {t('dashboard.revenueVsExpenses', 'Revenue vs Expenses (12 months)')} ──────── */}
       <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -497,24 +499,24 @@ export default function Dashboard() {
           <div className="flex items-center gap-3 text-xs">
             <span className="flex items-center gap-1">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
-              Income
+              {t('dashboard.income', 'Income')}
             </span>
             <span className="flex items-center gap-1">
               <span className="inline-block h-2 w-2 rounded-full bg-red-400" />
-              Expenses
+              {t('dashboard.expenses', 'Expenses')}
             </span>
           </div>
         </div>
         {trendLoading ? (
           <div className="flex items-center justify-center h-32 text-sm text-slate-400">
-            Loading trend data…
+            {t('dashboard.loadingTrend', 'Loading trend data…')}
           </div>
         ) : (
           <MiniBarChart months={months} data={trend} />
         )}
       </div>
 
-      {/* ── Recent journal entries ────────────────────────────── */}
+      {/* ── {t('dashboard.recentJournalEntries', 'Recent journal entries')} ────────────────────────────── */}
       <div className="mt-4 rounded-lg border border-slate-200 bg-white">
         <div className="border-b border-slate-200 px-4 py-3 text-sm font-medium text-slate-700">
           Recent journal entries
@@ -536,7 +538,7 @@ export default function Dashboard() {
                   colSpan={5}
                   className="px-4 py-6 text-center text-slate-400"
                 >
-                  No entries yet — post your first journal entry.
+                  {t('dashboard.noEntries', 'No entries yet — post your first journal entry.')}
                 </td>
               </tr>
             )}
