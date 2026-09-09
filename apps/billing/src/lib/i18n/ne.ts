@@ -410,6 +410,291 @@ export const ne = {
     narration: 'विवरण',
     noEntries: 'अहिलेसम्म कुनै प्रवेश छैन — आफ्नो पहिलो जर्नल प्रवेश पोस्ट गर्नुहोस्।',
   },
+
+  // ── IllakaSwitcher ──
+  illaka: {
+    all: 'सबै इलाका',
+    switchScope: 'इलाका सीमा स्विच गर्नुहोस्',
+    label: 'इलाका',
+  },
+
+  // ── FiscalYearSwitcher ──
+  fy: {
+    addYear: 'नयाँ वित्तिय वर्ष थप्नुहोस्',
+    switchScope: 'वित्तिय वर्ष स्विच गर्नुहोस् — यस अवधिको डाटा देखाउँछ',
+    workingYear: 'कार्य वर्ष',
+  },
+
+  // ── SyncBanner ──
+  sync: {
+    queuedCreate: 'कतारमा सिर्जना',
+    queuedUpdate: 'कतारमा अपडेट',
+    queuedDelete: 'कतारमा हटाउने',
+    couldNotSync: 'अनुकूलन गर्न सकिएन',
+    serverRejected: 'सर्भरले अस्वीकार गर्यो',
+    resolve: 'समाधान गर्नुहोस्',
+    edit: 'सम्पादन',
+    retry: 'पुन: प्रयास',
+    discard: 'रद्द गर्नुहोस्',
+    offlineNotice: 'अफलाइन — नयाँ परिवर्तनहरू कतारमा राखिनेछ र पुन: जोडिएपछि अनुकूलन हुनेछ।',
+    syncing: 'अनुकूलन गरिरहेको छ…',
+    syncNow: 'अहिले अनुकूलन गर्नुहोस्',
+    waitingToSync: '{n} परिवर्तन अनुकूलनको लागि पर्खिरहेको छ।',
+    offlineQueued: 'अफलाइन — {n} परिवर्तन स्थानीय रूपमा कतारमा छ।',
+    needsAttention: '{n} परिवर्तनलाई ध्यान दिनुपर्छ।',
+    draftType: 'प्रकार',
+    draftDate: 'मिति',
+    draftParty: 'पक्ष',
+    draftNarration: 'विवरण',
+    draftPayment: 'भुक्तानी',
+    draftTaxRate: 'कर दर',
+    draftItem: 'वस्तु',
+    draftDescription: 'विवरण',
+    draftQty: 'मात्रा',
+    draftRate: 'दर',
+    draftAmount: 'रकम',
+    draftAccount: 'खाता',
+    draftDebit: 'डेबिट',
+    draftCredit: 'क्रेडिट',
+    draftMemo: 'मेमो',
+  },
+
+  // ── CommandPalette ──
+  palette: {
+    searchPlaceholder: 'लेनदेन, पक्ष र इन्भेन्टरी खोज्नुहोस्…',
+    searching: 'खोजिरहेको छ…',
+    noResults: 'कुनै परिणाम छैन',
+    shortcuts: 'शर्टकट (डाटा थप्न)',
+    footerHint: 'खोल्न · नेभिगेट · छान्न',
+    shortcutSalesInvoice: 'बिक्री इन्भोइस',
+    shortcutPurchaseInvoice: 'किन्मा इन्भोइस',
+    shortcutPayment: 'भुक्तानी',
+    shortcutReceipt: 'रसिद',
+    shortcutJournalEntry: 'जर्नल प्रवेश',
+    shortcutContraEntry: 'कन्ट्रा प्रवेश',
+    shortcutCreditNote: 'क्रेडिट नोट',
+    shortcutAddItem: 'वस्तु थप्नुहोस्',
+    shortcutAddParty: 'पक्ष थप्नुहोस्',
+    shortcutDashboard: 'डैशबोर्ड',
+  },
+
+  // ── Tour ──
+  tour: {
+    step1Title: 'साइडबार नेभिगेसन',
+    step1Body: 'सबै समूहमा छ: लेखापरिकलन, मास्टरहरू, इन्भेन्टरी, र प्रतिवेदनहरू। संकेतमा क्लिक गरेर आइकनमा संकुचित गर्नुहोस्।',
+    step2Title: 'अनुकूलन स्थिति',
+    step2Body: 'यो तपाईंको जडान देखाउँछ — अनलाइनमा अनुकूलित, परिवर्तन कतारमा हुँदा "n अनुकूलन", विच्छेदित हुँदा अफलाइन। लम्बित परिवर्तनहरू फ्लश गर्न क्लिक गर्नुहोस्।',
+    step3Title: 'डैशबोर्ड',
+    step3Body: 'तपाईंको तुरुन्त अवलोकन: खाता गणना, जर्नल प्रवेशहरू, पोस्ट जम्मा, र परीक्षण शेषर जाँच।',
+    step4Title: 'लेनदेनहरू',
+    step4Body: 'यहाँ हरेक लेनदेन रेकर्ड गर्नुहोस् — बिक्री इन्भोइस, किन्मा बिल, भुक्तानी र रसिद, नोट, र अरू। "नयाँ लेनदेन" बाट सुरु गर्नुहोस्।',
+    step5Title: 'सूची फिल्टर गर्नुहोस्',
+    step5Body: 'प्रकार वा स्थिति अनुसार लेनदेनहरू संकुचित गर्नुहोस् — प्रत्येक फिल्टर आफ्नो लाइनमा छ।',
+    step6Title: 'प्रतिवेदन र खाता',
+    step6Body: 'परीक्षण शेषर, खाता खाता, AR/AP बुढ्यौली, लाभ/हानि, सन्तुलन पत्र, र दिन-पुस्तिका। पोस्ट इन्जिनले डेबिट र क्रेडिटलाई स्वचालित रूपमा सन्तुलित राख्छ।',
+    step7Title: 'सेटिङहरू',
+    step7Body: 'वित्तिय वर्ष व्यवस्थापन गर्नुहोस्: प्रत्येक अवधिको शुरु/अन्त मिति छ र सक्रिय (सम्पादनयोग्य) वा बन्द (पढ्न मात्र) हो। कार्य वर्ष सेट गर्नुहोस्, र बन्द अवधिहरूले नयाँ पोस्टिङ रोक्छन्।',
+    back: 'फिर्ता',
+    next: 'अगाडि',
+    finish: 'सम्पन्न',
+    closeTour: 'टुर बन्द गर्नुहोस्',
+  },
+
+  // ── UpdatePrompt ──
+  update: {
+    updateAvailable: 'अपडेट उपलब्ध छ',
+    reload: 'रिलोड',
+    dismiss: 'खारेज',
+  },
+
+  // ── ConnectingBanner ──
+  connecting: {
+    connecting: 'जोडिरहेको छ…',
+    retry: 'पुन: प्रयास',
+  },
+
+  // ── ErrorBoundary ──
+  error: {
+    title: 'केही गलत भयो',
+    reload: 'पृष्ठ रिलोड गर्नुहोस्',
+  },
+
+  // ── Login page ──
+  login: {
+    notAuthorized: 'अधिकृत छैन',
+    needAdmin: 'बिलिंग प्रयोग गर्न तपाईंलाई प्रशासन खाता चाहिन्छ।',
+    signOut: 'साइन आउट',
+    loading: 'लोड गरिरहेको छ…',
+  },
+
+  // ── Journal page ──
+  journal: {
+    title: 'जर्नल',
+    searchPlaceholder: 'नम्बर, विवरण खोज्नुहोस्…',
+    columnNumber: 'नम्बर',
+    columnDate: 'मिति',
+    columnNarration: 'विवरण',
+    columnDebit: 'डेबिट',
+    columnCredit: 'क्रेडिट',
+    columnStatus: 'स्थिति',
+    noEntries: 'अहिलेसम्म कुनै जर्नल प्रवेश छैन।',
+  },
+
+  // ── Transfers page ──
+  transfers: {
+    title: 'हस्तान्तरण',
+    newTransfer: 'नयाँ हस्तान्तरण',
+    fromIllaka: 'बाट इलाका',
+    toIllaka: 'तर्फ इलाका',
+    amount: 'रकम',
+    noTransfers: 'अहिलेसम्म कुनै हस्तान्तरण छैन।',
+  },
+
+  // ── Daybooks page ──
+  daybooks: {
+    title: 'दिन-पुस्तिका',
+    cashBook: 'नगद खाता',
+    bankBook: 'ब्याङ्क खाता',
+    noEntries: 'अहिलेसम्म कुनै प्रवेश छैन।',
+  },
+
+  // ── Items / Inventory page ──
+  items: {
+    title: 'इन्भेन्टरी',
+    newItem: 'नयाँ वस्तु',
+    name: 'नाम',
+    code: 'कोड',
+    salePrice: 'बिक्री मूल्य',
+    purchasePrice: 'किन्मा मूल्य',
+    quantity: 'मात्रा',
+    reorderLevel: 'पुन: अर्डर स्तर',
+    noItems: 'अहिलेसम्म कुनै वस्तु छैन।',
+  },
+
+  // ── Expense Claims page ──
+  expenseClaims: {
+    title: 'खर्च दावी',
+    newClaim: 'नयाँ दावी',
+    noClaims: 'अहिलेसम्म कुनै खर्च दावी छैन।',
+  },
+
+  // ── Members page ──
+  members: {
+    title: 'सदस्यहरू',
+    table: 'तालिका',
+    applicationForm: 'आवेदन फाराम',
+    newMember: 'नयाँ सदस्य',
+    noMembers: 'अहिलेसम्म कुनै सदस्य छैन।',
+    payFee: 'शुल्क तिर्नुहोस्',
+    printForm: 'फाराम छप्नुहोस्',
+    blankForm: 'खाली फाराम छप्नुहोस्',
+  },
+
+  // ── Setup Wizard ──
+  setup: {
+    title: 'सेटअप जादुगर',
+    step1: 'कम्पनी प्रोफाइल',
+    step2: 'वित्तिय वर्ष',
+    step3: 'खाताको चार्ट',
+    step4: 'खुला शेषर',
+    next: 'अगाडि',
+    back: 'फिर्ता',
+    finish: 'सम्पन्न',
+  },
+
+  // ── Posting page ──
+  posting: {
+    title: 'पोस्ट गर्नु',
+    selectEntry: 'प्रवेश छान्नुहोस्',
+    post: 'पोस्ट गर्नु',
+    noEntries: 'पोस्ट गर्न कुनै प्रवेश छैन।',
+  },
+
+  // ── Audit Log ──
+  audit: {
+    title: 'लेखा अभिलेख',
+    action: 'कार्य',
+    user: 'प्रयोगकर्ता',
+    timestamp: 'समय',
+    noLogs: 'अहिलेसम्म कुनै लेखा अभिलेख छैन।',
+  },
+
+  // ── Bank Reconciliation ──
+  bankRec: {
+    title: 'ब्याङ्क व्यवस्थापन',
+    import: 'विवरण आयात',
+    match: 'मिलान',
+    unmatched: 'मिलान नभएको',
+    noData: 'अहिलेसम्म कुनै ब्याङ्क डाटा छैन।',
+  },
+
+  // ── Aging Report ──
+  aging: {
+    title: 'AR बुढ्यौली',
+    party: 'पक्ष',
+    current: 'वर्तमान',
+    days30: '१-३० दिन',
+    days60: '३१-६० दिन',
+    days90: '६१-९० दिन',
+    over90: '९०+ दिन',
+    total: 'जम्मा',
+  },
+
+  // ── Recurring Billing ──
+  recurringBilling: {
+    title: 'दोहोर्यो बिलिंग',
+    newSchedule: 'नयाँ तालिका',
+    noSchedules: 'अहिलेसम्म कुनै दोहोर्यो तालिका छैन।',
+  },
+
+  // ── Opening Balances ──
+  openingBalances: {
+    title: 'खुला शेषर',
+    save: 'शेषर स्वीकृत गर्नुहोस्',
+    noData: 'शेषर सेट गर्न कुनै खाता छैन।',
+  },
+
+  // ── Data Management ──
+  dataManagement: {
+    title: 'डाटा व्यवस्थापन',
+    seedDemo: 'डेमो डाटा बीजन',
+    export: 'डाटा रपट्याइ',
+    import: 'डाटा आयात',
+  },
+
+  // ── Recent Activity ──
+  recentActivity: {
+    title: 'हालको गतिविधि',
+    noActivity: 'हाल कुनै गतिविधि छैन।',
+  },
+
+  // ── Report pages ──
+  reports: {
+    trialBalance: 'परीक्षण शेषर',
+    profitLoss: 'लाभ / हानि',
+    balanceSheet: 'सन्तुलन पत्र',
+    salesReport: 'बिक्री प्रतिवेदन',
+    purchaseReport: 'किन्मा प्रतिवेदन',
+    vatRegister: 'VAT रजिस्टर',
+    stockQuantity: 'स्टक मात्रा',
+    lowStockSummary: 'कम स्टक सारांश',
+    expenseCategory: 'खर्च श्रेणी',
+    incomeCategory: 'आम्दानी श्रेणी',
+    partyStatement: 'पक्ष विवरण',
+    cashStatement: 'नगद विवरण',
+    bankStatement: 'ब्याङ्क विवरण',
+    inventoryValuation: 'इन्भेन्टरी मूल्यांकन',
+    columnAccount: 'खाता',
+    columnDebit: 'डेबिट',
+    columnCredit: 'क्रेडिट',
+    columnBalance: 'शेषर',
+    total: 'जम्मा',
+    downloadCsv: 'CSV डाउनलोड',
+    downloadPdf: 'PDF डाउनलोड',
+    print: 'छप्नुहोस्',
+    noData: 'देखाउन कुनै डाटा छैन।',
+  },
+
 } as const
 
 export type NeNamespace = keyof typeof ne

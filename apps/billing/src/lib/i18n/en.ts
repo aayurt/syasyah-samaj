@@ -408,6 +408,291 @@ export const en = {
     narration: 'Narration',
     noEntries: 'No entries yet — post your first journal entry.',
   },
+
+  // ── IllakaSwitcher ──
+  illaka: {
+    all: 'All Illakas',
+    switchScope: 'Switch illaka scope',
+    label: 'Illaka',
+  },
+
+  // ── FiscalYearSwitcher ──
+  fy: {
+    addYear: 'Add new fiscal year',
+    switchScope: 'Switch fiscal year — filters the data shown to this period',
+    workingYear: 'Working year',
+  },
+
+  // ── SyncBanner ──
+  sync: {
+    queuedCreate: 'Queued create',
+    queuedUpdate: 'Queued update',
+    queuedDelete: 'Queued delete',
+    couldNotSync: 'could not sync',
+    serverRejected: 'server rejected it',
+    resolve: 'Resolve',
+    edit: 'Edit',
+    retry: 'Retry',
+    discard: 'Discard',
+    offlineNotice: 'Offline — new changes will be queued and synced when you reconnect.',
+    syncing: 'Syncing…',
+    syncNow: 'Sync now',
+    waitingToSync: '{n} change(s) waiting to sync.',
+    offlineQueued: 'Offline — {n} change(s) queued locally.',
+    needsAttention: '{n} change(s) need(s) attention.',
+    draftType: 'Type',
+    draftDate: 'Date',
+    draftParty: 'Party',
+    draftNarration: 'Narration',
+    draftPayment: 'Payment',
+    draftTaxRate: 'Tax rate',
+    draftItem: 'Item',
+    draftDescription: 'Description',
+    draftQty: 'Qty',
+    draftRate: 'Rate',
+    draftAmount: 'Amount',
+    draftAccount: 'Account',
+    draftDebit: 'Debit',
+    draftCredit: 'Credit',
+    draftMemo: 'Memo',
+  },
+
+  // ── CommandPalette ──
+  palette: {
+    searchPlaceholder: 'Search for transactions, parties & inventory…',
+    searching: 'Searching…',
+    noResults: 'No results for',
+    shortcuts: 'Shortcuts (for adding data)',
+    footerHint: 'to open · to navigate · to select',
+    shortcutSalesInvoice: 'Sales Invoice',
+    shortcutPurchaseInvoice: 'Purchase Invoice',
+    shortcutPayment: 'Payment',
+    shortcutReceipt: 'Receipt',
+    shortcutJournalEntry: 'Journal Entry',
+    shortcutContraEntry: 'Contra Entry',
+    shortcutCreditNote: 'Credit Note',
+    shortcutAddItem: 'Add Item',
+    shortcutAddParty: 'Add Party',
+    shortcutDashboard: 'Dashboard',
+  },
+
+  // ── Tour ──
+  tour: {
+    step1Title: 'Sidebar navigation',
+    step1Body: 'Everything is grouped: Bookkeeping, Masters, Inventory, and Reports. Click the arrow to collapse it to icons and free up space.',
+    step2Title: 'Sync status',
+    step2Body: 'This pill shows your connection — Synced when online, "n to sync" when changes are queued, Offline when disconnected. Click it to flush pending changes.',
+    step3Title: 'Dashboard',
+    step3Body: 'Your at-a-glance overview: account count, journal entries, posted totals, and the trial balance check.',
+    step4Title: 'Transactions',
+    step4Body: 'Record every transaction here — sales invoices, purchase bills, payments and receipts, notes, and more. Start one with "New transaction".',
+    step5Title: 'Filter the list',
+    step5Body: 'Narrow transactions by Type or by Status — each filter sits on its own line.',
+    step6Title: 'Reports & ledgers',
+    step6Body: 'Trial balance, account ledgers, AR/AP aging, P&L, balance sheet, and daybooks. The posting engine keeps debits and credits in balance automatically.',
+    step7Title: 'Settings',
+    step7Body: 'Manage fiscal years: each period has a start/end date and is Active (editable) or Closed (read-only). Set the working year, and closed periods block new postings.',
+    back: 'Back',
+    next: 'Next',
+    finish: 'Finish',
+    closeTour: 'Close tour',
+  },
+
+  // ── UpdatePrompt ──
+  update: {
+    updateAvailable: 'Update available',
+    reload: 'Reload',
+    dismiss: 'Dismiss',
+  },
+
+  // ── ConnectingBanner ──
+  connecting: {
+    connecting: 'Connecting…',
+    retry: 'Retry',
+  },
+
+  // ── ErrorBoundary ──
+  error: {
+    title: 'Something went wrong',
+    reload: 'Reload page',
+  },
+
+  // ── Login page ──
+  login: {
+    notAuthorized: 'Not authorized',
+    needAdmin: 'You need an admin account to use Billing.',
+    signOut: 'Sign out',
+    loading: 'Loading…',
+  },
+
+  // ── Journal page ──
+  journal: {
+    title: 'Journal',
+    searchPlaceholder: 'Search number, narration…',
+    columnNumber: 'Number',
+    columnDate: 'Date',
+    columnNarration: 'Narration',
+    columnDebit: 'Debit',
+    columnCredit: 'Credit',
+    columnStatus: 'Status',
+    noEntries: 'No journal entries yet.',
+  },
+
+  // ── Transfers page ──
+  transfers: {
+    title: 'Transfers',
+    newTransfer: 'New transfer',
+    fromIllaka: 'From illaka',
+    toIllaka: 'To illaka',
+    amount: 'Amount',
+    noTransfers: 'No transfers yet.',
+  },
+
+  // ── Daybooks page ──
+  daybooks: {
+    title: 'Daybooks',
+    cashBook: 'Cash Book',
+    bankBook: 'Bank Book',
+    noEntries: 'No entries yet.',
+  },
+
+  // ── Items / Inventory page ──
+  items: {
+    title: 'Inventory',
+    newItem: 'New item',
+    name: 'Name',
+    code: 'Code',
+    salePrice: 'Sale price',
+    purchasePrice: 'Purchase price',
+    quantity: 'Quantity',
+    reorderLevel: 'Reorder level',
+    noItems: 'No items yet.',
+  },
+
+  // ── Expense Claims page ──
+  expenseClaims: {
+    title: 'Expense Claims',
+    newClaim: 'New claim',
+    noClaims: 'No expense claims yet.',
+  },
+
+  // ── Members page ──
+  members: {
+    title: 'Members',
+    table: 'Table',
+    applicationForm: 'Application Form',
+    newMember: 'New member',
+    noMembers: 'No members yet.',
+    payFee: 'Pay fee',
+    printForm: 'Print form',
+    blankForm: 'Print blank form',
+  },
+
+  // ── Setup Wizard ──
+  setup: {
+    title: 'Setup Wizard',
+    step1: 'Company Profile',
+    step2: 'Fiscal Year',
+    step3: 'Chart of Accounts',
+    step4: 'Opening Balances',
+    next: 'Next',
+    back: 'Back',
+    finish: 'Finish',
+  },
+
+  // ── Posting page ──
+  posting: {
+    title: 'Posting',
+    selectEntry: 'Select entry',
+    post: 'Post',
+    noEntries: 'No entries to post.',
+  },
+
+  // ── Audit Log ──
+  audit: {
+    title: 'Audit Log',
+    action: 'Action',
+    user: 'User',
+    timestamp: 'Timestamp',
+    noLogs: 'No audit logs yet.',
+  },
+
+  // ── Bank Reconciliation ──
+  bankRec: {
+    title: 'Bank Reconciliation',
+    import: 'Import statement',
+    match: 'Match',
+    unmatched: 'Unmatched',
+    noData: 'No bank data yet.',
+  },
+
+  // ── Aging Report ──
+  aging: {
+    title: 'AR Aging',
+    party: 'Party',
+    current: 'Current',
+    days30: '1-30 days',
+    days60: '31-60 days',
+    days90: '61-90 days',
+    over90: '90+ days',
+    total: 'Total',
+  },
+
+  // ── Recurring Billing ──
+  recurringBilling: {
+    title: 'Recurring Billing',
+    newSchedule: 'New schedule',
+    noSchedules: 'No recurring schedules yet.',
+  },
+
+  // ── Opening Balances ──
+  openingBalances: {
+    title: 'Opening Balances',
+    save: 'Save balances',
+    noData: 'No accounts to set balances for.',
+  },
+
+  // ── Data Management ──
+  dataManagement: {
+    title: 'Data Management',
+    seedDemo: 'Seed demo data',
+    export: 'Export data',
+    import: 'Import data',
+  },
+
+  // ── Recent Activity ──
+  recentActivity: {
+    title: 'Recent Activity',
+    noActivity: 'No recent activity.',
+  },
+
+  // ── Report pages ──
+  reports: {
+    trialBalance: 'Trial Balance',
+    profitLoss: 'Profit & Loss',
+    balanceSheet: 'Balance Sheet',
+    salesReport: 'Sales Report',
+    purchaseReport: 'Purchase Report',
+    vatRegister: 'VAT Register',
+    stockQuantity: 'Stock Quantity',
+    lowStockSummary: 'Low Stock Summary',
+    expenseCategory: 'Expense Category',
+    incomeCategory: 'Income Category',
+    partyStatement: 'Party Statement',
+    cashStatement: 'Cash Statement',
+    bankStatement: 'Bank Statement',
+    inventoryValuation: 'Inventory Valuation',
+    columnAccount: 'Account',
+    columnDebit: 'Debit',
+    columnCredit: 'Credit',
+    columnBalance: 'Balance',
+    total: 'Total',
+    downloadCsv: 'Download CSV',
+    downloadPdf: 'Download PDF',
+    print: 'Print',
+    noData: 'No data to display.',
+  },
+
 } as const
 
 export type EnNamespace = keyof typeof en
