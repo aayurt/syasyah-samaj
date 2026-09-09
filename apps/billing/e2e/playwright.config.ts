@@ -164,5 +164,13 @@ export default defineConfig({
       dependencies: ['03-masters'],
       use: { storageState: AUTH_STATE },
     },
+    // 10 — Membership application form journey (fill → save → table → edit)
+    // and Nepali mode smoke (toggle language, assert labels).
+    {
+      name: '10-membership',
+      testMatch: /10-membership\.spec\.ts/,
+      dependencies: ['00-auth'],
+      use: { storageState: AUTH_STATE },
+    },
   ],
 })
