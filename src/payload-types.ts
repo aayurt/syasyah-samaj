@@ -995,15 +995,31 @@ export interface Ticket {
   createdAt: string;
 }
 /**
+ * Classify GL accounts into groups. Supports a parent–child tree.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "account-groups".
  */
 export interface AccountGroup {
   id: number;
+  /**
+   * Short code for the group (auto-generated from name if empty).
+   */
   code?: string | null;
   name: string;
   type: 'asset' | 'liability' | 'equity' | 'income' | 'expense';
+  /**
+   * Parent group for hierarchical tree structure.
+   */
   parent?: (number | null) | AccountGroup;
+  /**
+   * Optional description of what this group contains.
+   */
+  description?: string | null;
+  /**
+   * Display order within the parent group.
+   */
+  sortOrder?: number | null;
   tenant?: (number | null) | Tenant;
   updatedAt: string;
   createdAt: string;
@@ -1355,13 +1371,87 @@ export interface TaxType {
   createdAt: string;
 }
 /**
+ * Number series for documents. Assign a prefix and format per document type.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doc-sequences".
  */
 export interface DocSequence {
   id: number;
+  /**
+   * Display name for this series (auto-generated from type + prefix if empty).
+   */
+  name: string;
+  /**
+   * The document type this sequence applies to.
+   */
+  docType:
+    | 'sales-invoice'
+    | 'purchase-invoice'
+    | 'receipt-voucher'
+    | 'payment-voucher'
+    | 'journal-voucher'
+    | 'contra-voucher'
+    | 'credit-note'
+    | 'debit-note'
+    | 'grn'
+    | 'delivery-challan';
+  /**
+   * Prefix for document numbers, e.g. "SI-" for Sales Invoice, "PV-" for Payment Voucher.
+   */
+  prefix?: string | null;
+  /**
+   * Number format template. Variables: {prefix}, {year}, {number}. Example: {prefix}{year}-{number}
+   */
+  format?: string | null;
+  /**
+   * If set, this sequence resets each fiscal year. Leave empty for a global counter.
+   */
+  fiscalYear?: (number | null) | FiscalYear;
+  /**
+   * Internal key (auto-generated: docType:fiscalYear).
+   */
   key: string;
+  /**
+   * Last used number. Cannot delete this series if > 0 (posted entries exist).
+   */
   lastNumber: number;
+  /**
+   * Preview of the next document number (read-only, computed).
+   */
+  nextPreview?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Accounting periods. Active years are editable; closed years are read-only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "fiscal-years".
+ */
+export interface FiscalYear {
+  id: number;
+  /**
+   * Display label, e.g. "2083-84". Auto-generated from the start date if left empty.
+   */
+  label: string;
+  /**
+   * First day of the fiscal year (AD). Entered as BS in the SPA.
+   */
+  startDate: string;
+  /**
+   * Last day of the fiscal year (AD).
+   */
+  endDate: string;
+  /**
+   * Active = entries may be posted. Closed = read-only; the posting engine refuses new entries in this period.
+   */
+  status: 'active' | 'closed';
+  /**
+   * The working year for new entries and voucher numbering. Only one year can be active per tenant.
+   */
+  isActive?: boolean | null;
+  tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -1828,38 +1918,6 @@ export interface ExpenseClaim {
    * Reimbursement journal entry
    */
   paymentJournalEntry?: number | null;
-  tenant: number | Tenant;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Accounting periods. Active years are editable; closed years are read-only.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "fiscal-years".
- */
-export interface FiscalYear {
-  id: number;
-  /**
-   * Display label, e.g. "2083-84". Auto-generated from the start date if left empty.
-   */
-  label: string;
-  /**
-   * First day of the fiscal year (AD). Entered as BS in the SPA.
-   */
-  startDate: string;
-  /**
-   * Last day of the fiscal year (AD).
-   */
-  endDate: string;
-  /**
-   * Active = entries may be posted. Closed = read-only; the posting engine refuses new entries in this period.
-   */
-  status: 'active' | 'closed';
-  /**
-   * The working year for new entries and voucher numbering. Only one year can be active per tenant.
-   */
-  isActive?: boolean | null;
   tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
@@ -2730,6 +2788,8 @@ export interface AccountGroupsSelect<T extends boolean = true> {
   name?: T;
   type?: T;
   parent?: T;
+  description?: T;
+  sortOrder?: T;
   tenant?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2879,8 +2939,14 @@ export interface DocumentsSelect<T extends boolean = true> {
  * via the `definition` "doc-sequences_select".
  */
 export interface DocSequencesSelect<T extends boolean = true> {
+  name?: T;
+  docType?: T;
+  prefix?: T;
+  format?: T;
+  fiscalYear?: T;
   key?: T;
   lastNumber?: T;
+  nextPreview?: T;
   updatedAt?: T;
   createdAt?: T;
 }

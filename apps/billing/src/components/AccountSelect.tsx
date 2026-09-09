@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, Search, X } from 'lucide-react'
 import type { Account } from '../lib/types'
+import Popover from './Popover'
 
 interface AccountSelectProps {
   accounts: Account[]
@@ -80,8 +81,7 @@ export default function AccountSelect({ accounts, value, onChange, placeholder =
       </button>
 
       {/* Dropdown panel */}
-      {open && (
-        <div className="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+      <Popover open={open} onClose={() => setOpen(false)} anchorRef={wrapRef} className="overflow-hidden">
           {/* Search */}
           <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
             <Search size={14} className="shrink-0 text-slate-400" />
@@ -140,8 +140,7 @@ export default function AccountSelect({ accounts, value, onChange, placeholder =
               ))
             )}
           </div>
-        </div>
-      )}
+      </Popover>
     </div>
   )
 }

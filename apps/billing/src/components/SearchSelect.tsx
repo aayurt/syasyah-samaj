@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, Search, X } from 'lucide-react'
+import Popover from './Popover'
 
 export interface SearchSelectOption {
   value: string | number
@@ -86,8 +87,7 @@ export default function SearchSelect({
       </button>
 
       {/* Dropdown panel */}
-      {open && (
-        <div className="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+      <Popover open={open} onClose={() => setOpen(false)} anchorRef={wrapRef} className="overflow-hidden">
           {/* Search */}
           {options.length > 6 && (
             <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
@@ -144,8 +144,7 @@ export default function SearchSelect({
               ))
             )}
           </div>
-        </div>
-      )}
+      </Popover>
     </div>
   )
 }
