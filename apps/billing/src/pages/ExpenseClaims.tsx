@@ -155,6 +155,17 @@ export default function ExpenseClaims() {
 
   const billableCount = useMemo(() => claims.filter((c) => c.billable && !c.billedInvoiceId && ['approved', 'reimbursed'].includes(c.status)).length, [claims])
 
+  // Translated labels for the status filter chips (keys match the filter values below)
+  const filterLabelMap: Record<string, string> = {
+    all: t('common.all', 'All'),
+    draft: t('status.draft', 'Draft'),
+    submitted: t('expenseClaims.submitted', 'Submitted'),
+    approved: t('status.approved', 'Approved'),
+    rejected: t('status.rejected', 'Rejected'),
+    reimbursed: t('expenseClaims.reimbursed', 'Reimbursed'),
+    billable: t('expenseClaims.billable', 'Billable'),
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -195,7 +206,7 @@ export default function ExpenseClaims() {
             className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
               filter === f ? 'bg-crimson-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
             }`}>
-            {f}{f === 'billable' && billableCount > 0 ? ` (${billableCount})` : ''}
+            {filterLabelMap[f] ?? f}{f === 'billable' && billableCount > 0 ? ` (${billableCount})` : ''}
           </button>
         ))}
       </div>

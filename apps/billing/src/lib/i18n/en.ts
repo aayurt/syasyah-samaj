@@ -712,6 +712,14 @@ export const en = {
     cashBook: 'Cash Book',
     bankBook: 'Bank Book',
     noEntries: 'No entries yet.',
+    allTransactions: 'All Transactions',
+    cashAndBank: 'Cash & Bank',
+    pettyCash: 'Petty Cash',
+    salesDaybook: 'Sales Daybook',
+    purchaseDaybook: 'Purchase Daybook',
+    journalProper: 'Journal Proper',
+    tallyDesc: 'Every posted transaction line, in date order (Tally Day Book). Click a transaction number to open the source entry.',
+    journalProperDesc: 'The Journal Proper register: free-form journal and journal-voucher entries.',
   },
 
   // ── Items / Inventory page ──
@@ -732,6 +740,9 @@ export const en = {
     title: 'Expense Claims',
     newClaim: 'New claim',
     noClaims: 'No expense claims yet.',
+    submitted: 'Submitted',
+    reimbursed: 'Reimbursed',
+    billable: 'Billable',
   },
 
   // ── Members page ──
@@ -773,6 +784,14 @@ export const en = {
     user: 'User',
     timestamp: 'Timestamp',
     noLogs: 'No audit logs yet.',
+    allActions: 'All Actions',
+    allEntities: 'All Entities',
+    actionCreate: 'Create',
+    actionUpdate: 'Update',
+    actionDelete: 'Delete',
+    actionPost: 'Post',
+    actionVoid: 'Void',
+    actionTransfer: 'Transfer',
   },
 
   // ── Bank Reconciliation ──
@@ -816,6 +835,15 @@ export const en = {
     seedDemo: 'Seed demo data',
     export: 'Export data',
     import: 'Import data',
+    exportData: 'Export Data',
+    exportDesc: 'Download all records for a collection as JSON.',
+    importData: 'Import Data',
+    importDesc: 'Upload a JSON export file. Duplicates are detected automatically.',
+    subtitle: "Destroy or bootstrap a tenant's transactional data. Masters (ilakas, accounts, parties, items, tax types, years) are never touched.",
+    cleanup: 'Cleanup data',
+    cleanupDesc: 'Delete every voucher and ledger row for the selected tenant. Posted and voided documents are final (posting rules) and stay as history - void them in the Posting queue first if you need them gone.',
+    removes: 'Removes',
+    keeps: 'Keeps',
   },
 
   // ── Recent Activity ──

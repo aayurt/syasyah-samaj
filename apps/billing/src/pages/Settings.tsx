@@ -1484,7 +1484,7 @@ export default function Settings() {
 
       {/* ── 4. Feature Toggles ───────────────────────────────── */}
       <Section
-        title="Feature Toggles"
+        title={t('settings.featureToggles', 'Feature Toggles')}
         subtitle={
           bankRecEnabled
             ? 'Bank Rec ON'
@@ -1580,8 +1580,8 @@ export default function Settings() {
 
       {/* ── 5. Default Account Assignments (editable) ────────── */}
       <Section
-        title="Default Accounts"
-        subtitle="Map GL accounts to posting roles — drag to reorder"
+        title={t('settings.defaultAccounts', 'Default Accounts')}
+        subtitle={t('settings.accountsSubtitle', 'Map GL accounts to posting roles — drag to reorder')}
         icon={Wallet}
         open={!!openSections.accounts}
         onToggle={() => toggle('accounts')}
@@ -1844,8 +1844,8 @@ export default function Settings() {
 
       {/* ── 7. Number Series / क्रमांक शृंखला ─────────────────────── */}
       <Section
-        title="Number Series / क्रमांक शृंखला"
-        subtitle={sequences.length ? `${sequences.length} series` : 'No series yet — add one below'}
+        title={t('settings.numberSeries', 'Number Series / क्रमांक शृंखला')}
+        subtitle={sequences.length ? `${sequences.length} series` : t('settings.noSeriesYet', 'No series yet — add one below')}
         icon={Hash}
         open={!!openSections.sequences}
         onToggle={() => toggle('sequences')}
@@ -1853,22 +1853,25 @@ export default function Settings() {
         {/* Add button */}
         <div className="mb-3 flex items-center justify-between">
           <span className="text-xs text-slate-400">
-            {sequences.length} series · Prefix per document type · FY-scoped series reset each year
+            {sequences.length} {t('settings.seriesSummary', 'series · Prefix per document type · FY-scoped series reset each year')}
           </span>
           <button
             type="button"
             onClick={openSeriesNew}
             className="flex items-center gap-1.5 rounded-md bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
           >
-            <Plus size={14} /> Add Series
+            <Plus size={14} /> {t('settings.addSeries', 'Add Series')}
           </button>
         </div>
 
         {/* Series table */}
         {sequences.length === 0 ? (
           <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
-            No number series defined yet. Click <span className="font-medium">Add Series</span> to create one.
-            Each series assigns a prefix to a document type — e.g. <span className="font-mono">SI-</span> for Sales Invoice.
+            {t('settings.noSeriesDefined', 'No number series defined yet. Click')}{' '}
+            <span className="font-medium">{t('settings.addSeries', 'Add Series')}</span>{' '}
+            {t('settings.noSeriesHint', 'to create one. Each series assigns a prefix to a document type — e.g.')}{' '}
+            <span className="font-mono">SI-</span>{' '}
+            {t('settings.forSalesInvoice', 'for Sales Invoice.')}
           </div>
         ) : (
           <div className="overflow-x-auto rounded border border-slate-200">
@@ -1989,9 +1992,10 @@ export default function Settings() {
         )}
 
         <p className="mt-3 text-xs text-slate-400">
-          Series determine document numbers like <span className="font-mono">{DOC_TYPE_OPTIONS[0].label}</span> →{' '}
-          <span className="font-mono">SI-2083-84-0001</span>. FY-scoped series reset each fiscal year.
-          Series with posted documents cannot be deleted.
+          {t('settings.seriesDetermineNumbers', 'Series determine document numbers like')}{' '}
+          <span className="font-mono">{DOC_TYPE_OPTIONS[0].label}</span> →{' '}
+          <span className="font-mono">SI-2083-84-0001</span>. {t('settings.fyResetNote', 'FY-scoped series reset each fiscal year.')}{' '}
+          {t('settings.postedSeriesLock', 'Series with posted documents cannot be deleted.')}
         </p>
       </Section>
 
@@ -2001,7 +2005,7 @@ export default function Settings() {
           <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-800">
-                {seriesEditingId != null ? 'Edit Series' : 'Add Series'}
+                {seriesEditingId != null ? t('settings.editSeries', 'Edit Series') : t('settings.addSeries', 'Add Series')}
               </h3>
               <button
                 type="button"
@@ -2064,7 +2068,7 @@ export default function Settings() {
                   />
                 </div>
                 <p className="mt-1 text-xs text-slate-400">
-                  If set, this series resets each fiscal year. Leave empty for a global counter that never resets.
+                  {t('settings.fySeriesResetHint', 'If set, this series resets each fiscal year. Leave empty for a global counter that never resets.')}
                 </p>
               </div>
             </div>
@@ -2082,7 +2086,7 @@ export default function Settings() {
                 disabled={seriesSaving}
                 className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
               >
-                {seriesSaving ? 'Saving…' : seriesEditingId != null ? 'Save Changes' : 'Create Series'}
+                {seriesSaving ? t('settings.saving', 'Saving…') : seriesEditingId != null ? t('settings.saveChanges', 'Save Changes') : t('settings.createSeries', 'Create Series')}
               </button>
             </div>
           </div>
@@ -2092,7 +2096,7 @@ export default function Settings() {
       {/* ── 7. Account ───────────────────────────────────────── */}
       <Section
         title="Account"
-        subtitle="Tutorial & sign out"
+        subtitle={t('settings.tutorialAndSignOut', 'Tutorial & sign out')}
         icon={HelpCircle}
         open={!!openSections.account}
         onToggle={() => toggle('account')}
@@ -2107,7 +2111,7 @@ export default function Settings() {
             className="flex items-center gap-2 rounded border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
           >
             <HelpCircle size={14} />
-            Show Tutorial
+            {t('hint.showTutorial', 'Show Tutorial')}
           </button>
           <button
             type="button"

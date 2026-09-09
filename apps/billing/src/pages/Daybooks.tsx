@@ -102,8 +102,15 @@ export default function Daybooks() {
     )
   }
 
-  const label =
-    TYPES.find((t) => t.value === type)?.label ?? type
+  const labelKey: Record<string, string> = {
+      all: 'daybooks.allTransactions',
+      cash: 'daybooks.cashAndBank',
+      'petty-cash': 'daybooks.pettyCash',
+      sales: 'daybooks.salesDaybook',
+      purchase: 'daybooks.purchaseDaybook',
+      journal: 'daybooks.journalProper',
+    }
+  const label = t(labelKey[type] || '', TYPES.find((ty) => ty.value === type)?.label ?? type)
 
   const pdf = () => {
     if (!data) return
@@ -175,17 +182,17 @@ export default function Daybooks() {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        {TYPES.map((t) => (
+        {TYPES.map((tb) => (
           <button
-            key={t.value}
-            onClick={() => setType(t.value)}
+            key={tb.value}
+            onClick={() => setType(tb.value)}
             className={`rounded px-3 py-1.5 text-sm font-medium ${
               type === t.value
                 ? 'bg-crimson-600 text-white'
                 : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
             }`}
           >
-            {t.label}
+            {t(labelKey[tb.value] || '', tb.label)}
           </button>
         ))}
         <span className="ml-auto flex items-center gap-3">
@@ -310,7 +317,7 @@ export default function Daybooks() {
 
       <p className="mt-3 text-xs text-slate-400">
         {type === 'all' &&
-          'Every posted transaction line, in date order (Tally Day Book). Click a transaction number to open the source entry.'}
+          t('daybooks.tallyDesc', 'Every posted transaction line, in date order (Tally Day Book). Click a transaction number to open the source entry.')}
         {type === 'cash' &&
           'All postings touching cash or bank accounts, with a running balance. Click a transaction number to open the source entry.'}
         {type === 'petty-cash' &&
@@ -318,7 +325,7 @@ export default function Daybooks() {
         {type === 'sales' && 'Postings to income accounts (sales revenue).'}
         {type === 'purchase' && 'Postings to expense accounts (purchases).'}
         {type === 'journal' &&
-          'The Journal Proper register: free-form journal and journal-voucher entries.'}
+          t('daybooks.journalProperDesc', 'The Journal Proper register: free-form journal and journal-voucher entries.')}
       </p>
 
       <VoucherViewModal voucher={voucher} onClose={() => setVoucher(null)} />

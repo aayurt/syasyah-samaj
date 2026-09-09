@@ -142,19 +142,19 @@ export default function AuditLog() {
           <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
         </div>
         <div className="flex gap-1">
-          {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{r.label}</button>))}
+          {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{t(`reports.${r.label === 'This Month' ? 'thisMonth' : r.label === 'This Week' ? 'thisWeek' : r.label === 'Today' ? 'today' : 'allTime'}`, r.label)}</button>))}
         </div>
         <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500">
-          <option value="">All Actions</option>
-          <option value="create">Create</option>
-          <option value="update">Update</option>
-          <option value="delete">Delete</option>
-          <option value="post">Post</option>
-          <option value="void">Void</option>
-          <option value="transfer">Transfer</option>
+          <option value="">{t('audit.allActions', 'All Actions')}</option>
+          <option value="create">{t('audit.actionCreate', 'Create')}</option>
+          <option value="update">{t('audit.actionUpdate', 'Update')}</option>
+          <option value="delete">{t('audit.actionDelete', 'Delete')}</option>
+          <option value="post">{t('audit.actionPost', 'Post')}</option>
+          <option value="void">{t('audit.actionVoid', 'Void')}</option>
+          <option value="transfer">{t('audit.actionTransfer', 'Transfer')}</option>
         </select>
         <select value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500">
-          <option value="">All Entities</option>
+          <option value="">{t('audit.allEntities', 'All Entities')}</option>
           {entityTypes.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>

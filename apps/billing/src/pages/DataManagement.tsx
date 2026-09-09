@@ -139,8 +139,7 @@ export default function DataManagement() {
           {t('dataManagement.title', 'Data Management')}
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Destroy or bootstrap a tenant's transactional data. Masters (ilakas, accounts, parties,
-          items, tax types, years) are never touched.
+          {t('dataManagement.subtitle', "Destroy or bootstrap a tenant's transactional data. Masters (ilakas, accounts, parties, items, tax types, years) are never touched.")}
         </p>
       </div>
 
@@ -151,18 +150,16 @@ export default function DataManagement() {
             <Trash2 size={20} />
           </div>
           <div className="flex-1">
-            <h2 className="text-base font-semibold text-slate-800">{t('dataManagement.title', 'Cleanup data')}</h2>
+            <h2 className="text-base font-semibold text-slate-800">{t('dataManagement.cleanup', 'Cleanup data')}</h2>
             <p className="mt-1 text-sm text-slate-500">
-              Delete every voucher and ledger row for the selected tenant. Posted and voided
-              documents are final (posting rules) and stay as history — void them in the Posting
-              queue first if you need them gone.
+              {t('dataManagement.cleanupDesc', 'Delete every voucher and ledger row for the selected tenant. Posted and voided documents are final (posting rules) and stay as history — void them in the Posting queue first if you need them gone.')}
             </p>
           </div>
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Removes</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{t('dataManagement.removes', 'Removes')}</p>
             <ul className="mt-2 space-y-1">
               {DATA_COLLECTIONS.map((c) => (
                 <li key={c} className="flex items-center gap-2 text-sm text-slate-600">
@@ -173,7 +170,7 @@ export default function DataManagement() {
             </ul>
           </div>
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Keeps</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500">{t('dataManagement.keeps', 'Keeps')}</p>
             <ul className="mt-2 space-y-1">
               {KEPT.map((k) => (
                 <li key={k} className="flex items-center gap-2 text-sm text-emerald-700">
@@ -316,8 +313,8 @@ export default function DataManagement() {
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Export */}
           <div className="rounded-lg border border-slate-200 p-5">
-            <h3 className="text-sm font-semibold text-slate-700">Export Data</h3>
-            <p className="mt-1 text-xs text-slate-500">Download all records for a collection as JSON.</p>
+            <h3 className="text-sm font-semibold text-slate-700">{t('dataManagement.exportData', 'Export Data')}</h3>
+            <p className="mt-1 text-xs text-slate-500">{t('dataManagement.exportDesc', 'Download all records for a collection as JSON.')}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {['members', 'parties', 'items', 'accounts', 'documents'].map((slug) => (
                 <button
@@ -343,8 +340,8 @@ export default function DataManagement() {
 
           {/* Import */}
           <div className="rounded-lg border border-slate-200 p-5">
-            <h3 className="text-sm font-semibold text-slate-700">Import Data</h3>
-            <p className="mt-1 text-xs text-slate-500">Upload a JSON export file. Duplicates are detected automatically.</p>
+            <h3 className="text-sm font-semibold text-slate-700">{t('dataManagement.importData', 'Import Data')}</h3>
+            <p className="mt-1 text-xs text-slate-500">{t('dataManagement.importDesc', 'Upload a JSON export file. Duplicates are detected automatically.')}</p>
             <div className="mt-3">
               <label className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
                 <Database size={12} /> Choose JSON file
