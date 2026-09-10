@@ -1257,6 +1257,11 @@ export const ne = {
     noOptionsMatch: 'कुनै विकल्प मिल्दैन',
   },
 
+  // ── Import button ──
+  import: {
+    button: 'आयात',
+  },
+
 
 } as const
 

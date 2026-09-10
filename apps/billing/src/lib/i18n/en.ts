@@ -1255,6 +1255,11 @@ export const en = {
     noOptionsMatch: 'No options match',
   },
 
+  // ── Import button ──
+  import: {
+    button: 'Import',
+  },
+
 
 } as const
 
