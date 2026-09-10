@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Download, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Download, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import { api, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
+import { parseImportFile } from '../lib/importExport'
+import ImportPreviewModal from '../components/ImportPreviewModal'
+import { pushToast } from '../lib/toast'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import ActionMenu from '../components/ActionMenu'
 import SearchBox from '../components/SearchBox'
@@ -43,6 +46,8 @@ export default function Parties() {
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
+  const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[] } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(false)
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -189,6 +194,12 @@ export default function Parties() {
         <h1 className="text-lg font-semibold text-slate-900">{t('parties.title', 'Parties')}</h1>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            <Upload size={14} /> {t('import.button', 'Import')}
+          </button>
+          <button
             onClick={() => downloadCsv('parties.csv', ['Name', 'Type', 'Phone', 'Email', 'Opening Balance'],
               visible.map((p) => [p.name, p.type, p.phone || '', p.email || '', p.openingBalance || 0]))
             }
@@ -206,6 +217,24 @@ export default function Parties() {
           </button>
         </div>
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0]
+          if (!file) return
+          try {
+            const parsed = await parseImportFile<Record<string, unknown>>(file)
+            setImportData({ collection: parsed.collection, docs: parsed.docs })
+          } catch (err) {
+            pushToast('error', 'Parse failed', err instanceof Error ? err.message : String(err))
+          }
+          e.target.value = ''
+        }}
+      />
 
       <div className="mt-2">
         <DataStatus />
@@ -449,6 +478,15 @@ export default function Parties() {
         </table>
       </div>
         </>
+      )}
+
+      {importData && (
+        <ImportPreviewModal
+          collection={importData.collection}
+          docs={importData.docs}
+          onClose={() => setImportData(null)}
+          onImported={() => setImportData(null)}
+        />
       )}
     </div>
   )

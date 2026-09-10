@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CreditCard, Download, Edit3, FileText, Image, MoreVertical, Plus, Printer, Table2, Trash2, X } from 'lucide-react'
+import { CreditCard, Download, Edit3, FileText, Image, MoreVertical, Plus, Printer, Table2, Trash2, Upload, X } from 'lucide-react'
 import { api, useSyncState, fmt } from '../lib/api'
 import { API_BASE } from '../lib/base'
 import SearchSelect from '../components/SearchSelect'
@@ -15,6 +15,8 @@ import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import SearchBox from '../components/SearchBox'
 import { DISTRICTS } from '../lib/districts'
 import MemberViewModal from '../components/MemberViewModal'
+import { parseImportFile } from '../lib/importExport'
+import ImportPreviewModal from '../components/ImportPreviewModal'
 
 /* ─────────────────────────────────────────────────────────────
    Types
@@ -922,6 +924,8 @@ export default function Members() {
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [viewingMember, setViewingMember] = useState<Member | null>(null)
+  const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[] } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -1122,6 +1126,12 @@ export default function Members() {
           {viewMode === 'table' && (
             <>
               <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+              >
+                <Upload size={14} /> {t('import.button', 'Import')}
+              </button>
+              <button
                 onClick={() => downloadCsv('members.csv', ['Name', 'Email', 'Membership Type', 'Payment Status', 'Renewal Date'],
                   filtered.map((m) => [m.fullName, m.email, m.membershipType?.name || '', m.paymentStatus || '', m.renewalDate || '']))
                 }
@@ -1137,6 +1147,23 @@ export default function Members() {
                 <Plus size={14} /> {t('members.newMember', 'Add Member')}
               </button>
               <SearchBox value={query} onChange={setQuery} placeholder={t('members.title', 'Search members…')} />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  try {
+                    const parsed = await parseImportFile<Record<string, unknown>>(file)
+                    setImportData({ collection: parsed.collection, docs: parsed.docs })
+                  } catch (err) {
+                    pushToast('error', 'Parse failed', err instanceof Error ? err.message : String(err))
+                  }
+                  e.target.value = ''
+                }}
+              />
             </>
           )}
         </div>
@@ -1428,6 +1455,15 @@ export default function Members() {
           member={viewingMember}
           onClose={() => setViewingMember(null)}
           onEdit={(m) => { setViewingMember(null); startEdit(m) }}
+        />
+      )}
+
+      {importData && (
+        <ImportPreviewModal
+          collection={importData.collection}
+          docs={importData.docs}
+          onClose={() => setImportData(null)}
+          onImported={() => setImportData(null)}
         />
       )}
     </div>

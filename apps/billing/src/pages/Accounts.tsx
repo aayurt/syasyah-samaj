@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Download, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Download, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import { api, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
+import { parseImportFile } from '../lib/importExport'
+import ImportPreviewModal from '../components/ImportPreviewModal'
+import { pushToast } from '../lib/toast'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import ActionMenu from '../components/ActionMenu'
 import SearchBox from '../components/SearchBox'
@@ -45,6 +48,8 @@ export default function Accounts() {
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
+  const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[] } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { selectedYear } = useFiscalYear()
 
   const load = async () => {
@@ -201,6 +206,12 @@ export default function Accounts() {
         <h1 className="text-lg font-semibold text-slate-900">{t('accounts.title', 'Chart of Accounts')}</h1>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            <Upload size={14} /> {t('import.button', 'Import')}
+          </button>
+          <button
             onClick={() => downloadCsv('accounts.csv', ['Code', 'Name', 'Type', 'Class', 'Opening Balance'],
               visible.map((a) => [a.code || '', a.name, a.type, a.class || '', openings[a.id] ?? a.openingBalance ?? 0]))
             }
@@ -218,6 +229,24 @@ export default function Accounts() {
           </button>
         </div>
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0]
+          if (!file) return
+          try {
+            const parsed = await parseImportFile<Record<string, unknown>>(file)
+            setImportData({ collection: parsed.collection, docs: parsed.docs })
+          } catch (err) {
+            pushToast('error', 'Parse failed', err instanceof Error ? err.message : String(err))
+          }
+          e.target.value = ''
+        }}
+      />
 
       {error && (
         <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -408,7 +437,16 @@ export default function Accounts() {
           No accounts yet. Add your first account to build the chart of accounts.
         </p>
       )}
-      </>
+      </> 
+      )}
+
+      {importData && (
+        <ImportPreviewModal
+          collection={importData.collection}
+          docs={importData.docs}
+          onClose={() => setImportData(null)}
+          onImported={() => setImportData(null)}
+        />
       )}
     </div>
   )
