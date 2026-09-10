@@ -3,6 +3,41 @@ import type { Document, DocumentLine, Party } from './types'
 import { fmt } from './api'
 
 const ORG = 'स्यस्यः धुकू'
+
+/** Save a jsPDF document in a cross-platform way.
+ *  iOS Safari blocks programmatic <a download> clicks (pdf.save()), so we
+ *  use navigator.share() with the PDF blob — the native share sheet lets the
+ *  user save to Files, AirPrint, etc. Falls back to opening in a new tab,
+ *  then to the standard pdf.save() on desktop. */
+function savePdf(pdf: jsPDF, filename: string) {
+  const ua = navigator.userAgent
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+
+  if (isIOS && typeof navigator.share === 'function') {
+    try {
+      const blob = pdf.output('blob')
+      const file = new File([blob], filename, { type: 'application/pdf' })
+      navigator.share({ files: [file] }).catch(() => {
+        // share cancelled or not supported with files — open in new tab
+        pdf.output('dataurlnewwindow')
+      })
+      return
+    } catch {
+      // output('blob') failed — fall through
+    }
+  }
+
+  if (isIOS) {
+    // iOS without share API — open PDF in a new tab so the user can save it
+    pdf.output('dataurlnewwindow')
+    return
+  }
+
+  // Desktop: standard download
+  pdf.save(filename)
+}
 const M = 48 // left/right margin (pt)
 const PAGE_H = 842 // A4 height (pt)
 const PAGE_W = 595 // A4 width (pt)
@@ -136,7 +171,7 @@ export function exportInvoicePdf(doc: Document, party?: Party) {
     pdf.text(`Note: ${doc.narration}`, M, y)
   }
 
-  pdf.save(`${doc.number || `invoice-${doc.id}`}.pdf`)
+  savePdf(pdf, `${doc.number || `invoice-${doc.id}`}.pdf`)
 }
 
 // --- Generic report export (trial balance, P&L, balance sheet, daybooks) --
@@ -286,6 +321,6 @@ export function exportReportPdf(opts: ReportPdfOptions) {
     }
   }
 
-  pdf.save(opts.filename)
+  savePdf(pdf, opts.filename)
 }
 
