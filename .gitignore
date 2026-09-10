@@ -21,3 +21,4 @@ serviceAccountKey.json
 apps/billing/e2e/.auth/
 apps/billing/test-results/
 apps/billing/playwright-report/
+.serena/
