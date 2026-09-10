@@ -84,8 +84,8 @@ export default function FiscalYearSwitcher() {
   const isWorking = selectedYear?.id === activeYear?.id
 
   return (
-    <div className="flex items-center gap-1">
-      <div className="relative">
+    <div className="flex min-w-0 max-w-full items-center gap-1">
+      <div className="relative min-w-0 max-w-full">
         <select
           value={selectedYear?.id ?? ''}
           onChange={(e) => {
@@ -93,7 +93,7 @@ export default function FiscalYearSwitcher() {
             // BUG-1 FIX: Bump cache when switching years
             void refresh()
           }}
-          className="appearance-none rounded border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 hover:border-slate-300 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500"
+          className="min-w-[5rem] max-w-full appearance-none truncate rounded border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 hover:border-slate-300 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500"
           title={t('fy.switchScope', 'Switch fiscal year — filters the data shown to this period')}
         >
           {years.map((y) => (
@@ -131,7 +131,7 @@ export default function FiscalYearSwitcher() {
         ref={addBtnRef}
         onClick={handleAddYearClick}
         title={t('fy.addYear', 'Add new fiscal year')}
-        className="rounded-full bg-crimson-600 p-1 text-white hover:bg-crimson-700 focus:outline-none focus:ring-1 focus:ring-crimson-500"
+        className="shrink-0 rounded-full bg-crimson-600 p-1 text-white hover:bg-crimson-700 focus:outline-none focus:ring-1 focus:ring-crimson-500"
       >
         <Plus size={14} />
       </button>

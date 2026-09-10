@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Cloud, CloudOff, RefreshCw } from 'lucide-react'
 import { getEngine, useSyncState } from '../lib/api'
+import { useT } from '../lib/i18n'
 
 /**
  * Compact sync status shown in the header: Synced / n to sync / Offline,
@@ -8,6 +9,7 @@ import { getEngine, useSyncState } from '../lib/api'
  * endpoint to push queued writes and pull all changes in one request.
  */
 export default function SyncStatus() {
+  const t = useT()
   const state = useSyncState()
   const [syncing, setSyncing] = useState(false)
   const [pullProgress, setPullProgress] = useState('')
@@ -23,7 +25,7 @@ export default function SyncStatus() {
 
   const syncNow = async () => {
     setSyncing(true)
-    setPullProgress('Resyncing…')
+    setPullProgress(t('sync.resyncing', 'Resyncing…'))
     try {
       const engine = getEngine()
       // Single endpoint: pushes outbox + pulls all changes
@@ -65,7 +67,7 @@ export default function SyncStatus() {
         className="flex items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50"
       >
         <CloudOff size={13} />
-        Offline{state.pending > 0 ? ` · ${state.pending} queued` : ''}
+        Offline{state.pending > 0 ? ` · ${state.pending} ${t('sync.pending', 'to sync')}` : ''}
         {reportAge}
       </button>
     )
@@ -78,7 +80,7 @@ export default function SyncStatus() {
         className="flex items-center gap-1.5 rounded border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 hover:bg-sky-100 disabled:opacity-50"
       >
         <RefreshCw size={13} className="animate-spin" />
-        {pullProgress || (state.pending > 0 ? `${state.pending} to sync` : 'Resyncing…')}
+        {pullProgress || (state.pending > 0 ? `${state.pending} ${t('sync.pending', 'to sync')}` : t('sync.resyncing', 'Resyncing…'))}
       </button>
     )
   } else if (state.syncingCount > 0) {
@@ -100,7 +102,7 @@ export default function SyncStatus() {
         title="All changes synced — next automatic sync is scheduled"
       >
         <RefreshCw size={13} />
-        Resync in {nextIn}s
+        Resync in {t('sync.resyncIn', 'Resync in {n}s').replace('{n}', String(nextIn))}
       </span>
     )
   } else {
@@ -119,18 +121,18 @@ export default function SyncStatus() {
     <span className="flex items-center gap-1.5">
       {pill}
       <button
-        onClick={() => void syncNow()}
-        disabled={syncing}
-        title={
-          canSync
-            ? 'Resync — push queued changes and pull the latest data from the server'
-            : 'All changes synced'
-        }
-        aria-label="Resync"
-        className="flex items-center gap-1.5 rounded border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-700 disabled:cursor-default disabled:opacity-40"
+      onClick={() => void syncNow()}
+      disabled={syncing}
+      title={
+        canSync
+          ? t('sync.resyncAria', 'Resync — push queued changes and pull the latest data from the server')
+          : t('sync.synced', 'All changes synced')
+      }
+      aria-label={t('sync.resyncAria', 'Resync — push queued changes and pull the latest data from the server')}
+      className="flex items-center gap-1.5 rounded border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-700 disabled:cursor-default disabled:opacity-40"
       >
-        <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
-        {syncing ? (pullProgress || 'Resyncing…') : 'Resync'}
+      <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
+      <span className="hidden sm:inline">{syncing ? (pullProgress || t('sync.resyncing', 'Resyncing…')) : t('sync.resync', 'Resync')}</span>
       </button>
     </span>
   )

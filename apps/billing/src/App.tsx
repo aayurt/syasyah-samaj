@@ -444,9 +444,9 @@ function Shell({ email }: { email: string }) {
           <ConnectingBanner />
           <SyncBanner />
         </div>
-        <header className="print:hidden flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+        <header className="print:hidden flex flex-wrap items-center justify-between border-b border-slate-200 bg-white px-3 py-2 md:px-6 md:py-3 gap-2">
           <div className="text-sm text-slate-500">{email}</div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3">
             <IllakaSwitcher />
             <FiscalYearSwitcher />
             <span data-tour="sync">
