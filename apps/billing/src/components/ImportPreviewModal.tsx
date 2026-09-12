@@ -107,7 +107,7 @@ export default function ImportPreviewModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-3">
           <h2 className="text-sm font-semibold text-slate-800">
-            `${t("importPreview.title")} — {collection} ({docs.length} records)`
+            {t('importPreview.title')} — {collection} ({docs.length} records)
           </h2>
           <button onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
             <X size={16} />
