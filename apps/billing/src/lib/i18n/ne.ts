@@ -388,6 +388,7 @@ export const ne = {
     gross: 'कुल',
     balanced: '✓ सन्तुलित',
     difference: 'भिन्नता',
+    unbalancedHint: 'स्वीकृत गर्नुअघि डेबिट र क्रेडिट बराबर हुनुपर्छ',
     saveDraft: 'मसौदा स्वीकृत गर्नु',
     saveChanges: 'परिवर्तनहरू स्वीकृत गर्नु',
     savePost: 'स्वीकृत गर्नु र पोस्ट गर्नु',
