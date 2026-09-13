@@ -176,6 +176,23 @@ function readGlobalsCache(): Record<string, unknown> | null {
   } catch { return null }
 }
 
+/**
+ * Stale-tolerant read for the OFFLINE fallback path only. The 5-minute TTL
+ * exists to keep background-refresh merges fresh while online; when the
+ * device is offline the last-known settings are the best (and only) data
+ * available — dropping them after 5 minutes would blank the org name,
+ * calendar, feature toggles and the setup gate mid-event. Cache-first
+ * callers always get a value once any sync has ever succeeded.
+ */
+function readGlobalsCacheStale(): Record<string, unknown> | null {
+  try {
+    const raw = localStorage.getItem(GS_KEY)
+    if (!raw) return null
+    const { data } = JSON.parse(raw)
+    return data ?? null
+  } catch { return null }
+}
+
 function writeGlobalsCache(data: unknown): void {
   try {
     localStorage.setItem(GS_KEY, JSON.stringify({ data, ts: Date.now() }))
@@ -429,7 +446,9 @@ export async function api<T = unknown>(
   // --- offline path ---
   if (method === 'GET') {
     if (isGlobals) {
-      const cached = readGlobalsCache()
+      // Stale-tolerant: offline the last-synced settings are better than an
+      // error (see readGlobalsCacheStale above).
+      const cached = readGlobalsCacheStale()
       if (cached) return cached as unknown as T
       throw new Error('Offline — billing settings have not been synced yet.')
     }
@@ -485,8 +504,9 @@ export const fmt = (n: number | undefined | null): string => {
   // Nepali digits setting is read synchronously from the localStorage globals
   // cache (same pattern as readGlobalsCache above) — fmt stays sync and cheap.
   // The cache is kept fresh by every api('/globals/billing-settings') read and
-  // the Settings save path, so the toggle applies on the next render.
-  if (readGlobalsCache()?.nepaliDigitsEnabled) {
+  // the Settings save path, so the toggle applies on the next render. The
+  // stale-tolerant read keeps the toggle working offline past the TTL.
+  if (readGlobalsCacheStale()?.nepaliDigitsEnabled) {
     return toNepaliDigits(western)
   }
   return western

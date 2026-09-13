@@ -72,6 +72,7 @@ import { LangProvider, useT } from './lib/i18n'
 import { api } from './lib/api'
 import { useDataEpochWatcher } from './lib/dataOps'
 import { useSetupStatus } from './lib/setup'
+import { usePrewarmMasters } from './lib/prewarm'
 import type { BillingSettings } from './lib/types'
 import DataManagement from './pages/DataManagement'
 import SetupWizard from './pages/SetupWizard'
@@ -200,6 +201,10 @@ function AppShell() {
 function Shell({ email }: { email: string }) {
   useBackgroundSync()
   useDataEpochWatcher()
+  // Pre-warm the offline masters cache (members, accounts, fiscal years,
+  // settings) right after login so dropdowns/autocomplete are instant even
+  // when the device goes offline at a remote event.
+  usePrewarmMasters()
   const navigate = useNavigate()
   const t = useT()
   // Setup gate — drives the full-page /setup wizard for fresh tenants.
