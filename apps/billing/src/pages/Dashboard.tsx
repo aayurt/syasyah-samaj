@@ -334,11 +334,11 @@ export default function Dashboard() {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             to="/vouchers/new/receipt"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-crimson-700"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
           >
-            <Receipt size={14} />
+            <Receipt size={14} className="text-slate-500" />
             <span>+ {t('vouchers.receipt', 'रसिद (Receipt)')}</span>
-            <span className="rounded bg-white/20 px-1 py-0.5 text-[10px] font-mono">F1</span>
+            <span className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-mono text-slate-600">F1</span>
           </Link>
           <Link
             to="/vouchers/new/payment"
