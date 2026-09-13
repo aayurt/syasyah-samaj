@@ -746,22 +746,14 @@ export default function VoucherForm({ mode }: Props) {
           </div>
 
           {/* Date */}
-          <NepaliDateInput
-            label="Date"
-            required
-            value={date}
-            onChange={setDate}
-          />
-
-          {/* Invoice No for cash types */}
-          {isCash && (
-            <div className="sm:col-span-1">
-              <label className="text-sm font-medium text-slate-700">{t('vouchers.invoiceNo', 'Invoice No')}</label>
-              <div className="mt-1 rounded border border-slate-200 bg-slate-50 px-3 min-h-[40px] py-2.5 font-mono text-sm text-slate-600">
-                {nextNumberPreview || `${invoicePrefix}-...`}
-              </div>
-            </div>
-          )}
+          <div className="sm:col-span-2">
+            <NepaliDateInput
+              label="Date"
+              required
+              value={date}
+              onChange={setDate}
+            />
+          </div>
         </div>
 
       </div>

@@ -236,21 +236,21 @@ export default function NepaliDateInput({
   // ── Compact variant: single-line, for filter bars ────────────────────
   if (compact) {
     return (
-      <div className={`inline-flex items-center gap-2 ${className}`}>
+      <div className={`inline-flex items-center gap-1.5 ${className}`}>
         {inputMode === 'BS' ? (
           <div className="relative" ref={wrapRef}>
             <button
               ref={triggerRef}
               type="button"
               onClick={() => (calOpen ? setCalOpen(false) : openCalendar())}
-              className="flex w-36 items-center justify-between gap-1 rounded border border-slate-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-slate-500"
+              className="flex h-9 w-40 items-center justify-between gap-1 rounded border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none hover:border-slate-400 focus:border-slate-500"
             >
-              <span className={bs ? 'text-slate-700' : 'text-slate-400'}>
+              <span className={`truncate ${bs ? 'font-medium text-slate-800' : 'text-slate-400'}`}>
                 {bs
                   ? `${bs.day} ${BS_MONTHS[bs.month]} ${bs.year}`
                   : t('common.selectDate', 'Select date')}
               </span>
-              <Calendar size={12} className="shrink-0 text-slate-400" />
+              <Calendar size={13} className="shrink-0 text-slate-400" />
             </button>
             {bsCalendar}
           </div>
@@ -259,13 +259,13 @@ export default function NepaliDateInput({
             type="date"
             value={value}
             onChange={(e) => handleChange(e.target.value)}
-            className="rounded border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-slate-500"
+            className="h-9 rounded border border-slate-300 px-2 py-1.5 text-xs text-slate-800 outline-none hover:border-slate-400 focus:border-slate-500"
           />
         )}
         <button
           type="button"
           onClick={toggleMode}
-          className="shrink-0 rounded border border-slate-200 bg-slate-50 px-1.5 py-1 text-[10px] font-semibold text-slate-500 hover:bg-slate-100"
+          className="flex h-9 shrink-0 items-center justify-center rounded border border-slate-200 bg-slate-50 px-2 text-[10px] font-semibold text-slate-600 transition-colors hover:bg-slate-100"
           title={`Currently entering ${inputMode}. Click to switch.`}
         >
           {inputMode}
@@ -277,46 +277,55 @@ export default function NepaliDateInput({
   return (
     <div className={className}>
       {label && (
-        <label className="text-sm font-medium text-slate-700">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-slate-700">
+            {label} {required && <span className="text-red-500">*</span>}
+          </label>
+          {value && (
+            <span className="text-xs font-mono text-slate-400">
+              {inputMode === 'BS'
+                ? `(AD: ${value})`
+                : `(BS: ${adToBsString(value)})`}
+            </span>
+          )}
+        </div>
       )}
       <div className="mt-1 flex items-center gap-1.5">
         {inputMode === 'BS' ? (
-          <div className="relative flex-1" ref={wrapRef}>
+          <div className="relative min-w-0 flex-1" ref={wrapRef}>
             <button
               ref={triggerRef}
               type="button"
               onClick={() => (calOpen ? setCalOpen(false) : openCalendar())}
-              className="flex w-full items-center justify-between rounded border border-slate-300 bg-white py-2.5 pl-3 pr-3 text-sm outline-none focus:border-slate-500"
+              className="flex min-h-[40px] w-full items-center justify-between rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none hover:border-slate-400 focus:border-slate-500"
             >
-              <span className={bs ? 'text-slate-800' : 'text-slate-400'}>
+              <span className={`truncate whitespace-nowrap ${bs ? 'font-medium text-slate-800' : 'text-slate-400'}`}>
                 {bs
                   ? `${bs.day} ${BS_MONTHS[bs.month]} ${bs.year}`
                   : 'Select BS date'}
               </span>
-              <Calendar size={14} className="text-slate-400" />
+              <Calendar size={15} className="ml-1.5 shrink-0 text-slate-400" />
             </button>
             {bsCalendar}
           </div>
         ) : (
-          <div className="relative flex-1">
+          <div className="relative min-w-0 flex-1">
             <Calendar
-              size={14}
+              size={15}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
             <input
               type="date"
               value={value}
               onChange={(e) => handleChange(e.target.value)}
-              className="w-full rounded border border-slate-300 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-slate-500"
+              className="min-h-[40px] w-full rounded border border-slate-300 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none hover:border-slate-400 focus:border-slate-500"
             />
           </div>
         )}
         <button
           type="button"
           onClick={toggleMode}
-          className="shrink-0 rounded border border-slate-200 bg-slate-50 px-2 py-2.5 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-slate-100"
+          className="flex min-h-[40px] shrink-0 items-center justify-center rounded border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100"
           title={`Currently entering ${inputMode} date. Click to switch.`}
         >
           {inputMode}
@@ -324,19 +333,19 @@ export default function NepaliDateInput({
         <button
           type="button"
           onClick={setToday}
-          className="shrink-0 rounded border border-slate-200 bg-slate-50 px-2 py-2.5 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-slate-100"
+          className="flex min-h-[40px] shrink-0 items-center justify-center rounded border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100"
           title="Set to today"
         >
           Today
         </button>
-        {value && (
-          <span className="shrink-0 text-[11px] text-slate-400">
-            {inputMode === 'BS'
-              ? `AD: ${value}`
-              : `BS: ${adToBsString(value)}`}
-          </span>
-        )}
       </div>
+      {!label && value && (
+        <div className="mt-0.5 text-right text-[11px] font-mono text-slate-400">
+          {inputMode === 'BS'
+            ? `AD: ${value}`
+            : `BS: ${adToBsString(value)}`}
+        </div>
+      )}
     </div>
   )
 }
