@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -629,18 +629,28 @@ export default function VoucherForm({ mode }: Props) {
     if (isCash) {
       base.paymentMethod = paymentMethod || 'bank'
       if (bankAccount) base.bankAccount = Number(bankAccount)
-      // For receipt/payment: send the amount as a single line
-      if (!isItem && lines.length > 0 && lines[0].amount) {
-        const amt = Number(lines[0].amount)
-        base.lines = [{ description: docType === 'receipt-voucher' ? 'Receipt' : 'Payment', amount: amt, qty: 1, rate: amt }]
-        // Pre-supply totals so the optimistic (pre-sync) row renders the real
-        // amount — without them the offline cache row shows Rs 0 until the
-        // server echo lands. Matches the server's recompute (net = gross =
-        // line amount; cash types send no tax rate, so tax is 0).
-        base.netTotal = amt
-        base.grossTotal = amt
-        base.taxTotal = 0
-        base.taxRate = 0
+      // For receipt/payment: send the amounts as line(s). Simple mode has a
+      // single amount line; detailed mode sends every filled line so the
+      // server's recompute (net = sum of line amounts) matches the form.
+      if (!isItem && lines.length > 0) {
+        const filled = cashSimple
+          ? lines.slice(0, 1)
+          : lines.filter((l) => l.amount !== '' && (parseFloat(l.amount) || 0) > 0)
+        if (filled.length > 0 && filled.some((l) => l.amount)) {
+          const amt = filled.reduce((s, l) => s + (parseFloat(l.amount) || 0), 0)
+          base.lines = filled.map((l) => ({
+            description: l.description || (docType === 'receipt-voucher' ? 'Receipt' : 'Payment'),
+            amount: Number(l.amount), qty: 1, rate: Number(l.amount),
+          }))
+          // Pre-supply totals so the optimistic (pre-sync) row renders the real
+          // amount — without them the offline cache row shows Rs 0 until the
+          // server echo lands. Matches the server's recompute (net = sum of
+          // line amounts; tax from taxLines when present, else 0).
+          base.netTotal = amt
+          base.grossTotal = cashSimple ? amt : grandTotal
+          base.taxTotal = cashSimple ? 0 : Math.round((vatTotal - tdsAmount) * 100) / 100
+          base.taxRate = 0
+        }
       }
     }
     // Link receipt/payment to a specific invoice
