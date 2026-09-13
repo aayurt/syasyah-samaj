@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>स्यस्यः समाज — उच्च-स्तरीय वित्तीय ड्यासबोर्ड (Tier 2 High Fidelity)</title>
+  <style>
+    :root {
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+      
+      /* Warm Stone Scale */
+      --stone-50: #fafaf9;
+      --stone-100: #f5f5f4;
+      --stone-200: #e7e5e4;
+      --stone-300: #d6d3d1;
+      --stone-400: #a8a29e;
+      --stone-500: #78716c;
+      --stone-600: #57534e;
+      --stone-700: #44403c;
+      --stone-800: #292524;
+      --stone-900: #1c1917;
+
+      /* Deep Crimson Brand */
+      --crimson-50: #fdf3f3;
+      --crimson-100: #fbe5e5;
+      --crimson-200: #f6cccc;
+      --crimson-500: #d13a3a;
+      --crimson-600: #be1a1a;
+      --crimson-700: #9c1414;
+      --crimson-800: #7d1010;
+
+      /* Status colors */
+      --emerald-bg: #ecfdf5;
+      --emerald-border: #a7f3d0;
+      --emerald-text: #065f46;
+      --amber-bg: #fffbeb;
+      --amber-border: #fde68a;
+      --amber-text: #92400e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--stone-100);
+      color: var(--stone-900);
+      line-height: 1.4;
+      font-size: 12.5px;
+      padding: 16px;
+    }
+
+    .app-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Top Navigation & Brand Strip ───────────────────────────────── */
+    .top-header {
+      background: #ffffff;
+      border: 1px solid var(--stone-300);
+      border-radius: 6px;
+      padding: 10px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: var(--crimson-600);
+      color: #fff;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .brand-titles h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--stone-900);
+      letter-spacing: -0.2px;
+    }
+    .brand-titles p {
+      font-size: 11px;
+      color: var(--stone-500);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ── Command Ribbon ─────────────────────────────────────────────── */
+    .command-ribbon {
+      background: #ffffff;
+      border: 1px solid var(--stone-300);
+      border-radius: 6px;
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .btn-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    button {
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--stone-300);
+      background: #ffffff;
+      color: var(--stone-800);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: var(--stone-50);
+      border-color: var(--stone-400);
+    }
+    .btn-crimson {
+      background: var(--crimson-600);
+      border-color: var(--crimson-700);
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .btn-crimson:hover {
+      background: var(--crimson-700);
+      border-color: var(--crimson-800);
+    }
+    .kbd-tag {
+      background: rgba(0,0,0,0.08);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+    .btn-crimson .kbd-tag {
+      background: rgba(255,255,255,0.22);
+      color: #fff;
+    }
+
+    .search-input {
+      font-family: inherit;
+      font-size: 12px;
+      padding: 6px 10px;
+      border: 1px solid var(--stone-300);
+      border-radius: 4px;
+      width: 250px;
+      background: var(--stone-50);
+      color: var(--stone-900);
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--crimson-600);
+      background: #ffffff;
+    }
+
+    /* ── Main 3-Column Operator Layout ──────────────────────────────── */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 290px 1fr 310px;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .panel-card {
+      background: #ffffff;
+      border: 1px solid var(--stone-300);
+      border-radius: 6px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--stone-200);
+      padding-bottom: 8px;
+    }
+    .panel-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--stone-700);
+    }
+
+    /* Cash Drawer Card */
+    .drawer-box {
+      background: var(--stone-50);
+      border: 1px solid var(--stone-200);
+      border-radius: 5px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .drawer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .drawer-big-val {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--stone-900);
+      font-family: var(--font-mono);
+    }
+
+    /* Tabular data */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th {
+      text-align: left;
+      padding: 8px 10px;
+      background: var(--stone-100);
+      color: var(--stone-700);
+      font-weight: 600;
+      border-bottom: 1px solid var(--stone-300);
+      font-size: 11px;
+    }
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--stone-200);
+      vertical-align: middle;
+    }
+    tbody tr:nth-child(even) { background-color: var(--stone-50); }
+    tbody tr:hover { background-color: #f0eeec; }
+    .mono-num {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10.5px;
+      font-weight: 500;
+    }
+    .badge-posted {
+      background: var(--emerald-bg);
+      color: var(--emerald-text);
+      border: 1px solid var(--emerald-border);
+    }
+    .badge-draft {
+      background: var(--amber-bg);
+      color: var(--amber-text);
+      border: 1px solid var(--amber-border);
+    }
+
+    /* Filter pills */
+    .pills-bar {
+      display: flex;
+      gap: 4px;
+    }
+    .pill-item {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--stone-300);
+      background: #ffffff;
+      cursor: pointer;
+      color: var(--stone-600);
+    }
+    .pill-item.active {
+      background: var(--crimson-600);
+      color: #ffffff;
+      border-color: var(--crimson-700);
+      font-weight: 600;
+    }
+
+    /* Drafts queue card */
+    .draft-item-box {
+      border: 1px solid var(--stone-200);
+      background: var(--stone-50);
+      border-radius: 4px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .draft-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--stone-600);
+    }
+    .draft-memo {
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--stone-900);
+    }
+
+    /* ── Modal Overlay ──────────────────────────────────────────────── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(28, 25, 23, 0.45);
+      backdrop-filter: blur(2px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-box {
+      background: #ffffff;
+      border: 1px solid var(--stone-300);
+      border-radius: 8px;
+      width: 100%;
+      max-width: 820px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--stone-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--stone-50);
+    }
+    .modal-title { font-size: 14px; font-weight: 700; color: var(--stone-900); }
+    .modal-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; max-height: 75vh; overflow-y: auto; }
+    .modal-footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--stone-200);
+      background: var(--stone-50);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .modal-tabs {
+      display: flex;
+      gap: 6px;
+      border-bottom: 1px solid var(--stone-300);
+      margin-bottom: 8px;
+    }
+    .modal-tab-btn {
+      padding: 6px 14px;
+      border: 1px solid transparent;
+      background: none;
+      border-radius: 4px 4px 0 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--stone-600);
+      cursor: pointer;
+    }
+    .modal-tab-btn.active {
+      border: 1px solid var(--stone-300);
+      border-bottom: 1px solid #ffffff;
+      background: #ffffff;
+      color: var(--crimson-700);
+      margin-bottom: -1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="brand-group">
+        <div class="brand-logo">स्य</div>
+        <div class="brand-titles">
+          <h1>स्यस्यः समाज — लेखा तथा बिलिङ्ग प्रणाली</h1>
+          <p>यल (पाटन) • आ.व. २०८१/८२ (२०२४/२५) • कार्यालय मुख्य शाखा</p>
+        </div>
+      </div>
+      <div class="header-controls">
+        <div style="font-size:11px; color:var(--stone-600);">
+          <span>मिति: <strong>२०८१ भाद्र २८</strong> (13 Sep 2026)</span>
+        </div>
+        <button onclick="openImportModal('export')">📊 थोक निर्यात (Export)</button>
+        <button class="btn-crimson" onclick="openImportModal('import')">📥 डाटा आयात (Import)</button>
+      </div>
+    </header>
+
+    <!-- Command Ribbon -->
+    <section class="command-ribbon">
+      <div class="btn-group">
+        <button class="btn-crimson" onclick="alert('नयाँ रसिद भौचर (Receipt [F1]) फारम')">
+          <span>+ रसिद काट्नुहोस् (Receipt)</span>
+          <span class="kbd-tag">F1</span>
+        </button>
+        <button onclick="alert('भुक्तानी भौचर (Payment [F2]) फारम')">
+          <span>+ भुक्तानी (Payment)</span>
+          <span class="kbd-tag">F2</span>
+        </button>
+        <button onclick="alert('जर्नल भौचर (Journal [F3]) फारम')">
+          <span>+ जर्नल (Journal)</span>
+          <span class="kbd-tag">F3</span>
+        </button>
+        <button onclick="alert('नयाँ सदस्य दर्ता')">
+          <span>👥 नयाँ सदस्य दर्ता</span>
+        </button>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:8px;">
+        <input type="text" class="search-input" placeholder="सदस्य नाम, भौचर नं. वा फोन..." oninput="filterRows(this.value)" />
+        <button style="padding:6px 10px;">🔍 खोज</button>
+      </div>
+    </section>
+
+    <!-- 3-Column Operator Layout -->
+    <div class="dashboard-grid">
+      <!-- Left: Cash Desk & Ledger Sanity -->
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">दैनिक नगद बाकस (Cash Desk)</span>
+            <span style="font-size:10.5px; color:var(--stone-500);">आजको विवरण</span>
+          </div>
+          <div class="drawer-box">
+            <div class="drawer-row">
+              <span style="font-size:11px; color:var(--stone-600);">काउन्टर नगद (Cash in Hand)</span>
+              <button style="font-size:10px; padding:3px 6px;" onclick="alert('दिनको हिसाब मिलान (Day Close Summary)')">क्लोजिङ (Close)</button>
+            </div>
+            <div class="drawer-big-val">रु. ३८,४५०</div>
+          </div>
+          <div style="font-size:11.5px; display:flex; flex-direction:column; gap:5px;">
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--stone-600);">आज संकलन (Inflow):</span>
+              <strong class="mono-num">रु. ४२,०००</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--stone-600);">आज भुक्तानी (Outflow):</span>
+              <strong class="mono-num">रु. ३,५५०</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--stone-200); padding-top:4px;">
+              <span style="color:var(--stone-600);">आज जारी रसिद:</span>
+              <strong>८ वटा</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">बैंक मौज्दात (Bank Accounts)</span>
+            <span style="font-size:10.5px; color:var(--stone-500);">२ खाता</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="padding-bottom:6px; border-bottom:1px solid var(--stone-200);">
+              <div style="font-weight:600; font-size:12px;">नेपाल बैंक लि. (चालू)</div>
+              <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--stone-500); margin-top:2px;">
+                <span>०४५०-१०-००२९१</span>
+                <span class="mono-num" style="color:var(--stone-900);">रु. ३८,४०,०००</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-weight:600; font-size:12px;">लक्ष्मी सनराइज (अक्षयकोष)</div>
+              <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--stone-500); margin-top:2px;">
+                <span>०१२९-८८-१२९०३</span>
+                <span class="mono-num" style="color:var(--stone-900);">रु. ७,६९,५००</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card" style="background:var(--stone-50);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:11px; font-weight:700; color:var(--stone-700);">लेखा सन्तुलन (Audit)</span>
+            <span class="status-badge badge-posted">✓ सन्तुलित (Balanced)</span>
+          </div>
+          <div style="font-size:11px; color:var(--stone-600); margin-top:4px;">
+            कुल डेबिट = कुल क्रेडिट (रु. १,२४,५०,०००). कुनै बेरुजु छैन।
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Live Transaction Stream -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <span class="panel-title">पछिल्ला भौचरहरू (Recent Journal Entries)</span>
+          <div class="pills-bar">
+            <span class="pill-item active" onclick="filterType('all', this)">सबै (४)</span>
+            <span class="pill-item" onclick="filterType('Receipt', this)">रसिद (२)</span>
+            <span class="pill-item" onclick="filterType('Payment', this)">भुक्तानी (१)</span>
+            <span class="pill-item" onclick="filterType('Journal', this)">जर्नल (१)</span>
+          </div>
+        </div>
+        <table id="trans-table">
+          <thead>
+            <tr>
+              <th>मिति / समय</th>
+              <th>भौचर नं.</th>
+              <th>विवरण तथा पार्टी</th>
+              <th>प्रकार</th>
+              <th style="text-align:right;">रकम</th>
+              <th style="text-align:center;">स्थिति</th>
+              <th style="text-align:center;">कार्य</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-type="Payment">
+              <td style="color:var(--stone-600);">२०८१-०५-२८ <small>१४:३०</small></td>
+              <td><strong style="color:var(--crimson-700);">JV-0142</strong></td>
+              <td>गुठी बैठक खाजा तथा चिया खर्च (मंगलबजार)</td>
+              <td>Payment</td>
+              <td class="mono-num">रु. ४,५००</td>
+              <td style="text-align:center;"><span class="status-badge badge-posted">Posted</span></td>
+              <td style="text-align:center;"><button style="font-size:10px; padding:2px 6px;">हेर्नुहोस्</button></td>
+            </tr>
+            <tr data-type="Receipt">
+              <td style="color:var(--stone-600);">२०८१-०५-२८ <small>१३:१५</small></td>
+              <td><strong style="color:var(--crimson-700);">RV-0089</strong></td>
+              <td>रत्नकाजी शाक्य (S-042) — आजीवन सदस्यता शुल्क</td>
+              <td>Receipt</td>
+              <td class="mono-num">रु. २५,०००</td>
+              <td style="text-align:center;"><span class="status-badge badge-posted">Posted</span></td>
+              <td style="text-align:center;"><button style="font-size:10px; padding:2px 6px;">🖨 प्रिन्ट</button></td>
+            </tr>
+            <tr data-type="Receipt">
+              <td style="color:var(--stone-600);">२०८१-०५-२८ <small>११:००</small></td>
+              <td><strong style="color:var(--crimson-700);">RV-0088</strong></td>
+              <td>सुनिल मानन्धर (S-108) — नियमित मासिक शुल्क (६ महिना)</td>
+              <td>Receipt</td>
+              <td class="mono-num">रु. ३,०००</td>
+              <td style="text-align:center;"><span class="status-badge badge-posted">Posted</span></td>
+              <td style="text-align:center;"><button style="font-size:10px; padding:2px 6px;">🖨 प्रिन्ट</button></td>
+            </tr>
+            <tr data-type="Journal">
+              <td style="color:var(--stone-600);">२०८१-०५-२७ <small>१०:२०</small></td>
+              <td><strong style="color:var(--crimson-700);">JV-0141</strong></td>
+              <td>भवन मर्मत तथा रंगरोगन पेश्की भुक्तानी</td>
+              <td>Journal</td>
+              <td class="mono-num">रु. ५०,०००</td>
+              <td style="text-align:center;"><span class="status-badge badge-draft">Draft</span></td>
+              <td style="text-align:center;"><button style="font-size:10px; padding:2px 6px;">सच्याउनुहोस्</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Right: Pending Drafts & Quick Tasks -->
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">मस्यौदा भौचरहरू (Pending Drafts)</span>
+            <span style="background:var(--amber-bg); color:var(--amber-text); border:1px solid var(--amber-border); font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px;">२</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div class="draft-item-box">
+              <div class="draft-top">
+                <span>JV-0141 • पेश्की</span>
+                <strong class="mono-num" style="color:var(--stone-900);">रु. ५०,०००</strong>
+              </div>
+              <div class="draft-memo">भवन मर्मत रंगरोगन पेश्की</div>
+              <div style="display:flex; justify-content:flex-end; gap:4px; margin-top:4px;">
+                <button style="font-size:10px; padding:3px 6px;">सच्याउनुहोस्</button>
+                <button class="btn-crimson" style="font-size:10px; padding:3px 6px;" onclick="alert('भौचर JV-0141 प्रमाणित गरियो!')">प्रमाणित गर्नुहोस्</button>
+              </div>
+            </div>
+
+            <div class="draft-item-box">
+              <div class="draft-top">
+                <span>PV-0034 • स्टेशनरी</span>
+                <strong class="mono-num" style="color:var(--stone-900);">रु. २,४००</strong>
+              </div>
+              <div class="draft-memo">कार्यालय माइन्यूट तथा रसिद बुक</div>
+              <div style="display:flex; justify-content:flex-end; gap:4px; margin-top:4px;">
+                <button style="font-size:10px; padding:3px 6px;">सच्याउनुहोस्</button>
+                <button class="btn-crimson" style="font-size:10px; padding:3px 6px;" onclick="alert('भौचर PV-0034 प्रमाणित गरियो!')">प्रमाणित गर्नुहोस्</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">द्रुत सर्टकटहरू (Shortcuts)</span>
+          </div>
+          <div style="font-size:11.5px; display:flex; flex-direction:column; gap:5px; color:var(--stone-600);">
+            <div style="display:flex; justify-content:space-between;"><span class="kbd-tag">F1</span><span>नयाँ रसिद भौचर</span></div>
+            <div style="display:flex; justify-content:space-between;"><span class="kbd-tag">F2</span><span>नयाँ भुक्तानी भौचर</span></div>
+            <div style="display:flex; justify-content:space-between;"><span class="kbd-tag">F3</span><span>जर्नल भौचर</span></div>
+            <div style="display:flex; justify-content:space-between;"><span class="kbd-tag">Ctrl + I</span><span>डाटा आयात केन्द्र</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Interactive Import/Export Modal ────────────────────────────── -->
+  <div class="modal-backdrop" id="import-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">डाटा आयात तथा निर्यात केन्द्र (Import & Export Wizard)</div>
+        <button style="border:none; background:none; font-size:16px; cursor:pointer;" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-tabs">
+          <button class="modal-tab-btn active" id="m-tab-import" onclick="switchModalTab('import')">१. एक्सेल / CSV आयात गर्नुहोस् (Import)</button>
+          <button class="modal-tab-btn" id="m-tab-export" onclick="switchModalTab('export')">२. डाटा ब्याकअप / निर्यात (Export Collections)</button>
+        </div>
+
+        <!-- Import Panel -->
+        <div id="m-view-import" style="display:flex; flex-direction:column; gap:12px;">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <!-- Drop zone -->
+            <div style="border:2px dashed var(--stone-400); border-radius:6px; padding:20px; text-align:center; background:var(--stone-50); cursor:pointer;" onclick="alert('फाइल छानियो: members_batch_2081.csv')">
+              <div style="font-size:24px;">📄</div>
+              <div style="font-weight:600; font-size:12px; margin-top:4px;">यहाँ एक्सेल (.xlsx) वा .CSV फाइल तान्नुहोस्</div>
+              <div style="font-size:10.5px; color:var(--stone-500);">वा आफ्नो कम्प्युटरबाट छनौट गर्नुहोस्</div>
+            </div>
+
+            <!-- Import Settings -->
+            <div style="display:flex; flex-direction:column; gap:8px; font-size:11.5px;">
+              <div>
+                <label style="font-weight:600;">कुन डाटा आयात गर्ने?</label>
+                <select style="width:100%; padding:5px; margin-top:2px; border:1px solid var(--stone-300); border-radius:4px;">
+                  <option selected>सदस्य सूची (Members Directory)</option>
+                  <option>लेखा खाताहरू (Chart of Accounts)</option>
+                  <option>पार्टी / आपूर्तिकर्ता (Parties / Vendors)</option>
+                  <option>सामग्री तथा सेवा (Items)</option>
+                </select>
+              </div>
+              <div style="margin-top:4px;">
+                <label style="font-weight:600;">दोहोरिएको डाटा नियम (Conflict Rule):</label>
+                <div style="display:flex; flex-direction:column; gap:4px; margin-top:3px;">
+                  <label><input type="radio" name="c-rule" checked /> दोहोरिएको छाड्नुहोस् (Skip duplicates)</label>
+                  <label><input type="radio" name="c-rule" /> अद्यावधिक गर्नुहोस् (Overwrite/Update)</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview Table -->
+          <div>
+            <div style="font-weight:700; font-size:12px; margin-bottom:6px; display:flex; justify-content:space-between;">
+              <span>पूर्वावलोकन (Data Preview — ३ रेकर्ड भेटियो)</span>
+              <span style="font-size:10.5px; color:var(--emerald-text);">✓ सबै फिल्डहरू प्रमाणित</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>सदस्य नं.</th>
+                  <th>पूरा नाम (Full Name)</th>
+                  <th>टोल / वडा</th>
+                  <th>मोबाइल</th>
+                  <th>रक्त समूह</th>
+                  <th>जाँच</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>S-081</strong></td>
+                  <td>सुमन शाक्य</td>
+                  <td>मंगलबजार, १२</td>
+                  <td>९८४१००२३४५</td>
+                  <td>B+</td>
+                  <td><span class="status-badge badge-posted">✓ Valid</span></td>
+                </tr>
+                <tr>
+                  <td><strong>S-082</strong></td>
+                  <td>कमला श्रेष्ठ</td>
+                  <td>हौगल, ८</td>
+                  <td>९८५११२३४५६</td>
+                  <td>O+</td>
+                  <td><span class="status-badge badge-posted">✓ Valid</span></td>
+                </tr>
+                <tr>
+                  <td><strong>S-083</strong></td>
+                  <td>दिनेश मानन्धर</td>
+                  <td>च्यासल, ९</td>
+                  <td>९८०३३४४५५६</td>
+                  <td>AB+</td>
+                  <td><span class="status-badge badge-posted">✓ Valid</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Export Panel -->
+        <div id="m-view-export" style="display:none; flex-direction:column; gap:10px;">
+          <div style="border:1px solid var(--stone-200); border-radius:4px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600;">सदस्य नामावली (Member Directory)</div>
+              <div style="font-size:11px; color:var(--stone-500);">३४० सदस्य • ठेगाना, रक्त समूह, पारिवारिक सम्पर्क</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button onclick="alert('सदस्य एक्सेल डाउनलोड हुँदैछ...')">📊 Excel (.xlsx)</button>
+              <button onclick="alert('सदस्य CSV डाउनलोड हुँदैछ...')">📄 CSV</button>
+            </div>
+          </div>
+
+          <div style="border:1px solid var(--stone-200); border-radius:4px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600;">चालू आ.व. सम्पूर्ण भौचरहरू (Journal Entries)</div>
+              <div style="font-size:11px; color:var(--stone-500);">२१४ भौचरहरू • डेबिट/क्रेडिट पंक्तिहरू सहित</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button onclick="alert('भौचर एक्सेल डाउनलोड हुँदैछ...')">📊 Excel (.xlsx)</button>
+              <button onclick="alert('भौचर CSV डाउनलोड हुँदैछ...')">📄 CSV</button>
+            </div>
+          </div>
+
+          <div style="border:1px solid var(--stone-200); border-radius:4px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600;">लेखा खाता सूची (Chart of Accounts)</div>
+              <div style="font-size:11px; color:var(--stone-500);">४८ खाताहरू • कोड र मौज्दात सहित</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button onclick="alert('खाता एक्सेल डाउनलोड हुँदैछ...')">📊 Excel (.xlsx)</button>
+              <button onclick="alert('खाता CSV डाउनलोड हुँदैछ...')">📄 CSV</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button onclick="closeModal()">रद्द (Cancel)</button>
+        <button class="btn-crimson" id="modal-confirm-btn" onclick="alert('डाटा सफलतापूर्वक आयात गरियो!'); closeModal();">आयात पुष्टि गर्नुहोस् (Confirm Import)</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openImportModal(mode) {
+      document.getElementById('import-modal').style.display = 'flex';
+      switchModalTab(mode);
+    }
+    function closeModal() {
+      document.getElementById('import-modal').style.display = 'none';
+    }
+    function switchModalTab(mode) {
+      if (mode === 'import') {
+        document.getElementById('m-view-import').style.display = 'flex';
+        document.getElementById('m-view-export').style.display = 'none';
+        document.getElementById('m-tab-import').classList.add('active');
+        document.getElementById('m-tab-export').classList.remove('active');
+        document.getElementById('modal-confirm-btn').style.display = '';
+      } else {
+        document.getElementById('m-view-import').style.display = 'none';
+        document.getElementById('m-view-export').style.display = 'flex';
+        document.getElementById('m-tab-import').classList.remove('active');
+        document.getElementById('m-tab-export').classList.add('active');
+        document.getElementById('modal-confirm-btn').style.display = 'none';
+      }
+    }
+
+    function filterType(type, el) {
+      document.querySelectorAll('.pills-bar .pill-item').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      const rows = document.querySelectorAll('#trans-table tbody tr');
+      rows.forEach(r => {
+        if (type === 'all' || r.dataset.type === type) {
+          r.style.display = '';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    }
+
+    function filterRows(q) {
+      const query = q.toLowerCase();
+      const rows = document.querySelectorAll('#trans-table tbody tr');
+      rows.forEach(r => {
+        const txt = r.innerText.toLowerCase();
+        r.style.display = txt.includes(query) ? '' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>

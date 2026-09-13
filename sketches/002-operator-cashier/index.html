@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>सस्यः समाज — Operator Cashier (T1 Wireframe)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+      background: #f1f1f1;
+      color: #111;
+      line-height: 1.35;
+      font-size: 12px;
+      padding: 12px;
+    }
+    .wrapper { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+
+    /* Action Command Bar */
+    .command-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 8px 14px;
+      border-radius: 4px;
+    }
+    .quick-actions { display: flex; gap: 8px; }
+    button {
+      font-family: inherit;
+      font-size: 11px;
+      padding: 6px 12px;
+      border: 1px solid #888;
+      background: #fff;
+      border-radius: 3px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .btn-hero {
+      border: 2px solid #111;
+      font-weight: 700;
+      background: #fff;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    input[type="text"] {
+      padding: 5px 8px;
+      border: 1px solid #999;
+      border-radius: 3px;
+      font-size: 12px;
+      width: 220px;
+    }
+
+    /* 3-Column Dense Grid */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 280px 1fr 300px;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Cash Drawer Stats */
+    .drawer-metric {
+      padding: 8px;
+      border: 1px dashed #999;
+      background: #fafafa;
+      border-radius: 3px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .drawer-metric .val { font-size: 16px; font-weight: 700; }
+
+    /* Transaction Stream */
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { text-align: left; padding: 6px; background: #eee; border-bottom: 1px solid #111; font-weight: 600; }
+    td { padding: 6px; border-bottom: 1px solid #e5e5e5; }
+    .text-right { text-align: right; }
+    .row-highlight { background: #fdfdfd; }
+
+    /* Filter pills */
+    .filter-pills { display: flex; gap: 4px; }
+    .pill {
+      font-size: 10px;
+      padding: 3px 8px;
+      border: 1px solid #aaa;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .pill.active { background: #111; color: #fff; border-color: #111; }
+
+    /* Drafts queue */
+    .draft-item {
+      border: 1px solid #ddd;
+      padding: 8px;
+      border-radius: 3px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .draft-meta { display: flex; justify-content: space-between; font-size: 10px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Command Bar -->
+    <div class="command-bar">
+      <div class="quick-actions">
+        <button class="btn-hero" onclick="alert('नयाँ रसिद (Receipt) भौचर प्रविष्टि')">+ रसिद काट्नुहोस् (Receipt [F1])</button>
+        <button onclick="alert('खर्च भुक्तानी भौचर')">+ भुक्तानी भौचर (Payment [F2])</button>
+        <button onclick="alert('जर्नल भौचर')">+ जर्नल (Journal [F3])</button>
+        <button onclick="alert('नयाँ सदस्य दर्ता')">नयाँ सदस्य दर्ता (+Member)</button>
+      </div>
+      <div class="search-box">
+        <input type="text" placeholder="सदस्य नाम, भौचर नं. वा फोन..." id="quick-search" oninput="liveSearch(this.value)" />
+        <button>खोज्नुहोस्</button>
+      </div>
+    </div>
+
+    <!-- 3-Column Operator Layout -->
+    <div class="grid-3">
+      <!-- Left: Cashier Desk & Balances -->
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div class="card">
+          <div class="card-title">
+            <span>दैनिक काउन्टर (Cash Desk)</span>
+            <span>२०८१-०५-२८</span>
+          </div>
+          <div class="drawer-metric">
+            <div>
+              <div style="font-size:10px; color:#555;">काउन्टर नगद (Cash in Hand)</div>
+              <div class="val">रु. ३८,४५०</div>
+            </div>
+            <button style="font-size:10px;" onclick="alert('दिनको हिसाब मिलान (Day Close)')">क्लोजिङ (Reconcile)</button>
+          </div>
+          <div style="font-size:11px; display:flex; flex-direction:column; gap:4px; padding-top:4px;">
+            <div style="display:flex; justify-content:space-between;">
+              <span>आज संकलन (Today In):</span>
+              <strong>रु. ४२,०००</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span>आज भुक्तानी (Today Out):</span>
+              <strong>रु. ३,५५०</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-top:1px dashed #ddd; padding-top:4px;">
+              <span>आजका कुल रसिदहरू:</span>
+              <strong>८ वटा</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>बैंक खाता स्थिति (Bank Accounts)</span>
+            <span style="font-weight:normal; font-size:10px;">अद्यावधिक</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;">
+            <div style="border-bottom:1px solid #eee; padding-bottom:4px;">
+              <div style="font-weight:600;">नेपाल बैंक लि. (चालू)</div>
+              <div style="display:flex; justify-content:space-between; color:#555;">
+                <span>0450-10-00291</span>
+                <span style="font-weight:700; color:#111;">रु. ३८,४०,०००</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-weight:600;">लक्ष्मी सनराइज (मुद्दती)</div>
+              <div style="display:flex; justify-content:space-between; color:#555;">
+                <span>0129-88-12903</span>
+                <span style="font-weight:700; color:#111;">रु. ७,६९,५००</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: High-Density Live Transaction Ledger -->
+      <div class="card">
+        <div class="card-title">
+          <span>दैनिक भौचर सूची (Daily Journal Feed)</span>
+          <div class="filter-pills">
+            <span class="pill active" onclick="setFilter('all', this)">सबै (<span id="cnt-all">4</span>)</span>
+            <span class="pill" onclick="setFilter('Receipt', this)">रसिद (<span id="cnt-rcpt">2</span>)</span>
+            <span class="pill" onclick="setFilter('Payment', this)">भुक्तानी (<span id="cnt-pay">1</span>)</span>
+            <span class="pill" onclick="setFilter('Journal', this)">जर्नल (<span id="cnt-jnl">1</span>)</span>
+          </div>
+        </div>
+        <table id="feed-table">
+          <thead>
+            <tr>
+              <th>समय</th>
+              <th>भौचर नं.</th>
+              <th>खाता / पार्टी विवरण</th>
+              <th>प्रकार</th>
+              <th class="text-right">रकम</th>
+              <th style="text-align:center;">कार्य</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-highlight" data-type="Payment">
+              <td>१४:३०</td>
+              <td><strong>JV-0142</strong></td>
+              <td>गुठी बैठक खाजा तथा चिया खर्च (मंगलबजार)</td>
+              <td>Payment</td>
+              <td class="text-right"><strong>रु. ४,५००</strong></td>
+              <td style="text-align:center;"><button style="padding:2px 5px; font-size:10px;">हेर्नुहोस्</button></td>
+            </tr>
+            <tr data-type="Receipt">
+              <td>१३:१५</td>
+              <td><strong>RV-0089</strong></td>
+              <td>रत्नकाजी शाक्य (सदस्यता नं. S-042) — आजीवन शुल्क</td>
+              <td>Receipt</td>
+              <td class="text-right"><strong>रु. २५,०००</strong></td>
+              <td style="text-align:center;"><button style="padding:2px 5px; font-size:10px;">प्रिन्ट</button></td>
+            </tr>
+            <tr data-type="Receipt">
+              <td>११:००</td>
+              <td><strong>RV-0088</strong></td>
+              <td>सुनिल मानन्धर — नियमित मासिक शुल्क (६ महिना)</td>
+              <td>Receipt</td>
+              <td class="text-right"><strong>रु. ३,०००</strong></td>
+              <td style="text-align:center;"><button style="padding:2px 5px; font-size:10px;">प्रिन्ट</button></td>
+            </tr>
+            <tr data-type="Journal">
+              <td>१०:२०</td>
+              <td><strong>JV-0141</strong></td>
+              <td>भवन मर्मत तथा रंगरोगन पेश्की भुक्तानी</td>
+              <td>Journal</td>
+              <td class="text-right"><strong>रु. ५०,०००</strong></td>
+              <td style="text-align:center;"><button style="padding:2px 5px; font-size:10px;">हेर्नुहोस्</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Right: Pending Drafts & Quick Member Dues Lookup -->
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div class="card">
+          <div class="card-title">
+            <span>स्वीकृति पर्खिएका मस्यौदा (Pending Drafts)</span>
+            <span style="border:1px solid #111; border-radius:10px; padding:0 6px; font-size:10px;">२</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <div class="draft-item">
+              <div class="draft-meta">
+                <span>JV-0141 • पेश्की</span>
+                <strong>रु. ५०,०००</strong>
+              </div>
+              <div style="font-weight:600; font-size:11px;">भवन मर्मत रंगरोगन</div>
+              <div style="display:flex; justify-content:flex-end; gap:4px; margin-top:4px;">
+                <button style="font-size:10px;">सच्याउनुहोस्</button>
+                <button class="btn-hero" style="font-size:10px;" onclick="alert('प्रमाणित गरियो (Posted)')">प्रमाणित गर्नुहोस्</button>
+              </div>
+            </div>
+            <div class="draft-item">
+              <div class="draft-meta">
+                <span>PV-0034 • स्टेशनरी</span>
+                <strong>रु. २,४००</strong>
+              </div>
+              <div style="font-weight:600; font-size:11px;">कार्यालय रजिष्टर तथा फाइल</div>
+              <div style="display:flex; justify-content:flex-end; gap:4px; margin-top:4px;">
+                <button style="font-size:10px;">सच्याउनुहोस्</button>
+                <button class="btn-hero" style="font-size:10px;" onclick="alert('प्रमाणित गरियो (Posted)')">प्रमाणित गर्नुहोस्</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>द्रुत सर्टकट (Keyboard Shortcuts)</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#555;">
+            <div style="display:flex; justify-content:space-between;"><span>F1</span><span>नयाँ रसिद भौचर</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>F2</span><span>नयाँ भुक्तानी भौचर</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>F3</span><span>जर्नल भौचर</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>Ctrl + K</span><span>द्रुत खोजी</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setFilter(type, el) {
+      document.querySelectorAll('.filter-pills .pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      const rows = document.querySelectorAll('#feed-table tbody tr');
+      rows.forEach(r => {
+        if (type === 'all' || r.dataset.type === type) {
+          r.style.display = '';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    }
+
+    function liveSearch(val) {
+      const q = val.toLowerCase();
+      const rows = document.querySelectorAll('#feed-table tbody tr');
+      rows.forEach(r => {
+        const text = r.innerText.toLowerCase();
+        r.style.display = text.includes(q) ? '' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>

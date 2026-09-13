@@ -25,7 +25,7 @@ test.describe.serial('S10 — Membership application form', () => {
 
   /** Switch to the Application Form view via the segmented control. */
   async function switchToApplicationForm(page: import('@playwright/test').Page) {
-    const appFormBtn = page.getByRole('button', { name: 'Application Form' })
+    const appFormBtn = page.getByRole('button', { name: /आवेदन फाराम|Application Form/ })
     await expect(appFormBtn).toBeVisible({ timeout: 15_000 })
     await appFormBtn.click()
     // Wait for the application form to render
@@ -34,7 +34,7 @@ test.describe.serial('S10 — Membership application form', () => {
 
   /** Switch to the Table view via the segmented control. */
   async function switchToTable(page: import('@playwright/test').Page) {
-    const tableBtn = page.getByRole('button', { name: 'Table' })
+    const tableBtn = page.getByRole('button', { name: /तालिका|Table/ })
     await tableBtn.click()
   }
 

@@ -1150,7 +1150,7 @@ export default function Members() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".json"
+                accept=".json,.csv"
                 className="hidden"
                 onChange={async (e) => {
                   const file = e.target.files?.[0]

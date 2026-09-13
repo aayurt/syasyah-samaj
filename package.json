@@ -1,7 +1,7 @@
 {
-  "name": "afno-payload",
+  "name": "syasyah-samaj",
   "version": "1.0.0",
-  "description": "Website template for Payload",
+  "description": "Syasyah Samaj App",
   "license": "MIT",
   "type": "module",
   "scripts": {

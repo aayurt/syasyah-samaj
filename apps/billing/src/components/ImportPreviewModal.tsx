@@ -222,7 +222,7 @@ export default function ImportPreviewModal({
                 <span className="text-xs text-slate-500">{t('importPreview.recordsWillBeImported').replace('{n}', String(willImport))}</span>
                 <div className="flex gap-2">
                   <button onClick={onClose} className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
-                    Cancel
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     onClick={handleImport}

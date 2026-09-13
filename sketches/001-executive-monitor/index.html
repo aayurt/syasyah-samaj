@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>सस्यः समाज — Executive Monitor (T1 Wireframe)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+      background: #f6f6f6;
+      color: #111;
+      line-height: 1.4;
+      font-size: 13px;
+      padding: 16px;
+    }
+    .container { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    
+    /* Header */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 12px 16px;
+      border-radius: 4px;
+    }
+    .org-title h1 { font-size: 16px; font-weight: 700; }
+    .org-title span { font-size: 12px; color: #666; }
+    .fy-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    select, button {
+      font-family: inherit;
+      font-size: 12px;
+      padding: 6px 10px;
+      border: 1px solid #999;
+      border-radius: 4px;
+      background: #fff;
+      color: #111;
+      cursor: pointer;
+    }
+    .btn-primary-outline {
+      border: 2px solid #111;
+      font-weight: 600;
+    }
+
+    /* KPI strip */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .kpi-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 14px;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .kpi-label { font-size: 11px; text-transform: uppercase; color: #666; font-weight: 600; }
+    .kpi-value { font-size: 20px; font-weight: 700; }
+    .kpi-sub { font-size: 11px; color: #555; }
+
+    /* Main layout: 2 cols (70% / 30%) */
+    .main-cols {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+    }
+    .panel {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
+    .panel-title { font-size: 14px; font-weight: 600; }
+    .tag { font-size: 10px; padding: 2px 6px; border: 1px solid #ccc; border-radius: 3px; }
+
+    /* Bar chart wireframe */
+    .chart-box {
+      height: 140px;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 12px 4px 4px 4px;
+      border-bottom: 1px solid #ddd;
+    }
+    .chart-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .bars-wrap {
+      display: flex;
+      gap: 2px;
+      align-items: flex-end;
+      width: 100%;
+      height: 100px;
+      justify-content: center;
+    }
+    .bar-inc { width: 10px; background: #555; border-radius: 2px 2px 0 0; }
+    .bar-exp { width: 10px; background: #bbb; border-radius: 2px 2px 0 0; }
+    .bar-label { font-size: 10px; color: #666; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; padding: 8px; border-bottom: 1px solid #111; font-weight: 600; color: #444; }
+    td { padding: 8px; border-bottom: 1px solid #eee; }
+    .text-right { text-align: right; }
+
+    /* Accounts list */
+    .acct-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .acct-name { font-weight: 500; }
+    .acct-bal { font-weight: 600; }
+
+    /* Tab switcher for interactivity */
+    .tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+    .tab-btn {
+      padding: 4px 10px;
+      border: 1px solid #ccc;
+      background: #eee;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: #111;
+      color: #fff;
+      border-color: #111;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="org-title">
+        <h1>स्यस्यः समाज (यल) — वित्तीय सारांश (Financial Dashboard)</h1>
+        <span>आर्थिक वर्ष २०८१/८२ (२०२४/२५) • स्थिति: सामान्य (Normal)</span>
+      </div>
+      <div class="fy-selector">
+        <label for="fy-select" style="font-size: 11px; color: #555;">आ.व.:</label>
+        <select id="fy-select" onchange="switchFY(this.value)">
+          <option value="2081/82" selected>२०८१/८२ (चालू)</option>
+          <option value="2080/81">२०८०/८१</option>
+          <option value="2079/80">२०७९/८०</option>
+        </select>
+        <button class="btn-primary-outline" onclick="alert('नयाँ भौचर प्रविष्टि फारम खोल्दैछ...')">+ नयाँ भौचर (New Entry)</button>
+      </div>
+    </header>
+
+    <!-- KPI Strip -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">मौज्दात रकम (Total Cash & Bank)</span>
+        <span class="kpi-value" id="kpi-cash">रु. ४८,२४,५००</span>
+        <span class="kpi-sub">नगद: रु. २,१५,००० • बैंक: रु. ४६,०९,५००</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">यस महिनाको आम्दानी (Monthly Inflow)</span>
+        <span class="kpi-value" id="kpi-inflow">रु. ३,८०,०००</span>
+        <span class="kpi-sub">सदस्यता शुल्क र चन्दा</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">यस महिनाको खर्च (Monthly Outflow)</span>
+        <span class="kpi-value" id="kpi-outflow">रु. १,४२,३००</span>
+        <span class="kpi-sub">कार्यक्रम तथा मर्मत खर्च</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">उठ्न बाँकी बक्यौता (Receivables)</span>
+        <span class="kpi-value">रु. ६,१५,०००</span>
+        <span class="kpi-sub">४२ सदस्यहरूबाट लिन बाँकी</span>
+      </div>
+    </section>
+
+    <!-- Main Content Split -->
+    <div class="main-cols">
+      <!-- Left: Income/Expense Chart & Recent Ledger -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">मासिक आय-व्यय तुलना (Income vs Expense - Last 6 Months)</span>
+            <div style="display:flex; gap:12px; font-size:11px; color:#555;">
+              <span>■ आम्दानी (Income)</span>
+              <span>□ खर्च (Expense)</span>
+            </div>
+          </div>
+          <div class="chart-box">
+            <div class="chart-col"><div class="bars-wrap"><div class="bar-inc" style="height:60%"></div><div class="bar-exp" style="height:40%"></div></div><span class="bar-label">बैशाख</span></div>
+            <div class="chart-col"><div class="bars-wrap"><div class="bar-inc" style="height:80%"></div><div class="bar-exp" style="height:35%"></div></div><span class="bar-label">जेठ</span></div>
+            <div class="chart-col"><div class="bars-wrap"><div class="bar-inc" style="height:70%"></div><div class="bar-exp" style="height:55%"></div></div><span class="bar-label">असार</span></div>
+            <div class="chart-col"><div class="bars-wrap"><div class="bar-inc" style="height:50%"></div><div class="bar-exp" style="height:30%"></div></div><span class="bar-label">श्रावण</span></div>
+            <div class="chart-col"><div class="bars-wrap"><div class="bar-inc" style="height:90%"></div><div class="bar-exp" style="height:45%"></div></div><span class="bar-label">भाद्र</span></div>
+            <div class="chart-col"><div class="bars-wrap"><div class="bar-inc" style="height:75%"></div><div class="bar-exp" style="height:60%"></div></div><span class="bar-label">असोज</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">पछिल्ला भौचरहरू (Recent Journal Entries)</span>
+            <div class="tabs">
+              <button class="tab-btn active" onclick="filterTable('all', this)">सबै (All)</button>
+              <button class="tab-btn" onclick="filterTable('posted', this)">प्रमाणित (Posted)</button>
+              <button class="tab-btn" onclick="filterTable('draft', this)">मस्यौदा (Draft)</button>
+            </div>
+          </div>
+          <table id="journal-table">
+            <thead>
+              <tr>
+                <th>मिति (Date)</th>
+                <th>भौचर नं. (Voucher #)</th>
+                <th>विवरण (Description)</th>
+                <th>प्रकार (Type)</th>
+                <th class="text-right">रकम (Amount)</th>
+                <th>स्थिति (Status)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-status="posted">
+                <td>२०८१-०५-२८</td>
+                <td><strong>JV-0142</strong></td>
+                <td>मासिक गुठी बैठक खाजा खर्च</td>
+                <td>Payment</td>
+                <td class="text-right">रु. ४,५००</td>
+                <td><span class="tag">Posted</span></td>
+              </tr>
+              <tr data-status="posted">
+                <td>२०८१-०५-२६</td>
+                <td><strong>RV-0089</strong></td>
+                <td>रत्नकाजी शाक्य — आजन्म सदस्यता शुल्क</td>
+                <td>Receipt</td>
+                <td class="text-right">रु. २५,०००</td>
+                <td><span class="tag">Posted</span></td>
+              </tr>
+              <tr data-status="draft">
+                <td>२०८१-०५-२५</td>
+                <td><strong>JV-0141</strong></td>
+                <td>भवन मर्मत तथा रंगरोगन पेश्की</td>
+                <td>Journal</td>
+                <td class="text-right">रु. ५०,०००</td>
+                <td><span class="tag" style="border-style:dashed;">Draft</span></td>
+              </tr>
+              <tr data-status="posted">
+                <td>२०८१-०५-२२</td>
+                <td><strong>RV-0088</strong></td>
+                <td>वार्षिक साधारण सभा सहयोग चन्दा</td>
+                <td>Receipt</td>
+                <td class="text-right">रु. १,२०,०००</td>
+                <td><span class="tag">Posted</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Right Column: Ledger Sanity & Cash Accounts -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">लेखा स्थिति (Ledger Health)</span>
+            <span class="tag">सन्तुलित (Balanced)</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; padding:4px 0;">
+            <span>कुल डेबिट (Total Dr):</span>
+            <strong>रु. १,२४,५०,०००</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; padding:4px 0;">
+            <span>कुल क्रेडिट (Total Cr):</span>
+            <strong>रु. १,२४,५०,०००</strong>
+          </div>
+          <div style="border-top:1px dashed #ccc; margin-top:4px; padding-top:8px; font-size:11px; color:#555;">
+            ✓ ट्रायल ब्यालेन्स शून्य फरक (Zero imbalance).
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">खाता मौज्दात (Accounts)</span>
+            <a href="#" style="font-size:11px; color:#111; text-decoration:underline;">सबै हेर्नुहोस्</a>
+          </div>
+          <div class="acct-row">
+            <div>
+              <div class="acct-name">मुख्य बचत खाता (Nepal Bank)</div>
+              <div style="font-size:10px; color:#666;">खाता नं: ०४५०-१०-००२९१</div>
+            </div>
+            <div class="acct-bal">रु. ३८,४०,०००</div>
+          </div>
+          <div class="acct-row">
+            <div>
+              <div class="acct-name">आपतकालीन अक्षयकोष (Laxmi)</div>
+              <div style="font-size:10px; color:#666;">मुद्दती निक्षेप (Fixed)</div>
+            </div>
+            <div class="acct-bal">रु. ७,६९,५००</div>
+          </div>
+          <div class="acct-row">
+            <div>
+              <div class="acct-name">कार्यालय नगद बाकस (Petty Cash)</div>
+              <div style="font-size:10px; color:#666;">कोषाध्यक्ष जिम्मा</div>
+            </div>
+            <div class="acct-bal">रु. २,१५,०००</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function filterTable(status, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const rows = document.querySelectorAll('#journal-table tbody tr');
+      rows.forEach(r => {
+        if (status === 'all' || r.dataset.status === status) {
+          r.style.display = '';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    }
+
+    function switchFY(val) {
+      if (val === '2080/81') {
+        document.getElementById('kpi-cash').innerText = 'रु. ३९,१०,०००';
+        document.getElementById('kpi-inflow').innerText = 'रु. ३२,४०,०००';
+        document.getElementById('kpi-outflow').innerText = 'रु. २६,१०,०००';
+      } else {
+        document.getElementById('kpi-cash').innerText = 'रु. ४८,२४,५००';
+        document.getElementById('kpi-inflow').innerText = 'रु. ३,८०,०००';
+        document.getElementById('kpi-outflow').innerText = 'रु. १,४२,३००';
+      }
+    }
+  </script>
+</body>
+</html>

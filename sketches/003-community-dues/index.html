@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>सस्यः समाज — Community Dues & Guthi Stance (T1 Wireframe)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+      background: #f7f7f7;
+      color: #111;
+      line-height: 1.4;
+      font-size: 13px;
+      padding: 16px;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+    /* Header */
+    .header {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-h1 { font-size: 16px; font-weight: 700; }
+    .header-sub { font-size: 12px; color: #666; }
+    button {
+      font-family: inherit;
+      font-size: 12px;
+      padding: 6px 12px;
+      border: 1px solid #777;
+      background: #fff;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .btn-hero { border: 2px solid #111; font-weight: 700; }
+
+    /* Progress Banner */
+    .progress-card {
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .progress-bar-bg {
+      height: 14px;
+      background: #eee;
+      border-radius: 7px;
+      overflow: hidden;
+      display: flex;
+    }
+    .progress-bar-fill {
+      background: #333;
+      height: 100%;
+      transition: width 0.3s;
+    }
+
+    /* Aging Buckets Row */
+    .aging-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .aging-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: border-color 0.2s;
+    }
+    .aging-card.selected {
+      border: 2px solid #111;
+      background: #fafafa;
+    }
+    .aging-label { font-size: 11px; font-weight: 600; color: #555; }
+    .aging-val { font-size: 18px; font-weight: 700; }
+    .aging-count { font-size: 11px; color: #777; }
+
+    /* 2 Columns: Outstanding Roster vs Funds */
+    .dues-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 14px;
+    }
+    .panel {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
+    .panel-title { font-size: 13px; font-weight: 700; }
+
+    /* Member Roster */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; padding: 7px; border-bottom: 1px solid #111; background: #f0f0f0; }
+    td { padding: 7px; border-bottom: 1px solid #eee; }
+    .text-right { text-align: right; }
+
+    /* Guthi Funds breakdown */
+    .fund-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .fund-title { font-weight: 600; }
+    .fund-desc { font-size: 11px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Header -->
+    <header class="header">
+      <div>
+        <div class="header-h1">स्यस्यः समाज — सदस्यता तथा शुल्क संकलन बोर्ड (Member Dues & Welfare)</div>
+        <div class="header-sub">आ.व. २०८१/८२ • कुल दर्ता सदस्य: ३४० घरधुरी (Total 340 households)</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button onclick="alert('बक्यौता एसएमएस / सूचना पठाउने')">बक्यौता सूचना पठाउनुहोस् (Send Reminders)</button>
+        <button class="btn-hero" onclick="alert('नयाँ शुल्क संकलन रसिद')">+ शुल्क संकलन (Collect Dues)</button>
+      </div>
+    </header>
+
+    <!-- Fiscal Year Collection Progress -->
+    <section class="progress-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight:600;">वार्षिक सदस्यता शुल्क संकलन प्रगति (Annual Dues Target)</span>
+        <span><strong>रु. १६,२०,०००</strong> / रु. २०,००,००० (८१% सम्पन्न)</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" style="width: 81%;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:11px; color:#555;">
+        <span>२७५ सदस्यहरू चुक्ता • ६५ सदस्यहरू बाँकी</span>
+        <span>लक्ष्य पूरा हुन बाँकी: रु. ३,८०,०००</span>
+      </div>
+    </section>
+
+    <!-- Aging Breakdown Buttons -->
+    <section class="aging-row">
+      <div class="aging-card selected" id="card-all" onclick="selectAging('all', this)">
+        <span class="aging-label">कुल बाँकी बक्यौता (Total Overdue)</span>
+        <span class="aging-val">रु. ६,१५,०००</span>
+        <span class="aging-count">४२ सदस्य / २ वटा संस्था</span>
+      </div>
+      <div class="aging-card" id="card-30" onclick="selectAging('0-30', this)">
+        <span class="aging-label">०–३० दिन (Current Dues)</span>
+        <span class="aging-val">रु. १,१०,०००</span>
+        <span class="aging-count">१६ जना (नयाँ महिना शुल्क)</span>
+      </div>
+      <div class="aging-card" id="card-90" onclick="selectAging('31-90', this)">
+        <span class="aging-label">३१–९० दिन (Moderate Delay)</span>
+        <span class="aging-val">रु. २,४५,०००</span>
+        <span class="aging-count">१८ जना</span>
+      </div>
+      <div class="aging-card" id="card-90plus" onclick="selectAging('90+', this)">
+        <span class="aging-label">९० दिन भन्दा बढी (Critical Overdue)</span>
+        <span class="aging-val">रु. २,६०,०००</span>
+        <span class="aging-count">८ जना (विशेष ताकेता आवश्यक)</span>
+      </div>
+    </section>
+
+    <!-- Two-Column Content -->
+    <div class="dues-grid">
+      <!-- Left: Outstanding Member List -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title" id="roster-title">बक्यौता सदस्य नामावली (Outstanding Members — All)</span>
+          <span style="font-size:11px; color:#666;">४२ जना</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>सदस्य नं.</th>
+              <th>नाम तथा टोल (Name / Locality)</th>
+              <th>अवधि (Period)</th>
+              <th class="text-right">बाँकी रकम (Due)</th>
+              <th style="text-align:center;">कार्य (Action)</th>
+            </tr>
+          </thead>
+          <tbody id="member-table-body">
+            <tr data-bucket="90+">
+              <td><strong>S-019</strong></td>
+              <td>
+                <div>सुरेन्द्र शाक्य</div>
+                <div style="font-size:10px; color:#666;">मंगलबजार, वडा नं. १२ • ९८४१२३४५६७</div>
+              </td>
+              <td>१२ महिना (आ.व. २०८०)</td>
+              <td class="text-right"><strong>रु. ४८,०००</strong></td>
+              <td style="text-align:center;"><button style="font-size:10px;" onclick="alert('रसिद काट्नुहोस् S-019')">शुल्क तिर्नुहोस्</button></td>
+            </tr>
+            <tr data-bucket="90+">
+              <td><strong>S-044</strong></td>
+              <td>
+                <div>राजेश मानन्धर</div>
+                <div style="font-size:10px; color:#666;">इखालखु, वडा नं. १६ • ९८५१०२९३८४</div>
+              </td>
+              <td>८ महिना</td>
+              <td class="text-right"><strong>रु. ३२,०००</strong></td>
+              <td style="text-align:center;"><button style="font-size:10px;">शुल्क तिर्नुहोस्</button></td>
+            </tr>
+            <tr data-bucket="31-90">
+              <td><strong>S-102</strong></td>
+              <td>
+                <div>विक्रम शाक्य</div>
+                <div style="font-size:10px; color:#666;">हौगल, वडा नं. ८ • ९८०३९४८१२३</div>
+              </td>
+              <td>३ महिना</td>
+              <td class="text-right"><strong>रु. १२,०००</strong></td>
+              <td style="text-align:center;"><button style="font-size:10px;">शुल्क तिर्नुहोस्</button></td>
+            </tr>
+            <tr data-bucket="0-30">
+              <td><strong>S-215</strong></td>
+              <td>
+                <div>सुष्मा श्रेष्ठ</div>
+                <div style="font-size:10px; color:#666;">च्यासल, वडा नं. ९ • ९८१२३४९८७१</div>
+              </td>
+              <td>१ महिना (भाद्र)</td>
+              <td class="text-right"><strong>रु. ४,०००</strong></td>
+              <td style="text-align:center;"><button style="font-size:10px;">शुल्क तिर्नुहोस्</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Right: Community Welfare & Guthi Funds -->
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">समाजका विशेष कोषहरू (Dedicated Samaj Funds)</span>
+          </div>
+          <div class="fund-row">
+            <div>
+              <div class="fund-title">आपतकालीन तथा मृत्यु-संस्कार कोष</div>
+              <div class="fund-desc">सदस्य मृत्यु तथा काजकिरिया राहत</div>
+            </div>
+            <div style="font-weight:700;">रु. १२,४०,०००</div>
+          </div>
+          <div class="fund-row">
+            <div>
+              <div class="fund-title">छात्रवृत्ति तथा शिक्षा कोष</div>
+              <div class="fund-desc">मेधावी छात्रछात्रा प्रोत्साहन</div>
+            </div>
+            <div style="font-weight:700;">रु. ५,८०,०००</div>
+          </div>
+          <div class="fund-row">
+            <div>
+              <div class="fund-title">भवन निर्माण तथा संरक्षण कोष</div>
+              <div class="fund-desc">सामुदायिक भवन पूर्वाधार</div>
+            </div>
+            <div style="font-weight:700;">रु. २१,५०,०००</div>
+          </div>
+          <div class="fund-row">
+            <div>
+              <div class="fund-title">नियमित सञ्चालन मौज्दात</div>
+              <div class="fund-desc">कार्यालय तथा बैठक खर्च</div>
+            </div>
+            <div style="font-weight:700;">रु. ८,५४,५००</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">शीघ्र कार्य (Quick Actions)</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <button style="text-align:left; padding:8px;">📄 बक्यौता सूची PDF निकाल्नुहोस् (Export Overdue PDF)</button>
+            <button style="text-align:left; padding:8px;">📊 सदस्यता शुल्क प्रतिवेदन (Dues Collection Report)</button>
+            <button style="text-align:left; padding:8px;">👥 नयाँ परिवार / सदस्य दर्ता गर्नुहोस्</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function selectAging(bucket, el) {
+      document.querySelectorAll('.aging-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      const rows = document.querySelectorAll('#member-table-body tr');
+      const title = document.getElementById('roster-title');
+      if (bucket === 'all') {
+        title.innerText = 'बक्यौता सदस्य नामावली (Outstanding Members — All)';
+      } else {
+        title.innerText = 'बक्यौता सदस्य नामावली (Bucket: ' + bucket + ' दिन)';
+      }
+      rows.forEach(r => {
+        if (bucket === 'all' || r.dataset.bucket === bucket) {
+          r.style.display = '';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

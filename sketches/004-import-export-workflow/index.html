@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>सस्यः समाज — Data Import & Export (T1 Wireframe)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+      background: #f5f5f5;
+      color: #111;
+      line-height: 1.4;
+      font-size: 12px;
+      padding: 16px;
+    }
+    .wrapper { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+    
+    /* Header */
+    .header {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 { font-size: 16px; font-weight: 700; }
+    .header p { font-size: 11px; color: #666; margin-top: 2px; }
+
+    /* Nav Tabs */
+    .tabs { display: flex; gap: 6px; border-bottom: 2px solid #ddd; padding-bottom: 2px; }
+    .tab-btn {
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      background: none;
+      cursor: pointer;
+      border-radius: 4px 4px 0 0;
+    }
+    .tab-btn.active {
+      border: 1px solid #ddd;
+      border-bottom: 2px solid #fff;
+      background: #fff;
+      margin-bottom: -4px;
+    }
+
+    /* Cards */
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card-title { font-size: 13px; font-weight: 700; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+
+    /* Grid */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* Drop Zone */
+    .drop-zone {
+      border: 2px dashed #999;
+      border-radius: 6px;
+      padding: 28px 16px;
+      text-align: center;
+      background: #fafafa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .drop-zone:hover { border-color: #111; background: #f0f0f0; }
+    .drop-icon { font-size: 24px; }
+
+    button {
+      font-family: inherit;
+      font-size: 11px;
+      padding: 6px 12px;
+      border: 1px solid #888;
+      background: #fff;
+      border-radius: 3px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .btn-hero {
+      border: 2px solid #111;
+      font-weight: 700;
+      background: #111;
+      color: #fff;
+    }
+
+    /* Preview Table */
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { text-align: left; padding: 7px; background: #eee; border-bottom: 1px solid #111; font-weight: 600; }
+    td { padding: 7px; border-bottom: 1px solid #eee; }
+    .badge-ok { padding: 2px 6px; border: 1px solid #555; border-radius: 3px; font-size: 10px; }
+    .badge-warn { padding: 2px 6px; border: 1px dashed #111; border-radius: 3px; font-size: 10px; font-weight: 600; }
+
+    /* Export List */
+    .export-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .export-item:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div>
+        <h1>डाटा आयात तथा निर्यात केन्द्र (Data Import & Export Center)</h1>
+        <p>सदस्य विवरण, लेखा खाता, पार्टी तथा कारोबारको थोक डाउनलोड वा अपलोड (CSV, Excel र JSON)</p>
+      </div>
+      <div>
+        <button onclick="alert('डाउनलोड टेम्प्लेट')">📥 खाली नमुना एक्सेल डाउनलोड (Download Blank Template)</button>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-import-btn" onclick="showTab('import')">१. डाटा आयात गर्नुहोस् (Import CSV / JSON)</button>
+      <button class="tab-btn" id="tab-export-btn" onclick="showTab('export')">२. डाटा ब्याकअप / निर्यात (Export Collections)</button>
+    </div>
+
+    <!-- Tab 1: Import Workflow -->
+    <div id="tab-import" style="display:flex; flex-direction:column; gap:14px;">
+      <div class="grid-2">
+        <!-- Step 1: Upload File -->
+        <div class="card">
+          <div class="card-title">चरण १: फाइल छनौट गर्नुहोस् (Select File)</div>
+          <div class="drop-zone" onclick="simulateUpload()">
+            <div class="drop-icon">📄</div>
+            <div style="font-weight:600;">यहाँ फाइल तानेर ल्याउनुहोस् (Drag & Drop) वा क्लिक गर्नुहोस्</div>
+            <div style="color:#666; font-size:10px;">समर्थित ढाँचा: .CSV, .XLSX, .JSON (अधिकतम ५ MB)</div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+            <label style="font-size:11px;">कुन डाटा आयात गर्दै हुनुहुन्छ?</label>
+            <select style="padding:4px 8px; border:1px solid #999; border-radius:3px;">
+              <option selected>सदस्य सूची (Members)</option>
+              <option>लेखा खाताहरू (Chart of Accounts)</option>
+              <option>पार्टी / आपूर्तिकर्ता (Parties / Vendors)</option>
+              <option>सामग्री / सेवा (Items)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Step 2: Conflict Rules -->
+        <div class="card">
+          <div class="card-title">चरण २: दोहोरिएको डाटा नियम (Duplicate Handling)</div>
+          <div style="display:flex; flex-direction:column; gap:8px; font-size:11px; padding:4px 0;">
+            <label style="display:flex; gap:8px; align-items:center;">
+              <input type="radio" name="dup" checked />
+              <span><strong>दोहोरिएको छाड्नुहोस् (Skip duplicates):</strong> यदि सदस्य नं. वा फोन नम्बर पहिले नै छ भने नयाँ थप्ने छैन।</span>
+            </label>
+            <label style="display:flex; gap:8px; align-items:center;">
+              <input type="radio" name="dup" />
+              <span><strong>अपडेट गर्नुहोस् (Overwrite/Update):</strong> पुरानो रेकर्डलाई नयाँ डाटाले अद्यावधिक गर्ने।</span>
+            </label>
+            <label style="display:flex; gap:8px; align-items:center;">
+              <input type="radio" name="dup" />
+              <span><strong>सबै नयाँ थप्नुहोस् (Append all):</strong> कुनै जाँच नगरी सबै नयाँ लाइन बनाउने।</span>
+            </label>
+          </div>
+          <div style="border-top:1px dashed #ccc; padding-top:8px; font-size:10px; color:#666;">
+            💡 सुझाव: नयाँ वर्षको सदस्य नवीकरण गर्दा "अपडेट गर्नुहोस्" छान्नुहोला।
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Verification / Preview Table -->
+      <div class="card" id="preview-section">
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>चरण ३: डाटा पूर्वावलोकन (Data Validation Preview — members_2081.csv)</span>
+          <span style="font-size:10px; font-weight:normal; color:#444;">कुल ४ वटा रेकर्ड • ३ सही • १ सचेत (Warning)</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>लाइन</th>
+              <th>सदस्य नं. (Member ID)</th>
+              <th>पूरा नाम (Full Name)</th>
+              <th>टोल / वडा (Locality / Ward)</th>
+              <th>मोबाइल (Mobile)</th>
+              <th>रक्त समूह (Blood)</th>
+              <th>जाँच स्थिति (Validation)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>१</td>
+              <td><strong>S-001</strong></td>
+              <td>रत्नकाजी शाक्य</td>
+              <td>मंगलबजार, १२</td>
+              <td>९८४१२३४५६७</td>
+              <td>O+</td>
+              <td><span class="badge-ok">✓ मान्य (Valid)</span></td>
+            </tr>
+            <tr>
+              <td>२</td>
+              <td><strong>S-002</strong></td>
+              <td>सुरेन्द्र मानन्धर</td>
+              <td>इखालखु, १६</td>
+              <td>९८५१०२९३८४</td>
+              <td>B+</td>
+              <td><span class="badge-ok">✓ मान्य (Valid)</span></td>
+            </tr>
+            <tr style="background:#fcfcfc;">
+              <td>३</td>
+              <td><strong>S-003</strong></td>
+              <td>अनिता श्रेष्ठ</td>
+              <td>हौगल, ८</td>
+              <td>९८०३९४८१२३</td>
+              <td>—</td>
+              <td><span class="badge-warn">⚠ रक्त समूह खाली</span></td>
+            </tr>
+            <tr>
+              <td>४</td>
+              <td><strong>S-004</strong></td>
+              <td>विकास शाक्य</td>
+              <td>च्यासल, ९</td>
+              <td>९८१२३४९८७१</td>
+              <td>AB+</td>
+              <td><span class="badge-ok">✓ मान्य (Valid)</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+          <button onclick="alert('रद्द गरियो')">रद्द गर्नुहोस् (Cancel)</button>
+          <button class="btn-hero" onclick="alert('४ वटा सदस्य सफलतापूर्वक आयात गरियो!')">डाटाबेस मा आयात गर्नुहोस् (Confirm & Import 4 Records)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Export Center -->
+    <div id="tab-export" style="display:none; flex-direction:column; gap:14px;">
+      <div class="card">
+        <div class="card-title">थोक डाटा निर्यात (Export Collection to Excel / CSV / JSON)</div>
+        <div class="export-item">
+          <div>
+            <div style="font-weight:600; font-size:12px;">सदस्य विवरण सूची (Member Directory)</div>
+            <div style="color:#666; font-size:11px;">३४० सदस्य • नाम, ठेगाना, सम्पर्क, रक्त समूह, पारिवारिक विवरण</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button onclick="alert('सदस्य Excel डाउनलोड सुरु भयो')">📊 Export Excel (.xlsx)</button>
+            <button onclick="alert('सदस्य CSV डाउनलोड सुरु भयो')">📄 Export CSV</button>
+            <button onclick="alert('JSON ब्याकअप सुरु भयो')">💾 JSON Backup</button>
+          </div>
+        </div>
+        <div class="export-item">
+          <div>
+            <div style="font-weight:600; font-size:12px;">लेखा खाता सूची (Chart of Accounts & Ledgers)</div>
+            <div style="color:#666; font-size:11px;">४८ खाताहरू • ग्रुप, कोड, ओपनिङ्ग ब्यालेन्स, प्रकार</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button onclick="alert('खाता Excel डाउनलोड सुरु भयो')">📊 Export Excel</button>
+            <button onclick="alert('खाता CSV डाउनलोड सुरु भयो')">📄 Export CSV</button>
+          </div>
+        </div>
+        <div class="export-item">
+          <div>
+            <div style="font-weight:600; font-size:12px;">आ.व. २०८१/८२ सम्पूर्ण भौचरहरू (Journal Entries)</div>
+            <div style="color:#666; font-size:11px;">२१४ भौचरहरू • डेबिट/क्रेडिट पंक्तिहरू, मिति, कैफियत सहित</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button onclick="alert('भौचर Excel डाउनलोड सुरु भयो')">📊 Export Excel</button>
+            <button onclick="alert('भौचर CSV डाउनलोड सुरु भयो')">📄 Export CSV</button>
+          </div>
+        </div>
+        <div class="export-item">
+          <div>
+            <div style="font-weight:600; font-size:12px;">सामग्री तथा सेवा (Items & Services)</div>
+            <div style="color:#666; font-size:11px;">२६ वस्तुहरू • मूल्य, मौज्दात, एकाइ</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button onclick="alert('सामग्री Excel डाउनलोड सुरु भयो')">📊 Export Excel</button>
+            <button onclick="alert('सामग्री CSV डाउनलोड सुरु भयो')">📄 Export CSV</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showTab(tab) {
+      if (tab === 'import') {
+        document.getElementById('tab-import').style.display = 'flex';
+        document.getElementById('tab-export').style.display = 'none';
+        document.getElementById('tab-import-btn').classList.add('active');
+        document.getElementById('tab-export-btn').classList.remove('active');
+      } else {
+        document.getElementById('tab-import').style.display = 'none';
+        document.getElementById('tab-export').style.display = 'flex';
+        document.getElementById('tab-import-btn').classList.remove('active');
+        document.getElementById('tab-export-btn').classList.add('active');
+      }
+    }
+
+    function simulateUpload() {
+      alert('फाइल "members_2081.csv" छानियो! तलको पूर्वावलोकन तालिकामा हेर्नुहोस्।');
+    }
+  </script>
+</body>
+</html>
