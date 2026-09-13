@@ -321,6 +321,14 @@ export default function VoucherForm({ mode }: Props) {
   // clutter is opt-in via the "Detailed Line Items" toggle.
   const [cashDetailed, setCashDetailed] = useState(false)
   const cashAmountRef = useRef<HTMLInputElement>(null)
+  // Counter-cashier flow: land the cursor straight in the Amount field.
+  // isCash is declared later (derived from docType); compute it inline here.
+  const focusAmount = useCallback(() => {
+    if (cashAmountRef.current) cashAmountRef.current.focus()
+  }, [])
+  useEffect(() => {
+    if (CASH_TYPES.includes(docType) && !cashDetailed && mode === 'create') focusAmount()
+  }, [docType, cashDetailed, mode, focusAmount])
 
   /* ── Load billing settings (cache-first globals) ─────────────── */
   useEffect(() => {

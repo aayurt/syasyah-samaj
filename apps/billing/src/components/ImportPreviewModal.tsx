@@ -102,8 +102,8 @@ export default function ImportPreviewModal({
   const willImport = [...actions.values()].filter((a) => a !== 'skip').length
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-[8vh]">
-      <div className="w-full max-w-2xl rounded-lg border border-slate-200 bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div className="anim-fade-in fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-[8vh]">
+      <div className="anim-modal-in w-full max-w-2xl rounded-lg border border-slate-200 bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-3">
           <h2 className="text-sm font-semibold text-slate-800">

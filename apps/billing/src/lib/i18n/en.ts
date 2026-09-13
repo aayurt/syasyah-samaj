@@ -386,6 +386,7 @@ export const en = {
     gross: 'Gross',
     balanced: '✓ balanced',
     difference: 'difference',
+    unbalancedHint: 'Debit and credit must match before saving',
     saveDraft: 'Save draft',
     saveChanges: 'Save changes',
     savePost: 'Save & post',
@@ -519,6 +520,18 @@ export const en = {
     createItem: 'Create Item',
     creating: 'Creating…',
     failedToCreateItem: 'Failed to create item',
+    // Simplified cash flow mode (receipt/payment)
+    receivedFrom: 'Received From',
+    paidTo: 'Paid To',
+    selectParty: 'select party',
+    cashOrBankAccount: 'Cash / Bank Account',
+    defaultBankAccount: '— default bank —',
+    cashInHandOption: 'Cash in hand',
+    detailedLineItems: 'Detailed Line Items',
+    detailedLineItemsMode: 'Detailed Line Items mode',
+    backToSimple: '← Back to simple mode',
+    lineDescription: 'e.g. rent, salary, utility…',
+    noTax: '— no tax —',
   },
 
   // ── Parties page ──

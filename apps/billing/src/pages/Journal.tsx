@@ -255,7 +255,7 @@ export default function Journal() {
   })
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className={`mx-auto max-w-5xl ${showForm ? 'pb-24' : ''}`}>
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">{t('journal.title', 'Journal')}</h1>
         <div className="flex items-center gap-2">
@@ -485,7 +485,7 @@ export default function Journal() {
             <button
               type="button"
               onClick={() => submit('draft')}
-              disabled={saving || selectedYear?.status === 'closed'}
+              disabled={saving || Math.abs(totals.diff) >= 0.001 || selectedYear?.status === 'closed'}
               className="rounded border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
               {saving ? t('msg.saving', 'Saving…') : t('vouchers.saveDraft', 'Save draft')}
@@ -632,6 +632,44 @@ export default function Journal() {
       )}
 
       <VoucherViewModal voucher={voucher} onClose={() => setVoucher(null)} />
+
+      {/* ── Sticky balance bar (while the entry form is open) ── */}
+      {showForm && (
+        <BalanceBar
+          debit={totals.debit}
+          credit={totals.credit}
+          actions={
+            <>
+              <button
+                type="button"
+                onClick={() => submit('draft')}
+                disabled={saving || Math.abs(totals.diff) >= 0.001 || selectedYear?.status === 'closed'}
+                title={
+                  Math.abs(totals.diff) >= 0.001
+                    ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
+                    : undefined
+                }
+                className="rounded border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                {saving ? t('msg.saving', 'Saving…') : t('vouchers.saveDraft', 'Save draft')}
+              </button>
+              <button
+                type="button"
+                onClick={() => submit('posted')}
+                disabled={saving || Math.abs(totals.diff) >= 0.001 || selectedYear?.status === 'closed'}
+                title={
+                  Math.abs(totals.diff) >= 0.001
+                    ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
+                    : undefined
+                }
+                className="rounded bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {t('vouchers.post', 'Post')}
+              </button>
+            </>
+          }
+        />
+      )}
     </div>
   )
 }

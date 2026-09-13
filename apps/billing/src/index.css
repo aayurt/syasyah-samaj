@@ -56,3 +56,100 @@ select {
     background-color: var(--color-slate-100);
   }
 }
+
+/* ── Micro-interactions ──────────────────────────────────────────
+   Lightweight tactile feedback. GPU-accelerated only (transform +
+   opacity) so nothing blocks the main thread; all short (<250ms).
+   Disable for users who prefer reduced motion. */
+
+/* New table row slides down + fades in (150ms) */
+@keyframes enterRow {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.anim-enter-row {
+  animation: enterRow 150ms ease-out both;
+}
+
+/* Green balance snap lives in the `balance-snap` keyframe below
+   (components/BalanceBar.tsx) — 250ms emerald pulse on Dr==Cr. */
+
+/* Modal entrance — scale-in + fade-in for the panel (200ms) */
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.anim-modal-in {
+  animation: modalIn 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Modal backdrop fade (150ms) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.anim-fade-in {
+  animation: fadeIn 150ms ease-out both;
+}
+
+/* Success pop — button transform into "✓ Posted" (250ms) */
+@keyframes postedPop {
+  0% {
+    transform: scale(0.92);
+  }
+  60% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.anim-posted {
+  animation: postedPop 250ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-enter-row,
+  .anim-modal-in,
+  .anim-fade-in,
+  .anim-posted {
+    animation: none;
+  }
+}
+
+/* Balance snap pulse — 250ms emerald flash on the badge the instant a
+   journal / voucher Dr==Cr (used by components/BalanceBar.tsx). */
+@keyframes balance-snap {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(16 185 129 / 0);
+  }
+  40% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 6px rgb(16 185 129 / 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(16 185 129 / 0);
+  }
+}
+
+.animate-balance-snap {
+  animation: balance-snap 250ms ease-out;
+}

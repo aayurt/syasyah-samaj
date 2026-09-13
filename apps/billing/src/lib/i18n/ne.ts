@@ -519,6 +519,18 @@ export const ne = {
     createItem: 'वस्तु सिर्जना गर्नु',
     creating: 'सिर्जना गरिरहेको छ…',
     failedToCreateItem: 'वस्तु सिर्जना गर्न विफल',
+    // Simplified cash flow mode (receipt/payment)
+    receivedFrom: 'प्राप्त गरिएको',
+    paidTo: 'तिरिएको',
+    selectParty: 'पक्ष छान्नुहोस्',
+    cashOrBankAccount: 'नगद / ब्याङ्क खाता',
+    defaultBankAccount: '— पूर्वनिर्धारित ब्याङ्क —',
+    cashInHandOption: 'हातमा नगद',
+    detailedLineItems: 'विस्तृत लाइन वस्तुहरू',
+    detailedLineItemsMode: 'विस्तृत लाइन वस्तुहरू मोड',
+    backToSimple: '← सरल मोडमा फर्कनुहोस्',
+    lineDescription: 'जस्तै भाडा, तलब, बिजुली…',
+    noTax: '— कर छैन —',
   },
 
   // ── Parties page ──
