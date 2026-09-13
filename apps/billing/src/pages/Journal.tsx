@@ -1,8 +1,9 @@
 import NepaliDateInput from '../components/NepaliDateInput'
 import { todayAD } from '../lib/nepaliDate'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Download, Plus, Trash2 } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
+import { focusCell, handleGridKeyDown } from '../lib/gridNav'
 import { downloadCsv } from '../lib/csv'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import ActionMenu from '../components/ActionMenu'
@@ -10,6 +11,7 @@ import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
+import BalanceBar from '../components/BalanceBar'
 import { useCalendar } from '../lib/calendar'
 import { useSearchParams } from 'react-router-dom'
 import { useT } from '../lib/i18n'
@@ -106,7 +108,37 @@ export default function Journal() {
     )
   }
 
+  // Keyboard grid nav: Enter in the last column appends a row and focuses its
+  // first input on the next render (the row doesn't exist yet at keypress time).
+  const pendingCell = useRef<[number, number] | null>(null)
+  useEffect(() => {
+    if (!pendingCell.current) return
+    const [r, c] = pendingCell.current
+    pendingCell.current = null
+    focusCell(r, c)
+  }, [form.lines])
+
+  const appendLine = () => {
+    setForm((f) => ({ ...f, lines: [...f.lines, emptyLine()] }))
+    pendingCell.current = [form.lines.length, 0]
+  }
+
+  // Ctrl/Cmd+Enter triggers the primary action (Post when balanced, else draft).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key !== 'Enter') return
+      e.preventDefault()
+      if (saving || selectedYear?.status === 'closed') return
+      if (Math.abs(totals.diff) < 0.001) submit('posted')
+      else submit('draft')
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   const submit = async (status: 'draft' | 'posted') => {
+    if (status === 'draft' && Math.abs(totals.diff) >= 0.001) return
+    if (status === 'posted' && Math.abs(totals.diff) >= 0.001) return
     setSaving(true)
     setError('')
     try {
@@ -299,7 +331,7 @@ export default function Journal() {
                 </tr>
               </thead>
               <tbody>
-                {form.lines.map((l) => (
+                {form.lines.map((l, lIdx) => (
                   <tr key={l.key}>
                     <td className="py-1.5 pr-2">
                       <select
@@ -308,6 +340,16 @@ export default function Journal() {
                         onChange={(e) =>
                           setLine(l.key, { account: e.target.value })
                         }
+                        onKeyDown={(e) =>
+                          handleGridKeyDown(e, {
+                            row: lIdx,
+                            col: 0,
+                            rows: form.lines.length,
+                            cols: 4,
+                            onAppendRow: appendLine,
+                          })
+                        }
+                        data-grid-cell={`${lIdx}:0`}
                         className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500"
                       >
                         <option value="">{t('vouchers.selectAccount', '— select account —')}</option>
@@ -331,6 +373,16 @@ export default function Journal() {
                             credit: l.credit ? '' : l.credit,
                           })
                         }
+                        onKeyDown={(e) =>
+                          handleGridKeyDown(e, {
+                            row: lIdx,
+                            col: 1,
+                            rows: form.lines.length,
+                            cols: 4,
+                            onAppendRow: appendLine,
+                          })
+                        }
+                        data-grid-cell={`${lIdx}:1`}
                         className="w-full rounded border border-slate-300 px-2 py-1.5 text-right font-mono outline-none focus:border-slate-500"
                       />
                     </td>
@@ -346,6 +398,16 @@ export default function Journal() {
                             debit: l.debit ? '' : l.debit,
                           })
                         }
+                        onKeyDown={(e) =>
+                          handleGridKeyDown(e, {
+                            row: lIdx,
+                            col: 2,
+                            rows: form.lines.length,
+                            cols: 4,
+                            onAppendRow: appendLine,
+                          })
+                        }
+                        data-grid-cell={`${lIdx}:2`}
                         className="w-full rounded border border-slate-300 px-2 py-1.5 text-right font-mono outline-none focus:border-slate-500"
                       />
                     </td>
@@ -353,6 +415,16 @@ export default function Journal() {
                       <input
                         value={l.memo}
                         onChange={(e) => setLine(l.key, { memo: e.target.value })}
+                        onKeyDown={(e) =>
+                          handleGridKeyDown(e, {
+                            row: lIdx,
+                            col: 3,
+                            rows: form.lines.length,
+                            cols: 4,
+                            onAppendRow: appendLine,
+                          })
+                        }
+                        data-grid-cell={`${lIdx}:3`}
                         className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500"
                       />
                     </td>

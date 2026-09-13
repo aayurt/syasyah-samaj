@@ -7,6 +7,8 @@ import {
   ChevronDown,
   ChevronRight,
   FilePenLine,
+  ListCollapse,
+  ListPlus,
   Minus,
   Plus,
   Settings2,
@@ -14,11 +16,13 @@ import {
 } from 'lucide-react'
 import NepaliDateInput from '../components/NepaliDateInput'
 import OutstandingInvoices from '../components/OutstandingInvoices'
+import { useBalanceSnap } from '../components/BalanceBar'
 import { api, fmt, useSyncState } from '../lib/api'
 import { useT } from '../lib/i18n'
 import { useCachedList } from '../lib/useCachedList'
 import { useCalendar } from '../lib/calendar'
 import { calcEval } from '../lib/calcEval'
+import { focusCell, handleGridKeyDown } from '../lib/gridNav'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
 import { todayAD } from '../lib/nepaliDate'
@@ -231,6 +235,7 @@ export default function VoucherForm({ mode }: Props) {
   const [journalLines, setJournalLines] = useState<JLineDraft[]>([emptyJLine(), emptyJLine()])
   const [paymentMethod, setPaymentMethod] = useState('bank')
   const [bankAccount, setBankAccount] = useState('')
+  const [cashAccountId, setCashAccountId] = useState('')
   const [fromAccount, setFromAccount] = useState('')
   const [toAccount, setToAccount] = useState('')
   const [contraAmount, setContraAmount] = useState('')
@@ -310,6 +315,12 @@ export default function VoucherForm({ mode }: Props) {
   const [notesSectionOpen, setNotesSectionOpen] = useState(false)
   const [paymentSectionOpen, setPaymentSectionOpen] = useState(false)
 
+  // Simplified cash flow mode (receipt/payment): by default show a focused
+  // 3-field layout (Party, Amount, Cash/Bank account); the line-item / tax
+  // clutter is opt-in via the "Detailed Line Items" toggle.
+  const [cashDetailed, setCashDetailed] = useState(false)
+  const cashAmountRef = useRef<HTMLInputElement>(null)
+
   /* ── Load billing settings (cache-first globals) ─────────────── */
   useEffect(() => {
     api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
@@ -337,6 +348,7 @@ export default function VoucherForm({ mode }: Props) {
         const idOf = (v: unknown): string => v && typeof v === 'object' ? String((v as { id: unknown }).id) : String(v ?? '')
         setParty(idOf(d.party))
         setBankAccount(idOf(d.bankAccount))
+        setCashAccountId(idOf(d.bankAccount))
         setFromAccount(idOf(d.fromAccount))
         setToAccount(idOf(d.toAccount))
         setContraAmount(d.grossTotal !== undefined ? String(d.grossTotal) : '')
@@ -347,6 +359,9 @@ export default function VoucherForm({ mode }: Props) {
             rate: l.rate != null ? String(l.rate) : '', amount: l.amount != null ? String(l.amount) : '',
             discountPct: '', discountAmt: '',
           })))
+        }
+        if (CASH_TYPES.includes(d.docType) && ((d.lines?.length || 0) > 1 || (d.taxLines?.length || 0) > 0)) {
+          setCashDetailed(true)
         }
         if (d.journalLines?.length) {
           setJournalLines(d.journalLines.map((l) => ({
@@ -371,6 +386,40 @@ export default function VoucherForm({ mode }: Props) {
     })()
   }, [mode, id, tenantId])
 
+  // Keyboard grid nav: Enter in the last column appends a row and focuses its
+  // first input on the next render (the row doesn't exist yet at keypress time).
+  const pendingCell = useRef<[number, number] | null>(null)
+  useEffect(() => {
+    if (!pendingCell.current) return
+    const [r, c] = pendingCell.current
+    pendingCell.current = null
+    focusCell(r, c)
+  }, [lines, journalLines])
+
+  const appendItemRow = () => {
+    setLines((ls) => [...ls, emptyLine()])
+    pendingCell.current = [lines.length, 0]
+  }
+  const appendJLine = () => {
+    setJournalLines((ls) => [...ls, emptyJLine()])
+    pendingCell.current = [journalLines.length, 0]
+  }
+
+  // Ctrl/Cmd+Enter triggers the primary action (Post when valid, else draft).
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key !== 'Enter') return
+      if (showPartyPopup || showItemPopup) return
+      e.preventDefault()
+      if (!saving && !(mode === 'edit' && isClosedYear)) {
+        if (docType !== 'sales-quote' && allRequiredFilled && !setupBlocked) submit(true)
+        else submit(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   /* ── Close party dropdown on outside click ──────────────────── */
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -387,6 +436,9 @@ export default function VoucherForm({ mode }: Props) {
   const isContra = docType === 'contra'
   const isJournal = docType === 'journal-voucher'
   const isCash = CASH_TYPES.includes(docType)
+  // Simplified cash mode: hide line/tax clutter unless the user opts into
+  // "Detailed Line Items" — the default is the focused 3-field flow.
+  const cashSimple = isCash && !cashDetailed
   const isInventory = INVENTORY_TYPES.includes(docType)
   const isTaxable = ['sales-invoice', 'purchase-invoice', 'payment-voucher', 'receipt-voucher'].includes(docType)
   const bankAccounts = accounts.filter((a) => a.class === 'bank')
@@ -396,8 +448,21 @@ export default function VoucherForm({ mode }: Props) {
   const filteredParties = useMemo(() => {
     if (!partySearch) return parties
     const q = partySearch.toLowerCase()
-    return parties.filter((p) => p.name.toLowerCase().includes(q))
+    // Match on name, phone, address (locality) or PAN so a cashier can find
+    // the right member without typing the exact name.
+    return parties.filter((p) =>
+      p.name.toLowerCase().includes(q) ||
+      (p.phone || '').toLowerCase().includes(q) ||
+      (p.address || '').toLowerCase().includes(q) ||
+      (p.taxId || '').toLowerCase().includes(q))
   }, [parties, partySearch])
+
+  /** Locality hint for a party: first comma segment of the address. */
+  const partyLocality = (p: Party): string => {
+    const addr = (p.address || '').trim()
+    if (!addr) return ''
+    return addr.split(/[,\n]/)[0].trim()
+  }
 
   const selectedParty = parties.find((p) => String(p.id) === party)
 
@@ -425,6 +490,8 @@ export default function VoucherForm({ mode }: Props) {
     for (const l of journalLines) { debit += parseFloat(l.debit) || 0; credit += parseFloat(l.credit) || 0 }
     return { debit, credit, diff: debit - credit }
   }, [journalLines])
+  const journalBalanced = Math.abs(jTotals.diff) < 0.001
+  const journalSnap = useBalanceSnap(jTotals.diff)
 
   const globalDiscountAmount = useMemo(() => {
     if (!globalDiscountEnabled) return 0
@@ -662,7 +729,8 @@ export default function VoucherForm({ mode }: Props) {
       <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           {/* Party */}
-          {(isItem || isCash) && (
+          {/* Party — hidden in simple cash mode (the cash panel has its own) */}
+          {(isItem || isCash) && !cashSimple && (
             <div ref={partyRef} className="relative">
               <label className="text-sm font-medium text-slate-700">
                 {t('vouchers.partyLabel', 'Party')}{' '}
@@ -693,10 +761,22 @@ export default function VoucherForm({ mode }: Props) {
                       key={p.id}
                       type="button"
                       onClick={() => { setParty(String(p.id)); setPartySearch(p.name); setShowPartyDropdown(false) }}
-                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50 ${String(p.id) === party ? 'bg-crimson-50 text-crimson-700' : 'text-slate-700'}`}
+                      className={`flex w-full flex-col gap-0.5 px-3 py-2 text-left hover:bg-slate-50 ${String(p.id) === party ? 'bg-crimson-50' : ''}`}
                     >
-                      <span>{p.name}</span>
-                      <span className="text-xs text-slate-400">{p.type}</span>
+                      <span className="flex w-full items-center justify-between gap-2 text-sm">
+                        <span className={`truncate font-medium ${String(p.id) === party ? 'text-crimson-700' : 'text-slate-800'}`}>{p.name}</span>
+                        <span className="shrink-0 text-xs text-slate-400">{p.type}</span>
+                      </span>
+                      {(p.phone || partyLocality(p)) && (
+                        <span className="flex w-full flex-wrap items-center gap-1.5">
+                          {p.phone && (
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">📞 {p.phone}</span>
+                          )}
+                          {partyLocality(p) && (
+                            <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-700">📍 {partyLocality(p)}</span>
+                          )}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -812,6 +892,8 @@ export default function VoucherForm({ mode }: Props) {
                               setLine(l.key, { item: '', description: e.target.value })
                             }}
                             onFocus={() => { setItemSearchRow(l.key); setItemSearchText('') }}
+                            onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 4, onAppendRow: appendItemRow })}
+                            data-grid-cell={`${i}:0`}
                             placeholder={t('vouchers.enterItemName', 'Enter Item name')}
                             className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
                           />
@@ -844,6 +926,8 @@ export default function VoucherForm({ mode }: Props) {
                         <input
                           type="text" value={l.description}
                           onChange={(e) => setLine(l.key, { description: e.target.value })}
+                          onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 4, onAppendRow: appendItemRow })}
+                          data-grid-cell={`${i}:0`}
                           placeholder={t('vouchers.enterItemName', 'Enter Item name')}
                           className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
                         />
@@ -879,6 +963,8 @@ export default function VoucherForm({ mode }: Props) {
                     <td className="px-2 py-2">
                       <input type="number" min="0" step="any" value={l.qty}
                         onChange={(e) => setLine(l.key, { qty: e.target.value })}
+                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 1, rows: lines.length, cols: 4, onAppendRow: appendItemRow })}
+                        data-grid-cell={`${i}:1`}
                         className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                     </td>
                     <td className="px-2 py-2">
@@ -887,6 +973,8 @@ export default function VoucherForm({ mode }: Props) {
                         <input type="number" min="0" step="0.01" value={l.rate}
                           onChange={(e) => setLine(l.key, { rate: e.target.value })}
                           onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { rate: r }) }}
+                          onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 2, rows: lines.length, cols: 4, onAppendRow: appendItemRow })}
+                          data-grid-cell={`${i}:2`}
                           className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                       </div>
                     </td>
@@ -897,6 +985,8 @@ export default function VoucherForm({ mode }: Props) {
                             <input type="number" min="0" max="100" step="0.01" value={l.discountPct}
                               onChange={(e) => setLine(l.key, { discountPct: e.target.value, discountAmt: '' })}
                               onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountPct: r, discountAmt: '' }) }}
+                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 4, onAppendRow: appendItemRow })}
+                              data-grid-cell={`${i}:3`}
                               className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                             <span className="ml-1 text-xs text-slate-400">%</span>
                           </>
@@ -906,6 +996,8 @@ export default function VoucherForm({ mode }: Props) {
                             <input type="number" min="0" step="0.01" value={l.discountAmt}
                               onChange={(e) => setLine(l.key, { discountAmt: e.target.value, discountPct: '' })}
                               onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountAmt: r, discountPct: '' }) }}
+                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 4, onAppendRow: appendItemRow })}
+                              data-grid-cell={`${i}:3`}
                               className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                           </>
                         )}
@@ -1198,10 +1290,12 @@ export default function VoucherForm({ mode }: Props) {
               </tr>
             </thead>
             <tbody>
-              {journalLines.map((l) => (
+              {journalLines.map((l, jIdx) => (
                 <tr key={l.key} className="border-b border-slate-50">
                   <td className="px-2 py-2">
                     <select value={l.account} onChange={(e) => setJLine(l.key, { account: e.target.value })}
+                      onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 0, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
+                      data-grid-cell={`${jIdx}:0`}
                       className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
                       <option value="">— select —</option>
                       {accounts.map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ''}{a.name}</option>)}
@@ -1209,12 +1303,18 @@ export default function VoucherForm({ mode }: Props) {
                   </td>
                   <td className="px-2 py-2"><input type="number" step="0.01" min="0" value={l.debit}
                     onChange={(e) => setJLine(l.key, { debit: e.target.value, credit: '' })}
+                    onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 1, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
+                    data-grid-cell={`${jIdx}:1`}
                     className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
                   <td className="px-2 py-2"><input type="number" step="0.01" min="0" value={l.credit}
                     onChange={(e) => setJLine(l.key, { credit: e.target.value, debit: '' })}
+                    onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 2, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
+                    data-grid-cell={`${jIdx}:2`}
                     className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
                   <td className="px-2 py-2"><input type="text" value={l.memo}
                     onChange={(e) => setJLine(l.key, { memo: e.target.value })}
+                    onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 3, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
+                    data-grid-cell={`${jIdx}:3`}
                     className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" /></td>
                   <td className="px-2 py-2 text-center">
                     <button type="button" onClick={() => removeJLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
@@ -1234,8 +1334,8 @@ export default function VoucherForm({ mode }: Props) {
             <div className="flex gap-8 font-mono">
               <span>Dr {fmt(jTotals.debit)}</span>
               <span>Cr {fmt(jTotals.credit)}</span>
-              <span className={Math.abs(jTotals.diff) < 0.001 ? 'text-emerald-600' : 'text-red-600'}>
-                {Math.abs(jTotals.diff) < 0.001 ? '✓ balanced' : `diff ${fmt(jTotals.diff)}`}
+              <span className={journalBalanced ? 'text-emerald-600' : 'text-red-600'}>
+                {journalBalanced ? '✓ balanced' : `diff ${fmt(jTotals.diff)}`}
               </span>
             </div>
           </div>
@@ -1290,37 +1390,195 @@ export default function VoucherForm({ mode }: Props) {
         />
       )}
 
-      {/* ── Amount (receipt/payment only) ──────────────────── */}
-      {isCash && !isItem && (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
-          <label className="text-sm font-medium text-slate-700">
-            Amount <span className="text-red-500">*</span>
-          </label>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="text-sm text-slate-500">Rs.</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={lines[0]?.amount || ''}
-              onChange={(e) => {
-                const val = e.target.value
-                setLines((prev) => {
-                  if (prev.length === 0) {
-                    return [{ key: crypto.randomUUID(), item: '', description: 'Payment', qty: '1', rate: val, amount: val, discountPct: '', discountAmt: '' }]
-                  }
-                  return [{ ...prev[0], amount: val, rate: val }]
-                })
-              }}
-              placeholder="0.00"
-              className="mt-1 w-48 rounded border border-slate-300 px-3 py-2.5 font-mono text-sm outline-none focus:border-slate-500"
-            />
-          </div>
-        </div>
+      {/* ── Cash Flow Panel (receipt/payment) ───────────────── */}
+      {isCash && (
+        <>
+          {/* Simplified: one tactile 3-field strip for counter cashiers */}
+          {cashSimple && (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <label className="text-sm text-slate-700">
+                  {docType === 'receipt-voucher'
+                    ? t('vouchers.receivedFrom', 'Received From')
+                    : t('vouchers.paidTo', 'Paid To')}
+                  <span className="text-red-500"> *</span>
+                  <select value={party} onChange={(e) => {
+                    const pid = e.target.value
+                    setParty(pid)
+                    const found = parties.find((x) => String(x.id) === pid)
+                    setPartySearch(found?.name || '')
+                  }}
+                    className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                    <option value="">— {t('vouchers.selectParty', 'select party')} —</option>
+                    {parties.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
+                  </select>
+                </label>
+                <label className="text-sm text-slate-700">
+                  {t('common.amount', 'Amount')} <span className="text-red-500">*</span>
+                  <div className="relative mt-1">
+                    <span className="pointer-events-none absolute left-3 top-[13px] text-sm text-slate-400">Rs.</span>
+                    <input ref={cashAmountRef} type="text" inputMode="decimal"
+                      value={lines[0]?.amount || ''}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setLines((prev) => {
+                          if (prev.length === 0) {
+                            return [{ key: crypto.randomUUID(), item: '', description: docType === 'receipt-voucher' ? 'Receipt' : 'Payment', qty: '1', rate: val, amount: val, discountPct: '', discountAmt: '' }]
+                          }
+                          return [{ ...prev[0], amount: val, rate: val }]
+                        })
+                      }}
+                      onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) { setLines((prev) => prev.length ? [{ ...prev[0], amount: r, rate: r }] : prev) } }}
+                      placeholder="0.00"
+                      className="w-full rounded border border-slate-300 pl-10 pr-3 min-h-[40px] py-2.5 font-mono text-base font-semibold outline-none focus:border-slate-500" />
+                  </div>
+                </label>
+                <label className="text-sm text-slate-700">
+                  {t('vouchers.cashOrBankAccount', 'Cash / Bank Account')}
+                  <select value={cashAccountId} onChange={(e) => {
+                    const acctId = e.target.value
+                    setCashAccountId(acctId)
+                    const acct = accounts.find((a) => String(a.id) === acctId)
+                    const cls = acct?.class
+                    setPaymentMethod(cls === 'bank' ? 'bank' : 'cash')
+                    if (cls === 'bank') setBankAccount(acctId)
+                  }}
+                    className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                    <option value="">{paymentMethod === 'bank' ? t('vouchers.defaultBankAccount', '— default bank —') : t('vouchers.cashInHand', 'Cash in hand')}</option>
+                    {cashBankAccounts.map((a) => <option key={a.id} value={String(a.id)}>{a.name}</option>)}
+                  </select>
+                </label>
+              </div>
+              <div className="mt-3 flex items-center justify-between">
+                <button type="button" onClick={() => setCashDetailed(true)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-700">
+                  <ListPlus size={14} /> {t('vouchers.detailedLineItems', 'Detailed Line Items')}
+                </button>
+                {grandTotal > 0 && (
+                  <span className="text-sm text-slate-500">
+                    {t('vouchers.inWords', 'In words:')} <span className="font-medium text-slate-700">{amountInWordsFor(grandTotal)}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Detailed mode: full line-item table + tax/TDS for split accounting */}
+          {!cashSimple && (
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/60 p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-sm font-medium text-amber-700">
+                  <ListCollapse size={14} /> {t('vouchers.detailedLineItemsMode', 'Detailed Line Items mode')}
+                </div>
+                <button type="button" onClick={() => setCashDetailed(false)}
+                  className="rounded border border-amber-300 bg-white px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100">
+                  {t('vouchers.backToSimple', '← Back to simple mode')}
+                </button>
+              </div>
+              <div className="mt-3">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-amber-200/80 text-left text-xs uppercase tracking-wide text-amber-700">
+                      <th className="w-10 px-2 py-2 text-center">#</th>
+                      <th className="px-2 py-2">{t('common.description', 'Description')}</th>
+                      <th className="w-28 px-2 py-2 text-right">{t('common.amount', 'Amount')}</th>
+                      <th className="w-10 px-2 py-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lines.map((l, i) => (
+                      <tr key={l.key} className="border-b border-amber-100">
+                        <td className="px-2 py-2 text-center text-slate-400">{i + 1}</td>
+                        <td className="px-2 py-2">
+                          <input type="text" value={l.description}
+                            onChange={(e) => setLine(l.key, { description: e.target.value })}
+                            placeholder={t('vouchers.lineDescription', 'e.g. rent, salary, utility…')}
+                            className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input type="text" inputMode="decimal" value={l.amount}
+                            onChange={(e) => setLine(l.key, { amount: e.target.value })}
+                            onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { amount: r }) }}
+                            placeholder="0.00"
+                            className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          <button type="button" onClick={() => removeLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <button type="button" onClick={() => setLines((ls) => [...ls, emptyLine()])}
+                  className="mt-2 flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700">
+                  <Plus size={14} /> {t('vouchers.addLine', '+ Add line')}
+                </button>
+              </div>
+              <div className="mt-3 flex items-center justify-between border-t border-amber-200/80 pt-3">
+                <span className="text-sm font-medium text-slate-600">{t('vouchers.total', 'Total')}</span>
+                <span className="font-mono text-base font-bold text-slate-900">Rs. {fmt(lineTotals)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Cash/Bank account strip for detailed mode (kept out of the table) */}
+          {!cashSimple && (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <label className="text-sm text-slate-700">
+                  {t('vouchers.paymentMethod', 'Payment Method')}
+                  <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                    <option value="bank">Bank</option><option value="cash">Cash</option>
+                  </select>
+                </label>
+                <label className="text-sm text-slate-700">
+                  {t('vouchers.cashOrBankAccount', 'Cash / Bank Account')}
+                  <select value={cashAccountId} onChange={(e) => {
+                    const acctId = e.target.value
+                    setCashAccountId(acctId)
+                    const acct = accounts.find((a) => String(a.id) === acctId)
+                    const cls = acct?.class
+                    setPaymentMethod(cls === 'bank' ? 'bank' : 'cash')
+                    if (cls === 'bank') setBankAccount(acctId)
+                  }}
+                    className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                    <option value="">{paymentMethod === 'bank' ? t('vouchers.defaultBankAccount', '— default bank —') : t('vouchers.cashInHand', 'Cash in hand')}</option>
+                    {cashBankAccounts.map((a) => <option key={a.id} value={String(a.id)}>{a.name}</option>)}
+                  </select>
+                </label>
+                <label className="text-sm text-slate-700">
+                  {t('vouchers.taxVatGst', 'Tax (VAT / GST)')}
+                  <div className="mt-1 flex gap-2">
+                    <select value={taxLines[0]?.taxType || ''}
+                      onChange={(e) => {
+                        const selected = taxTypes.find((tx) => String(tx.id) === e.target.value)
+                        setTaxLines((ts) => {
+                          const rest = ts.filter((tx) => tx.nature === 'withholding')
+                          const next: TaxLineDraft[] = e.target.value
+                            ? [{ key: crypto.randomUUID(), taxType: e.target.value, nature: 'additive' as TaxNature, rate: selected ? String(selected.rate) : '' }]
+                            : []
+                          return [...next, ...rest]
+                        })
+                      }}
+                      className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                      <option value="">{t('vouchers.noTax', '— no tax —')}</option>
+                      {taxTypes.filter((tx) => tx.nature === 'additive' && tx.active !== false)
+                        .map((tx) => <option key={tx.id} value={String(tx.id)}>{tx.name} ({tx.rate}%)</option>)}
+                    </select>
+                    {vatTotal > 0 && (
+                      <span className="flex items-center rounded border border-slate-200 bg-slate-50 px-2 font-mono text-xs text-slate-600">+{fmt(vatTotal)}</span>
+                    )}
+                  </div>
+                </label>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Payment Fields (collapsible for cash types) ─────── */}
-      {isCash && (
+      {isCash && !cashSimple && (
         <CollapsibleSection
           title={t('vouchers.paymentDetails', 'Payment Details')}
           open={paymentSectionOpen}
@@ -1554,12 +1812,26 @@ export default function VoucherForm({ mode }: Props) {
               </div>
             )}
             {isJournal && (
-              <div className="hidden sm:flex items-center gap-4 text-sm text-slate-500">
-                <span>Dr <span className="font-mono text-slate-700">{fmt(jTotals.debit)}</span></span>
-                <span>Cr <span className="font-mono text-slate-700">{fmt(jTotals.credit)}</span></span>
-                <span className={Math.abs(jTotals.diff) < 0.001 ? 'text-emerald-600' : 'text-red-600'}>
-                  {Math.abs(jTotals.diff) < 0.001 ? '✓ balanced' : `diff ${fmt(jTotals.diff)}`}
+              <div className="hidden sm:flex items-center gap-3 text-sm">
+                <span className="font-mono text-slate-500">
+                  Dr <span className="font-semibold text-slate-800">{fmt(jTotals.debit)}</span>
                 </span>
+                <span className="font-mono text-slate-500">
+                  Cr <span className="font-semibold text-slate-800">{fmt(jTotals.credit)}</span>
+                </span>
+                {journalBalanced ? (
+                  <span
+                    className={`rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ${
+                      journalSnap ? 'animate-balance-snap' : ''
+                    }`}
+                  >
+                    ✓ {t('vouchers.balanced', 'balanced')}
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+                    {t('vouchers.difference', 'difference')} {fmt(jTotals.diff)}
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -1571,7 +1843,8 @@ export default function VoucherForm({ mode }: Props) {
               </span>
             )}
             <div className="flex gap-2">
-              <button type="button" onClick={() => submit(false)} disabled={saving}
+              <button type="button" onClick={() => submit(false)} disabled={saving || (isJournal && !journalBalanced)}
+                title={isJournal && !journalBalanced ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving') : undefined}
                 className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
                 {saving ? t('common.saving', 'Saving…') : docType === 'sales-quote' ? t('vouchers.saveQuote', 'Save Quote') : t('vouchers.saveDraft', 'Save draft')}
               </button>
@@ -1580,9 +1853,11 @@ export default function VoucherForm({ mode }: Props) {
                   {t('vouchers.quotesHint', "Quotes don't post — copy to an invoice when accepted")}
                 </span>
               ) : (
-                <button type="button" onClick={() => submit(true)} disabled={saving || !allRequiredFilled || setupBlocked}
+                <button type="button" onClick={() => submit(true)} disabled={saving || !allRequiredFilled || setupBlocked || (isJournal && !journalBalanced)}
                   title={
-                    setupBlocked
+                    isJournal && !journalBalanced
+                      ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
+                      : setupBlocked
                       ? `Finish setup first (${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} left) — see the checklist on the Dashboard`
                       : !allRequiredFilled
                         ? 'Fill all required fields first'
