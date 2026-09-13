@@ -546,12 +546,20 @@ function ApplicationForm({
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
-  // Filter members for the edit-picker
+  // Filter members for the edit-picker (name, email, member ID or contact)
   const filteredMembers = searchMember.trim()
     ? members.filter(
-        (m) =>
-          m.fullName.toLowerCase().includes(searchMember.toLowerCase()) ||
-          m.email.toLowerCase().includes(searchMember.toLowerCase()),
+        (m) => {
+          const q = searchMember.toLowerCase()
+          const mid = ((m as Record<string, unknown>).memberId as string) || ''
+          const phone = m.phoneNumber || m.application?.mobile || ''
+          return (
+            m.fullName.toLowerCase().includes(q) ||
+            m.email.toLowerCase().includes(q) ||
+            mid.toLowerCase().includes(q) ||
+            phone.includes(q)
+          )
+        },
       )
     : []
 
@@ -685,19 +693,41 @@ function ApplicationForm({
           </div>
           {filteredMembers.length > 0 && (
             <div className="mt-2 max-h-40 overflow-y-auto rounded border border-slate-200 bg-white">
-              {filteredMembers.slice(0, 10).map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => loadMember(m)}
-                  className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-slate-50"
-                >
-                  <span className="font-medium text-slate-800">{m.fullName}</span>
-                  <span className="text-xs text-slate-400">{m.email}</span>
-                  {m.membershipType && (
-                    <span className="ml-auto text-xs text-slate-500">{m.membershipType.name}</span>
-                  )}
-                </button>
-              ))}
+              {filteredMembers.slice(0, 10).map((m) => {
+                const mid = ((m as Record<string, unknown>).memberId as string) || ''
+                const locality = (m.application?.addressPermanent || '').split(/[,\n]/)[0].trim()
+                const contact = m.phoneNumber || m.application?.mobile || ''
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => loadMember(m)}
+                    className="flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-slate-50"
+                  >
+                    <span className="flex w-full items-center gap-2">
+                      {mid && (
+                        <span className="shrink-0 rounded bg-crimson-50 px-1.5 py-0.5 font-mono text-[10px] font-medium text-crimson-700">{mid}</span>
+                      )}
+                      <span className="font-medium text-slate-800">{m.fullName}</span>
+                      {m.membershipType && (
+                        <span className="ml-auto shrink-0 text-xs text-slate-500">{m.membershipType.name}</span>
+                      )}
+                    </span>
+                    {(contact || locality) && (
+                      <span className="flex w-full flex-wrap items-center gap-1.5">
+                        {contact && (
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">📞 {contact}</span>
+                        )}
+                        {locality && (
+                          <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-700">📍 {locality}</span>
+                        )}
+                        {m.email && (
+                          <span className="truncate text-[11px] text-slate-400">{m.email}</span>
+                        )}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
@@ -1346,6 +1376,7 @@ export default function Members() {
                 <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                   <tr>
                     <SortableTh label={t('common.name', 'Name')} sortKey="fullName" sort={sort} onSort={toggleSort} />
+                    <th className="px-4 py-3 text-left">Member ID</th>
                     <SortableTh label={t('common.email', 'Email')} sortKey="email" sort={sort} onSort={toggleSort} />
                     <SortableTh label={t('common.type', 'Type')} sortKey="membershipType" sort={sort} onSort={toggleSort} />
                     <SortableTh label={t('common.status', 'Status')} sortKey="paymentStatus" sort={sort} onSort={toggleSort} />
@@ -1355,10 +1386,29 @@ export default function Members() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filtered.map((m) => (
-                    <tr key={m.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-800">{m.fullName}</td>
-                      <td className="px-4 py-3 text-slate-600">{m.email}</td>
+                  {filtered.map((m) => {
+                    const mid = ((m as Record<string, unknown>).memberId as string) || ''
+                    const locality = (m.application?.addressPermanent || '').split(/[,\n]/)[0].trim()
+                    const contact = m.phoneNumber || m.application?.mobile || ''
+                    return (
+                      <tr key={m.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium text-slate-800">{m.fullName}</span>
+                            {(contact || locality) && (
+                              <span className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                                {contact && <span className="text-slate-500">📞 {contact}</span>}
+                                {locality && <span className="text-slate-400">📍 {locality}</span>}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {mid ? (
+                            <span className="rounded bg-crimson-50 px-1.5 py-0.5 font-mono text-xs font-medium text-crimson-700">{mid}</span>
+                          ) : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">{m.email}</td>
                       <td className="px-4 py-3 text-slate-600">
                         {m.membershipType?.name || '—'}
                       </td>
@@ -1443,7 +1493,8 @@ export default function Members() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

@@ -206,6 +206,7 @@ export default function VoucherForm({ mode }: Props) {
   const levelFor = (itemId: string) =>
     levels.find((lv) => String(lv.item.id) === itemId)
   const [saving, setSaving] = useState(false)
+  const [posted, setPosted] = useState(false)
   const [error, setError] = useState('')
   const [simplifiedInv, setSimplifiedInv] = useState({ enabled: true, threshold: 5000 })
   // Amount-in-words in Nepali (print/preview) — from BillingSettings.
@@ -670,7 +671,15 @@ export default function VoucherForm({ mode }: Props) {
           await api(`/documents/${docId}/post`, { method: 'POST' })
         }
       }
-      navigate('/vouchers')
+      if (post) {
+        // Tactile confirmation: flip the button to "✓ Posted" for 1s before
+        // navigating, so the success state is actually seen. Purely cosmetic —
+        // the save is already committed to the local outbox.
+        setPosted(true)
+        setTimeout(() => navigate('/vouchers'), 1000)
+      } else {
+        navigate('/vouchers')
+      }
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to save') }
     setSaving(false)
   }
@@ -879,7 +888,7 @@ export default function VoucherForm({ mode }: Props) {
                 const estProfit = finalAmt - estCostTotal
                 const marginPct = finalAmt > 0 ? (estProfit / finalAmt) * 100 : 0
                 return (
-                  <tr key={l.key} className="border-b border-slate-50">
+                  <tr key={l.key} className="anim-enter-row border-b border-slate-50">
                     <td className="px-4 py-2 text-center text-slate-400">{i + 1}</td>
                     <td className="px-2 py-2">
                       {isInventory ? (
@@ -1291,7 +1300,7 @@ export default function VoucherForm({ mode }: Props) {
             </thead>
             <tbody>
               {journalLines.map((l, jIdx) => (
-                <tr key={l.key} className="border-b border-slate-50">
+                <tr key={l.key} className="anim-enter-row border-b border-slate-50">
                   <td className="px-2 py-2">
                     <select value={l.account} onChange={(e) => setJLine(l.key, { account: e.target.value })}
                       onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 0, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
@@ -1444,7 +1453,7 @@ export default function VoucherForm({ mode }: Props) {
                     if (cls === 'bank') setBankAccount(acctId)
                   }}
                     className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
-                    <option value="">{paymentMethod === 'bank' ? t('vouchers.defaultBankAccount', '— default bank —') : t('vouchers.cashInHand', 'Cash in hand')}</option>
+      <option value="">{paymentMethod === 'bank' ? t('vouchers.defaultBankAccount', '— default bank —') : t('vouchers.cashInHandOption', 'Cash in hand')}</option>
                     {cashBankAccounts.map((a) => <option key={a.id} value={String(a.id)}>{a.name}</option>)}
                   </select>
                 </label>
@@ -1487,7 +1496,7 @@ export default function VoucherForm({ mode }: Props) {
                   </thead>
                   <tbody>
                     {lines.map((l, i) => (
-                      <tr key={l.key} className="border-b border-amber-100">
+                      <tr key={l.key} className="anim-enter-row border-b border-amber-100">
                         <td className="px-2 py-2 text-center text-slate-400">{i + 1}</td>
                         <td className="px-2 py-2">
                           <input type="text" value={l.description}
@@ -1543,7 +1552,7 @@ export default function VoucherForm({ mode }: Props) {
                     if (cls === 'bank') setBankAccount(acctId)
                   }}
                     className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
-                    <option value="">{paymentMethod === 'bank' ? t('vouchers.defaultBankAccount', '— default bank —') : t('vouchers.cashInHand', 'Cash in hand')}</option>
+      <option value="">{paymentMethod === 'bank' ? t('vouchers.defaultBankAccount', '— default bank —') : t('vouchers.cashInHandOption', 'Cash in hand')}</option>
                     {cashBankAccounts.map((a) => <option key={a.id} value={String(a.id)}>{a.name}</option>)}
                   </select>
                 </label>
@@ -1863,8 +1872,12 @@ export default function VoucherForm({ mode }: Props) {
                         ? 'Fill all required fields first'
                         : undefined
                   }
-                  className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
-                  {saving ? t('vouchers.posting', 'Posting…') : t('vouchers.savePost', 'Save & post')}
+                  className={`rounded px-4 py-2 text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed ${
+                    posted
+                      ? 'anim-posted bg-emerald-600 shadow-md'
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}>
+                  {posted ? <span className="inline-flex items-center gap-1.5">✓ Posted</span> : saving ? t('vouchers.posting', 'Posting…') : t('vouchers.savePost', 'Save & post')}
                 </button>
               )}
             </div>
