@@ -1,6 +1,5 @@
 import { jsPDF } from 'jspdf'
 import type { Document, DocumentLine, Party } from './types'
-import { DOC_TYPE_LABELS } from './types'
 import { fmt } from './api'
 
 const ORG = 'स्यस्यः धुकू'
@@ -56,6 +55,11 @@ export function exportInvoicePdf(doc: Document, party?: Party) {
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' })
   let y = 52
 
+  const temp = isTemporaryReceipt(doc)
+  const tempLabel = `TEMPORARY RECEIPT #${String(doc.id).slice(0, 14)}`
+  const tempNote =
+    'Provisional slip issued offline. The final voucher number will be assigned automatically once the device syncs — reprint the official copy then.'
+
   // Header: org name left, INVOICE right
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(18)
@@ -67,7 +71,12 @@ export function exportInvoicePdf(doc: Document, party?: Party) {
   y += 14
   pdf.setFontSize(9)
   pdf.setTextColor(110)
-  pdf.text(`Invoice #: ${doc.number || '—'}`, PAGE_W - M, y, { align: 'right' })
+  pdf.text(
+    temp ? `Receipt #: ${tempLabel}` : `Invoice #: ${doc.number || '—'}`,
+    PAGE_W - M,
+    y,
+    { align: 'right' },
+  )
   y += 12
   pdf.text(
     `Date: ${(doc.date || '').slice(0, 10) || '—'}`,
@@ -75,6 +84,28 @@ export function exportInvoicePdf(doc: Document, party?: Party) {
     y,
     { align: 'right' },
   )
+
+  // Offline badge: dashed amber box marking the receipt as provisional.
+  // English-only — jsPDF's standard fonts cannot render Devanagari.
+  if (temp) {
+    y += 16
+    pdf.setDrawColor(251, 191, 36) // amber-400
+    pdf.setLineWidth(1.2)
+    pdf.setLineDashPattern([4, 3], 0)
+    const boxH = 34
+    pdf.rect(M, y, PAGE_W - M * 2, boxH)
+    pdf.setLineDashPattern([], 0)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(10)
+    pdf.setTextColor(180, 83, 9) // amber-700
+    pdf.text(`[ ${tempLabel} ]`, M + 10, y + 14)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(7.5)
+    pdf.setTextColor(146, 64, 14) // amber-800
+    const note = pdf.splitTextToSize(tempNote, PAGE_W - M * 2 - 20)
+    pdf.text(note, M + 10, y + 25)
+    y += boxH
+  }
 
   // Bill to
   y += 30

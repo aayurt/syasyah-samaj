@@ -48,7 +48,7 @@ import { useSetupStatus } from '../lib/setup'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
-import { exportInvoicePdf } from '../lib/pdf'
+import { exportInvoicePdf, isTemporaryReceipt } from '../lib/pdf'
 import PrintVoucher from '../components/PrintVoucher'
 
 interface DocTypeMeta {
@@ -812,6 +812,18 @@ export default function Vouchers() {
 
   const downloadPdf = async (doc: Document) => {
     try {
+      // Un-synced (offline-created) doc: no server fetch — render straight
+      // from the local cache with the temporary-receipt badge.
+      if (isTemporaryReceipt(doc)) {
+        const cached = await getEngine().readDoc('documents', String(doc.id))
+        const full = ((cached ?? {}) as unknown as Document) || doc
+        const party =
+          full.party && typeof full.party === 'object'
+            ? (full.party as Party)
+            : parties.find((p) => p.id === Number(full.party))
+        exportInvoicePdf(full, party)
+        return
+      }
       // Payload returns the single document directly (not wrapped in { doc }).
       const full = await api<Document>(`/documents/${doc.id}`, {
         query: { depth: 1 },
@@ -1949,7 +1961,13 @@ export default function Vouchers() {
                 </td>
                 <td className="px-4 py-2 font-mono text-slate-700">
                   {d.number || (
-                    <span className="text-slate-400">— draft —</span>
+                    String(d.id ?? '').startsWith('local-') ? (
+                      <span className="text-sky-600" title="Temporary local number — replaced by the official voucher number once synced">
+                        #LOCAL-{String(d.id).slice(6)}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">— draft —</span>
+                    )
                   )}
                 </td>
                 <td className="px-4 py-2 text-slate-600">
@@ -1961,6 +1979,14 @@ export default function Vouchers() {
                 </td>
                 <td className="px-4 py-2">
                   <span className="inline-flex items-center gap-1.5">
+                    {String(d.id ?? '').startsWith('local-') && (
+                      <span
+                        title="Saved on this device — posted officially as soon as the device syncs"
+                        className="inline-flex items-center gap-0.5 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-700"
+                      >
+                        {t('status.queuedForPosting', '⏳ Queued for Posting (सिङ्क पर्खिएको)')}
+                      </span>
+                    )}
                     <StatusPill status={d.status} />
                     {'_pendingSync' in d && (d as { _pendingSync?: boolean })._pendingSync && (
                       <span title="Pending sync to server" className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
