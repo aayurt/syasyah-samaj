@@ -41,7 +41,7 @@ function fyEnd(): string {
 function computePayments(
   invoices: Document[],
   receipts: Document[],
-): Map<number, number> {
+): Map<number | string, number> {
   // Group receipts by party
   const receiptsByParty = new Map<number | null, Document[]>()
   for (const r of receipts) {
@@ -51,7 +51,7 @@ function computePayments(
     receiptsByParty.set(pid, arr)
   }
 
-  const payments = new Map<number, number>()
+  const payments = new Map<number | string, number>()
   for (const inv of invoices) {
     const invParty = inv.party && typeof inv.party === 'object' ? (inv.party as Party).id : (inv.party as number || null)
     const invDate = inv.date || ''
@@ -68,7 +68,7 @@ function computePayments(
       received += amt
       remaining -= amt
     }
-    payments.set(inv.id, received)
+    payments.set(String(inv.id), received)
   }
   return payments
 }

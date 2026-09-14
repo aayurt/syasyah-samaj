@@ -127,7 +127,7 @@ export default function OutstandingInvoices({
         const results: OutstandingInvoice[] = []
         for (const inv of sorted) {
           const gross = effectiveAmount(inv)
-          let paid = paidMap.get(inv.id) || 0
+          let paid = paidMap.get(Number(inv.id)) || 0
 
           // Apply unlinked receipts oldest-first
           if (unlinkedRemaining > 0.01) {

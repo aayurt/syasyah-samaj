@@ -1,8 +1,15 @@
 import { jsPDF } from 'jspdf'
 import type { Document, DocumentLine, Party } from './types'
+import { DOC_TYPE_LABELS } from './types'
 import { fmt } from './api'
 
 const ORG = 'स्यस्यः धुकू'
+
+/** True while a doc still carries an outbox `local-*` id (not yet flushed) —
+ *  such a receipt is provisional and must be badged as temporary. */
+export function isTemporaryReceipt(doc: Document): boolean {
+  return String(doc.id ?? '').startsWith('local-')
+}
 
 /** Save a jsPDF document in a cross-platform way.
  *  iOS Safari blocks programmatic <a download> clicks (pdf.save()), so we

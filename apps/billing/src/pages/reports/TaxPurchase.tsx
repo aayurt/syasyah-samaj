@@ -13,7 +13,7 @@ import { effectiveNet, type Document, type Party, type TaxType } from '../../lib
 import NepaliDateInput from '../../components/NepaliDateInput'
 
 interface TaxEntry {
-  docId: number
+  docId: number | string
   date: string
   number: string | null
   partyName: string

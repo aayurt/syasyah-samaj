@@ -54,7 +54,6 @@ import Members from './pages/Members'
 import MembershipTypes from './pages/MembershipTypes'
 import RecurringBilling from './pages/RecurringBilling'
 import ExpenseClaims from './pages/ExpenseClaims'
-import SyncBanner from './components/SyncBanner'
 import ConnectingBanner from './components/ConnectingBanner'
 import SyncStatus from './components/SyncStatus'
 import CommandPalette from './components/CommandPalette'
@@ -447,7 +446,6 @@ function Shell({ email }: { email: string }) {
       <div className="flex flex-1 flex-col overflow-y-hidden">
         <div className="print:hidden">
           <ConnectingBanner />
-          <SyncBanner />
         </div>
         <header className="print:hidden flex flex-wrap items-center justify-between border-b border-slate-200 bg-white px-3 py-2 md:px-6 md:py-3 gap-2">
           <div className="text-sm text-slate-500">{email}</div>

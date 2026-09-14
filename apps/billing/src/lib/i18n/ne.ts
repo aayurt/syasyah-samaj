@@ -131,6 +131,7 @@ export const ne = {
     pending: 'मात्र',
     approved: 'अनुमोदित',
     rejected: 'अस्वीकृत',
+    queuedForPosting: '⏳ सिङ्क पर्खिएको (Queued for Posting)',
   },
 
   // ── Toast kinds ──
@@ -927,6 +928,26 @@ export const ne = {
     pending: '{n} सिंक बाँकी',
     resync: 'पुनः सिंक गर्नुहोस्',
     resyncAria: 'पुनः सिंक - क्यूर गरिएका परिवर्तनहरू धकेल्नुहोस् र सर्भरबाट सबै डाटा ल्याउनुहोस्',
+    // ── Non-intrusive header pill + conflict drawer ──
+    syncedLabel: 'सिंक भयो',
+    syncedTitle: 'सबै परिवर्तनहरू सिंक भए',
+    pendingSync: '{n} सिंक बाँकी',
+    pendingHint: 'परिवर्तनहरू सिंक हुन बाँकी छन्। अहिले सिंक गर्न क्लिक गर्नुहोस्।',
+    offline: 'अफलाइन',
+    savedLocally: 'यसै उपकरणमा सुरक्षित',
+    offlineHint: 'अफलाइन — तपाईंका परिवर्तनहरू यसै उपकरणमा सुरक्षित छन् र जडान फेरि भए आफैं सिंक हुनेछन्।',
+    reviewQueued: '{n} समीक्षा बाँकी',
+    reviewHint: 'सर्भरले स्वीकार गर्न नसकेका परिवर्तनहरू — समीक्षा गर्नुहोस्, सम्पादन गर्नुहोस् वा फाल्नुहोस्।',
+    drawerTitle: 'समीक्षा आवश्यक',
+    drawerSubtitle: 'यी परिवर्तनहरू यसै उपकरणमा सुरक्षित छन् तर सर्भरले स्वीकार गर्न सकेन।',
+    noConflicts: 'समीक्षा गर्नुपर्ने केही छैन।',
+    drawerFooter: 'स्थानीय रूपमा सुरक्षित — केही पनि हराउँदैन',
+    queuedAt: 'क्यू गरिएको {d}',
+    queuedDraft: 'क्यू गरिएको ड्राफ्ट',
+    close: 'बन्द गर्नुहोस्',
+    retryTitle: 'विवाद हटाएर फेरि सिंक गर्नुहोस्',
+    discardTitle: 'यो क्यू गरिएको परिवर्तन स्थायी रूपमा हटाउनुहोस्',
+    resolveTitle: 'तपाईंको संस्करण र सर्भरको तुलना गरेर समाधान गर्नुहोस्',
   },
 
   // ── Recent Activity ──
@@ -1098,6 +1119,7 @@ export const ne = {
     receivedBy: 'प्राप्त गर्ने',
     generatedBy: 'बनाइएको',
     printVoucher: 'भाउचर छाप्नुहोस्',
+    syncedNumber: 'सिंक भयो',
   },
 
   // ── Outstanding Invoices ──

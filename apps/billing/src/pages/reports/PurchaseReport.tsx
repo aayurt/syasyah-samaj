@@ -37,7 +37,7 @@ function fyEnd(): string {
   const now = new Date(); const y = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear(); return `${y}-07-15`
 }
 
-function computePayments(invoices: Document[], payments: Document[]): Map<number, number> {
+function computePayments(invoices: Document[], payments: Document[]): Map<number | string, number> {
   const payByParty = new Map<number | null, Document[]>()
   for (const p of payments) {
     const pid = p.party && typeof p.party === 'object' ? (p.party as Party).id : (p.party as number || null)
@@ -45,7 +45,7 @@ function computePayments(invoices: Document[], payments: Document[]): Map<number
     arr.push(p)
     payByParty.set(pid, arr)
   }
-  const result = new Map<number, number>()
+  const result = new Map<number | string, number>()
   for (const inv of invoices) {
     const invParty = inv.party && typeof inv.party === 'object' ? (inv.party as Party).id : (inv.party as number || null)
     const invDate = inv.date || ''
@@ -61,7 +61,7 @@ function computePayments(invoices: Document[], payments: Document[]): Map<number
       paid += amt
       remaining -= amt
     }
-    result.set(inv.id, paid)
+    result.set(String(inv.id), paid)
   }
   return result
 }

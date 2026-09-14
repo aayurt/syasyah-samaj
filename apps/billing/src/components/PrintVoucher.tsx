@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Document, TaxLine, Account, BillingSettings } from '../lib/types'
 import { DOC_TYPE_LABELS } from '../lib/types'
 import { useT } from '../lib/i18n'
-import { api } from '../lib/api'
+import { api, getEngine } from '../lib/api'
 import { numberToNepaliWords } from '../lib/nepaliNumbers'
 
 /* ── Amount in words (Nepali/Indian numbering) ──────────────────── */
@@ -52,6 +52,12 @@ function numToWords(n: number): string {
 
 /* ── Component ─────────────────────────────────────────────────── */
 
+/* ── Temporary (offline) receipt detection ──────────────────────── */
+
+/** True while the doc still carries an outbox `local-*` id (not yet flushed). */
+const isLocalIdDoc = (d: Document): boolean =>
+  String(d.id ?? '').startsWith('local-')
+
 interface Props {
   doc: Document
   accounts: Account[]
@@ -84,6 +90,32 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
     return () => { alive = false }
   }, [])
   const amountInWords = nepaliWords ? numberToNepaliWords(grandTotal) : numToWords(grandTotal)
+
+  // ── Offline (temporary receipt) support ──────────────────────────
+  // A doc created offline carries a `local-xxx` id until the outbox flush
+  // maps it to the server id. The cached copy is fully renderable with zero
+  // server dependencies — the only unknown is the final voucher number.
+  const isTemp = isLocalIdDoc(doc)
+  const [serverNumber, setServerNumber] = useState<string | null>(null)
+  useEffect(() => {
+    if (!isTemp) return
+    let alive = true
+    const check = async () => {
+      try {
+        const serverId = await getEngine().resolveLocalId(String(doc.id))
+        if (!alive || serverId == null) return
+        // Flushed — read the server-assigned number straight from the local
+        // cache (the flush also upserts the server copy of the doc).
+        const serverDoc = await getEngine().readDoc('documents', String(serverId))
+        if (alive && serverDoc?.number) setServerNumber(String(serverDoc.number))
+      } catch { /* offline — keep the temporary badge */ }
+    }
+    void check()
+    // Re-check after syncs may have mapped the id — cheap idmap lookups.
+    const timer = setInterval(check, 2000)
+    return () => { alive = false; clearInterval(timer) }
+  }, [isTemp, doc.id])
+  const displayNumber = doc.number || (isTemp ? `LOCAL-${String(doc.id).slice(6)}` : '') || '— draft —'
 
   return (
     <div className="print-voucher">
@@ -143,11 +175,30 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
 
       {/* ── Voucher Info ───────────────────────────────────── */}
       <div className="print-border border-t-0 p-4">
+        {isTemp && !serverNumber && (
+          <div className="mb-3 rounded border-2 border-dashed border-amber-400 bg-amber-50 px-3 py-2">
+            <div className="text-sm font-bold text-amber-700">
+              [अस्थायी रसिद / Temporary Receipt #LOCAL-{String(doc.id).slice(6)}]
+            </div>
+            <div className="mt-0.5 text-[10px] leading-snug text-amber-600">
+              यो रसिद अझै सर्भरमा पठाइएको छैन — अन्तिम रसिद नम्बर इन्टरनेट जडान भएपछि छापिनेछ।
+              This is a provisional receipt issued while offline. The final voucher
+              number will be assigned automatically once the device syncs — reprint
+              the official copy then.
+            </div>
+          </div>
+        )}
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-base font-bold text-slate-800">{label}</h2>
             <div className="mt-1 space-y-0.5 text-xs text-slate-600">
-              <div><span className="font-medium">{t('printVoucher.number')}</span> {doc.number || '— draft —'}</div>
+              <div>
+                <span className="font-medium">{t('printVoucher.number')}</span>{' '}
+                {serverNumber || displayNumber}
+                {serverNumber && isTemp && (
+                  <span className="ml-1 text-emerald-600">✓ {t('printVoucher.syncedNumber', 'synced')}</span>
+                )}
+              </div>
               <div><span className="font-medium">{t('printVoucher.date')}</span> {doc.date}</div>
             </div>
           </div>

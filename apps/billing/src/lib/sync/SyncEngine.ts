@@ -49,9 +49,19 @@ export class SyncEngine {
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
   private syncTimer: ReturnType<typeof setInterval> | null = null
   private flushTimer: ReturnType<typeof setTimeout> | null = null
+  private backoffTimer: ReturnType<typeof setTimeout> | null = null
+  private backoffIndex = 0
   private consecutiveFailures = 0
 
   private static readonly PERIODIC_SYNC_MS = 60_000
+
+  /**
+   * Exponential backoff schedule for flaky mobile data (15s → 30s → 60s).
+   * After a failed flush, the next attempt is scheduled at this interval
+   * instead of waiting for the 60s periodic sync, so recovery is quick on
+   * brief drops but never hammers the network. A success resets the counter.
+   */
+  private static readonly BACKOFF_MS = [15_000, 30_000, 60_000]
 
   /** Maps a plain collection name (from server) to the local cache key.
    *  Defaults to identity (plain name). The wrapper overrides this to
@@ -104,6 +114,7 @@ export class SyncEngine {
   destroy(): void {
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer)
     if (this.syncTimer) clearInterval(this.syncTimer)
+    if (this.backoffTimer) clearTimeout(this.backoffTimer)
   }
 
   // ── State ─────────────────────────────────────────────────────
@@ -168,6 +179,11 @@ export class SyncEngine {
    */
   scheduleFlush(delayMs = 1500) {
     if (!this.online) return
+    // A user- or write-triggered flush supersedes any pending backoff retry.
+    if (this.backoffTimer) {
+      clearTimeout(this.backoffTimer)
+      this.backoffTimer = null
+    }
     if (this.flushTimer) clearTimeout(this.flushTimer)
     this.nextSyncAt = Date.now() + delayMs
     this.flushTimer = setTimeout(() => {
@@ -323,15 +339,50 @@ export class SyncEngine {
     this.nextSyncAt = null
     this.emit()
 
+    let backoffScheduled = false
     try {
       const result = await this.flush()
+      // Success: reset backoff so the next failure retries fast again.
+      this.backoffIndex = 0
       return result
+    } catch {
+      // A failed flush (HTTP error, aborted request) schedules a backoff
+      // retry so flaky connections recover quickly without hammering the
+      // server. Queued entries stay in the outbox.
+      this.scheduleBackoffRetry()
+      backoffScheduled = this.nextSyncAt != null
+      return null
     } finally {
       this.syncing = false
-      // Healthy cadence: the next automatic sync runs at the periodic interval.
-      this.nextSyncAt = this.online ? Date.now() + SyncEngine.PERIODIC_SYNC_MS : null
+      // Healthy cadence: the next automatic sync runs at the periodic
+      // interval — unless a backoff retry was just scheduled (it owns the
+      // next attempt and its countdown).
+      if (!backoffScheduled) {
+        this.nextSyncAt = this.online ? Date.now() + SyncEngine.PERIODIC_SYNC_MS : null
+      }
       this.emit()
     }
+  }
+
+  /**
+   * Schedule the next retry with exponential backoff (15s → 30s → 60s).
+   * Skipped while offline — reconnect / the heartbeat handles recovery and
+   * the backoff index keeps growing only for online-but-failing flushes.
+   */
+  private scheduleBackoffRetry(): void {
+    if (!this.online) return
+    if (this.backoffTimer) clearTimeout(this.backoffTimer)
+    const delay = SyncEngine.BACKOFF_MS[
+      Math.min(this.backoffIndex, SyncEngine.BACKOFF_MS.length - 1)
+    ]
+    this.backoffIndex++
+    this.nextSyncAt = Date.now() + delay
+    this.backoffTimer = setTimeout(() => {
+      this.backoffTimer = null
+      if (!this.syncing && this.online && (this.pendingHint > 0 || this.conflictsHint > 0)) {
+        void this.syncAll().catch(() => { /* stay queued */ })
+      }
+    }, delay)
   }
 
   /**
@@ -565,6 +616,30 @@ export class SyncEngine {
         })
         if (fetchRes.ok) {
           customApplied = true
+          // Optimistic-post promotion: the server's response doc carries the
+          // official voucher number + status — write it into every cache key
+          // holding the row so the UI flips from the blue "Queued for
+          // Posting" badge / #LOCAL-xxx placeholder to "✓ Posted" with the
+          // real number as soon as the flush lands.
+          const resDoc = (await fetchRes.json().catch(() => null)) as
+            | { doc?: Record<string, unknown> }
+            | Record<string, unknown>
+            | null
+          const posted = (resDoc && 'doc' in resDoc ? resDoc.doc : resDoc) as
+            | Record<string, unknown>
+            | null
+          if (posted && posted.id != null) {
+            for (const key of new Set([collName, this._cacheKey(collName)])) {
+              const existing = await this.storage.get(key, String(resolvedId))
+              if (existing) {
+                await this.storage.upsert(key, {
+                  ...existing,
+                  ...posted,
+                  id: posted.id,
+                })
+              }
+            }
+          }
           // Remove from outbox on success
           if (entry.seq != null) {
             await this.storage.removePending(entry.seq)
