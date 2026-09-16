@@ -1,7 +1,17 @@
 import * as React from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { NavLink } from 'react-router-dom'
-import { ChevronDown, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import {
+  Building2,
+  ChevronRight,
+  ChevronsUpDown,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+} from 'lucide-react'
+import { useTenant } from '../../lib/tenant'
+import { authClient, useOfflineSession } from '../../lib/auth'
 
 export interface SidebarItem {
   to: string
@@ -38,56 +48,139 @@ export function AnimatedSidebar({
   onToggleGroup,
   t,
 }: AnimatedSidebarProps) {
+  const { tenantId, setTenantId, tenants, isCentral } = useTenant()
+  const { session } = useOfflineSession()
+
+  const [tenantDropdownOpen, setTenantDropdownOpen] = React.useState(false)
+  const [userDropdownOpen, setUserDropdownOpen] = React.useState(false)
+
+  const activeTenant = React.useMemo(() => {
+    return tenants.find((tn) => String(tn.id) === String(tenantId)) || tenants[0]
+  }, [tenants, tenantId])
+
+  const userInitial = React.useMemo(() => {
+    const email = session?.user?.email || 'Admin'
+    return email.charAt(0).toUpperCase()
+  }, [session])
+
+  const handleSignOut = async () => {
+    await authClient.signOut()
+    window.location.href = '/admin/login'
+  }
+
   return (
     <motion.aside
       initial={false}
       animate={{
-        width: collapsed ? 64 : 224,
+        width: collapsed ? 64 : 240,
       }}
       transition={{
         type: 'spring',
         stiffness: 350,
         damping: 32,
       }}
-      className="print:hidden relative z-20 flex flex-col bg-slate-900 text-slate-300 shadow-xl select-none"
+      className="print:hidden relative z-20 flex flex-col bg-white border-r border-slate-200/90 text-slate-700 select-none shadow-xs"
     >
-      {/* Sidebar Header */}
-      <div
-        className={`flex items-center py-4 transition-all duration-200 ${
-          collapsed ? 'justify-center px-2' : 'justify-between px-5'
-        }`}
-      >
-        <AnimatePresence mode="wait">
-          {!collapsed && (
+      {/* ── 1. Header: Organization / Illaka Switcher ─────────── */}
+      <div className="p-2 border-b border-slate-100 relative">
+        <div className="flex items-center justify-between gap-1">
+          <button
+            onClick={() => {
+              if (isCentral && !collapsed) {
+                setTenantDropdownOpen((o) => !o)
+              }
+            }}
+            disabled={!isCentral || collapsed}
+            className={`flex flex-1 items-center gap-2.5 rounded-lg p-1.5 text-left transition-colors ${
+              isCentral && !collapsed
+                ? 'hover:bg-slate-100 cursor-pointer'
+                : 'cursor-default'
+            }`}
+          >
+            {/* Logo Badge */}
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-crimson-600 text-white font-bold text-xs shadow-xs">
+              <Building2 size={16} />
+            </div>
+
+            {/* Title & Subtitle */}
+            {!collapsed && (
+              <div className="grid flex-1 text-left leading-tight truncate">
+                <span className="truncate text-xs font-bold text-slate-900">
+                  {activeTenant?.name || 'स्यस्यः धुकू'}
+                </span>
+                <span className="truncate text-[10px] text-slate-500">
+                  {activeTenant?.type === 'central'
+                    ? 'केन्द्रीय कार्यालय (HQ)'
+                    : activeTenant?.code || 'इलाका शाखा'}
+                </span>
+              </div>
+            )}
+
+            {isCentral && !collapsed && (
+              <ChevronsUpDown size={14} className="text-slate-400 shrink-0 ml-auto" />
+            )}
+          </button>
+
+          {/* Toggle sidebar button */}
+          <button
+            onClick={onToggle}
+            title={
+              collapsed
+                ? t('sidebar.expand', 'Expand sidebar')
+                : t('sidebar.collapse', 'Collapse sidebar')
+            }
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+          >
+            {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          </button>
+        </div>
+
+        {/* Illaka Selector Dropdown */}
+        <AnimatePresence>
+          {tenantDropdownOpen && !collapsed && (
             <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
               transition={{ duration: 0.15 }}
-              className="truncate text-lg font-semibold tracking-tight text-white"
+              className="absolute left-2 right-2 top-full mt-1.5 z-50 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg space-y-1"
             >
-              स्यस्यः धुकू
+              <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                इलाका / संगठन चयन
+              </div>
+              <div className="max-h-48 overflow-y-auto space-y-0.5">
+                {tenants.map((tn) => {
+                  const active = String(tn.id) === String(tenantId)
+                  return (
+                    <button
+                      key={tn.id}
+                      onClick={() => {
+                        setTenantId(String(tn.id))
+                        setTenantDropdownOpen(false)
+                      }}
+                      className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-left transition-colors ${
+                        active
+                          ? 'bg-crimson-50 text-crimson-800 font-semibold'
+                          : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="truncate">{tn.name}</span>
+                      {tn.code && (
+                        <span className="ml-2 font-mono text-[10px] text-slate-400">
+                          {tn.code}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onToggle}
-          title={
-            collapsed
-              ? t('sidebar.expand', 'Expand sidebar')
-              : t('sidebar.collapse', 'Collapse sidebar')
-          }
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
-        >
-          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-        </motion.button>
       </div>
 
-      {/* Nav Content */}
-      <nav className="flex-1 space-y-4 overflow-y-auto overflow-x-hidden px-2 pb-4 scrollbar-thin scrollbar-thumb-slate-700">
+      {/* ── 2. Navigation Content with Tree Guide ─────────────── */}
+      <nav className="flex-1 space-y-3 overflow-y-auto overflow-x-hidden p-2 scrollbar-thin scrollbar-thumb-slate-200">
         {navGroups.map((group) => {
           const items = group.items.filter((item) => {
             if (item.feature && !features[item.feature]) return false
@@ -101,35 +194,39 @@ export function AnimatedSidebar({
 
           return (
             <div key={group.items[0].to} className="space-y-1">
+              {/* Group Label */}
               {isGroup && !collapsed && (
                 <button
                   onClick={() => onToggleGroup(group.title as string)}
                   aria-expanded={open}
-                  className="flex w-full items-center justify-between gap-1 rounded-md px-3 pb-1 pt-1.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300"
+                  className="flex w-full items-center justify-between gap-1 rounded-md px-2.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700"
                 >
                   <span className="truncate">
                     {group.titleKey ? t(group.titleKey, group.title) : group.title}
                   </span>
-                  <ChevronDown
+                  <ChevronRight
                     size={12}
-                    className={`shrink-0 transition-transform duration-200 ${
-                      open ? '' : '-rotate-90'
+                    className={`shrink-0 transition-transform duration-200 text-slate-400 ${
+                      open ? 'rotate-90' : ''
                     }`}
                   />
                 </button>
               )}
 
+              {/* Sub-tree */}
               <AnimatePresence initial={false}>
                 {open && (
                   <motion.div
                     initial={isGroup && !collapsed ? { opacity: 0, height: 0 } : false}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.18 }}
                     className={
                       collapsed
-                        ? 'flex flex-col items-center gap-1.5'
-                        : 'space-y-1'
+                        ? 'flex flex-col items-center gap-1'
+                        : isGroup
+                        ? 'ml-2.5 pl-2.5 border-l border-slate-200/80 space-y-0.5'
+                        : 'space-y-0.5'
                     }
                   >
                     {items.map(
@@ -141,12 +238,14 @@ export function AnimatedSidebar({
                             <div
                               key={to}
                               title={`${translatedLabel} (coming soon)`}
-                              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 cursor-not-allowed ${
-                                collapsed ? 'w-10 justify-center p-2' : ''
+                              className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-400 cursor-not-allowed opacity-60 ${
+                                collapsed ? 'size-9 justify-center p-0' : ''
                               }`}
                             >
-                              <Icon size={16} className="shrink-0" />
-                              {!collapsed && <span className="truncate">{translatedLabel}</span>}
+                              <Icon size={15} className="shrink-0" />
+                              {!collapsed && (
+                                <span className="truncate">{translatedLabel}</span>
+                              )}
                             </div>
                           )
                         }
@@ -158,20 +257,20 @@ export function AnimatedSidebar({
                             end={end}
                             title={collapsed ? translatedLabel : undefined}
                             className={({ isActive }) =>
-                              `group relative flex items-center gap-2.5 rounded-lg text-xs font-medium transition-colors ${
+                              `group relative flex items-center gap-2 rounded-lg text-xs font-medium transition-colors ${
                                 collapsed
-                                  ? 'h-10 w-10 justify-center p-0'
-                                  : 'px-3 py-2'
+                                  ? 'size-9 justify-center p-0'
+                                  : 'px-2.5 py-1.5'
                               } ${
                                 isActive
-                                  ? 'text-white'
-                                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                                  ? 'text-crimson-700 font-semibold'
+                                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                               }`
                             }
                           >
                             {({ isActive }) => (
                               <>
-                                {/* Animated active highlight pill */}
+                                {/* Animated Active Pill */}
                                 {isActive && (
                                   <motion.div
                                     layoutId="sidebar-active-pill"
@@ -180,15 +279,17 @@ export function AnimatedSidebar({
                                       stiffness: 400,
                                       damping: 35,
                                     }}
-                                    className="absolute inset-0 rounded-lg bg-crimson-600/90 shadow-sm shadow-crimson-900/40"
+                                    className="absolute inset-0 rounded-lg bg-crimson-50 border border-crimson-200/60"
                                   />
                                 )}
 
-                                <span className="relative z-10 flex items-center gap-2.5">
+                                <span className="relative z-10 flex items-center gap-2">
                                   <Icon
-                                    size={16}
+                                    size={15}
                                     className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${
-                                      isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
+                                      isActive
+                                        ? 'text-crimson-600'
+                                        : 'text-slate-400 group-hover:text-slate-600'
                                     }`}
                                   />
                                   {!collapsed && (
@@ -208,6 +309,71 @@ export function AnimatedSidebar({
           )
         })}
       </nav>
+
+      {/* ── 3. Footer: User Identity Card ─────────────────────── */}
+      <div className="p-2 border-t border-slate-100 relative">
+        <button
+          onClick={() => setUserDropdownOpen((o) => !o)}
+          className={`flex w-full items-center gap-2.5 rounded-lg p-1.5 text-left transition-colors hover:bg-slate-100 ${
+            collapsed ? 'justify-center' : ''
+          }`}
+        >
+          {/* Avatar Circle */}
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-700 font-bold text-xs">
+            {userInitial}
+          </div>
+
+          {/* User Email & Role */}
+          {!collapsed && (
+            <div className="grid flex-1 text-left leading-tight truncate">
+              <span className="truncate text-xs font-semibold text-slate-800">
+                {session?.user?.email?.split('@')[0] || 'User'}
+              </span>
+              <span className="truncate text-[10px] text-slate-400 font-mono">
+                {session?.user?.email || 'authenticated'}
+              </span>
+            </div>
+          )}
+
+          {!collapsed && (
+            <ChevronsUpDown size={14} className="text-slate-400 shrink-0 ml-auto" />
+          )}
+        </button>
+
+        {/* User Context Dropdown */}
+        <AnimatePresence>
+          {userDropdownOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.15 }}
+              className={`absolute bottom-full mb-1.5 z-50 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg space-y-1 ${
+                collapsed ? 'left-2 w-48' : 'left-2 right-2'
+              }`}
+            >
+              <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 border-b border-slate-100">
+                {session?.user?.email || 'User Account'}
+              </div>
+              <NavLink
+                to="/settings"
+                onClick={() => setUserDropdownOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                <Settings size={14} className="text-slate-400" />
+                <span>सेटिंग्स (Settings)</span>
+              </NavLink>
+              <button
+                onClick={handleSignOut}
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors text-left"
+              >
+                <LogOut size={14} className="text-red-500" />
+                <span>लगआउट (Log out)</span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.aside>
   )
 }
