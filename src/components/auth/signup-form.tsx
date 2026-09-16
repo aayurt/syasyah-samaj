@@ -6,6 +6,7 @@ import { ArrowRight, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useState } from 'react'
+import { LiquidButton } from '@/components/animate-ui/components/buttons/liquid'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -101,19 +102,19 @@ export default function SignUpForm() {
 
             {error && <div className="error-message">{error}</div>}
 
-            <button type="submit" disabled={loading} className="submit-button">
+            <LiquidButton type="submit" disabled={loading} className="w-full h-11" variant="default">
               {loading ? (
                 <>
-                  <Loader2 className="spinner" />
+                  <Loader2 className="spinner animate-spin" />
                   Creating account...
                 </>
               ) : (
                 <>
                   Create Account
-                  <ArrowRight className="arrow-icon" />
+                  <ArrowRight className="arrow-icon ml-1.5" />
                 </>
               )}
-            </button>
+            </LiquidButton>
           </form>
 
           <div className="signup-container">

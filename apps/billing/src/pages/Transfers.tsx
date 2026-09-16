@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { LiquidButton } from '../components/ui/LiquidButton'
 import { ArrowRight, Ban, Download } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
@@ -184,7 +185,7 @@ export default function Transfers() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-800">{t('transfers.title', 'Transfers')}</h1>
-        <button
+        <LiquidButton
           onClick={() =>
             downloadCsv(
               'transfers.csv',
@@ -198,10 +199,11 @@ export default function Transfers() {
             )
           }
           disabled={groups.length === 0}
-          className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          variant="outline"
+          size="sm"
         >
           <Download size={14} /> CSV
-        </button>
+        </LiquidButton>
       </div>
 
       {/* New transfer */}
@@ -268,11 +270,16 @@ export default function Transfers() {
               className="h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500" />
           </div>
           <div className="flex items-end lg:col-span-1">
-            <button type="submit" disabled={submitting}
-              className="inline-flex h-[42px] w-full items-center justify-center gap-1.5 rounded bg-crimson-600 px-4 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
+            <LiquidButton
+              type="submit"
+              disabled={submitting}
+              variant="accent"
+              size="lg"
+              className="w-full !h-[42px]"
+            >
               <ArrowRight size={14} />
               {submitting ? t('vouchers.posting', 'Posting…') : t('transfers.newTransfer', 'Transfer')}
-            </button>
+            </LiquidButton>
           </div>
         </div>
       </form>

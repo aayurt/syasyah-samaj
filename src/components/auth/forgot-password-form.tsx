@@ -5,6 +5,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { LiquidButton } from '@/components/animate-ui/components/buttons/liquid'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -88,7 +89,7 @@ export default function ForgotPasswordForm() {
 
             {error && <div className="error-message">{error}</div>}
 
-            <Button type="submit" className="submit-button" disabled={loading}>
+            <LiquidButton type="submit" className="w-full h-11" variant="default" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -97,7 +98,7 @@ export default function ForgotPasswordForm() {
               ) : (
                 'Send reset link'
               )}
-            </Button>
+            </LiquidButton>
           </form>
 
           <div className="text-center text-sm">

@@ -1,6 +1,7 @@
 import NepaliDateInput from '../components/NepaliDateInput'
 import { todayAD } from '../lib/nepaliDate'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { LiquidButton } from '../components/ui/LiquidButton'
 import { Download, Plus, Trash2 } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
 import { focusCell, handleGridKeyDown } from '../lib/gridNav'
@@ -259,7 +260,7 @@ export default function Journal() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">{t('journal.title', 'Journal')}</h1>
         <div className="flex items-center gap-2">
-          <button
+          <LiquidButton
             onClick={() => downloadCsv('journal.csv', [t('journal.columnNumber'), t('journal.columnDate'), t('journal.columnNarration'), t('journal.columnDebit'), t('journal.columnCredit'), t('journal.columnStatus')],
               filtered.map((e) => {
                 const lines = Array.isArray(e.lines) ? e.lines : []
@@ -269,17 +270,19 @@ export default function Journal() {
               }))
             }
             disabled={filtered.length === 0}
-            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+            variant="outline"
+            size="sm"
           >
             <Download size={14} /> CSV
-          </button>
-          <button
+          </LiquidButton>
+          <LiquidButton
             onClick={() => setShowForm((s) => !s)}
-            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            variant="accent"
+            size="sm"
           >
             <Plus size={14} />
             {t('common.add', 'New entry')}
-          </button>
+          </LiquidButton>
         </div>
       </div>
 
@@ -640,8 +643,10 @@ export default function Journal() {
           credit={totals.credit}
           actions={
             <>
-              <button
+              <LiquidButton
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => submit('draft')}
                 disabled={saving || Math.abs(totals.diff) >= 0.001 || selectedYear?.status === 'closed'}
                 title={
@@ -649,12 +654,13 @@ export default function Journal() {
                     ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
                     : undefined
                 }
-                className="rounded border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
               >
                 {saving ? t('msg.saving', 'Saving…') : t('vouchers.saveDraft', 'Save draft')}
-              </button>
-              <button
+              </LiquidButton>
+              <LiquidButton
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={() => submit('posted')}
                 disabled={saving || Math.abs(totals.diff) >= 0.001 || selectedYear?.status === 'closed'}
                 title={
@@ -662,10 +668,10 @@ export default function Journal() {
                     ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
                     : undefined
                 }
-                className="rounded bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="!bg-emerald-600 hover:!bg-emerald-700 !border-emerald-600"
               >
-                {t('vouchers.post', 'Post')}
-              </button>
+                {saving ? t('vouchers.posting', 'Posting…') : t('vouchers.savePost', 'Save & post')}
+              </LiquidButton>
             </>
           }
         />

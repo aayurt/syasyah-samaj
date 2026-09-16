@@ -9,7 +9,7 @@ import { Apple, ArrowRight, Loader2, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { LiquidButton } from '@/components/animate-ui/components/buttons/liquid'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -266,19 +266,19 @@ export default function LoginForm({
 
             {error && <div className="error-message">{error}</div>}
 
-            <button type="submit" disabled={loading} className="submit-button">
+            <LiquidButton type="submit" disabled={loading} className="w-full h-11" variant="default">
               {loading ? (
                 <>
-                  <Loader2 className="spinner" />
+                  <Loader2 className="spinner animate-spin" />
                   Signing in...
                 </>
               ) : (
                 <>
                   Sign In
-                  <ArrowRight className="arrow-icon" />
+                  <ArrowRight className="arrow-icon ml-1.5" />
                 </>
               )}
-            </button>
+            </LiquidButton>
           </form>
 
           {(enableSignUp === true || enableSignUp === 'auto') && (
