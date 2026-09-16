@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { LiquidButton } from '../components/ui/LiquidButton'
 import { Download, Pencil, Plus, Trash2, TriangleAlert, Upload } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
@@ -209,28 +210,31 @@ export default function Items() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">{t('items.title', 'Inventory')}</h1>
         <div className="flex items-center gap-2">
-          <button
+          <LiquidButton
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+            variant="outline"
+            size="sm"
           >
             <Upload size={14} /> {t('import.button', 'Import')}
-          </button>
-          <button
+          </LiquidButton>
+          <LiquidButton
             onClick={() => downloadCsv('inventory.csv', [t('items.code', 'Code'), t('items.name', 'Name'), 'Unit', t('items.salePrice', 'Sale Price'), t('items.purchasePrice', 'Purchase Price'), t('items.reorderLevel', 'Reorder Level')],
               visible.map((i) => [i.code || '', i.name, i.unit || '', i.salePrice || 0, i.purchasePrice || 0, i.reorderLevel || 0]))
             }
             disabled={visible.length === 0}
-            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+            variant="outline"
+            size="sm"
           >
             <Download size={14} /> CSV
-          </button>
-          <button
+          </LiquidButton>
+          <LiquidButton
             onClick={openNew}
-            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            variant="accent"
+            size="sm"
           >
             <Plus size={14} />
             {t('items.newItem', 'New item')}
-          </button>
+          </LiquidButton>
         </div>
       </div>
 
@@ -360,20 +364,22 @@ export default function Items() {
             </label>
           </div>
           <div className="mt-4 flex gap-2">
-            <button
+            <LiquidButton
               type="submit"
               disabled={saving}
-              className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+              variant="accent"
+              size="sm"
             >
-              {saving ? t('msg.saving', 'Saving…') : editing ? t('common.edit', 'Update') : t('common.save', 'Save')}
-            </button>
-            <button
+              {saving ? 'Saving…' : editing ? 'Update' : 'Save'}
+            </LiquidButton>
+            <LiquidButton
               type="button"
-              onClick={() => { setShowForm(false); setEditing(null); setStockLocked(false) }}
-              className="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+              variant="outline"
+              size="sm"
+              onClick={() => { setShowForm(false); setEditing(null) }}
             >
-              {t('common.cancel', 'Cancel')}
-            </button>
+              Cancel
+            </LiquidButton>
           </div>
         </form>
       )}
