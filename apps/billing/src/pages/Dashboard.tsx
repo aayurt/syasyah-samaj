@@ -386,17 +386,14 @@ export default function Dashboard() {
           </LiquidButton>
 
           {/* Import button */}
-          <label className="group relative inline-flex cursor-pointer items-center justify-center overflow-hidden h-7 px-2.5 text-xs gap-1 rounded-lg border border-crimson-200 bg-crimson-50 font-semibold text-crimson-800 transition-all duration-200 hover:bg-crimson-100 shadow-xs select-none">
-            <Upload size={14} className="text-crimson-700 relative z-10 transition-transform duration-200 group-hover:scale-105" />
-            <span className="relative z-10 transition-transform duration-200 group-hover:scale-105">आयात (Import CSV)</span>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,.json"
-              className="hidden"
-              onChange={onFileSelected}
-            />
-          </label>
+          <LiquidButton
+            variant="accent"
+            size="xs"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload size={14} className="text-white" />
+            <span>आयात (Import CSV)</span>
+          </LiquidButton>
         </div>
       </div>
 
