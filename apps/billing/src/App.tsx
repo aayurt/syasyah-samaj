@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatedSidebar } from './components/ui/AnimatedSidebar'
+import { Breadcrumbs } from './components/ui/Breadcrumbs'
 import {
   ArrowLeftRight,
   BarChart3,
@@ -334,8 +335,10 @@ function Shell({ email }: { email: string }) {
         <div className="print:hidden">
           <ConnectingBanner />
         </div>
-        <header className="print:hidden flex flex-wrap items-center justify-between border-b border-slate-200 bg-white px-3 py-2 md:px-6 md:py-3 gap-2">
-          <div className="text-sm text-slate-500">{email}</div>
+        <header className="print:hidden flex flex-wrap items-center justify-between border-b border-slate-200 bg-white px-3 py-2 md:px-6 md:py-2.5 gap-2">
+          <div className="flex items-center gap-3">
+            <Breadcrumbs />
+          </div>
           <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3">
             <IllakaSwitcher />
             <FiscalYearSwitcher />
@@ -345,10 +348,10 @@ function Shell({ email }: { email: string }) {
             <button
               onClick={() => setPaletteOpen(true)}
               title={`${t('header.search', 'Search & shortcuts')} (⌘K)`}
-              className="flex shrink-0 items-center gap-1.5 rounded border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50/50 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 transition-colors shadow-2xs"
             >
-              <Search size={14} />
-              <kbd className="hidden rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px] text-slate-400 lg:inline">⌘K</kbd>
+              <Search size={13} className="text-slate-400" />
+              <kbd className="hidden rounded border border-slate-200 bg-white px-1 py-0.2 text-[9px] font-mono text-slate-400 lg:inline">⌘K</kbd>
             </button>
           </div>
         </header>
