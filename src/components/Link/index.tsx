@@ -1,3 +1,4 @@
+import { LiquidButton, type LiquidButtonProps } from '@/components/ui/LiquidButton'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { cn } from '@/utilities/ui'
 import Link from 'next/link'
@@ -5,8 +6,10 @@ import React from 'react'
 
 import type { Page, Post } from '@/payload-types'
 
+type LiquidAppearance = 'liquid' | 'liquid-default' | 'liquid-secondary' | 'liquid-destructive' | 'liquid-outline' | 'liquid-accent' | 'liquid-ghost'
+
 type CMSLinkType = {
-  appearance?: 'inline' | ButtonProps['variant']
+  appearance?: 'inline' | LiquidAppearance | ButtonProps['variant']
   children?: React.ReactNode
   className?: string
   label?: string | null
@@ -55,8 +58,24 @@ export const CMSLink: React.FC<CMSLinkType> = (props) => {
     )
   }
 
+  // Handle LiquidButton appearances
+  if (appearance === 'liquid' || (typeof appearance === 'string' && appearance.startsWith('liquid-'))) {
+    const liquidVariant = (
+      appearance === 'liquid' ? 'default' : appearance.replace('liquid-', '')
+    ) as LiquidButtonProps['variant']
+
+    return (
+      <LiquidButton asChild className={className} size={size} variant={liquidVariant}>
+        <Link className={cn(className)} href={href || url || ''} {...newTabProps}>
+          {label && label}
+          {children && children}
+        </Link>
+      </LiquidButton>
+    )
+  }
+
   return (
-    <Button asChild className={className} size={size} variant={appearance}>
+    <Button asChild className={className} size={size} variant={appearance as ButtonProps['variant']}>
       <Link className={cn(className)} href={href || url || ''} {...newTabProps}>
         {label && label}
         {children && children}

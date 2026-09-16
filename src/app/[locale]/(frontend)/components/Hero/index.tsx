@@ -3,7 +3,7 @@ import { getCurrentLocale, getI18n } from '@/locales/server'
 import configPromise from '@payload-config'
 import Link from 'next/link'
 import { getPayload } from 'payload'
-import { Button } from '@/components/ui/button'
+import { LiquidButton } from '@/components/ui/LiquidButton'
 
 export default async function Hero() {
     const payload = await getPayload({ config: configPromise })
@@ -32,17 +32,17 @@ export default async function Hero() {
                         </p>
 
                         <div className="flex gap-4">
-                            <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+                            <LiquidButton asChild size="lg" variant="accent" className="shadow-lg">
                                 <Link href="/members">
                                     {t('home.becomeMember')}
                                 </Link>
-                            </Button>
+                            </LiquidButton>
 
-                            <Button asChild size="lg" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10">
+                            <LiquidButton asChild size="lg" variant="outline" className="border-white/40 bg-white/10 text-white hover:bg-white/20">
                                 <Link href="/events">
                                     {t('home.upcomingEvents')}
                                 </Link>
-                            </Button>
+                            </LiquidButton>
                         </div>
                     </div>
 

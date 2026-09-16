@@ -3,7 +3,7 @@ import { getPayload } from "payload"
 import configPromise from "@/payload.config"
 import { getCurrentLocale } from "@/locales/server"
 import { headers } from "next/headers"
-import { Button } from "@/components/ui/button"
+import { LiquidButton } from "@/components/ui/LiquidButton"
 import Link from "next/link"
 
 export default async function HomepageHero() {
@@ -33,11 +33,11 @@ export default async function HomepageHero() {
           <p className="text-lg md:text-xl mb-6 text-primary-foreground/80">
             {t('home.homepageWelcomeDescription')}
           </p>
-          <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+          <LiquidButton asChild size="lg" variant="accent" className="shadow-lg">
             <Link href="/members">
               {t('home.joinCommunity')}
             </Link>
-          </Button>
+          </LiquidButton>
         </div>
       </div>
     </section>
