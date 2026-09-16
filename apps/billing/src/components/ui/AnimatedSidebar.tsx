@@ -54,6 +54,34 @@ export function AnimatedSidebar({
   const [tenantDropdownOpen, setTenantDropdownOpen] = React.useState(false)
   const [userDropdownOpen, setUserDropdownOpen] = React.useState(false)
 
+  const tenantRef = React.useRef<HTMLDivElement>(null)
+  const userRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (tenantRef.current && !tenantRef.current.contains(e.target as Node)) {
+        setTenantDropdownOpen(false)
+      }
+      if (userRef.current && !userRef.current.contains(e.target as Node)) {
+        setUserDropdownOpen(false)
+      }
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setTenantDropdownOpen(false)
+        setUserDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
+
   const activeTenant = React.useMemo(() => {
     return tenants.find((tn) => String(tn.id) === String(tenantId)) || tenants[0]
   }, [tenants, tenantId])
@@ -82,7 +110,7 @@ export function AnimatedSidebar({
       className="print:hidden relative z-20 flex flex-col bg-white border-r border-slate-200/90 text-slate-700 select-none shadow-xs"
     >
       {/* ── 1. Header: Organization / Illaka Switcher ─────────── */}
-      <div className="p-2 border-b border-slate-100 relative">
+      <div ref={tenantRef} className="p-2 border-b border-slate-100 relative">
         <div className="flex items-center justify-between gap-1">
           <button
             onClick={() => {
@@ -311,7 +339,7 @@ export function AnimatedSidebar({
       </nav>
 
       {/* ── 3. Footer: User Identity Card ─────────────────────── */}
-      <div className="p-2 border-t border-slate-100 relative">
+      <div ref={userRef} className="p-2 border-t border-slate-100 relative">
         <button
           onClick={() => setUserDropdownOpen((o) => !o)}
           className={`flex w-full items-center gap-2.5 rounded-lg p-1.5 text-left transition-colors hover:bg-slate-100 ${
