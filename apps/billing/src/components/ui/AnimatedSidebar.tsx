@@ -37,6 +37,7 @@ interface AnimatedSidebarProps {
   closedGroups: Record<string, boolean>
   onToggleGroup: (groupTitle: string) => void
   t: (key: string, fallback?: string) => string
+  userEmail?: string
 }
 
 export function AnimatedSidebar({
@@ -47,9 +48,9 @@ export function AnimatedSidebar({
   closedGroups,
   onToggleGroup,
   t,
+  userEmail,
 }: AnimatedSidebarProps) {
   const { tenantId, setTenantId, tenants, isCentral } = useTenant()
-  const { session } = useOfflineSession()
 
   const [tenantDropdownOpen, setTenantDropdownOpen] = React.useState(false)
   const [userDropdownOpen, setUserDropdownOpen] = React.useState(false)
@@ -58,11 +59,13 @@ export function AnimatedSidebar({
   const userRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
+    if (!tenantDropdownOpen && !userDropdownOpen) return
+
     const handleClickOutside = (e: MouseEvent) => {
-      if (tenantRef.current && !tenantRef.current.contains(e.target as Node)) {
+      if (tenantDropdownOpen && tenantRef.current && !tenantRef.current.contains(e.target as Node)) {
         setTenantDropdownOpen(false)
       }
-      if (userRef.current && !userRef.current.contains(e.target as Node)) {
+      if (userDropdownOpen && userRef.current && !userRef.current.contains(e.target as Node)) {
         setUserDropdownOpen(false)
       }
     }
@@ -80,16 +83,16 @@ export function AnimatedSidebar({
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [])
+  }, [tenantDropdownOpen, userDropdownOpen])
 
   const activeTenant = React.useMemo(() => {
     return tenants.find((tn) => String(tn.id) === String(tenantId)) || tenants[0]
   }, [tenants, tenantId])
 
   const userInitial = React.useMemo(() => {
-    const email = session?.user?.email || 'Admin'
+    const email = userEmail || 'Admin'
     return email.charAt(0).toUpperCase()
-  }, [session])
+  }, [userEmail])
 
   const handleSignOut = async () => {
     await authClient.signOut()
@@ -355,10 +358,10 @@ export function AnimatedSidebar({
           {!collapsed && (
             <div className="grid flex-1 text-left leading-tight truncate">
               <span className="truncate text-xs font-semibold text-slate-800">
-                {session?.user?.email?.split('@')[0] || 'User'}
+                {userEmail?.split('@')[0] || 'User'}
               </span>
               <span className="truncate text-[10px] text-slate-400 font-mono">
-                {session?.user?.email || 'authenticated'}
+                {userEmail || 'authenticated'}
               </span>
             </div>
           )}
@@ -381,7 +384,7 @@ export function AnimatedSidebar({
               }`}
             >
               <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 border-b border-slate-100">
-                {session?.user?.email || 'User Account'}
+                {userEmail || 'User Account'}
               </div>
               <NavLink
                 to="/settings"

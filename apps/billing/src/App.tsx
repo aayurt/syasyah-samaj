@@ -329,6 +329,7 @@ function Shell({ email }: { email: string }) {
         closedGroups={closedGroups}
         onToggleGroup={toggleGroup}
         t={t}
+        userEmail={email}
       />
       <div className="flex flex-1 flex-col overflow-y-hidden">
         <div className="print:hidden">
