@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { LiquidButton } from '../components/ui/LiquidButton'
 import { CreditCard, Download, Edit3, FileText, Image, MoreVertical, Plus, Printer, Table2, Trash2, Upload, X } from 'lucide-react'
 import { api, useSyncState, fmt } from '../lib/api'
 import { API_BASE } from '../lib/base'
@@ -878,29 +879,32 @@ function ApplicationForm({
 
           {/* ── Save + Print ──────────────────────────── */}
           <div className="flex items-center gap-3 pt-2">
-            <button
+            <LiquidButton
               type="submit"
               disabled={saving}
-              className="inline-flex h-[38px] items-center gap-1.5 rounded bg-crimson-600 px-5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+              variant="accent"
+              size="md"
             >
               {saving ? 'Saving…' : editingMemberId ? 'Update Member' : 'Save Application'}
-            </button>
+            </LiquidButton>
             {editingMemberId && (
-              <button
+              <LiquidButton
                 type="button"
+                variant="outline"
+                size="md"
                 onClick={() => handlePrint('data')}
-                className="inline-flex h-[38px] items-center gap-1.5 rounded border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 <Printer size={14} /> प्रिन्ट
-              </button>
+              </LiquidButton>
             )}
-            <button
+            <LiquidButton
               type="button"
+              variant="outline"
+              size="md"
               onClick={() => handlePrint('blank')}
-              className="inline-flex h-[38px] items-center gap-1.5 rounded border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               <Printer size={14} /> खाली फाराम प्रिन्ट
-            </button>
+            </LiquidButton>
             {editingMemberId && (
               <button
                 type="button"

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { LiquidButton } from '../components/ui/LiquidButton'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -1870,17 +1871,27 @@ export default function VoucherForm({ mode }: Props) {
               </span>
             )}
             <div className="flex gap-2">
-              <button type="button" onClick={() => submit(false)} disabled={saving || (isJournal && !journalBalanced)}
+              <LiquidButton
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={() => submit(false)}
+                disabled={saving || (isJournal && !journalBalanced)}
                 title={isJournal && !journalBalanced ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving') : undefined}
-                className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+              >
                 {saving ? t('common.saving', 'Saving…') : docType === 'sales-quote' ? t('vouchers.saveQuote', 'Save Quote') : t('vouchers.saveDraft', 'Save draft')}
-              </button>
+              </LiquidButton>
               {docType === 'sales-quote' ? (
                 <span className="hidden text-xs text-slate-400 sm:block">
                   {t('vouchers.quotesHint', "Quotes don't post — copy to an invoice when accepted")}
                 </span>
               ) : (
-                <button type="button" onClick={() => submit(true)} disabled={saving || !allRequiredFilled || setupBlocked || (isJournal && !journalBalanced)}
+                <LiquidButton
+                  type="button"
+                  variant="primary"
+                  size="md"
+                  onClick={() => submit(true)}
+                  disabled={saving || !allRequiredFilled || setupBlocked || (isJournal && !journalBalanced)}
                   title={
                     isJournal && !journalBalanced
                       ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
@@ -1890,13 +1901,14 @@ export default function VoucherForm({ mode }: Props) {
                         ? 'Fill all required fields first'
                         : undefined
                   }
-                  className={`rounded px-4 py-2 text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed ${
+                  className={
                     posted
-                      ? 'anim-posted bg-emerald-600 shadow-md'
-                      : 'bg-emerald-600 hover:bg-emerald-700'
-                  }`}>
+                      ? 'anim-posted !bg-emerald-600 !border-emerald-600 shadow-md'
+                      : '!bg-emerald-600 hover:!bg-emerald-700 !border-emerald-600'
+                  }
+                >
                   {posted ? <span className="inline-flex items-center gap-1.5">✓ Posted</span> : saving ? t('vouchers.posting', 'Posting…') : t('vouchers.savePost', 'Save & post')}
-                </button>
+                </LiquidButton>
               )}
             </div>
           </div>

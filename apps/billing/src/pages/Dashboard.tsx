@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { LiquidButton } from '../components/ui/LiquidButton'
+import { LiquidLink } from '../components/ui/LiquidLink'
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -332,53 +334,61 @@ export default function Dashboard() {
       {/* ── Operator Command Ribbon ────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xs">
         <div className="flex flex-wrap items-center gap-2">
-          <Link
+          <LiquidLink
             to="/vouchers/new/receipt"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
+            variant="outline"
+            size="xs"
+            className="font-semibold shadow-xs"
           >
             <Receipt size={14} className="text-slate-500" />
             <span>+ {t('vouchers.receipt', 'रसिद (Receipt)')}</span>
             <span className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-mono text-slate-600">F1</span>
-          </Link>
-          <Link
+          </LiquidLink>
+          <LiquidLink
             to="/vouchers/new/payment"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            variant="outline"
+            size="xs"
+            className="font-semibold"
           >
             <FilePlus size={14} className="text-slate-500" />
             <span>+ {t('vouchers.payment', 'भुक्तानी (Payment)')}</span>
             <span className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-mono text-slate-600">F2</span>
-          </Link>
-          <Link
+          </LiquidLink>
+          <LiquidLink
             to="/vouchers/new/journal"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            variant="outline"
+            size="xs"
+            className="font-semibold"
           >
             <FileText size={14} className="text-slate-500" />
             <span>+ {t('vouchers.journal', 'जर्नल (Journal)')}</span>
             <span className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-mono text-slate-600">F3</span>
-          </Link>
-          <Link
+          </LiquidLink>
+          <LiquidLink
             to="/members"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            variant="outline"
+            size="xs"
           >
             <UserPlus size={14} className="text-slate-500" />
             <span>सदस्य दर्ता (+Member)</span>
-          </Link>
+          </LiquidLink>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Export button */}
-          <button
+          <LiquidButton
             onClick={() => setShowExportModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            variant="outline"
+            size="xs"
           >
             <Download size={14} className="text-slate-500" />
             <span>थोक निर्यात (Export)</span>
-          </button>
+          </LiquidButton>
 
           {/* Import button */}
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-crimson-200 bg-crimson-50 px-3 py-1.5 text-xs font-semibold text-crimson-800 hover:bg-crimson-100">
-            <Upload size={14} className="text-crimson-700" />
-            <span>आयात (Import CSV)</span>
+          <label className="group relative inline-flex cursor-pointer items-center justify-center overflow-hidden h-7 px-2.5 text-xs gap-1 rounded-lg border border-crimson-200 bg-crimson-50 font-semibold text-crimson-800 transition-all duration-200 hover:bg-crimson-100 shadow-xs select-none">
+            <Upload size={14} className="text-crimson-700 relative z-10 transition-transform duration-200 group-hover:scale-105" />
+            <span className="relative z-10 transition-transform duration-200 group-hover:scale-105">आयात (Import CSV)</span>
             <input
               ref={fileInputRef}
               type="file"
