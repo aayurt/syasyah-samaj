@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { AnimatedSidebar } from './components/ui/AnimatedSidebar'
 import {
   ArrowLeftRight,
   BarChart3,
@@ -320,129 +321,15 @@ function Shell({ email }: { email: string }) {
   return (
     <div className="flex h-screen bg-slate-100">
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-      <aside
-        className={`print:hidden flex flex-col bg-slate-900 text-slate-300 transition-[width] duration-200 ${
-          collapsed ? 'w-16' : 'w-56'
-        }`}
-      >
-        <div
-          className={`flex items-center py-4 ${
-            collapsed ? 'justify-center' : 'justify-between px-5'
-          }`}
-        >
-          {!collapsed && (
-            <div className="truncate text-lg font-semibold tracking-tight text-white">
-              स्यस्यः धुकू
-            </div>
-          )}
-          <button
-            onClick={toggleSidebar}
-            title={collapsed ? t('sidebar.expand', 'Expand sidebar') : t('sidebar.collapse', 'Collapse sidebar')}
-            className="rounded p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
-          >
-            {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-          </button>
-        </div>
-        <nav className="flex-1 space-y-4 overflow-y-auto px-2 pb-4">
-          {navGroups.map((group) => {
-            const items = group.items.filter((item) => {
-              if (item.feature && !features[item.feature]) return false
-              return true
-            })
-            if (items.length === 0) return null
-            // Titled groups are accordions; title-less groups (Dashboard,
-            // Settings) are always shown. In icon-only sidebar mode every
-            // section is forced open and headers are hidden.
-            const isGroup = !!group.title
-            const open =
-              collapsed || !isGroup || !closedGroups[group.title as string]
-            return (
-            <div key={group.items[0].to}>
-              {isGroup && !collapsed && (
-                <button
-                  onClick={() => toggleGroup(group.title as string)}
-                  aria-expanded={open}
-                  className="flex w-full items-center justify-between gap-1 rounded px-3 pb-1 pt-1 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300"
-                >
-                  <span className="truncate">{group.titleKey ? t(group.titleKey, group.title) : group.title}</span>
-                  <ChevronDown
-                    size={12}
-                    className={`shrink-0 transition-transform duration-200 ${
-                      open ? '' : '-rotate-90'
-                    }`}
-                  />
-                </button>
-              )}
-              {open && (
-                <div
-                  className={collapsed ? 'flex flex-col items-center gap-1' : 'space-y-1'}
-                >
-                  {items.map(({ to, label, labelKey, icon: Icon, end, disabled }) =>
-                  disabled ? (
-                    <span
-                      key={to}
-                      title={collapsed ? `${label} (coming soon)` : 'Coming soon'}
-                      className={`flex items-center gap-2 rounded px-3 py-2 text-sm text-slate-600 ${
-                        collapsed ? 'justify-center' : ''
-                      } cursor-not-allowed select-none opacity-60`}
-                    >
-                      <Icon size={16} />
-                      {!collapsed && (
-                        <>
-                          <span className="flex-1 truncate">{labelKey ? t(labelKey, label) : label}</span>
-                          <span className="rounded bg-slate-800 px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide text-slate-400">
-                            Soon
-                          </span>
-                        </>
-                      )}
-                    </span>
-                  ) : (
-                    <NavLink
-                      key={to}
-                      to={to}
-                      end={end}
-                      title={collapsed ? (labelKey ? t(labelKey, label) : label) : undefined}
-                      className={({ isActive }) =>
-                        `flex items-center gap-2 rounded px-3 py-2 text-sm transition-colors ${
-                          collapsed ? 'justify-center' : ''
-                        } ${
-                          isActive
-                            ? 'bg-crimson-600 text-white'
-                            : 'hover:bg-crimson-700/70 hover:text-white'
-                        }`
-                      }
-                    >
-                      <Icon size={16} />
-                      {!collapsed && (labelKey ? t(labelKey, label) : label)}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-          )})}
-          <div>
-            {!collapsed && (
-              <div className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                {t('nav.help', 'Help')}
-              </div>
-            )}
-            <div
-              className={collapsed ? 'flex flex-col items-center gap-1' : 'space-y-1'}
-            >
-              <button
-                onClick={() => setTourOpen(true)}
-                title={collapsed ? t('nav.guide', 'Guide') : undefined}
-                className={`flex items-center gap-2 rounded px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-crimson-700/70 hover:text-white ${
-                  collapsed ? 'justify-center' : ''
-                }`}
-              >
-                <HelpCircle size={16} />
-                {!collapsed && t('nav.guide', 'Guide')}
-              </button>
-            </div>
-          </div>
-        </nav>
-      </aside>
+      <AnimatedSidebar
+        collapsed={collapsed}
+        onToggle={toggleSidebar}
+        navGroups={navGroups}
+        features={features}
+        closedGroups={closedGroups}
+        onToggleGroup={toggleGroup}
+        t={t}
+      />
       <div className="flex flex-1 flex-col overflow-y-hidden">
         <div className="print:hidden">
           <ConnectingBanner />
