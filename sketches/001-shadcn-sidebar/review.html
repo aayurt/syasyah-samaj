@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidebar Design Review — shadcn/ui vs Current Billing SPA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Geist', system-ui, -apple-system, sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 p-6 min-h-screen">
+  <div class="max-w-6xl mx-auto space-y-8">
+    
+    <!-- Header / Meta -->
+    <header class="border-b border-slate-800 pb-5">
+      <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-3">
+        Design Pipeline · Tier 2 (Review & Specification)
+      </div>
+      <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-white">
+        Sidebar Design Architecture: shadcn/ui (<code class="text-pink-400 font-mono text-xl">components-radix-sidebar</code>) vs Current Billing SPA
+      </h1>
+      <p class="text-slate-400 text-sm mt-1 max-w-3xl">
+        Systematic gap analysis and migration review based on the reference screenshot and pasted Animate UI Radix Sidebar component.
+      </p>
+    </header>
+
+    <!-- Visual Comparison Grid -->
+    <section class="grid md:grid-cols-2 gap-6">
+      
+      <!-- Current State Card -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Current Implemented State</span>
+          <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300">Dark / Slate-900</span>
+        </div>
+        <div class="border border-slate-800 rounded-xl p-4 bg-slate-950/80 space-y-3">
+          <div class="h-10 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between px-3 text-sm font-semibold text-white">
+            <span>स्यस्यः धुकू</span>
+            <span class="text-slate-500">◫</span>
+          </div>
+          <div class="space-y-1 text-xs">
+            <div class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">कारोबार (Transactions)</div>
+            <div class="h-8 rounded bg-crimson-600/90 text-white flex items-center px-3 font-medium">रसिद (Receipts)</div>
+            <div class="h-8 rounded text-slate-400 flex items-center px-3 hover:bg-slate-900">भुक्तानी (Payments)</div>
+            <div class="h-8 rounded text-slate-400 flex items-center px-3 hover:bg-slate-900">जर्नल (Journal)</div>
+          </div>
+        </div>
+        <ul class="text-xs space-y-2 text-slate-400">
+          <li class="flex items-start gap-2">
+            <span class="text-emerald-400">✓</span>
+            <span>Smooth Framer Motion spring physics on collapse/expand (224px ↔ 64px).</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-amber-400">△</span>
+            <span>Uses high-contrast dark theme (<code class="font-mono text-slate-300">bg-slate-900</code>) rather than shadcn's light neutral token surface.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-amber-400">△</span>
+            <span>No top tenant/organization switcher dropdown pill (like Acme Inc in the reference).</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-amber-400">△</span>
+            <span>Simple flat list per group without tree hierarchy indent lines.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Target Reference Card -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Target: Reference Screenshot</span>
+          <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800/60">shadcn / Animate UI</span>
+        </div>
+        <div class="border border-slate-800 rounded-xl p-4 bg-white text-slate-900 space-y-3 shadow-inner">
+          <div class="h-10 rounded-lg bg-slate-100/90 border border-slate-200/80 flex items-center justify-between px-3 text-xs font-semibold">
+            <div class="flex items-center gap-2">
+              <div class="size-6 rounded bg-slate-900 text-white flex items-center justify-center text-[10px]">🏢</div>
+              <div class="flex flex-col text-left leading-tight">
+                <span>Acme Inc</span>
+                <span class="text-[9px] font-normal text-slate-500">Enterprise</span>
+              </div>
+            </div>
+            <span class="text-slate-400">↕</span>
+          </div>
+          <div class="space-y-1 text-xs">
+            <div class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Platform</div>
+            <div class="rounded border border-slate-200 bg-slate-50 p-2 space-y-1">
+              <div class="flex items-center justify-between font-medium text-slate-800">
+                <span>Playground</span>
+                <span>⌵</span>
+              </div>
+              <div class="border-l border-slate-200 ml-2 pl-2.5 space-y-1 text-[11px] text-slate-500">
+                <div class="text-slate-800 font-medium">History</div>
+                <div>Starred</div>
+                <div>Settings</div>
+              </div>
+            </div>
+          </div>
+          <div class="border-t border-slate-100 pt-2 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <div class="size-7 rounded-full bg-slate-200 flex items-center justify-center font-bold text-[10px] text-slate-600">CN</div>
+              <div class="text-left leading-tight">
+                <div class="font-semibold text-slate-800 text-[11px]">Skyleen</div>
+                <div class="text-[9px] text-slate-400">skyleen@example.com</div>
+              </div>
+            </div>
+            <span class="text-slate-400 text-xs">↕</span>
+          </div>
+        </div>
+        <ul class="text-xs space-y-2 text-slate-400">
+          <li class="flex items-start gap-2">
+            <span class="text-emerald-400">✓</span>
+            <span>Clean light neutral / white surface with subtle 1px border.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-emerald-400">✓</span>
+            <span>Organization / Branch selector dropdown at the top header.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-emerald-400">✓</span>
+            <span>Tree-structured indented sub-menus with left connector border.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-emerald-400">✓</span>
+            <span>User profile & switcher card docked in the footer.</span>
+          </li>
+        </ul>
+      </div>
+
+    </section>
+
+    <!-- Structural Gap Analysis Table -->
+    <section class="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
+      <h2 class="text-lg font-bold text-white">Feature & Token Breakdown</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left">
+          <thead class="border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider">
+            <tr>
+              <th class="py-3 px-4">Dimension</th>
+              <th class="py-3 px-4">Current Billing SPA Sidebar</th>
+              <th class="py-3 px-4 text-emerald-400">Reference (Animate UI / Radix)</th>
+              <th class="py-3 px-4">Recommendation</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 text-slate-300">
+            <tr>
+              <td class="py-3 px-4 font-semibold text-white">Palette / Surface</td>
+              <td class="py-3 px-4">Dark <code class="font-mono text-slate-400">bg-slate-900</code> with Crimson pill</td>
+              <td class="py-3 px-4">Light <code class="font-mono text-slate-400">bg-sidebar (white/gray)</code> with 1px border</td>
+              <td class="py-3 px-4">Adopt the clean light surface for a modern SaaS feel matching shadcn.</td>
+            </tr>
+            <tr>
+              <td class="py-3 px-4 font-semibold text-white">Header</td>
+              <td class="py-3 px-4">Static text ("स्यस्यः धुकू") + toggle button</td>
+              <td class="py-3 px-4">Interactive Workspace Switcher with Logo & Plan</td>
+              <td class="py-3 px-4">Map to Illaka / Branch switcher dropdown in Billing.</td>
+            </tr>
+            <tr>
+              <td class="py-3 px-4 font-semibold text-white">Navigation Tree</td>
+              <td class="py-3 px-4">Accordion headers + flat child list</td>
+              <td class="py-3 px-4">Collapsible parent with indented tree & vertical line</td>
+              <td class="py-3 px-4">Introduce <code class="font-mono text-slate-400">SidebarMenuSub</code> for nested items.</td>
+            </tr>
+            <tr>
+              <td class="py-3 px-4 font-semibold text-white">Footer</td>
+              <td class="py-3 px-4">Help & Guide button only</td>
+              <td class="py-3 px-4">User Avatar + Name + Email + Context Menu</td>
+              <td class="py-3 px-4">Dock user profile with logout & settings menu.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>
