@@ -74,11 +74,13 @@ fi
 if [ "$SKIP_BUILD" -eq 1 ]; then
   warn "Skipping local build (--skip-build)."
 else
-  info "Building Next.js app locally..."
-  run_local pnpm run build
-  info "Building billing SPA locally... (base /app/ for the hosted deploy)"
-  run_local pnpm --dir apps/billing build
-  ok "Local build passed."
+    # Build the Next.js app locally
+    info "Building Next.js app locally..."
+    run_local pnpm run build
+    # Ensure local binary path is included for Vite/tsc
+    info "Building billing SPA locally... (base /app/ for the hosted deploy)"
+    run_local env PATH="$LOCAL_PATH/apps/billing/node_modules/.bin:$PATH" pnpm --dir apps/billing build
+    ok "Local build passed."
 fi
 
 # -- 2. Ship source to the server ---------------------------------------
