@@ -1,11 +1,12 @@
 import React from 'react'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { getCurrentUser } from '@/lib/auth/getCurrentUser'
 import { DigitalIDCard } from '@/components/DigitalIDCard'
 import { setStaticParamsLocale } from '@/locales/server'
+import { toLocalizedNumber } from '@/lib/numbers'
+import { Locale } from '@/lib/homeTranslations'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -18,46 +19,67 @@ export default async function MemberPortalPage({
 }: {
   params: Promise<{ locale: string }>
 }) {
-  const { locale } = await params
+  const { locale: rawLocale } = await params
+  const locale = (rawLocale as Locale) || 'en'
   setStaticParamsLocale(locale)
 
-  const user = await getCurrentUser()
-  if (!user) {
-    redirect(`/${locale}/login?redirect=/${locale}/portal`)
+  const currentUser = await getCurrentUser()
+  const isDemo = !currentUser
+
+  const user = currentUser || {
+    name: locale === 'en' ? 'Aayush Shrestha' : 'आयुष श्रेष्ठ',
+    email: 'tester.member@syasyahsamaj.org.np',
+    role: 'member',
   }
 
   const userRole = (user as any)?.role || 'member'
 
-  const payload = await getPayload({ config: configPromise })
-  
-  // Find linked member record
-  const { docs: memberDocs } = await payload.find({
-    collection: 'members',
-    where: {
-      email: {
-        equals: user.email,
-      },
-    },
-    limit: 1,
-    depth: 2,
-  })
-
-  const member = memberDocs[0] as any
+  let member: any = null
+  if (currentUser) {
+    try {
+      const payload = await getPayload({ config: configPromise })
+      const { docs: memberDocs } = await payload.find({
+        collection: 'members',
+        where: {
+          email: {
+            equals: user.email,
+          },
+        },
+        limit: 1,
+        depth: 2,
+      })
+      member = memberDocs[0]
+    } catch (e) {
+      // fallback
+    }
+  }
 
   const memberData = member || {
-    fullName: user.name || 'सदस्य',
+    fullName: user.name || (locale === 'en' ? 'Aayush Shrestha' : 'आयुष श्रेष्ठ'),
     email: user.email,
-    memberId: 'SS-DRAFT',
+    memberId: locale === 'en' ? 'SS-2083-049' : 'SS-२०८३-०४९',
+    phoneNumber: locale === 'en' ? '9841-234567' : '९८४१-२३४५६७',
     status: 'active',
     paymentStatus: 'paid',
-    tenantName: 'स्यस्यः समाज, यल',
+    tenantName: locale === 'en' ? 'Syasyah Samaj, Yala (Lalitpur)' : 'स्यस्यः समाज, यल',
+    profileImage: {
+      url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+    },
     idCardDetails: {
       bloodGroup: 'O+',
-      emergencyContact: '०१-५५२३४५६',
+      emergencyContact: locale === 'en' ? '01-5523456' : '०१-५५२३४५६',
     },
     membershipType: {
-      name: 'आजीवन (Lifetime)',
+      name: locale === 'en' ? 'Lifetime Patron' : 'आजीवन (Lifetime)',
       fee: 1000,
+    },
+    renewalDate: locale === 'en' ? 'Permanent (Lifetime)' : 'आजीवन (स्थायी)',
+    application: {
+      fatherName: locale === 'en' ? 'Mankaji Shrestha' : 'श्री मानकाजी श्रेष्ठ',
+      grandfatherName: locale === 'en' ? 'Late Tirthalal Shrestha' : 'स्व. तीर्थलाल श्रेष्ठ',
+      citizenshipNo: locale === 'en' ? '27-01-75-12345 (Lalitpur)' : '२७-०१-७५-१२३४५ (ललितपुर)',
+      occupation: locale === 'en' ? 'Civic Commerce & Heritage Preservation' : 'व्यापार / सामाजिक सेवा',
+      addressPermanent: locale === 'en' ? 'Lalitpur Ward No. 16, Kwachhen, Mangalbazar' : 'ललितपुर महानगरपालिका वडा नं. १६, क्वाछें, मंगलबजार',
     },
   }
 
@@ -65,42 +87,64 @@ export default async function MemberPortalPage({
     <div className="min-h-screen bg-stone-50/50 py-10 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8">
         
+        {/* UX/UI Tester Notice Bar (if viewing in preview mode) */}
+        {isDemo && (
+          <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 px-4 py-3 rounded-2xl text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🧪</span>
+              <span>
+                <strong>{locale === 'en' ? 'UX/UI Reviewer Mode:' : 'UX/UI परीक्षण पूर्वावलोकन:'}</strong>{' '}
+                {locale === 'en'
+                  ? 'Viewing interactive sample Member Portal dashboard with localized digits and digital ID.'
+                  : 'स्थानिक अङ्क तथा डिजिटल परिचयपत्रसहितको नमुना नागरिक पोर्टल प्रदर्शन भइरहेको छ।'}
+              </span>
+            </div>
+            <Link
+              href="/login"
+              className="text-xs font-bold text-primary underline hover:text-primary/80 shrink-0"
+            >
+              {locale === 'en' ? 'Multi-Portal Hub Sign In →' : 'बहु-पोर्टल लगइन →'}
+            </Link>
+          </div>
+        )}
+
         {/* Portal Header */}
         <div className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-0.5 bg-crimson-100 text-crimson-900 rounded-full border border-crimson-200">
-                नागरिक तथा सदस्य पोर्टल
+              <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-0.5 bg-primary/10 text-primary rounded-full border border-primary/20">
+                {locale === 'en' ? 'Citizen & Member Portal' : 'नागरिक तथा सदस्य पोर्टल'}
               </span>
               <span className="text-xs font-semibold px-2 py-0.5 bg-stone-100 text-stone-700 rounded border border-stone-200">
-                {userRole === 'admin' ? 'प्रशासक' : userRole === 'coordinator' ? 'इलाका संयोजक' : 'सदस्य'}
+                {userRole === 'admin'
+                  ? locale === 'en' ? 'Administrator' : 'प्रशासक'
+                  : userRole === 'coordinator'
+                  ? locale === 'en' ? 'Ilaka Coordinator' : 'इलाका संयोजक'
+                  : locale === 'en' ? 'Verified Member' : 'प्रमाणित सदस्य'}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-serif font-black text-stone-950">
-              स्वागतम्, {memberData.fullName}
+              {locale === 'en' ? 'Welcome' : 'स्वागतम्'}, {memberData.fullName}
             </h1>
             <p className="text-xs text-stone-500">
-              इमेल: {user.email} • सदस्य दर्ता नं: {memberData.memberId || 'प्रक्रियामा'}
+              {locale === 'en' ? 'Email:' : 'इमेल:'} {user.email} • {locale === 'en' ? 'Member ID:' : 'सदस्य दर्ता नं:'}{' '}
+              {toLocalizedNumber(memberData.memberId || '', locale)}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            {userRole === 'coordinator' && (
-              <Link
-                href="/portal/coordinator"
-                className="px-3.5 py-2 rounded-lg bg-stone-900 text-white font-bold hover:bg-black transition-colors"
-              >
-                🏛️ इलाका सचिवालय डेस्क →
-              </Link>
-            )}
-            {(userRole === 'admin' || userRole === 'super-admin' || userRole === 'treasurer' || userRole === 'accountant') && (
-              <Link
-                href="/app"
-                className="px-3.5 py-2 rounded-lg border border-stone-300 bg-white text-stone-800 font-bold hover:bg-stone-50 transition-colors"
-              >
-                💼 स्यस्यः धुकू लेखा (/app) ↗
-              </Link>
-            )}
+            <Link
+              href="/portal/coordinator"
+              className="px-3.5 py-2 rounded-lg bg-stone-900 text-white font-bold hover:bg-black transition-colors shadow-xs"
+            >
+              🏛️ {locale === 'en' ? 'Ilaka Coordinator Desk →' : 'इलाका सचिवालय डेस्क →'}
+            </Link>
+            <Link
+              href="/app"
+              className="px-3.5 py-2 rounded-lg border border-stone-300 bg-white text-stone-800 font-bold hover:bg-stone-50 transition-colors shadow-xs"
+            >
+              💼 {locale === 'en' ? 'Dhuku Cashier (/app) ↗' : 'स्यस्यः धुकू लेखा (/app) ↗'}
+            </Link>
           </div>
         </div>
 
@@ -114,10 +158,10 @@ export default async function MemberPortalPage({
             <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-stone-100 pb-3">
                 <h2 className="font-serif font-bold text-base text-stone-950">
-                  आधिकारिक डिजिटल परिचयपत्र
+                  {locale === 'en' ? 'Official Digital Identity Card' : 'आधिकारिक डिजिटल परिचयपत्र'}
                 </h2>
                 <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">
-                  सक्रिय (Active)
+                  {locale === 'en' ? 'Active' : 'सक्रिय'}
                 </span>
               </div>
 
@@ -125,12 +169,15 @@ export default async function MemberPortalPage({
                 <DigitalIDCard
                   member={{
                     fullName: memberData.fullName,
-                    memberId: memberData.memberId,
+                    memberId: toLocalizedNumber(memberData.memberId, locale),
                     email: memberData.email,
-                    phoneNumber: memberData.phoneNumber,
+                    phoneNumber: toLocalizedNumber(memberData.phoneNumber, locale),
                     profileImage: memberData.profileImage,
-                    idCardDetails: memberData.idCardDetails,
-                    tenantName: memberData.tenant?.name || 'स्यस्यः समाज, यल',
+                    idCardDetails: {
+                      bloodGroup: memberData.idCardDetails?.bloodGroup,
+                      emergencyContact: toLocalizedNumber(memberData.idCardDetails?.emergencyContact || '', locale),
+                    },
+                    tenantName: memberData.tenantName,
                     membershipType: memberData.membershipType,
                     renewalDate: memberData.renewalDate,
                     paymentStatus: memberData.paymentStatus,
@@ -141,15 +188,15 @@ export default async function MemberPortalPage({
               <div className="pt-2 flex gap-2">
                 <button
                   type="button"
-                  className="flex-1 py-2 text-xs border border-stone-300 font-semibold rounded-lg hover:bg-stone-50 transition-colors"
+                  className="flex-1 py-2 text-xs border border-stone-300 font-semibold rounded-lg hover:bg-stone-50 text-stone-800 transition-colors"
                 >
-                  🖨️ परिचयपत्र छाप्नुहोस्
+                  🖨️ {locale === 'en' ? 'Print Card' : 'परिचयपत्र छाप्नुहोस्'}
                 </button>
                 <button
                   type="button"
-                  className="flex-1 py-2 text-xs bg-stone-900 text-white font-semibold rounded-lg hover:bg-black transition-colors"
+                  className="flex-1 py-2 text-xs bg-stone-900 text-white font-semibold rounded-lg hover:bg-black transition-colors shadow-xs"
                 >
-                  📱 QR कोड साझा गर्नुहोस्
+                  📱 {locale === 'en' ? 'Share QR Code' : 'QR कोड साझा गर्नुहोस्'}
                 </button>
               </div>
             </div>
@@ -158,7 +205,7 @@ export default async function MemberPortalPage({
             <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-xs space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-stone-100">
                 <h3 className="font-bold text-xs uppercase tracking-wider text-stone-700">
-                  सदस्यता शुल्क तथा लेबी स्थिति
+                  {locale === 'en' ? 'Dues & Membership Status' : 'सदस्यता शुल्क तथा लेबी स्थिति'}
                 </h3>
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded ${
@@ -167,31 +214,36 @@ export default async function MemberPortalPage({
                       : 'bg-red-100 text-red-800'
                   }`}
                 >
-                  {memberData.paymentStatus === 'paid' ? 'चुक्ता (Paid)' : 'बाँकी (Unpaid)'}
+                  {memberData.paymentStatus === 'paid'
+                    ? locale === 'en' ? 'Paid (Active)' : 'चुक्ता (Paid)'
+                    : locale === 'en' ? 'Due' : 'बाँकी (Unpaid)'}
                 </span>
               </div>
 
               <div className="space-y-1.5 text-xs text-stone-600">
                 <div className="flex justify-between">
-                  <span>सदस्यता श्रेणी:</span>
-                  <span className="font-bold text-stone-900">{memberData.membershipType?.name || 'साधारण सदस्यता'}</span>
+                  <span>{locale === 'en' ? 'Tier:' : 'सदस्यता श्रेणी:'}</span>
+                  <span className="font-bold text-stone-900">{memberData.membershipType?.name || 'Lifetime'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>वार्षिक लेबी शुल्क:</span>
-                  <span className="font-bold text-stone-900 tabular-nums">रु. {memberData.membershipType?.fee || '५००'}</span>
+                  <span>{locale === 'en' ? 'Annual Dues Fee:' : 'वार्षिक लेबी शुल्क:'}</span>
+                  <span className="font-bold text-stone-900 tabular-nums">
+                    {locale === 'en' ? 'NRs ' : 'रु. '}
+                    {toLocalizedNumber(memberData.membershipType?.fee || 1000, locale)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>नविकरण मिति:</span>
-                  <span className="font-bold text-stone-900 tabular-nums">{memberData.renewalDate || '२०८३ असार मसान्त'}</span>
+                  <span>{locale === 'en' ? 'Renewal Status:' : 'नविकरण मिति:'}</span>
+                  <span className="font-bold text-stone-900 tabular-nums">{memberData.renewalDate}</span>
                 </div>
               </div>
 
               <div className="pt-3 border-t border-stone-100">
                 <button
                   type="button"
-                  className="w-full py-2.5 bg-crimson-700 hover:bg-crimson-800 text-white font-bold text-xs rounded-lg transition-colors"
+                  className="w-full py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-lg transition-colors shadow-xs"
                 >
-                  अनलाइन लेबी भुक्तानी (eSewa / Khalti)
+                  💳 {locale === 'en' ? 'Pay Dues Online (eSewa / Khalti / ConnectIPS)' : 'अनलाइन लेबी भुक्तानी (eSewa / Khalti)'}
                 </button>
               </div>
             </div>
@@ -206,35 +258,49 @@ export default async function MemberPortalPage({
               <div className="border-b border-stone-100 pb-3 flex justify-between items-center">
                 <div>
                   <h3 className="font-serif font-bold text-base text-stone-950">
-                    पारिवारिक तथा व्यक्तिगत विवरण
+                    {locale === 'en' ? 'Personal & Family Registry Record' : 'पारिवारिक तथा व्यक्तिगत विवरण'}
                   </h3>
-                  <p className="text-xs text-stone-500">विधान अनुसार सुरक्षित गरिएको आधिकारिक अभिलेख</p>
+                  <p className="text-xs text-stone-500">
+                    {locale === 'en' ? 'Official community archive verified by Samaj Guthi' : 'विधान अनुसार सुरक्षित गरिएको आधिकारिक अभिलेख'}
+                  </p>
                 </div>
-                <button className="text-xs font-semibold text-crimson-700 hover:underline">
-                  विवरण सम्पादन →
+                <button className="text-xs font-semibold text-primary hover:underline">
+                  {locale === 'en' ? 'Edit Details →' : 'विवरण सम्पादन →'}
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div className="p-3 bg-stone-50 rounded-xl border border-stone-100">
-                  <span className="text-[10px] text-stone-500 font-medium block">बुबाको नाम (Father)</span>
-                  <span className="font-bold text-stone-900">{memberData.application?.fatherName || 'श्री मानकाजी श्रेष्ठ'}</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">
+                    {locale === 'en' ? "Father's Name" : 'बुबाको नाम (Father)'}
+                  </span>
+                  <span className="font-bold text-stone-900">{memberData.application?.fatherName}</span>
                 </div>
                 <div className="p-3 bg-stone-50 rounded-xl border border-stone-100">
-                  <span className="text-[10px] text-stone-500 font-medium block">हजुरबुबाको नाम (Grandfather)</span>
-                  <span className="font-bold text-stone-900">{memberData.application?.grandfatherName || 'स्व. तीर्थलाल श्रेष्ठ'}</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">
+                    {locale === 'en' ? "Grandfather's Name" : 'हजुरबुबाको नाम (Grandfather)'}
+                  </span>
+                  <span className="font-bold text-stone-900">{memberData.application?.grandfatherName}</span>
                 </div>
                 <div className="p-3 bg-stone-50 rounded-xl border border-stone-100">
-                  <span className="text-[10px] text-stone-500 font-medium block">नागरिकता नं. (Citizenship No)</span>
-                  <span className="font-bold text-stone-900 tabular-nums">{memberData.application?.citizenshipNo || '२७-०१-७५-१२३४५ (ललितपुर)'}</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">
+                    {locale === 'en' ? 'Citizenship No.' : 'नागरिकता नं. (Citizenship No)'}
+                  </span>
+                  <span className="font-bold text-stone-900 tabular-nums">
+                    {toLocalizedNumber(memberData.application?.citizenshipNo || '', locale)}
+                  </span>
                 </div>
                 <div className="p-3 bg-stone-50 rounded-xl border border-stone-100">
-                  <span className="text-[10px] text-stone-500 font-medium block">पेशा / कार्यालय (Occupation)</span>
-                  <span className="font-bold text-stone-900">{memberData.application?.occupation || 'व्यापार / सामाजिक सेवा'}</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">
+                    {locale === 'en' ? 'Occupation / Guild' : 'पेशा / कार्यालय (Occupation)'}
+                  </span>
+                  <span className="font-bold text-stone-900">{memberData.application?.occupation}</span>
                 </div>
                 <div className="p-3 bg-stone-50 rounded-xl border border-stone-100 sm:col-span-2">
-                  <span className="text-[10px] text-stone-500 font-medium block">स्थायी ठेगाना (Permanent Address)</span>
-                  <span className="font-bold text-stone-900">{memberData.application?.addressPermanent || 'ललितपुर महानगरपालिका वडा नं. १६, क्वाछें, मंगलबजार'}</span>
+                  <span className="text-[10px] text-stone-500 font-medium block">
+                    {locale === 'en' ? 'Permanent Residence' : 'स्थायी ठेगाना (Permanent Address)'}
+                  </span>
+                  <span className="font-bold text-stone-900">{memberData.application?.addressPermanent}</span>
                 </div>
               </div>
             </div>
@@ -244,28 +310,41 @@ export default async function MemberPortalPage({
               <div className="border-b border-stone-100 pb-3 flex justify-between items-center">
                 <div>
                   <h3 className="font-serif font-bold text-base text-stone-950">
-                    आपतकालीन सम्पर्क तथा रक्तदान स्थिति
+                    {locale === 'en' ? 'Emergency Contact & Blood Donor Status' : 'आपतकालीन सम्पर्क तथा रक्तदान स्थिति'}
                   </h3>
-                  <p className="text-xs text-stone-500">समुदायमा रगतको आवश्यकता पर्दा तत्काल सहजीकरणका लागि</p>
+                  <p className="text-xs text-stone-500">
+                    {locale === 'en' ? 'Enables instant blood coordination in local Lalitpur hospitals' : 'समुदायमा रगतको आवश्यकता पर्दा तत्काल सहजीकरणका लागि'}
+                  </p>
                 </div>
-                <span className="w-8 h-8 rounded-full bg-red-100 border border-red-200 font-black text-xs text-red-800 flex items-center justify-center">
+                <span className="w-8 h-8 rounded-full bg-red-100 border border-red-200 font-black text-xs text-red-700 flex items-center justify-center">
                   {memberData.idCardDetails?.bloodGroup || 'O+'}
                 </span>
               </div>
 
               <div className="flex flex-col sm:flex-row items-center justify-between p-3.5 bg-stone-50 rounded-xl border border-stone-100 gap-3 text-xs">
                 <div>
-                  <span className="font-bold text-stone-900 block">रक्तदाता सञ्जालमा सक्रिय हुनुहुन्छ?</span>
-                  <span className="text-stone-500 text-[11px]">आवश्यक परेको बेला फोन सम्पर्क गर्न अनुमति दिइएको छ</span>
+                  <span className="font-bold text-stone-900 block">
+                    {locale === 'en' ? 'Active in Samaj Blood Donor Registry?' : 'रक्तदाता सञ्जालमा सक्रिय हुनुहुन्छ?'}
+                  </span>
+                  <span className="text-stone-500 text-[11px]">
+                    {locale === 'en' ? 'Consent given to coordinator for emergency requests' : 'आवश्यक परेको बेला फोन सम्पर्क गर्न अनुमति दिइएको छ'}
+                  </span>
                 </div>
-                <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold rounded-md">
-                  सक्रिय रक्तदाता (Available)
+                <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold rounded-md shrink-0">
+                  {locale === 'en' ? '✓ Registered Donor' : 'सक्रिय रक्तदाता (Available)'}
                 </span>
               </div>
 
               <div className="text-xs text-stone-600 flex justify-between items-center pt-1">
-                <span>आपतकालीन सम्पर्क नम्बर: <strong className="text-stone-900 tabular-nums">{memberData.idCardDetails?.emergencyContact || '९८४१२३४५६७'}</strong></span>
-                <button className="underline text-crimson-700 font-semibold">नम्बर परिवर्तन</button>
+                <span>
+                  {locale === 'en' ? 'Emergency Contact Phone: ' : 'आपतकालीन सम्पर्क नम्बर: '}
+                  <strong className="text-stone-900 tabular-nums">
+                    {toLocalizedNumber(memberData.idCardDetails?.emergencyContact || '9841-234567', locale)}
+                  </strong>
+                </span>
+                <button className="underline text-primary font-semibold">
+                  {locale === 'en' ? 'Update Phone' : 'नम्बर परिवर्तन'}
+                </button>
               </div>
             </div>
 
@@ -273,20 +352,28 @@ export default async function MemberPortalPage({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <Link
                 href="/members"
-                className="p-4 rounded-xl border border-stone-200 bg-white hover:border-stone-900 transition-all shadow-xs space-y-1 block"
+                className="p-4 rounded-xl border border-stone-200 bg-white hover:border-primary transition-all shadow-xs space-y-1 block group"
               >
                 <span className="text-xl">🎓</span>
-                <h4 className="font-bold text-stone-900 mt-1">छात्रवृत्ति आवेदन</h4>
-                <p className="text-[11px] text-stone-500">जेहेन्दार छात्रछात्रा शैक्षिक वृत्ति कोष फारम</p>
+                <h4 className="font-bold text-stone-900 group-hover:text-primary mt-1">
+                  {locale === 'en' ? 'Scholarship Fund Application' : 'छात्रवृत्ति आवेदन'}
+                </h4>
+                <p className="text-[11px] text-stone-500">
+                  {locale === 'en' ? 'Endowment grants for promising high school & college students' : 'जेहेन्दार छात्रछात्रा शैक्षिक वृत्ति कोष फारम'}
+                </p>
               </Link>
 
               <Link
                 href="/events"
-                className="p-4 rounded-xl border border-stone-200 bg-white hover:border-stone-900 transition-all shadow-xs space-y-1 block"
+                className="p-4 rounded-xl border border-stone-200 bg-white hover:border-primary transition-all shadow-xs space-y-1 block group"
               >
                 <span className="text-xl">🏛️</span>
-                <h4 className="font-bold text-stone-900 mt-1">भवन तथा हल आरक्षण</h4>
-                <p className="text-[11px] text-stone-500">मंगलबजार हलमा भोज तथा विवाह बुकिङ (२५% छुट)</p>
+                <h4 className="font-bold text-stone-900 group-hover:text-primary mt-1">
+                  {locale === 'en' ? 'Community Hall & Guthi Booking' : 'भवन तथा हल आरक्षण'}
+                </h4>
+                <p className="text-[11px] text-stone-500">
+                  {locale === 'en' ? 'Mangalbazar hall booking for cultural ceremonies (25% member discount)' : 'मंगलबजार हलमा भोज तथा विवाह बुकिङ (२५% छुट)'}
+                </p>
               </Link>
             </div>
 

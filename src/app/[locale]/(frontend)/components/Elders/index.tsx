@@ -5,9 +5,14 @@ import { getHomeContent, Locale } from '@/lib/homeTranslations'
 
 export default async function EldersSection({ locale = 'en' }: { locale?: Locale }) {
   const content = getHomeContent(locale)
-  let elders: Array<{ name: string; honorificTitle: string; field: string; bio: string; initial: string }> = [
-    ...content.elders.elders,
-  ]
+  let elders: Array<{
+    name: string
+    honorificTitle: string
+    field: string
+    bio: string
+    initial: string
+    image?: string
+  }> = [...content.elders.elders]
 
   try {
     const payload = await getPayload({ config: configPromise })
@@ -19,12 +24,13 @@ export default async function EldersSection({ locale = 'en' }: { locale?: Locale
     })
 
     if (docs && docs.length > 0) {
-      elders = docs.map((d: any) => ({
+      elders = docs.map((d: any, idx: number) => ({
         name: d.name,
         honorificTitle: d.honorificTitle || (locale === 'en' ? 'Distinguished Elder' : 'सम्मानित व्यक्तित्व'),
         field: d.field || (locale === 'en' ? 'Community Service' : 'सामुदायिक सेवा'),
         bio: d.bio || '',
         initial: (d.name || 'A')[0],
+        image: d.photo?.url || content.elders.elders[idx % content.elders.elders.length]?.image,
       }))
     }
   } catch (err) {
@@ -55,10 +61,21 @@ export default async function EldersSection({ locale = 'en' }: { locale?: Locale
               key={idx}
               className="group border border-border rounded-2xl p-6 bg-card text-center hover:border-primary/50 hover:shadow-md transition-all flex flex-col items-center justify-between space-y-4"
             >
-              <div className="space-y-3 flex flex-col items-center w-full">
-                {/* Monogram Portrait */}
-                <div className="w-20 h-20 rounded-full border-2 border-primary flex items-center justify-center bg-muted text-primary text-2xl font-serif font-black shadow-xs group-hover:scale-105 transition-transform">
-                  {elder.initial}
+              <div className="space-y-4 flex flex-col items-center w-full">
+                {/* Person Portrait Image */}
+                <div className="w-24 h-24 rounded-full border-2 border-primary overflow-hidden shadow-md group-hover:scale-105 transition-transform bg-muted">
+                  {elder.image ? (
+                    <img
+                      src={elder.image}
+                      alt={elder.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center font-serif text-2xl font-black text-primary">
+                      {elder.initial}
+                    </div>
+                  )}
                 </div>
 
                 <span className="inline-block text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 bg-muted text-muted-foreground rounded-full border border-border">

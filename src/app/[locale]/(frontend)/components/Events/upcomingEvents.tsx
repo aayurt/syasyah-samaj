@@ -1,125 +1,139 @@
+import React from 'react'
 import configPromise from '@payload-config'
 import { getCurrentLocale, getI18n } from '@/locales/server'
 import { getPayload } from 'payload'
-import EventCard from './EventCard'
+import Link from 'next/link'
+import { MapPin, Calendar, Clock, ArrowRight } from 'lucide-react'
+import { getHomeContent, Locale } from '@/lib/homeTranslations'
 
 export default async function UpcomingEvents({
-    title,
-    description,
-    showPadding = true,
-    limit
+  title,
+  description,
+  showPadding = true,
+  limit,
 }: {
-    title?: string,
-    description?: string,
-    showPadding?: boolean,
-    limit?: number
+  title?: string
+  description?: string
+  showPadding?: boolean
+  limit?: number
 }) {
-    const payload = await getPayload({ config: configPromise })
-    const locale = await getCurrentLocale()
-    const t = await getI18n()
+  const payload = await getPayload({ config: configPromise })
+  const locale = (await getCurrentLocale()) as Locale
+  const t = await getI18n()
+  const content = getHomeContent(locale)
 
-    const { docs: events } = await payload.find({
-        collection: 'events',
-        locale: locale as 'en' | 'ne' | 'new',
-        limit: limit || 100
-    })
-    const upcomingEvents = events.filter((event) => event.enabled && event.startDatetime && new Date(event.startDatetime) > new Date())
+  const { docs: events } = await payload.find({
+    collection: 'events',
+    locale,
+    limit: limit || 10,
+  })
 
-    return (
-        <section id="upcoming-events" className={`${showPadding ? 'py-24' : ''} bg-white dark:bg-card`}>
-            <div className="container mx-auto px-4">
-                {(title || description) && (
-                    <div className="text-center mb-16">
-                        {title && <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">{title}</h2>}
-                        {description && <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{description}</p>}
-                    </div>
-                )}
-                {!title && !description && (
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">{t('home.UpcomingEvents')}</h2>
-                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t('home.UpcomingEventsDescription')}</p>
-                    </div>
-                )}
+  const upcomingEvents = events.filter(
+    (event) => event.enabled && event.startDatetime && new Date(event.startDatetime) > new Date(),
+  )
 
-                {upcomingEvents.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                        {upcomingEvents.map((event) => (
-                            <EventCard key={event.id} event={event as any} badgeLabel={t('home.UpcomingEvents')} />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
-                        <div className="bg-card rounded-2xl p-6 border border-border hover:border-primary/50 transition-all shadow-xs flex flex-col justify-between">
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold px-2.5 py-0.5 bg-primary/10 text-primary rounded-full border border-primary/20">
-                                        {locale === 'en' ? 'Central Assembly' : 'केन्द्रीय सभा'}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground font-mono">
-                                        {locale === 'en' ? 'Oct 10, 2026' : '२०८३ असोज १०'}
-                                    </span>
-                                </div>
-                                <h3 className="font-serif font-bold text-lg text-card-foreground">
-                                    {locale === 'en' ? '24th Annual General Assembly & Scholarship Awards' : '२४ औं वार्षिक साधारण सभा तथा छात्रवृत्ति वितरण'}
-                                </h3>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                    {locale === 'en' ? 'Annual financial report review, honor roll for outstanding students, and Ilaka council reports.' : 'वार्षिक आयव्यय समीक्षा, जेहेन्दार विद्यार्थी सम्मान तथा इलाका परिषद् प्रतिवेदन।'}
-                                </p>
-                            </div>
-                            <div className="pt-4 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-                                <span>{locale === 'en' ? 'Mangal Bazaar Hall' : 'मंगलबजार हल'}</span>
-                                <span className="font-bold text-primary">{t('home.learnMore')} →</span>
-                            </div>
-                        </div>
+  const eventItems = content.events.items
 
-                        <div className="bg-card rounded-2xl p-6 border border-border hover:border-primary/50 transition-all shadow-xs flex flex-col justify-between">
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold px-2.5 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full border border-amber-500/20">
-                                        {locale === 'en' ? 'Cultural Festival' : 'सांस्कृतिक पर्व'}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground font-mono">
-                                        {locale === 'en' ? 'Oct 15, 2026' : '२०८३ असोज १५'}
-                                    </span>
-                                </div>
-                                <h3 className="font-serif font-bold text-lg text-card-foreground">
-                                    {locale === 'en' ? 'Yenya (Indra Jatra) Samay Baji & Musical Procession' : 'यँयाः समय् बजि वितरण तथा सांस्कृतिक परिक्रमा'}
-                                </h3>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                    {locale === 'en' ? 'Traditional Gunla baja musical circumambulation around Patan Durbar with prasad distribution.' : 'पाटन दरवार स्क्वायरमा परम्परागत गुँला बाजा सहित प्रसाद तथा समय् बजि वितरण।'}
-                                </p>
-                            </div>
-                            <div className="pt-4 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-                                <span>{locale === 'en' ? 'Patan Durbar' : 'पाटन दरवार क्षेत्र'}</span>
-                                <span className="font-bold text-primary">{t('home.learnMore')} →</span>
-                            </div>
-                        </div>
+  return (
+    <section id="upcoming-events" className={`${showPadding ? 'py-16' : ''} bg-transparent`}>
+      <div className="w-full space-y-8">
+        
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-border">
+          <div className="space-y-1">
+            <span className="text-xs uppercase tracking-widest text-primary font-bold bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+              {locale === 'en' ? 'Community Calendar' : 'सामुदायिक पात्रो'}
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-serif font-black text-foreground tracking-tight mt-2">
+              {title || content.events.title}
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              {description || content.events.subtitle}
+            </p>
+          </div>
 
-                        <div className="bg-card rounded-2xl p-6 border border-border hover:border-primary/50 transition-all shadow-xs flex flex-col justify-between">
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold px-2.5 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-full border border-emerald-500/20">
-                                        {locale === 'en' ? 'Community Health' : 'स्वास्थ्य सेवा'}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground font-mono">
-                                        {locale === 'en' ? 'Nov 02, 2026' : '२०८३ कात्तिक ०२'}
-                                    </span>
-                                </div>
-                                <h3 className="font-serif font-bold text-lg text-card-foreground">
-                                    {locale === 'en' ? 'Open Blood Donation & Senior Health Camp' : 'खुला रक्तदान तथा ज्येष्ठ नागरिक स्वास्थ्य परीक्षण'}
-                                </h3>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                    {locale === 'en' ? 'Free health checkups and blood drive in coordination with Red Cross Lalitpur chapter.' : 'रेडक्रस ललितपुर शाखासँगको समन्वयमा निःशुल्क स्वास्थ्य परीक्षण र रक्तदान कार्यक्रम।'}
-                                </p>
-                            </div>
-                            <div className="pt-4 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-                                <span>{locale === 'en' ? 'Pulchowk Center' : 'पुल्चोक केन्द्र'}</span>
-                                <span className="font-bold text-primary">{t('home.learnMore')} →</span>
-                            </div>
-                        </div>
-                    </div>
-                )}
+          <Link
+            href="/events"
+            className="text-xs font-bold text-primary hover:underline shrink-0 flex items-center gap-1"
+          >
+            <span>{locale === 'en' ? 'View All Events' : 'सबै कार्यक्रमहरू'}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* Restructured Event Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {eventItems.map((item, idx) => (
+            <div
+              key={idx}
+              className="group bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+            >
+              <div>
+                {/* Event Photo with Floating Date Badge */}
+                <div className="relative h-48 w-full overflow-hidden bg-muted">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                  {/* Calendar Date Badge */}
+                  <div className="absolute top-3 left-3 bg-card/95 backdrop-blur-md border border-border text-card-foreground rounded-xl p-2 text-center min-w-[56px] shadow-md">
+                    <span className="text-[10px] font-bold text-primary uppercase block leading-none">
+                      {item.month}
+                    </span>
+                    <span className="text-xl font-serif font-black text-foreground leading-tight tabular-nums block mt-0.5">
+                      {item.day}
+                    </span>
+                  </div>
+
+                  {/* Event Category Badge */}
+                  <div className="absolute top-3 right-3 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-1 rounded-full shadow-xs">
+                    {item.type}
+                  </div>
+
+                  {/* Venue location pill */}
+                  <div className="absolute bottom-3 left-3 text-white text-xs font-medium flex items-center gap-1.5 drop-shadow-sm line-clamp-1 pr-3">
+                    <MapPin className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                    <span className="truncate">{item.location}</span>
+                  </div>
+                </div>
+
+                {/* Event Details */}
+                <div className="p-6 space-y-3">
+                  <h3 className="text-lg font-serif font-bold text-card-foreground group-hover:text-primary transition-colors leading-snug">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                    {locale === 'en'
+                      ? 'Annual formal gathering, community prasad distribution, and local service coordination in Lalitpur.'
+                      : 'वार्षिक औपचारिक भेला, समय् बजि प्रसाद वितरण तथा ललितपुरका २४ इलाका स्तरीय समन्वय।'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="p-6 pt-0 border-t border-border mt-2 flex items-center justify-between gap-2 text-xs">
+                <button
+                  type="button"
+                  className="px-3.5 py-2 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted font-medium transition-colors"
+                >
+                  {content.events.agendaBtn}
+                </button>
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg shadow-xs transition-colors"
+                >
+                  {content.events.rsvpBtn} →
+                </button>
+              </div>
             </div>
-        </section>
-    )
+          ))}
+        </div>
+
+      </div>
+    </section>
+  )
 }

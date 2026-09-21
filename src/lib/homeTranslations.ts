@@ -1,5 +1,42 @@
 export type Locale = 'en' | 'ne' | 'new'
 
+export interface EventItem {
+  month: string
+  day: string
+  title: string
+  type: string
+  location: string
+  image: string
+}
+
+export interface ArchiveItem {
+  id: string
+  category: 'manuscript' | 'photo' | 'guthi' | 'general'
+  tag: string
+  title: string
+  era: string
+  source: string
+  description: string
+  image: string
+}
+
+export interface ElderItem {
+  name: string
+  honorificTitle: string
+  field: string
+  bio: string
+  initial: string
+  image: string
+}
+
+export interface DonorItem {
+  id: string
+  name: string
+  group: string
+  ilaka: string
+  phone: string
+}
+
 export const homeContent = {
   en: {
     hero: {
@@ -12,13 +49,17 @@ export const homeContent = {
       actionBilling: 'Accounting Dhuku (/app)',
     },
     metrics: {
+      ilakasNum: '24',
       ilakasLabel: 'Active Ilakas',
       ilakasSub: 'Yala municipal sectors',
+      familiesNum: '1,842',
       familiesLabel: 'Registered Families',
       familiesSub: '98% digitally verified',
+      archivesNum: '120+',
       archivesLabel: 'Preserved Archives',
       archivesSub: 'Deeds & Guthi by-laws',
-      donorsLabel: 'Emergency Blood Donors',
+      donorsNum: '210+',
+      donorsLabel: 'Emergency Donors',
       donorsSub: '24/7 on-call registry',
     },
     events: {
@@ -35,22 +76,25 @@ export const homeContent = {
           month: 'OCT',
           day: '10',
           title: '24th Annual General Assembly & Scholarship Awards',
-          type: 'Central',
-          location: 'Syasyah Samaj Bhavan, Mangal Bazaar • Time: 11:00 AM',
+          type: 'Central Assembly',
+          location: 'Syasyah Samaj Bhavan, Mangal Bazaar • 11:00 AM',
+          image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80',
         },
         {
           month: 'OCT',
           day: '15',
-          title: 'Yenya (Indra Jatra) Samay Baji Distribution & Cultural Pageant',
-          type: 'Cultural',
-          location: 'Patan Durbar Square • Time: 2:00 PM',
+          title: 'Yenya (Indra Jatra) Samay Baji & Musical Procession',
+          type: 'Cultural Festival',
+          location: 'Patan Durbar Square • 2:00 PM',
+          image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&auto=format&fit=crop&q=80',
         },
         {
           month: 'NOV',
           day: '02',
-          title: 'Community Open Blood Donation & Health Screening Camp',
+          title: 'Community Open Blood Donation & Senior Health Camp',
           type: 'Health Camp',
-          location: 'Pulchowk Coordination Center • Time: 8:00 AM - 2:00 PM',
+          location: 'Pulchowk Coordination Center • 8:00 AM - 2:00 PM',
+          image: 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?w=800&auto=format&fit=crop&q=80',
         },
       ],
     },
@@ -128,30 +172,33 @@ export const homeContent = {
       items: [
         {
           id: '1',
-          category: 'manuscript',
+          category: 'manuscript' as const,
           tag: 'Historical Deed',
           title: 'Patan Taleju Guthi Festival Administration Agreement',
           era: 'Nepal Samvat 1048 (1927 AD)',
           source: 'Kwache Guthi Archives',
           description: 'Ancient contract penned in Prachalit Newari script stipulating annual festival offerings and Samay Baji distribution responsibilities.',
+          image: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=800&auto=format&fit=crop&q=80',
         },
         {
           id: '2',
-          category: 'photo',
+          category: 'photo' as const,
           tag: 'Archival Photograph',
           title: 'Mangal Bazaar & Chyasal Gunla Baja Musical Troupe',
           era: '1967 AD (2024 BS)',
           source: 'Chyasal Archives',
           description: 'Historic monochrome capture of over 60 musicians playing traditional Dhaa, Bhusya, and bansuri flutes during holy Gunla procession.',
+          image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80',
         },
         {
           id: '3',
-          category: 'guthi',
+          category: 'guthi' as const,
           tag: 'Guthi By-laws',
           title: 'Traditional Code of Conduct for See & Sanah Guthees',
           era: 'Updated 2024 AD',
           source: 'Central Secretariat',
           description: 'Codified principles governing funeral assistance, mutual welfare funds, and rotating religious obligations among family branches.',
+          image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&auto=format&fit=crop&q=80',
         },
       ],
     },
@@ -167,6 +214,7 @@ export const homeContent = {
           field: 'Historian & Cultural Scholar',
           bio: 'Five decades of pioneering field research on Newar genealogy, ancient manuscripts, and Patan’s medieval social structures.',
           initial: 'P',
+          image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500&auto=format&fit=crop&q=80',
         },
         {
           name: 'Shri Satya Narayan Shrestha',
@@ -174,6 +222,7 @@ export const homeContent = {
           field: 'Classical Dhapha & Charya Instructor (84 yrs)',
           bio: 'Preserved classical ragas and trained four generations of youth in traditional percussion and ritual flute at Chyasal and Mangal Bazaar.',
           initial: 'S',
+          image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80',
         },
         {
           name: 'Smt. Chandra Lakshmi Shrestha',
@@ -181,6 +230,7 @@ export const homeContent = {
           field: 'Women Empowerment & Micro-Savings Pioneer',
           bio: 'Founded cooperative women groups across Lalitpur to achieve household economic independence and culinary heritage enterprise.',
           initial: 'C',
+          image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
         },
       ],
     },
@@ -196,45 +246,52 @@ export const homeContent = {
       actionBilling: 'लेखा धुकू प्रणाली (/app)',
     },
     metrics: {
+      ilakasNum: '२४',
       ilakasLabel: 'सक्रिय इलाकाहरू',
       ilakasSub: 'यल नगर तथा उपनगर क्षेत्र',
+      familiesNum: '१,८४२',
       familiesLabel: 'दर्ता सदस्य परिवार',
       familiesSub: '९८% डिजिटल प्रमाणीकरण सम्पन्न',
+      archivesNum: '१२०+',
       archivesLabel: 'संरक्षित पाण्डुलिपि तथा अभिलेख',
       archivesSub: 'ऐतिहासिक तमसुक र विधान',
+      donorsNum: '२१०+',
       donorsLabel: 'आपतकालीन रक्तदाता',
       donorsSub: '२४ सै घण्टा उपलब्ध सञ्जाल',
     },
     events: {
       title: 'आसन्न गुठी, पर्व तथा कार्यक्रमहरू',
       subtitle: 'केन्द्रीय साधारण सभा, सांस्कृतिक झाँकी र सामुदायिक भेला विवरण',
-      badgeCentral: 'केन्द्रीय',
-      badgeCultural: 'सांस्कृतिक',
+      badgeCentral: 'केन्द्रीय सभा',
+      badgeCultural: 'सांस्कृतिक पर्व',
       badgeHealth: 'स्वास्थ्य शिविर',
-      agendaBtn: 'कार्यसूची',
+      agendaBtn: 'कार्यसूची हेर्नुहोस्',
       routeBtn: 'मार्ग नक्शा',
-      rsvpBtn: 'उपस्थिति दर्ता',
+      rsvpBtn: 'सहभागिता दर्ता',
       items: [
         {
           month: 'असोज',
           day: '१०',
           title: '२४ औं वार्षिक साधारण सभा तथा छात्रवृत्ति वितरण',
-          type: 'केन्द्रीय',
-          location: 'स्यस्यः समाज भवन, मंगलबजार • समय: बिहान ११:०० बजे',
+          type: 'केन्द्रीय सभा',
+          location: 'स्यस्यः समाज भवन, मंगलबजार • बिहान ११:०० बजे',
+          image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80',
         },
         {
           month: 'असोज',
           day: '१५',
           title: 'यँयाः (इन्द्रजात्रा) समय् बजि वितरण तथा सांस्कृतिक परिक्रमा',
-          type: 'सांस्कृतिक',
-          location: 'पाटन दरवार परिसर • समय: दिउँसो २:०० बजे',
+          type: 'सांस्कृतिक पर्व',
+          location: 'पाटन दरवार परिसर • दिउँसो २:०० बजे',
+          image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&auto=format&fit=crop&q=80',
         },
         {
           month: 'कात्तिक',
           day: '०२',
           title: 'सामुदायिक खुला रक्तदान तथा स्वास्थ्य परीक्षण शिविर',
           type: 'स्वास्थ्य शिविर',
-          location: 'पुल्चोक इलाका समन्वय केन्द्र • समय: बिहान ८:०० - २:०० सम्म',
+          location: 'पुल्चोक इलाका समन्वय केन्द्र • बिहान ८:०० - २:०० सम्म',
+          image: 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?w=800&auto=format&fit=crop&q=80',
         },
       ],
     },
@@ -312,30 +369,33 @@ export const homeContent = {
       items: [
         {
           id: '1',
-          category: 'manuscript',
+          category: 'manuscript' as const,
           tag: 'ऐतिहासिक पाण्डुलिपि',
           title: 'पाटन तलेजु गुठी व्यवस्थापन सम्बन्धी प्राचीन निर्णय',
           era: 'नेपाल संवत् १०४८ (वि.सं. १९८४)',
           source: 'क्वाछें गुठी अभिलेख',
           description: 'नेवारी लिपिमा लेखिएको ऐतिहासिक तमसुक जसमा स्यस्यः समुदायको तलेजु मन्दिरमा वार्षिक पर्व पूजा तथा समय् बजि वितरण दायित्व किटान गरिएको छ।',
+          image: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=800&auto=format&fit=crop&q=80',
         },
         {
           id: '2',
-          category: 'photo',
+          category: 'photo' as const,
           tag: 'तस्बिर अभिलेख',
           title: 'मंगलबजार तथा च्यासल गुँला बाजा खलः (वि.सं. २०२४)',
           era: 'वि.सं. २०२४',
           source: 'च्यासल अभिलेख',
           description: 'परम्परागत धाः बाजा, भुस्याः र बाँसुरी बजाउँदै पाटनका ऐतिहासिक बहाः बही परिक्रमा गर्दा खिचिएको श्यामश्वेत ऐतिहासिक तस्बिर।',
+          image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80',
         },
         {
           id: '3',
-          category: 'guthi',
+          category: 'guthi' as const,
           tag: 'गुठी आचारसंहिता',
           title: 'सी गुठी तथा सनः गुठी परम्परागत आचारसंहिता',
           era: 'अद्यावधिक वि.सं. २०८१',
           source: 'केन्द्रीय सचिवालय',
           description: 'मृत्यु संस्कार, दाहसंस्कार सहयोग र सदस्यहरू बीचको आपसी सद्भाव कायम राख्न तयार गरिएको नियम संग्रह।',
+          image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&auto=format&fit=crop&q=80',
         },
       ],
     },
@@ -351,6 +411,7 @@ export const homeContent = {
           field: 'इतिहासविद् तथा संस्कृतिविद्',
           bio: 'पाटनको स्यस्यः इतिहास, नेवार जातिको उत्पत्ति र पाण्डुलिपि अन्वेषणमा ५ दशक लामो शोध र ग्रन्थ प्रकाशन।',
           initial: 'प',
+          image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500&auto=format&fit=crop&q=80',
         },
         {
           name: 'श्री सत्यनारायण श्रेष्ठ',
@@ -358,6 +419,7 @@ export const homeContent = {
           field: 'दाफा भजन तथा राग प्रशिक्षक (८४ वर्ष)',
           bio: 'च्यासल र मंगलबजारमा चार पुस्तालाई शास्त्रीय दाफा भजन, चर्या नृत्य र परम्परागत बाँसुरी वादन प्रशिक्षण।',
           initial: 'स',
+          image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80',
         },
         {
           name: 'श्रीमती चन्द्रलक्ष्मी श्रेष्ठ',
@@ -365,6 +427,7 @@ export const homeContent = {
           field: 'महिला जागरण तथा बचत कोष अग्रणी',
           bio: 'पाटनका विभिन्न टोलमा महिला समूह गठन, परम्परागत नेवारी व्यञ्जन उत्पादन र आत्मनिर्भरता अभियानका नेतृत्वकर्ता।',
           initial: 'च',
+          image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
         },
       ],
     },
@@ -380,20 +443,24 @@ export const homeContent = {
       actionBilling: 'लेखा धुकू (/app)',
     },
     metrics: {
+      ilakasNum: '२४',
       ilakasLabel: 'सक्रिय इलाकापिं',
       ilakasSub: 'यल नगर व लागा क्षेत्र',
+      familiesNum: '१,८४२',
       familiesLabel: 'दर्ता दुजः परिवार',
       familiesSub: '९८% डिजिटल प्रमाणीकरण सिधल',
+      archivesNum: '१२०+',
       archivesLabel: 'सुरक्षित पाण्डुलिपि व अभिलेख',
       archivesSub: 'पुलांगु तमसुक व विधान',
+      donorsNum: '२१०+',
       donorsLabel: 'आकस्मिक हिदातापिं',
       donorsSub: '२४ सै घण्टा उपलब्ध सञ्जाल',
     },
     events: {
       title: 'आसन्न गुथि, नखःचखः व ज्याझ्वः',
       subtitle: 'केन्द्रीय मुँज्या, सांस्कृतिक झाँकी व समुदायया मुना विवरण',
-      badgeCentral: 'केन्द्रीय',
-      badgeCultural: 'सांस्कृतिक',
+      badgeCentral: 'केन्द्रीय मुँज्या',
+      badgeCultural: 'सांस्कृतिक नखः',
       badgeHealth: 'उसाँय् शिविर',
       agendaBtn: 'कार्यसूची',
       routeBtn: 'चाःहिलेगु लँपु',
@@ -403,22 +470,25 @@ export const homeContent = {
           month: 'कौला',
           day: '१०',
           title: '२४ क्वःगु वार्षिक मुँज्या व छात्रवृत्ति इनेगु ज्याझ्वः',
-          type: 'केन्द्रीय',
-          location: 'स्यस्यः समाज भवन, मंगलबजार • ई: सुथया ११:०० बजे',
+          type: 'केन्द्रीय मुँज्या',
+          location: 'स्यस्यः समाज भवन, मंगलबजार • सुथया ११:०० बजे',
+          image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80',
         },
         {
           month: 'कौला',
           day: '१५',
           title: 'यँयाः समय् बजि इनेगु व सांस्कृतिक चाःहिलेगु',
-          type: 'सांस्कृतिक',
-          location: 'यल लाय्कू लागा • ई: न्हिनेया २:०० बजे',
+          type: 'सांस्कृतिक नखः',
+          location: 'यल लाय्कू लागा • न्हिनेया २:०० बजे',
+          image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&auto=format&fit=crop&q=80',
         },
         {
           month: 'कछला',
           day: '०२',
           title: 'सामुदायिक खुला हिदान व उसाँय् जाँचेयायेगु ज्याझ्वः',
           type: 'उसाँय् शिविर',
-          location: 'पुल्चोक इलाका समन्वय केन्द्र • ई: सुथया ८:०० - २:००',
+          location: 'पुल्चोक इलाका समन्वय केन्द्र • सुथया ८:०० - २:००',
+          image: 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?w=800&auto=format&fit=crop&q=80',
         },
       ],
     },
@@ -496,30 +566,33 @@ export const homeContent = {
       items: [
         {
           id: '1',
-          category: 'manuscript',
+          category: 'manuscript' as const,
           tag: 'ऐतिहासिक पाण्डुलिपि',
           title: 'यल तलेजु गुथि व्यवस्थापन सम्बन्धी प्राचीन निर्णय',
           era: 'नेपाल संवत् १०४८',
           source: 'क्वाछें गुथि अभिलेख',
           description: 'नेवाः लिपिइ च्वयातःगु ऐतिहासिक तमसुक गन स्यस्यः समुदायया तलेजु देगलय् दँयदसं पर्व पूजा व समय् बजि इनेगु दायित्व दुथ्याःगु दु।',
+          image: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=800&auto=format&fit=crop&q=80',
         },
         {
           id: '2',
-          category: 'photo',
+          category: 'photo' as const,
           tag: 'तस्बिर अभिलेख',
           title: 'मंगलबजार व च्यासल गुँला बाजा खलः (वि.सं. २०२४)',
           era: 'वि.सं. २०२४',
           source: 'च्यासल अभिलेख',
           description: 'परम्परागत धाः बाजा, भुस्याः व बाँसुरी थानाः यलया बहाः बही चाःहिलाच्वंगु दुर्लभ श्यामश्वेत तस्बिर।',
+          image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80',
         },
         {
           id: '3',
-          category: 'guthi',
+          category: 'guthi' as const,
           tag: 'गुथि आचारसंहिता',
           title: 'सी गुथि व सनः गुथि परम्परागत आचारसंहिता',
           era: 'अद्यावधिक वि.सं. २०८१',
           source: 'केन्द्रीय सचिवालय',
           description: 'सी ज्या, दाहसंस्कार ग्वहालि व दुजःपिं दथुइ सद्भाव तयातयेत तयार याःगु नियम संग्रह।',
+          image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&auto=format&fit=crop&q=80',
         },
       ],
     },
@@ -535,6 +608,7 @@ export const homeContent = {
           field: 'इतिहासविद् व संस्कृतिविद्',
           bio: 'यलया स्यस्यः इतिहास, नेवार जातिया पलिस्था व पाण्डुलिपि अनुसन्धानय् ५ दशक योगदान बियादीपिं विद्वान।',
           initial: 'प',
+          image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500&auto=format&fit=crop&q=80',
         },
         {
           name: 'श्री सत्यनारायण श्रेष्ठ',
@@ -542,6 +616,7 @@ export const homeContent = {
           field: 'दाफा भजन व राग स्यनामि (८४ दँ)',
           bio: 'च्यासल व मंगलबजारय् प्यपुस्तायात शास्त्रीय दाफा भजन व बाँसुरी वादन स्यनादीपिं गुरु।',
           initial: 'स',
+          image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80',
         },
         {
           name: 'श्रीमती चन्द्रलक्ष्मी श्रेष्ठ',
@@ -549,6 +624,7 @@ export const homeContent = {
           field: 'मिसा जागरण व मुनिगु पुचः अग्रणी',
           bio: 'यलया थीथी त्वालय् मिसा पुचः गठन यानाः परम्परागत नेवारी नसा उत्पादन व आत्मनिर्भरता अभियान न्ह्याकादीपिं।',
           initial: 'च',
+          image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
         },
       ],
     },

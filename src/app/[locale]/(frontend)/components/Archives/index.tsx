@@ -12,6 +12,7 @@ export interface ArchiveItem {
   source?: string
   fileUrl?: string
   tag?: string
+  image?: string
 }
 
 export default function ArchivesSection({
@@ -104,15 +105,21 @@ export default function ArchivesSection({
               className="group border border-border bg-card rounded-2xl p-6 hover:shadow-md hover:border-primary/50 transition-all flex flex-col justify-between space-y-4"
             >
               <div className="space-y-3">
-                {/* Visual Placeholder Badge */}
-                <div className="aspect-[16/9] border border-dashed border-border rounded-xl bg-muted/50 flex flex-col items-center justify-center p-4 text-center group-hover:bg-primary/5 transition-colors">
-                  <span className="text-3xl mb-1">
-                    {item.category === 'photo' ? '📷' : item.category === 'guthi' ? '⚖️' : '📜'}
-                  </span>
-                  <span className="text-xs font-bold text-foreground">{item.era}</span>
-                  {item.source && (
-                    <span className="text-[11px] text-muted-foreground mt-0.5">{item.source}</span>
-                  )}
+                {/* Real Historical Deed / Manuscript Image */}
+                <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-muted border border-border">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute bottom-3 left-3 text-white text-xs font-bold">
+                    <span>{item.era}</span>
+                    {item.source && (
+                      <span className="text-[10px] text-white/80 block font-normal">{item.source}</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -165,6 +172,16 @@ export default function ArchivesSection({
                 ✕
               </button>
             </div>
+
+            {selectedDoc.image && (
+              <div className="relative h-52 w-full rounded-xl overflow-hidden border border-border">
+                <img
+                  src={selectedDoc.image}
+                  alt={selectedDoc.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
 
             <div className="text-xs text-muted-foreground leading-relaxed border-t border-b border-border py-4 space-y-3">
               <p className="text-foreground leading-relaxed">{selectedDoc.description}</p>

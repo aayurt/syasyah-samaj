@@ -104,7 +104,7 @@ export default async function HomepageHero({ locale: propLocale }: { locale?: Lo
               {content.metrics.ilakasLabel}
             </span>
             <span className="text-2xl sm:text-3xl font-black text-foreground tabular-nums">
-              २४
+              {content.metrics.ilakasNum}
             </span>
             <span className="text-[10px] text-muted-foreground block mt-0.5">
               {content.metrics.ilakasSub}
@@ -116,7 +116,7 @@ export default async function HomepageHero({ locale: propLocale }: { locale?: Lo
               {content.metrics.familiesLabel}
             </span>
             <span className="text-2xl sm:text-3xl font-black text-foreground tabular-nums">
-              १,८४२
+              {content.metrics.familiesNum}
             </span>
             <span className="text-[10px] text-muted-foreground block mt-0.5">
               {content.metrics.familiesSub}
@@ -128,7 +128,7 @@ export default async function HomepageHero({ locale: propLocale }: { locale?: Lo
               {content.metrics.archivesLabel}
             </span>
             <span className="text-2xl sm:text-3xl font-black text-foreground tabular-nums">
-              १२०+
+              {content.metrics.archivesNum}
             </span>
             <span className="text-[10px] text-muted-foreground block mt-0.5">
               {content.metrics.archivesSub}
@@ -140,7 +140,7 @@ export default async function HomepageHero({ locale: propLocale }: { locale?: Lo
               {content.metrics.donorsLabel}
             </span>
             <span className="text-2xl sm:text-3xl font-black text-primary tabular-nums">
-              २१०+
+              {content.metrics.donorsNum}
             </span>
             <span className="text-[10px] text-muted-foreground block mt-0.5">
               {content.metrics.donorsSub}

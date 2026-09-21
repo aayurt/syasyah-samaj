@@ -298,6 +298,34 @@ export default function OrganisationLoginForm() {
           <span>नयाँ सदस्य आवेदन? <Link href="/members" className="font-bold underline text-stone-900">दर्ता गर्नुहोस्</Link></span>
           <Link href="/admin" className="underline hover:text-stone-900">Payload CMS Admin (/admin)</Link>
         </div>
+
+        {/* UX/UI Tester Instant Preview Shortcuts */}
+        <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-xs space-y-2">
+          <div className="font-bold text-stone-700 flex items-center justify-between text-[11px]">
+            <span>🧪 UX/UI Tester Instant Access:</span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Ready</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 text-[11px]">
+            <Link
+              href="/portal"
+              className="px-2.5 py-1 bg-white border border-stone-300 rounded font-medium text-stone-800 hover:border-stone-900 hover:text-black transition-colors"
+            >
+              Member Portal →
+            </Link>
+            <Link
+              href="/portal/coordinator"
+              className="px-2.5 py-1 bg-white border border-stone-300 rounded font-medium text-stone-800 hover:border-stone-900 hover:text-black transition-colors"
+            >
+              Coordinator Desk →
+            </Link>
+            <Link
+              href="/app"
+              className="px-2.5 py-1 bg-white border border-stone-300 rounded font-medium text-stone-800 hover:border-stone-900 hover:text-black transition-colors"
+            >
+              Dhuku Cashier (/app) ↗
+            </Link>
+          </div>
+        </div>
       </div>
 
     </div>
