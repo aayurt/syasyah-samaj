@@ -676,12 +676,24 @@ export const en = {
 
   // ── Login page ──
   login: {
+    title: 'स्यस्यः धुकू',
+    subtitle: 'Sign in to access the billing dashboard',
     notAuthorized: 'Not authorized',
     needAdmin: 'You need an admin account to use Billing.',
     signOut: 'Sign out',
     loading: 'Loading…',
     signIn: 'Sign in',
     signingIn: 'Signing in…',
+    emailLabel: 'Email',
+    passwordLabel: 'Password',
+    emailPlaceholder: 'you@example.com',
+    passwordPlaceholder: '••••••••',
+    demoTitle: 'Try the demo — click to copy',
+    demoUse: 'Use demo',
+    demoEmail: 'Email',
+    demoPassword: 'Password',
+    copied: 'Copied!',
+    errorPrefix: 'Error: ',
   },
 
   // ── Journal page ──

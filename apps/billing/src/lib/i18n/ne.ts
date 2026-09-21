@@ -676,12 +676,24 @@ export const ne = {
 
   // ── Login page ──
   login: {
+    title: 'स्यस्यः धुकू',
+    subtitle: 'बिलिङ्ग ड्यासबोर्डमा पहुँच पाउन साइन इन गर्नुहोस्',
     notAuthorized: 'अधिकृत छैन',
     needAdmin: 'बिलिंग प्रयोग गर्न तपाईंलाई प्रशासन खाता चाहिन्छ।',
     signOut: 'साइन आउट',
     loading: 'लोड गरिरहेको छ…',
     signIn: 'साइन इन',
     signingIn: 'साइन इन हुँदै…',
+    emailLabel: 'इमेल',
+    passwordLabel: 'पासवर्ड',
+    emailPlaceholder: 'you@example.com',
+    passwordPlaceholder: '••••••••',
+    demoTitle: 'डेमो प्रयास गर्नुहोस् — नकल गर्न क्लिक गर्नुहोस्',
+    demoUse: 'डेमो प्रयोग',
+    demoEmail: 'इमेल',
+    demoPassword: 'पासवर्ड',
+    copied: 'नकल भयो!',
+    errorPrefix: 'त्रुटि: ',
   },
 
   // ── Journal page ──
