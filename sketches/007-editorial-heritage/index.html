@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Syasyah Samaj - Cultural Heritage & Archive (Grayscale Wireframe)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Georgia', 'Cambria', '"Noto Serif Devanagari"', 'serif'],
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Noto Sans Devanagari"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --border-subtle: #e5e7eb;
+      --border-dark: #111827;
+      --text-main: #111827;
+      --text-muted: #4b5563;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+    }
+    .num-tabular {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+  <!-- Editorial Topmast Header -->
+  <header class="border-b border-gray-900 bg-white">
+    <div class="max-w-6xl mx-auto px-6 py-6 flex flex-col items-center justify-center text-center">
+      <div class="flex items-center gap-3 text-xs tracking-widest uppercase text-gray-500 mb-2">
+        <span>स्थापना: वि.सं. २०५६</span>
+        <span>•</span>
+        <span>यल (ललितपुर), नेपाल</span>
+        <span>•</span>
+        <span>अभिलेख तथा संस्कृति केन्द्र</span>
+      </div>
+
+      <h1 class="text-3xl sm:text-5xl font-serif font-black tracking-tight text-gray-950">
+        स्यस्यः समाज, यल
+      </h1>
+      <p class="text-xs sm:text-sm font-serif italic text-gray-600 mt-2 max-w-xl">
+        "संस्कृति, भाय्, परम्परा व समुदायया संरक्षण: झीगु पहिचान, झीगु गौरव"
+      </p>
+
+      <div class="w-24 h-0.5 bg-gray-900 mt-4"></div>
+    </div>
+
+    <!-- Minimalist Horizontal Navigation Menu -->
+    <nav class="border-t border-b border-gray-200 bg-gray-50 py-2.5 px-6">
+      <div class="max-w-6xl mx-auto flex items-center justify-between text-xs font-medium">
+        <div class="flex items-center space-x-6">
+          <a href="#" class="text-gray-950 font-bold border-b-2 border-gray-900 pb-1">मुख्य पृष्ठ (Editorial)</a>
+          <a href="#history" class="text-gray-600 hover:text-gray-900 pb-1">इतिहास र परम्परा (Heritage)</a>
+          <a href="#archives" class="text-gray-600 hover:text-gray-900 pb-1">ऐतिहासिक अभिलेख (Archives)</a>
+          <a href="#elders" class="text-gray-600 hover:text-gray-900 pb-1">व्यक्तित्व तथा धरोहर (Elders)</a>
+          <a href="#publications" class="text-gray-600 hover:text-gray-900 pb-1">प्रकाशन (Publications)</a>
+        </div>
+
+        <div class="flex items-center space-x-4">
+          <span class="text-gray-400">|</span>
+          <a href="/app" class="text-gray-600 hover:text-gray-950 underline">लेखा प्रणाली (Billing)</a>
+          <button class="px-3 py-1 border border-gray-900 text-gray-900 font-semibold rounded hover:bg-gray-900 hover:text-white transition-colors">
+            सदस्य कक्ष (Member Desk)
+          </button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Editorial Lead / Hero Story -->
+  <section class="max-w-6xl mx-auto px-6 py-12 border-b border-gray-200">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+      <div class="md:col-span-7 space-y-4">
+        <span class="inline-block text-[11px] font-bold uppercase tracking-widest px-2 py-0.5 border border-gray-900">
+          विशेष आलेख (Featured Chronicle)
+        </span>
+        <h2 class="text-2xl sm:text-4xl font-serif font-bold leading-tight text-gray-950">
+          पाटनको स्यस्यः समाज: चार दशकको सामाजिक रुपान्तरण र गुठी ऐक्यबद्धता
+        </h2>
+        <p class="text-sm text-gray-700 leading-relaxed">
+          मध्यकालीन यल (ललितपुर) को सांस्कृतिक पहिचान जोगाउँदै नयाँ पुस्तालाई परम्परागत सीप, भाषा र सामाजिक सहकार्यमा जोड्ने अभियान। मंगलबजारदेखि चापागाउँसम्म फैलिएका २४ वटा इलाकाको ऐतिहासिक प्रतिवेदन।
+        </p>
+
+        <div class="flex items-center gap-4 pt-2 text-xs">
+          <button class="px-4 py-2 border-2 border-gray-900 font-bold hover:bg-gray-900 hover:text-white transition-colors">
+            पूर्ण इतिहास पढ्नुहोस् (Read Full History)
+          </button>
+          <a href="#archives" class="underline font-medium text-gray-700 hover:text-black">
+            अभिलेख संग्रह अन्वेषण गर्नुहोस् →
+          </a>
+        </div>
+      </div>
+
+      <!-- Lead Graphic/Wireframe Frame -->
+      <div class="md:col-span-5">
+        <div class="border-2 border-gray-300 p-3 bg-gray-50 flex flex-col items-center justify-center text-center aspect-[4/3]">
+          <div class="w-16 h-16 border-2 border-dashed border-gray-400 rounded-full flex items-center justify-center text-gray-400 mb-3">
+            🏛️
+          </div>
+          <span class="text-xs font-bold text-gray-700">[तस्वीर: वि.सं. २०५६ को पहिलो साधारण सभा]</span>
+          <span class="text-[11px] text-gray-500 mt-1">ऐतिहासिक पाटन दरवार परिसर, कृष्ण मन्दिर अगाडि</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Heritage Milestones (Chronological Timeline) -->
+  <section id="history" class="max-w-6xl mx-auto px-6 py-12 border-b border-gray-200">
+    <div class="text-center mb-8">
+      <span class="text-xs uppercase tracking-widest text-gray-500 font-bold">कालक्रम (Timeline)</span>
+      <h3 class="text-2xl font-serif font-bold text-gray-900 mt-1">ऐतिहासिक यात्राका मुख्य कोशेढुङ्गाहरू</h3>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="border-t-2 border-gray-900 pt-3">
+        <span class="text-xl font-serif font-bold num-tabular">२०५६</span>
+        <h4 class="font-bold text-xs mt-1">समाजको स्थापना</h4>
+        <p class="text-[11px] text-gray-600 mt-1 leading-normal">
+          पाटनका विभिन्न टोलका अग्रजहरूको भेलाद्वारा स्यस्यः समाजको औपचारिक गठन र विधान तर्जुमा।
+        </p>
+      </div>
+
+      <div class="border-t-2 border-gray-400 pt-3">
+        <span class="text-xl font-serif font-bold num-tabular">२०६२</span>
+        <h4 class="font-bold text-xs mt-1">२४ इलाका विभाजन</h4>
+        <p class="text-[11px] text-gray-600 mt-1 leading-normal">
+          ललितपुर नगर क्षेत्रलाई प्रशासनिक र सामाजिक सहजताका लागि २४ इलाकामा विकेन्द्रीकरण।
+        </p>
+      </div>
+
+      <div class="border-t-2 border-gray-400 pt-3">
+        <span class="text-xl font-serif font-bold num-tabular">२०७२</span>
+        <h4 class="font-bold text-xs mt-1">महाभूकम्प राहत तथा पुनर्निर्माण</h4>
+        <p class="text-[11px] text-gray-600 mt-1 leading-normal">
+          भूकम्प प्रभावित परिवारहरूलाई तत्काल उद्धार, सामुदायिक आश्रय तथा पुरातात्विक सम्पदा संरक्षण।
+        </p>
+      </div>
+
+      <div class="border-t-2 border-gray-400 pt-3">
+        <span class="text-xl font-serif font-bold num-tabular">२०८०-८३</span>
+        <h4 class="font-bold text-xs mt-1">डिजिटल अभिलेखीकरण र लेखा</h4>
+        <p class="text-[11px] text-gray-600 mt-1 leading-normal">
+          अफलाइन-फर्स्ट लेखा प्रणाली, डिजिटल सदस्यता कार्ड तथा ऐतिहासिक पाण्डुलिपि संरक्षण।
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Cultural Archive Repository -->
+  <section id="archives" class="max-w-6xl mx-auto px-6 py-12 border-b border-gray-200">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+      <div>
+        <span class="text-xs uppercase tracking-widest text-gray-500 font-bold">डिजिटल संग्रह (Archives)</span>
+        <h3 class="text-2xl font-serif font-bold text-gray-900 mt-1">सामुदायिक अभिलेख तथा पाण्डुलिपि</h3>
+        <p class="text-xs text-gray-600 mt-1">विगतका ऐतिहासिक सम्झौता, गुठी तमसुक, रीतिथिति विवरण र अडियो-भिडियो सामग्री</p>
+      </div>
+
+      <!-- Archive Filter Tabs (Interactive) -->
+      <div class="flex border border-gray-300 rounded text-xs overflow-hidden shrink-0">
+        <button onclick="filterArchive('all')" class="arch-tab active px-3 py-1.5 bg-gray-900 text-white font-medium">सबै (All)</button>
+        <button onclick="filterArchive('doc')" class="arch-tab px-3 py-1.5 hover:bg-gray-100 font-medium text-gray-700">तमसुक तथा दस्तावेज</button>
+        <button onclick="filterArchive('photo')" class="arch-tab px-3 py-1.5 hover:bg-gray-100 font-medium text-gray-700">ऐतिहासिक तस्बिर</button>
+        <button onclick="filterArchive('guthi')" class="arch-tab px-3 py-1.5 hover:bg-gray-100 font-medium text-gray-700">गुठी विधान</button>
+      </div>
+    </div>
+
+    <!-- Archive Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="archiveItems">
+
+      <!-- Item 1 -->
+      <div class="border border-gray-200 p-4 rounded hover:border-gray-900 transition-colors arch-item" data-category="doc">
+        <div class="border border-dashed border-gray-300 h-32 flex items-center justify-center bg-gray-50 mb-3 text-xs text-gray-400">
+          [दस्तावेज प्रतिलिपि: वि.सं. १९८४]
+        </div>
+        <span class="text-[10px] uppercase font-bold text-gray-500">ऐतिहासिक दस्तावेज • नेवारी लिपि</span>
+        <h4 class="font-serif font-bold text-base mt-1 text-gray-900">पाटन तलेजु गुठी व्यवस्थापन सम्बन्धी प्राचीन निर्णय</h4>
+        <p class="text-xs text-gray-600 mt-1 leading-relaxed">
+          वि.सं. १९८४ को नेपाल संवत् १०४८ मा लेखिएको तमसुक जसमा स्यस्यः समुदायको पूजा व्यवस्थापन दायित्व उल्लेख छ।
+        </p>
+        <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+          <span class="text-gray-500">स्क्यान फाइल (PDF)</span>
+          <a href="#" class="font-bold underline text-gray-900">अध्ययन गर्नुहोस् →</a>
+        </div>
+      </div>
+
+      <!-- Item 2 -->
+      <div class="border border-gray-200 p-4 rounded hover:border-gray-900 transition-colors arch-item" data-category="photo">
+        <div class="border border-dashed border-gray-300 h-32 flex items-center justify-center bg-gray-50 mb-3 text-xs text-gray-400">
+          [तस्बिर: गुँला बाजा टोली, वि.सं. २०२४]
+        </div>
+        <span class="text-[10px] uppercase font-bold text-gray-500">तस्बिर संग्रह • पाटन</span>
+        <h4 class="font-serif font-bold text-base mt-1 text-gray-900">मंगलबजार गुँला बाजा खलः को सामूहिक तस्बिर</h4>
+        <p class="text-xs text-gray-600 mt-1 leading-relaxed">
+          परम्परागत धाः बाजा, भुस्याः र बाँसुरी बजाउँदै महाबौद्ध र च्यासल परिक्रमा गर्दा खिचिएको दुर्लभ तस्बिर।
+        </p>
+        <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+          <span class="text-gray-500">उच्च गुणस्तर संग्रह</span>
+          <a href="#" class="font-bold underline text-gray-900">तस्बिर हेर्नुहोस् →</a>
+        </div>
+      </div>
+
+      <!-- Item 3 -->
+      <div class="border border-gray-200 p-4 rounded hover:border-gray-900 transition-colors arch-item" data-category="guthi">
+        <div class="border border-dashed border-gray-300 h-32 flex items-center justify-center bg-gray-50 mb-3 text-xs text-gray-400">
+          [विधान: सी गुठी नियमावली]
+        </div>
+        <span class="text-[10px] uppercase font-bold text-gray-500">गुठी विधान • सामाजिक संस्कार</span>
+        <h4 class="font-serif font-bold text-base mt-1 text-gray-900">सी गुठी तथा सनः गुठी परम्परागत आचारसंहिता</h4>
+        <p class="text-xs text-gray-600 mt-1 leading-relaxed">
+          मृत्यु संस्कार, दाहसंस्कार सहयोग र सदस्यहरू बीचको आपसी सद्भाव कायम राख्न तयार गरिएको नियम संग्रह।
+        </p>
+        <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+          <span class="text-gray-500">अद्यावधिक २०८१</span>
+          <a href="#" class="font-bold underline text-gray-900">अध्ययन गर्नुहोस् →</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Community Elders & Living Heritage (धरोहर व्यक्तित्व) -->
+  <section id="elders" class="max-w-6xl mx-auto px-6 py-12">
+    <div class="text-center mb-8">
+      <span class="text-xs uppercase tracking-widest text-gray-500 font-bold">आदरणीय अग्रज (Elders)</span>
+      <h3 class="text-2xl font-serif font-bold text-gray-900 mt-1">समाजका विशिष्ट धरोहर व्यक्तित्वहरू</h3>
+      <p class="text-xs text-gray-600 mt-1">समुदाय, भाषा र संस्कृतिको संवर्धनमा जीवन समर्पण गर्ने महानुभावहरू</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div class="border border-gray-200 p-4 text-center rounded">
+        <div class="w-20 h-20 border-2 border-gray-300 rounded-full mx-auto mb-3 flex items-center justify-center bg-gray-50 text-xs text-gray-400">
+          [तस्बिर]
+        </div>
+        <h4 class="font-serif font-bold text-sm">स्व. पूर्णमान श्रेष्ठ</h4>
+        <p class="text-[11px] text-gray-500">संस्थापक सल्लाहकार • भाषाविद्</p>
+        <p class="text-xs text-gray-600 mt-2 leading-normal">नेपालभाषा साहित्य र पाटनको सांस्कृतिक इतिहासका आधिकारिक खोजकर्ता।</p>
+      </div>
+
+      <div class="border border-gray-200 p-4 text-center rounded">
+        <div class="w-20 h-20 border-2 border-gray-300 rounded-full mx-auto mb-3 flex items-center justify-center bg-gray-50 text-xs text-gray-400">
+          [तस्बिर]
+        </div>
+        <h4 class="font-serif font-bold text-sm">श्री सत्यनारायण श्रेष्ठ</h4>
+        <p class="text-[11px] text-gray-500">वरिष्ठ गुठी गुरु • च्यासल</p>
+        <p class="text-xs text-gray-600 mt-2 leading-normal">पाँच दशकदेखि दाफा भजन र शास्त्रीय राग गायनका वरिष्ठ प्रशिक्षक।</p>
+      </div>
+
+      <div class="border border-gray-200 p-4 text-center rounded">
+        <div class="w-20 h-20 border-2 border-gray-300 rounded-full mx-auto mb-3 flex items-center justify-center bg-gray-50 text-xs text-gray-400">
+          [तस्बिर]
+        </div>
+        <h4 class="font-serif font-bold text-sm">श्रीमती चन्द्रलक्ष्मी श्रेष्ठ</h4>
+        <p class="text-[11px] text-gray-500">महिला जागरण अभियन्ता • त्यागल</p>
+        <p class="text-xs text-gray-600 mt-2 leading-normal">सामुदायिक बचत समूह र महिला सशक्तिकरण अभियानका अग्रणी नेतृत्व।</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Editorial Footer -->
+  <footer class="border-t border-gray-900 bg-gray-50 py-10 text-xs text-gray-600">
+    <div class="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <div class="space-y-2">
+        <h5 class="font-serif font-bold text-sm text-gray-900">स्यस्यः समाज, यल</h5>
+        <p class="text-xs text-gray-600 leading-normal">
+          ललितपुरका श्रेष्ठ (स्यस्यः) समुदायको ऐतिहासिक, सामाजिक र सांस्कृतिक साझा संगठन।
+        </p>
+      </div>
+      <div>
+        <h6 class="font-bold text-gray-900 uppercase text-[11px] mb-2">अन्वेषण (Explore)</h6>
+        <ul class="space-y-1">
+          <li><a href="#" class="hover:underline">संक्षिप्त इतिहास</a></li>
+          <li><a href="#" class="hover:underline">पाण्डुलिपि सूची</a></li>
+          <li><a href="#" class="hover:underline">गुठी तथा चाडपर्व</a></li>
+          <li><a href="#" class="hover:underline">छात्रवृत्ति कोष</a></li>
+        </ul>
+      </div>
+      <div>
+        <h6 class="font-bold text-gray-900 uppercase text-[11px] mb-2">इलाका सम्पर्क</h6>
+        <ul class="space-y-1">
+          <li><a href="#" class="hover:underline">मंगलबजार सचिवालय</a></li>
+          <li><a href="#" class="hover:underline">पुल्चोक समन्वय</a></li>
+          <li><a href="#" class="hover:underline">च्यासल / त्यागल</a></li>
+          <li><a href="#" class="hover:underline">इलाका प्रतिनिधि विवरण</a></li>
+        </ul>
+      </div>
+      <div>
+        <h6 class="font-bold text-gray-900 uppercase text-[11px] mb-2">सम्पर्क ठेगाना</h6>
+        <p>मंगलबजार, ललितपुर, नेपाल</p>
+        <p>फोन: ०१-५५२३४५६</p>
+        <p>इमेल: heritage@syasyahsamaj.org.np</p>
+      </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-6 pt-4 border-t border-gray-200 flex justify-between items-center text-[11px] text-gray-500">
+      <span>© २०८३ स्यस्यः समाज, यल। सर्वाधिकार सुरक्षित।</span>
+      <span>अभिलेख तथा संस्कृति विभाग</span>
+    </div>
+  </footer>
+
+  <!-- Interactive Script -->
+  <script>
+    function filterArchive(cat) {
+      document.querySelectorAll('.arch-tab').forEach(b => {
+        b.classList.remove('bg-gray-900', 'text-white');
+        b.classList.add('text-gray-700');
+      });
+      event.currentTarget.classList.remove('text-gray-700');
+      event.currentTarget.classList.add('bg-gray-900', 'text-white');
+
+      const items = document.querySelectorAll('.arch-item');
+      items.forEach(item => {
+        if (cat === 'all' || item.getAttribute('data-category') === cat) {
+          item.style.display = '';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

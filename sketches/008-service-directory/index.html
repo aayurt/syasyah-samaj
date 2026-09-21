@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Syasyah Samaj - Service Portal (Grayscale Wireframe)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Noto Sans Devanagari"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --border: #e4e4e7;
+      --text: #18181b;
+      --text-muted: #71717a;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    .num-tabular {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+  <!-- Header -->
+  <header class="border-b border-gray-200 bg-white sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded border border-gray-900 bg-gray-900 text-white flex items-center justify-center font-bold text-sm">
+            SS
+          </div>
+          <span class="font-bold text-sm tracking-tight text-gray-900">स्यस्यः सेवा पोर्टल (Service Hub)</span>
+        </div>
+
+        <nav class="hidden md:flex items-center gap-4 text-xs font-medium text-gray-600">
+          <a href="#" class="text-gray-900 font-semibold">सबै सेवाहरू (Services)</a>
+          <a href="#tracking" class="hover:text-gray-900">आवेदन स्थिति (Track Application)</a>
+          <a href="#hall" class="hover:text-gray-900">सामुदायिक भवन बुकिङ (Hall Booking)</a>
+          <a href="#dues" class="hover:text-gray-900">शुल्क भुक्तानी (Dues)</a>
+        </nav>
+      </div>
+
+      <div class="flex items-center gap-3 text-xs">
+        <a href="/app" class="px-3 py-1.5 border border-gray-300 rounded font-medium hover:bg-gray-50">
+          लेखा प्रणाली (Billing)
+        </a>
+        <button class="px-3 py-1.5 border border-gray-900 bg-white text-gray-900 font-bold rounded hover:bg-gray-900 hover:text-white transition-colors">
+          नागरिक प्रोफाइल (Citizen Profile)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Service Portal Banner -->
+  <section class="border-b border-gray-200 bg-white py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="max-w-2xl">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-gray-500">केन्द्रीय सेवा निर्देशिका</span>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-950 mt-1">
+          स्यस्यः समाज अनलाइन नागरिक सेवा केन्द्र
+        </h1>
+        <p class="text-xs sm:text-sm text-gray-600 mt-2 leading-relaxed">
+          ललितपुरका श्रेष्ठ परिवारहरूका लागि डिजिटल सदस्यता, गुठी सिफारिस, राहत कोष, छात्रवृत्ति तथा सामुदायिक भवन बुकिङको एकीकृत प्रणाली।
+        </p>
+      </div>
+
+      <!-- Application Tracking Box -->
+      <div class="mt-6 p-3.5 border border-gray-200 rounded bg-gray-50 max-w-xl flex flex-col sm:flex-row items-center gap-2">
+        <span class="text-xs font-medium text-gray-700 shrink-0">आवेदन ट्र्याक गर्नुहोस्:</span>
+        <input
+          type="text"
+          id="trackingInput"
+          placeholder="आवेदन नम्बर वा नागरिकता नं. (उदा. SS-2083-492)"
+          class="flex-1 w-full px-3 py-1.5 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:border-gray-900"
+        />
+        <button onclick="trackApplication()" class="w-full sm:w-auto px-3.5 py-1.5 bg-gray-900 text-white font-semibold text-xs rounded hover:bg-black">
+          स्थिति जाँच
+        </button>
+      </div>
+      <div id="trackingResult" class="hidden mt-2 p-2 border border-gray-900 bg-white text-xs rounded max-w-xl">
+        <span class="font-bold">स्थिति:</span> आवेदन #SS-2083-492 (सदस्यता नविकरण) - मंगलबजार इलाका संयोजकबाट प्रमाणित भएको छ। परिचयपत्र वितरण प्रक्रियामा छ।
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Service Catalog (Category Sidebar + Service Cards) -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+      <!-- Left Sidebar: Service Categories (Filter Pills) -->
+      <aside class="lg:col-span-3 space-y-4">
+        <div class="border border-gray-200 bg-white rounded p-4">
+          <h3 class="font-bold text-xs uppercase tracking-wider text-gray-500 mb-3">सेवा वर्ग (Categories)</h3>
+          <div class="space-y-1 text-xs">
+            <button onclick="selectCategory('all')" class="cat-btn active w-full text-left px-2.5 py-2 rounded font-semibold bg-gray-900 text-white flex justify-between items-center">
+              <span>सबै सेवाहरू (All)</span>
+              <span class="num-tabular">७</span>
+            </button>
+            <button onclick="selectCategory('member')" class="cat-btn w-full text-left px-2.5 py-2 rounded text-gray-700 hover:bg-gray-100 flex justify-between items-center">
+              <span>सदस्यता तथा परिचयपत्र</span>
+              <span class="num-tabular">२</span>
+            </button>
+            <button onclick="selectCategory('welfare')" class="cat-btn w-full text-left px-2.5 py-2 rounded text-gray-700 hover:bg-gray-100 flex justify-between items-center">
+              <span>कल्याणकारी कोष र राहत</span>
+              <span class="num-tabular">२</span>
+            </button>
+            <button onclick="selectCategory('venue')" class="cat-btn w-full text-left px-2.5 py-2 rounded text-gray-700 hover:bg-gray-100 flex justify-between items-center">
+              <span>भवन तथा हल बुकिङ</span>
+              <span class="num-tabular">१</span>
+            </button>
+            <button onclick="selectCategory('edu')" class="cat-btn w-full text-left px-2.5 py-2 rounded text-gray-700 hover:bg-gray-100 flex justify-between items-center">
+              <span>छात्रवृत्ति र शैक्षिक सहयोग</span>
+              <span class="num-tabular">२</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Helpdesk & Office Hours -->
+        <div class="border border-gray-200 bg-white rounded p-4 text-xs space-y-2">
+          <h4 class="font-bold text-gray-900">सहायता कक्ष (Helpdesk)</h4>
+          <p class="text-gray-600">अनलाइन फारम भर्न समस्या भएमा हाम्रो सहायता टोलीलाई सम्पर्क गर्नुहोस्:</p>
+          <div class="font-semibold text-gray-900 num-tabular">फोन: ०१-५५२३४५६</div>
+          <div class="text-[11px] text-gray-500">समय: आइतबार–शुक्रबार, १०–५</div>
+        </div>
+      </aside>
+
+      <!-- Right Area: Service Cards Grid -->
+      <section class="lg:col-span-9">
+        <div class="flex items-center justify-between mb-4">
+          <h2 id="serviceCategoryTitle" class="font-bold text-base text-gray-900">सबै उपलब्ध नागरिक सेवाहरू (All Services)</h2>
+          <span class="text-xs text-gray-500">अनलाइन आवेदन र सिफारिस प्रक्रिया</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="serviceGrid">
+
+          <!-- Service 1: Membership Registration -->
+          <div class="border border-gray-200 bg-white p-5 rounded hover:border-gray-900 transition-colors service-card" data-cat="member">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded">सदस्यता</span>
+                <h3 class="font-bold text-sm text-gray-900 mt-2">नयाँ सदस्यता आवेदन (New Membership)</h3>
+              </div>
+              <span class="text-xs font-semibold px-2 py-0.5 bg-gray-100 rounded text-gray-700">अनलाइन फारम</span>
+            </div>
+            <p class="text-xs text-gray-600 mt-2 leading-relaxed">
+              ललितपुरमा बसोबास गर्ने स्यस्यः (श्रेष्ठ) परिवारहरूको नयाँ आजीवन वा साधारण सदस्यता दर्ता।
+            </p>
+            <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+              <span class="text-gray-500">शुल्क: रु. १,००० (आजीवन)</span>
+              <button onclick="openServiceModal('नयाँ सदस्यता आवेदन', 'आवश्यक कागजातहरू: नागरिकता प्रमाणपत्रको प्रतिलिपि, २ प्रति पासपोर्ट साइजको फोटो, सम्बन्धित इलाका संयोजकको सिफारिस।')" class="px-3 py-1.5 border border-gray-900 font-medium rounded hover:bg-gray-900 hover:text-white">
+                आवेदन दिनुहोस् →
+              </button>
+            </div>
+          </div>
+
+          <!-- Service 2: Digital ID Card & Renewal -->
+          <div class="border border-gray-200 bg-white p-5 rounded hover:border-gray-900 transition-colors service-card" data-cat="member">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded">परिचयपत्र</span>
+                <h3 class="font-bold text-sm text-gray-900 mt-2">डिजिटल परिचयपत्र तथा नविकरण (Digital ID)</h3>
+              </div>
+              <span class="text-xs font-semibold px-2 py-0.5 bg-gray-100 rounded text-gray-700">तत्काल डाउनलोड</span>
+            </div>
+            <p class="text-xs text-gray-600 mt-2 leading-relaxed">
+              विद्यमान सदस्यहरूले आफ्नो डिजिटल परिचयपत्र QR कोडसहित हेर्न र वार्षिक सदस्यता नविकरण गर्न सकिने।
+            </p>
+            <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+              <span class="text-gray-500">नविकरण शुल्क: रु. २५०/वर्ष</span>
+              <button onclick="openServiceModal('डिजिटल परिचयपत्र तथा नविकरण', 'सदस्य नम्बर वा दर्ता मोबाइल नम्बर प्रविष्ट गरी OTP मार्फत परिचयपत्र डाउनलोड गर्नुहोस्।')" class="px-3 py-1.5 border border-gray-900 font-medium rounded hover:bg-gray-900 hover:text-white">
+                परिचयपत्र हेर्नुहोस् →
+              </button>
+            </div>
+          </div>
+
+          <!-- Service 3: Samaj Community Hall Booking -->
+          <div class="border border-gray-200 bg-white p-5 rounded hover:border-gray-900 transition-colors service-card" data-cat="venue">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded">भवन बुकिङ</span>
+                <h3 class="font-bold text-sm text-gray-900 mt-2">सामुदायिक भवन तथा भोज हल बुकिङ (Hall Booking)</h3>
+              </div>
+              <span class="text-xs font-semibold px-2 py-0.5 bg-gray-100 rounded text-gray-700">मिति क्यालेन्डर</span>
+            </div>
+            <p class="text-xs text-gray-600 mt-2 leading-relaxed">
+              मंगलबजारस्थित स्यस्यः समाज भवनमा विवाह, ब्रतबन्ध, कय्तापूजा, भोज तथा सांस्कृतिक कार्यक्रमका लागि हल आरक्षण।
+            </p>
+            <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+              <span class="text-gray-500">क्षमता: ३५० जना सम्म</span>
+              <button onclick="openServiceModal('सामुदायिक भवन तथा भोज हल बुकिङ', 'उपलब्ध मितिहरू: २०८३ असोज १५ पछि उपलब्ध। सदस्यहरूका लागि २५% विशेष छुटको व्यवस्था।')" class="px-3 py-1.5 border border-gray-900 font-medium rounded hover:bg-gray-900 hover:text-white">
+                मिति छान्नुहोस् →
+              </button>
+            </div>
+          </div>
+
+          <!-- Service 4: Emergency Relief & Welfare Fund -->
+          <div class="border border-gray-200 bg-white p-5 rounded hover:border-gray-900 transition-colors service-card" data-cat="welfare">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded">राहत कोष</span>
+                <h3 class="font-bold text-sm text-gray-900 mt-2">आपतकालीन उपचार तथा राहत सहयोग (Relief Fund)</h3>
+              </div>
+              <span class="text-xs font-semibold px-2 py-0.5 bg-gray-100 rounded text-gray-700">द्रुत प्रमाणीकरण</span>
+            </div>
+            <p class="text-xs text-gray-600 mt-2 leading-relaxed">
+              गम्भीर बिरामी परेका वा प्राकृतिक विपद्मा परेका विपन्न सदस्य परिवारहरूलाई आकस्मिक आर्थिक अनुदान।
+            </p>
+            <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+              <span class="text-gray-500">अनुदान सीमा: रु. ५०,००० सम्म</span>
+              <button onclick="openServiceModal('आपतकालीन उपचार सहयोग', 'अस्पताल भर्ना पुर्जी र डाक्टरको सिफारिस पत्र संलग्न गरी इलाका संयोजक मार्फत सिफारिस गर्नुहोस्।')" class="px-3 py-1.5 border border-gray-900 font-medium rounded hover:bg-gray-900 hover:text-white">
+                राहत आवेदन →
+              </button>
+            </div>
+          </div>
+
+          <!-- Service 5: Higher Education Scholarship -->
+          <div class="border border-gray-200 bg-white p-5 rounded hover:border-gray-900 transition-colors service-card" data-cat="edu">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded">छात्रवृत्ति</span>
+                <h3 class="font-bold text-sm text-gray-900 mt-2">स्यस्यः जेहेन्दार छात्रवृत्ति कोष (Scholarship)</h3>
+              </div>
+              <span class="text-xs font-semibold px-2 py-0.5 bg-gray-100 rounded text-gray-700">वार्षिक आवेदन</span>
+            </div>
+            <p class="text-xs text-gray-600 mt-2 leading-relaxed">
+              SEE र +2 मा उत्कृष्ट अंक ल्याउने जेहेन्दार तथा आर्थिक रुपमा कमजोर छात्रछात्राका लागि वार्षिक शैक्षिक वृत्ति।
+            </p>
+            <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+              <span class="text-gray-500">अन्तिम मिति: २०८३ कात्तिक १५</span>
+              <button onclick="openServiceModal('छात्रवृत्ति आवेदन फारम', 'आवश्यक प्रमाण: लब्धाङ्क पत्र (Transcript), चारित्रिक प्रमाणपत्र र सदस्य सिफारिस।')" class="px-3 py-1.5 border border-gray-900 font-medium rounded hover:bg-gray-900 hover:text-white">
+                फारम भर्नुहोस् →
+              </button>
+            </div>
+          </div>
+
+          <!-- Service 6: Senior Citizen Honor & Allowance -->
+          <div class="border border-gray-200 bg-white p-5 rounded hover:border-gray-900 transition-colors service-card" data-cat="welfare">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded">ज्येष्ठ नागरिक</span>
+                <h3 class="font-bold text-sm text-gray-900 mt-2">ज्येष्ठ नागरिक सम्मान तथा स्वास्थ्य सेवा</h3>
+              </div>
+              <span class="text-xs font-semibold px-2 py-0.5 bg-gray-100 rounded text-gray-700">७० वर्ष माथि</span>
+            </div>
+            <p class="text-xs text-gray-600 mt-2 leading-relaxed">
+              समुदायका ७० वर्ष पुगेका आदरणीय अग्रजहरूलाई वार्षिक सम्मान, घरदैलो स्वास्थ्य परीक्षण र तीर्थयात्रा सहजीकरण।
+            </p>
+            <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+              <span class="text-gray-500">वार्षिक सम्मान कार्यक्रम</span>
+              <button onclick="openServiceModal('ज्येष्ठ नागरिक सम्मान नामावली दर्ता', 'इलाका प्रतिनिधिले टोल-टोलबाट संकलन गरेको विवरण अनुसार नाम दर्ता गरिन्छ।')" class="px-3 py-1.5 border border-gray-900 font-medium rounded hover:bg-gray-900 hover:text-white">
+                विवरण दर्ता →
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Interactive Modal Drawer for Service Requirements -->
+  <div id="serviceModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white border-2 border-gray-900 rounded p-6 max-w-lg w-full shadow-lg">
+      <div class="flex justify-between items-start">
+        <h3 id="modalTitle" class="font-bold text-base text-gray-950">सेवा विवरण</h3>
+        <button onclick="closeServiceModal()" class="text-gray-500 hover:text-black font-bold">✕</button>
+      </div>
+      <div id="modalBody" class="text-xs text-gray-700 mt-3 leading-relaxed border-t border-b border-gray-100 py-3">
+        विवरण यहाँ देखिनेछ।
+      </div>
+      <div class="mt-4 flex justify-end gap-2 text-xs">
+        <button onclick="closeServiceModal()" class="px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-100">बन्द गर्नुहोस्</button>
+        <button onclick="alert('आवेदन प्रणाली सिधै केन्द्रीय सर्भरसँग जोडिएको छ।'); closeServiceModal();" class="px-4 py-1.5 bg-gray-900 text-white font-bold rounded hover:bg-black">अगाडि बढ्नुहोस् (Proceed)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-300 bg-white py-6 text-xs text-gray-600">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>
+        <span class="font-bold text-gray-900">स्यस्यः समाज अनलाइन नागरिक सेवा केन्द्र</span> • यल, नेपाल
+      </div>
+      <div class="flex items-center gap-4 text-gray-500">
+        <a href="#" class="hover:underline">नागरिक बडापत्र (Citizen Charter)</a>
+        <a href="#" class="hover:underline">उजुरी तथा गुनासो</a>
+        <a href="#" class="hover:underline">सम्पर्क</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    function selectCategory(cat) {
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-gray-900', 'text-white');
+        btn.classList.add('text-gray-700');
+      });
+      event.currentTarget.classList.remove('text-gray-700');
+      event.currentTarget.classList.add('active', 'bg-gray-900', 'text-white');
+
+      const cards = document.querySelectorAll('.service-card');
+      cards.forEach(card => {
+        if (cat === 'all' || card.getAttribute('data-cat') === cat) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function trackApplication() {
+      const val = document.getElementById('trackingInput').value.trim();
+      const res = document.getElementById('trackingResult');
+      if (!val) {
+        alert('कृपया आवेदन नम्बर वा नागरिकता नम्बर प्रविष्ट गर्नुहोस्।');
+        return;
+      }
+      res.classList.remove('hidden');
+    }
+
+    function openServiceModal(title, text) {
+      document.getElementById('modalTitle').innerText = title;
+      document.getElementById('modalBody').innerText = text;
+      document.getElementById('serviceModal').classList.remove('hidden');
+    }
+
+    function closeServiceModal() {
+      document.getElementById('serviceModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

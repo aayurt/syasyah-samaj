@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design Pipeline — Syasyah Samaj Main App Review</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-stone-100 text-stone-900 flex flex-col h-screen overflow-hidden">
+
+  <!-- Switcher Top Bar -->
+  <header class="bg-white border-b border-stone-300 px-6 py-2.5 flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-xs z-10">
+    <div class="flex items-center gap-3">
+      <span class="px-2 py-0.5 border border-red-800 bg-red-700 text-white text-[10px] font-bold uppercase tracking-wider rounded">
+        Unified Master · Tier 2
+      </span>
+      <div>
+        <h1 class="text-sm font-bold text-stone-900 leading-tight">Syasyah Samaj — Main App Architecture</h1>
+        <p class="text-[11px] text-stone-500">Civic Action Hub + Timeline + Archives & Manuscripts + Elders</p>
+      </div>
+    </div>
+
+    <!-- Variant Tabs -->
+    <div class="flex items-center gap-1.5 bg-stone-100 p-1 border border-stone-300 rounded-lg text-xs">
+      <button
+        id="btn-009"
+        onclick="switchVariant('009', '../009-unified-community-portal/index.html')"
+        class="tab-btn px-3 py-1.5 font-bold rounded-md bg-white shadow-xs border border-stone-300 text-red-700 flex items-center gap-1"
+      >
+        <span>★ 009: Unified Portal</span>
+        <span class="text-[10px] bg-red-100 text-red-800 px-1 rounded font-normal">New</span>
+      </button>
+      <button
+        id="btn-006"
+        onclick="switchVariant('006', '../006-civic-hub/index.html')"
+        class="tab-btn px-3 py-1.5 font-medium rounded-md text-stone-600 hover:text-black"
+      >
+        006: Civic Hub
+      </button>
+      <button
+        id="btn-007"
+        onclick="switchVariant('007', '../007-editorial-heritage/index.html')"
+        class="tab-btn px-3 py-1.5 font-medium rounded-md text-stone-600 hover:text-black"
+      >
+        007: Heritage
+      </button>
+      <button
+        id="btn-008"
+        onclick="switchVariant('008', '../008-service-directory/index.html')"
+        class="tab-btn px-3 py-1.5 font-medium rounded-md text-stone-600 hover:text-black"
+      >
+        008: Services
+      </button>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a
+        id="openDirectLink"
+        href="../009-unified-community-portal/index.html"
+        target="_blank"
+        class="text-xs px-3 py-1.5 border border-stone-400 font-semibold rounded hover:bg-stone-50 flex items-center gap-1.5"
+      >
+        <span>Open standalone</span>
+        <span>↗</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Interactive Preview Frame -->
+  <main class="flex-1 w-full bg-stone-200 relative overflow-hidden">
+    <iframe
+      id="previewFrame"
+      src="../009-unified-community-portal/index.html"
+      class="w-full h-full border-none bg-white"
+    ></iframe>
+  </main>
+
+  <script>
+    function switchVariant(id, url) {
+      document.getElementById('previewFrame').src = url;
+      document.getElementById('openDirectLink').href = url;
+
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.className = 'tab-btn px-3 py-1.5 font-medium rounded-md text-stone-600 hover:text-black';
+      });
+
+      const activeBtn = document.getElementById('btn-' + id);
+      activeBtn.className = 'tab-btn px-3 py-1.5 font-bold rounded-md bg-white shadow-xs border border-stone-300 text-red-700';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Syasyah Samaj - Civic Hub (Grayscale Wireframe)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Noto Sans Devanagari"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Strict Tier 1 Grayscale Constraints: No chromatic colors or gradients */
+    :root {
+      --bg: #fdfdfd;
+      --card-bg: #ffffff;
+      --border: #e2e4e8;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --text-dim: #9ca3af;
+      --highlight: #111827;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Tabular nums for dates and phone numbers */
+    .num-tabular {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+  <!-- Top Announcement Bar (Collapsible Urgent Notice) -->
+  <div id="notice-banner" class="border-b border-gray-300 bg-gray-100 text-xs py-2 px-4 transition-all">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="inline-block px-1.5 py-0.5 border border-gray-900 font-bold uppercase tracking-wider text-[10px]">
+          सूचना (Notice)
+        </span>
+        <span class="font-medium text-gray-800">
+          २०८३ असोज १० — वार्षिक साधारण सभा तथा छात्रवृत्ति वितरण कार्यक्रम मंगलबजार हलमा।
+        </span>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="#events" class="underline hover:text-black">विवरण हेर्नुहोस्</a>
+        <button onclick="document.getElementById('notice-banner').classList.add('hidden')" class="text-gray-500 hover:text-black text-sm px-1">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navigation Header -->
+  <header class="border-b border-gray-200 bg-white sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 border-2 border-gray-900 rounded-sm flex items-center justify-center font-bold text-lg">
+            स्य
+          </div>
+          <div>
+            <h1 class="text-base font-bold leading-tight tracking-tight">स्यस्यः समाज (Syasyah Samaj)</h1>
+            <p class="text-[11px] text-gray-500">यल (ललितपुर) • केन्द्रीय सामुदायिक पोर्टल</p>
+          </div>
+        </div>
+
+        <nav class="hidden md:flex items-center gap-1 pl-4 border-l border-gray-200 text-sm">
+          <a href="#" class="px-3 py-1.5 font-semibold text-gray-900 border-b-2 border-gray-900">गृहपृष्ठ (Home)</a>
+          <a href="#ilakas" class="px-3 py-1.5 text-gray-600 hover:text-gray-900">इलाकाहरू (Ilakas)</a>
+          <a href="#events" class="px-3 py-1.5 text-gray-600 hover:text-gray-900">कार्यक्रम (Events)</a>
+          <a href="#members" class="px-3 py-1.5 text-gray-600 hover:text-gray-900">सदस्य सूची (Directory)</a>
+          <a href="#services" class="px-3 py-1.5 text-gray-600 hover:text-gray-900">सेवाहरू (Services)</a>
+        </nav>
+      </div>
+
+      <!-- Quick Actions / Utilities -->
+      <div class="flex items-center gap-3 text-sm">
+        <div class="hidden sm:flex border border-gray-300 rounded text-xs overflow-hidden">
+          <button class="px-2.5 py-1 bg-gray-900 text-white font-medium">ने</button>
+          <button class="px-2.5 py-1 text-gray-600 hover:bg-gray-100">EN</button>
+          <button class="px-2.5 py-1 text-gray-600 hover:bg-gray-100">नेवाः</button>
+        </div>
+        <a href="/app" class="px-3 py-1.5 border border-gray-300 rounded font-medium text-xs hover:bg-gray-50">
+          लेखा प्रणाली (Billing SPA)
+        </a>
+        <button class="px-3.5 py-1.5 border-2 border-gray-900 font-semibold text-xs rounded hover:bg-gray-900 hover:text-white transition-colors">
+          सदस्य लगइन (Sign In)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Civic Command Bar (High Utility Search & Quick Jump) -->
+  <section class="border-b border-gray-200 bg-gray-50 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold tracking-tight">नागरिक कार्य केन्द्र (Civic Action Hub)</h2>
+          <p class="text-xs text-gray-600 mt-0.5">ललितपुरका २४ वटा इलाका, गुठी समन्वय र सदस्य सेवा प्रणाली</p>
+        </div>
+
+        <!-- Fast Search Input -->
+        <div class="flex-1 max-w-md">
+          <div class="relative">
+            <input
+              id="civicSearch"
+              type="text"
+              placeholder="इलाका, व्यक्ति, रक्त समूह (Blood Group) वा सेवा खोज्नुहोस्..."
+              class="w-full pl-9 pr-4 py-2 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
+              oninput="filterCivicContent()"
+            />
+            <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Jump Pills -->
+      <div class="flex flex-wrap items-center gap-2 mt-4 text-xs">
+        <span class="text-gray-500 font-medium">शीघ्र पहुँच (Quick Jump):</span>
+        <button onclick="setFilter('all')" class="filter-pill active px-3 py-1 border border-gray-900 bg-gray-900 text-white rounded-full">सबै (All)</button>
+        <button onclick="setFilter('ilaka')" class="filter-pill px-3 py-1 border border-gray-300 bg-white text-gray-700 hover:border-gray-900 rounded-full">इलाका खोज (Ilakas)</button>
+        <button onclick="setFilter('blood')" class="filter-pill px-3 py-1 border border-gray-300 bg-white text-gray-700 hover:border-gray-900 rounded-full">रक्त समूह निर्देशिका (Blood Donors)</button>
+        <button onclick="setFilter('dues')" class="filter-pill px-3 py-1 border border-gray-300 bg-white text-gray-700 hover:border-gray-900 rounded-full">लेबी तथा सदस्यता (Membership Dues)</button>
+        <button onclick="setFilter('events')" class="filter-pill px-3 py-1 border border-gray-300 bg-white text-gray-700 hover:border-gray-900 rounded-full">आसन्न गुठी पर्व (Guthi Events)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Layout (70% Primary Bulletin / 30% Sticky Locator & Actions) -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+      <!-- LEFT COLUMN: 8 of 12 (Core Operational Feed & Announcements) -->
+      <div class="lg:col-span-8 space-y-8">
+
+        <!-- 4-Stat Civic Health Bar -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 border border-gray-200 bg-white p-4 rounded">
+          <div class="border-r border-gray-100 last:border-0 pr-2">
+            <span class="text-[11px] text-gray-500 block">सक्रिय इलाकाहरू (Active Ilakas)</span>
+            <span class="text-xl font-bold num-tabular">२४</span>
+            <span class="text-[10px] text-gray-500 block mt-0.5">यल महानगर क्षेत्र</span>
+          </div>
+          <div class="border-r border-gray-100 last:border-0 pr-2">
+            <span class="text-[11px] text-gray-500 block">दर्ता सदस्य संख्या (Members)</span>
+            <span class="text-xl font-bold num-tabular">१,८४२</span>
+            <span class="text-[10px] text-gray-500 block mt-0.5">९८% नविकरण सम्पन्न</span>
+          </div>
+          <div class="border-r border-gray-100 last:border-0 pr-2">
+            <span class="text-[11px] text-gray-500 block">गुठी/पर्व समन्वय (Guthees)</span>
+            <span class="text-xl font-bold num-tabular">१४</span>
+            <span class="text-[10px] text-gray-500 block mt-0.5">परम्परागत दायित्व</span>
+          </div>
+          <div>
+            <span class="text-[11px] text-gray-500 block">आपतकालीन रक्तदाता (Donors)</span>
+            <span class="text-xl font-bold num-tabular">२१०+</span>
+            <span class="text-[10px] text-gray-500 block mt-0.5">सक्रिय सम्पर्क सूची</span>
+          </div>
+        </div>
+
+        <!-- Section: Upcoming Events & Festivals Timeline -->
+        <section id="events" class="border border-gray-200 bg-white rounded p-5">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-200 mb-4">
+            <div>
+              <h3 class="font-bold text-base">आसन्न गुठी, पर्व तथा कार्यक्रमहरू (Upcoming Events)</h3>
+              <p class="text-xs text-gray-500">समाजका केन्द्रीय तथा इलाकास्तरीय औपचारिक गतिविधिहरू</p>
+            </div>
+            <a href="#" class="text-xs font-semibold underline hover:text-gray-600">सबै कार्यक्रम (All Events) →</a>
+          </div>
+
+          <div class="space-y-3" id="eventsList">
+            <!-- Event 1 -->
+            <div class="border border-gray-200 p-3 rounded flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-gray-400 transition-colors">
+              <div class="flex items-start gap-3">
+                <div class="w-12 h-12 border border-gray-300 rounded flex flex-col items-center justify-center bg-gray-50 shrink-0">
+                  <span class="text-[10px] font-bold text-gray-500 uppercase">असोज</span>
+                  <span class="text-lg font-extrabold leading-none num-tabular">१०</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-gray-900">२३ औं वार्षिक साधारण सभा तथा सम्मान कार्यक्रम</span>
+                    <span class="px-1.5 py-0.2 border border-gray-300 text-[10px] text-gray-600 rounded">केन्द्रीय</span>
+                  </div>
+                  <p class="text-xs text-gray-600 mt-0.5">स्थान: स्यस्यः समाज भवन, मंगलबजार • समय: बिहान ११:०० बजे</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-100">कार्यसूची (Agenda)</button>
+                <button class="px-3 py-1.5 text-xs border border-gray-900 font-medium rounded hover:bg-gray-900 hover:text-white">उपस्थिति दर्ता (RSVP)</button>
+              </div>
+            </div>
+
+            <!-- Event 2 -->
+            <div class="border border-gray-200 p-3 rounded flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-gray-400 transition-colors">
+              <div class="flex items-start gap-3">
+                <div class="w-12 h-12 border border-gray-300 rounded flex flex-col items-center justify-center bg-gray-50 shrink-0">
+                  <span class="text-[10px] font-bold text-gray-500 uppercase">असोज</span>
+                  <span class="text-lg font-extrabold leading-none num-tabular">१५</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-gray-900">यँयाः (इन्द्रजात्रा) समय् बजि वितरण तथा सांस्कृतिक झाँकी</span>
+                    <span class="px-1.5 py-0.2 border border-gray-300 text-[10px] text-gray-600 rounded">सांस्कृतिक</span>
+                  </div>
+                  <p class="text-xs text-gray-600 mt-0.5">स्थान: पाटन दरवार स्क्वायर • समय: दिउँसो २:०० बजे</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-100">मार्ग नक्शा (Route)</button>
+                <button class="px-3 py-1.5 text-xs border border-gray-900 font-medium rounded hover:bg-gray-900 hover:text-white">सहभागिता विवरण</button>
+              </div>
+            </div>
+
+            <!-- Event 3 -->
+            <div class="border border-gray-200 p-3 rounded flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-gray-400 transition-colors">
+              <div class="flex items-start gap-3">
+                <div class="w-12 h-12 border border-gray-300 rounded flex flex-col items-center justify-center bg-gray-50 shrink-0">
+                  <span class="text-[10px] font-bold text-gray-500 uppercase">कार्तिक</span>
+                  <span class="text-lg font-extrabold leading-none num-tabular">०२</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-gray-900">सामुदायिक खुला रक्तदान तथा स्वास्थ्य परीक्षण शिविर</span>
+                    <span class="px-1.5 py-0.2 border border-gray-300 text-[10px] text-gray-600 rounded">स्वास्थ्य सेवा</span>
+                  </div>
+                  <p class="text-xs text-gray-600 mt-0.5">स्थान: पुल्चोक इलाका समन्वय केन्द्र • समय: बिहान ८:०० देखि २:०० सम्म</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-100">रक्तदाता फारम</button>
+                <button class="px-3 py-1.5 text-xs border border-gray-900 font-medium rounded hover:bg-gray-900 hover:text-white">नाम दर्ता (Sign Up)</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section: Interactive Ilaka Directory & Representatives -->
+        <section id="ilakas" class="border border-gray-200 bg-white rounded p-5">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-200 mb-4">
+            <div>
+              <h3 class="font-bold text-base">इलाका प्रतिनिधि तथा सम्पर्क सूची (Ilaka Directory)</h3>
+              <p class="text-xs text-gray-500">प्रत्येक इलाकाको संयोजक, सम्पर्क ठेगाना र सदस्य संख्या</p>
+            </div>
+            <span class="text-xs text-gray-500">कुल २४ इलाका</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="ilakaGrid">
+            <!-- Ilaka Card 1 -->
+            <div class="border border-gray-200 p-3 rounded hover:border-gray-400 transition-colors ilaka-item" data-name="मंगलबजार mangalbazar">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="font-bold text-sm">इलाका नं. १: मंगलबजार (Mangal Bazaar)</div>
+                  <p class="text-xs text-gray-600 mt-0.5">संयोजक: श्री राजेन्द्र श्रेष्ठ (९८४१२३४५६७)</p>
+                  <p class="text-[11px] text-gray-500">ठेगाना: क्वाछें, पाटन • सदस्य: १२४ परिवार</p>
+                </div>
+                <button class="text-xs border border-gray-300 px-2 py-1 rounded hover:bg-gray-100">सम्पर्क</button>
+              </div>
+            </div>
+
+            <!-- Ilaka Card 2 -->
+            <div class="border border-gray-200 p-3 rounded hover:border-gray-400 transition-colors ilaka-item" data-name="पुल्चोक pulchowk">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="font-bold text-sm">इलाका नं. २: पुल्चोक / कुपण्डोल (Pulchowk)</div>
+                  <p class="text-xs text-gray-600 mt-0.5">संयोजक: श्री सुरेन्द्र राज श्रेष्ठ (९८५१०१२३४५)</p>
+                  <p class="text-[11px] text-gray-500">ठेगाना: दमकल चोक नजिक • सदस्य: ९८ परिवार</p>
+                </div>
+                <button class="text-xs border border-gray-300 px-2 py-1 rounded hover:bg-gray-100">सम्पर्क</button>
+              </div>
+            </div>
+
+            <!-- Ilaka Card 3 -->
+            <div class="border border-gray-200 p-3 rounded hover:border-gray-400 transition-colors ilaka-item" data-name="त्यागल tyagal">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="font-bold text-sm">इलाका नं. ३: त्यागल / लगनखेल (Tyagal)</div>
+                  <p class="text-xs text-gray-600 mt-0.5">संयोजक: श्रीमती सुनिता श्रेष्ठ (९८४१५५६६७७)</p>
+                  <p class="text-[11px] text-gray-500">ठेगाना: त्यागल टोल • सदस्य: १४२ परिवार</p>
+                </div>
+                <button class="text-xs border border-gray-300 px-2 py-1 rounded hover:bg-gray-100">सम्पर्क</button>
+              </div>
+            </div>
+
+            <!-- Ilaka Card 4 -->
+            <div class="border border-gray-200 p-3 rounded hover:border-gray-400 transition-colors ilaka-item" data-name="पाटनढोका patandhoka">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="font-bold text-sm">इलाका नं. ४: पाटनढोका / इखालखु (Patan Dhoka)</div>
+                  <p class="text-xs text-gray-600 mt-0.5">संयोजक: श्री किरण कुमार श्रेष्ठ (९८०१२३४५६७)</p>
+                  <p class="text-[11px] text-gray-500">ठेगाना: नःबहाल • सदस्य: ११० परिवार</p>
+                </div>
+                <button class="text-xs border border-gray-300 px-2 py-1 rounded hover:bg-gray-100">सम्पर्क</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section: Emergency Blood Group Matrix (Interactive Filter) -->
+        <section id="bloodGroupSection" class="border border-gray-200 bg-white rounded p-5">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-200 mb-3">
+            <div>
+              <h3 class="font-bold text-base">रक्त समूह आपतकालीन सम्पर्क (Emergency Blood Network)</h3>
+              <p class="text-xs text-gray-500">आवश्यकता परेको बेला तुरुन्त उपलब्ध हुने समुदायका रक्तदाताहरू</p>
+            </div>
+            <span class="text-xs font-semibold px-2 py-1 border border-gray-300 rounded bg-gray-50">२४ सै घण्टा सेवा</span>
+          </div>
+
+          <div class="flex flex-wrap gap-2 mb-3">
+            <button onclick="filterBlood('ALL')" class="blood-btn active px-2.5 py-1 text-xs border border-gray-900 bg-gray-900 text-white rounded">सबै</button>
+            <button onclick="filterBlood('O+')" class="blood-btn px-2.5 py-1 text-xs border border-gray-300 rounded hover:border-gray-900">O+ (६८ जना)</button>
+            <button onclick="filterBlood('A+')" class="blood-btn px-2.5 py-1 text-xs border border-gray-300 rounded hover:border-gray-900">A+ (५४ जना)</button>
+            <button onclick="filterBlood('B+')" class="blood-btn px-2.5 py-1 text-xs border border-gray-300 rounded hover:border-gray-900">B+ (५१ जना)</button>
+            <button onclick="filterBlood('AB+')" class="blood-btn px-2.5 py-1 text-xs border border-gray-300 rounded hover:border-gray-900">AB+ (२२ जना)</button>
+            <button onclick="filterBlood('NEG')" class="blood-btn px-2.5 py-1 text-xs border border-gray-300 rounded hover:border-gray-900">Negative Groups (१५ जना)</button>
+          </div>
+
+          <div class="border border-gray-200 rounded divide-y divide-gray-100 text-xs" id="bloodDonorsList">
+            <div class="p-2.5 flex items-center justify-between" data-group="O+">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded border border-gray-300 font-bold flex items-center justify-center bg-gray-50">O+</span>
+                <div>
+                  <span class="font-bold text-gray-900">अमित श्रेष्ठ</span>
+                  <span class="text-gray-500 ml-2">• मंगलबजार इलाका</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-gray-600 num-tabular">९८४१-०१२३४५</span>
+                <button class="px-2 py-1 border border-gray-300 rounded hover:bg-gray-100">सम्पर्क गर्नुहोस्</button>
+              </div>
+            </div>
+
+            <div class="p-2.5 flex items-center justify-between" data-group="A+">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded border border-gray-300 font-bold flex items-center justify-center bg-gray-50">A+</span>
+                <div>
+                  <span class="font-bold text-gray-900">प्रमिला श्रेष्ठ</span>
+                  <span class="text-gray-500 ml-2">• पुल्चोक इलाका</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-gray-600 num-tabular">९८५१-२३४५६७</span>
+                <button class="px-2 py-1 border border-gray-300 rounded hover:bg-gray-100">सम्पर्क गर्नुहोस्</button>
+              </div>
+            </div>
+
+            <div class="p-2.5 flex items-center justify-between" data-group="B+">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded border border-gray-300 font-bold flex items-center justify-center bg-gray-50">B+</span>
+                <div>
+                  <span class="font-bold text-gray-900">सञ्जय मान श्रेष्ठ</span>
+                  <span class="text-gray-500 ml-2">• त्यागल इलाका</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-gray-600 num-tabular">९८०१-९८७६५४</span>
+                <button class="px-2 py-1 border border-gray-300 rounded hover:bg-gray-100">सम्पर्क गर्नुहोस्</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- RIGHT COLUMN: 4 of 12 (Sticky Member Actions, Dues & Documents) -->
+      <div class="lg:col-span-4 space-y-6">
+
+        <!-- Member Quick Action Box -->
+        <div class="border-2 border-gray-900 bg-white p-5 rounded">
+          <span class="inline-block px-2 py-0.5 border border-gray-900 text-[10px] font-bold uppercase tracking-wider mb-2">
+            सदस्य सेवा (Member Action)
+          </span>
+          <h3 class="text-base font-bold">तपाईंको सदस्यता तथा डिजिटल परिचयपत्र</h3>
+          <p class="text-xs text-gray-600 mt-1">
+            स्यस्यः समाजको आधिकारिक सदस्य परिचयपत्र डाउनलोड गर्न तथा नविकरण स्थिति जाँच गर्न यहाँ लगइन गर्नुहोस्।
+          </p>
+
+          <div class="mt-4 space-y-2">
+            <button class="w-full py-2 bg-gray-900 text-white font-medium text-xs rounded hover:bg-black transition-colors">
+              डिजिटल परिचयपत्र हेर्नुहोस् (Digital ID)
+            </button>
+            <button class="w-full py-2 border border-gray-300 font-medium text-xs rounded hover:bg-gray-50 transition-colors">
+              सदस्यता शुल्क भुक्तानी (Pay Dues)
+            </button>
+          </div>
+          <p class="text-[10px] text-gray-500 mt-2 text-center">अनलाइन भुक्तानी: eSewa / Khalti / ConnectIPS मार्फत</p>
+        </div>
+
+        <!-- Community Leadership (कार्यसमिति पदाधिकारी) -->
+        <div class="border border-gray-200 bg-white p-5 rounded">
+          <div class="flex justify-between items-center pb-2 border-b border-gray-200 mb-3">
+            <h4 class="font-bold text-sm">कार्यसमिति नेतृत्व (Executive Team)</h4>
+            <span class="text-[11px] text-gray-500">२०८१-२०८४</span>
+          </div>
+
+          <ul class="space-y-2.5 text-xs">
+            <li class="flex justify-between items-center">
+              <div>
+                <span class="font-bold block text-gray-900">श्री तीर्थलाल श्रेष्ठ</span>
+                <span class="text-gray-500 text-[11px]">अध्यक्ष (President)</span>
+              </div>
+              <span class="text-gray-600 num-tabular">९८४१२२३३४४</span>
+            </li>
+            <li class="flex justify-between items-center">
+              <div>
+                <span class="font-bold block text-gray-900">श्री ज्ञानकाजी श्रेष्ठ</span>
+                <span class="text-gray-500 text-[11px]">उपाध्यक्ष (Vice President)</span>
+              </div>
+              <span class="text-gray-600 num-tabular">९८५१०९८७६५</span>
+            </li>
+            <li class="flex justify-between items-center">
+              <div>
+                <span class="font-bold block text-gray-900">श्री राजेन्द्र मान श्रेष्ठ</span>
+                <span class="text-gray-500 text-[11px]">महासचिव (General Secretary)</span>
+              </div>
+              <span class="text-gray-600 num-tabular">९८४१४४५५६६</span>
+            </li>
+            <li class="flex justify-between items-center">
+              <div>
+                <span class="font-bold block text-gray-900">श्री राजेश श्रेष्ठ</span>
+                <span class="text-gray-500 text-[11px]">कोषाध्यक्ष (Treasurer)</span>
+              </div>
+              <span class="text-gray-600 num-tabular">९८०१२३४८९०</span>
+            </li>
+          </ul>
+
+          <a href="#" class="block text-center text-xs underline font-semibold text-gray-700 hover:text-black mt-4 pt-3 border-t border-gray-100">
+            पूर्ण कार्यसमिति तथा सल्लाहकार मण्डल →
+          </a>
+        </div>
+
+        <!-- Official Publications & Archives (दस्तावेज तथा प्रतिवेदन) -->
+        <div class="border border-gray-200 bg-white p-5 rounded">
+          <div class="flex justify-between items-center pb-2 border-b border-gray-200 mb-3">
+            <h4 class="font-bold text-sm">सार्वजनिक दस्तावेज (Official Archives)</h4>
+            <span class="text-[11px] text-gray-500">PDF</span>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <a href="#" class="p-2 border border-gray-100 rounded flex items-center justify-between hover:bg-gray-50 block">
+              <span class="font-medium text-gray-800">विधान तथा नियमावली २०८०</span>
+              <span class="text-[10px] text-gray-400">१.२ MB</span>
+            </a>
+            <a href="#" class="p-2 border border-gray-100 rounded flex items-center justify-between hover:bg-gray-50 block">
+              <span class="font-medium text-gray-800">आर्थिक वर्ष २०८१/८२ लेखापरीक्षण प्रतिवेदन</span>
+              <span class="text-[10px] text-gray-400">८५० KB</span>
+            </a>
+            <a href="#" class="p-2 border border-gray-100 rounded flex items-center justify-between hover:bg-gray-50 block">
+              <span class="font-medium text-gray-800">छात्रवृत्ति आवेदन फारम २०८३</span>
+              <span class="text-[10px] text-gray-400">३२० KB</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Central Office Location & Contact -->
+        <div class="border border-gray-200 bg-gray-50 p-4 rounded text-xs space-y-1.5">
+          <div class="font-bold text-gray-900">केन्द्रीय कार्यालय (Main Secretariat):</div>
+          <div class="text-gray-600">स्यस्यः समाज केन्द्रीय भवन, मंगलबजार, यल (ललितपुर)</div>
+          <div class="text-gray-600">फोन: ०१-५५२३४५६ • इमेल: info@syasyahsamaj.org.np</div>
+          <div class="text-[11px] text-gray-500 pt-1">खुल्ने समय: बिहान १०:०० देखि साँझ ५:०० सम्म (शनिबार बाहेक)</div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-300 bg-white py-8 mt-12 text-xs text-gray-600">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <span class="font-bold text-gray-900">स्यस्यः समाज (Syasyah Samaj)</span>
+        <span>•</span>
+        <span>यल (पाटन), नेपाल</span>
+        <span>•</span>
+        <span>दर्ता नं: २३४/०५६/५७ (ललितपुर)</span>
+      </div>
+      <div class="flex items-center gap-4 text-gray-500">
+        <a href="#" class="hover:underline">गोपनीयता नीति (Privacy)</a>
+        <a href="#" class="hover:underline">विधान (Constitution)</a>
+        <a href="#" class="hover:underline">लेखा अभिलेख (Accounts)</a>
+        <a href="#" class="hover:underline">सम्पर्क (Contact)</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive Scripts (Client-side Search & State Changes) -->
+  <script>
+    function filterCivicContent() {
+      const q = document.getElementById('civicSearch').value.toLowerCase();
+      // Filter Ilaka cards
+      document.querySelectorAll('.ilaka-item').forEach(item => {
+        const text = item.getAttribute('data-name').toLowerCase() + item.innerText.toLowerCase();
+        item.style.display = text.includes(q) ? '' : 'none';
+      });
+      // Filter Donors
+      document.querySelectorAll('#bloodDonorsList > div').forEach(item => {
+        const text = item.innerText.toLowerCase();
+        item.style.display = text.includes(q) ? '' : 'none';
+      });
+    }
+
+    function setFilter(type) {
+      document.querySelectorAll('.filter-pill').forEach(el => {
+        el.classList.remove('bg-gray-900', 'text-white', 'border-gray-900');
+        el.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+      });
+      event.currentTarget.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
+      event.currentTarget.classList.add('bg-gray-900', 'text-white', 'border-gray-900');
+
+      if (type === 'blood') {
+        document.getElementById('bloodGroupSection').scrollIntoView({ behavior: 'smooth' });
+      } else if (type === 'ilaka') {
+        document.getElementById('ilakas').scrollIntoView({ behavior: 'smooth' });
+      } else if (type === 'events') {
+        document.getElementById('events').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function filterBlood(group) {
+      document.querySelectorAll('.blood-btn').forEach(btn => {
+        btn.classList.remove('bg-gray-900', 'text-white', 'border-gray-900');
+        btn.classList.add('border-gray-300');
+      });
+      event.currentTarget.classList.add('bg-gray-900', 'text-white', 'border-gray-900');
+
+      const items = document.querySelectorAll('#bloodDonorsList > div');
+      items.forEach(item => {
+        if (group === 'ALL') {
+          item.style.display = '';
+        } else if (group === 'NEG') {
+          item.style.display = item.getAttribute('data-group').includes('-') ? '' : 'none';
+        } else {
+          item.style.display = item.getAttribute('data-group') === group ? '' : 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

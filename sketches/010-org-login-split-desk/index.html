@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Organisation Login — Split Civic Desk (Grayscale Wireframe)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Strict Tier 1 Grayscale Constraints: No chromatic colors or gradients */
+    :root {
+      --bg: #fcfcfc;
+      --card-bg: #ffffff;
+      --border: #e2e4e8;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+    }
+    .num-tabular {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+  <!-- Top Simple Return Header -->
+  <header class="border-b border-gray-200 bg-white py-3 px-6">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 text-xs font-semibold text-gray-700 hover:text-black">
+        <span>←</span>
+        <span>मुख्य पोर्टलमा फर्कनुहोस् (Back to Main Portal)</span>
+      </a>
+      <div class="flex items-center gap-3 text-xs text-gray-500">
+        <span>केन्द्रीय सचिवालय: ०१-५५२३४५६</span>
+        <span>•</span>
+        <span>सहायता कक्ष (Helpdesk)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Split-Screen Layout -->
+  <main class="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-50px)]">
+
+    <!-- LEFT COLUMN: Institutional Information & Guidance (5 of 12) -->
+    <div class="lg:col-span-5 border-r border-gray-200 bg-gray-50 p-8 sm:p-12 flex flex-col justify-between">
+      <div class="space-y-6">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 border-2 border-gray-900 rounded flex items-center justify-center font-bold text-xl bg-white">
+            स्य
+          </div>
+          <div>
+            <h1 class="text-lg font-bold tracking-tight">स्यस्यः समाज, यल</h1>
+            <p class="text-xs text-gray-500">ललितपुर • केन्द्रीय अनलाइन नागरिक तथा संस्थागत प्रणाली</p>
+          </div>
+        </div>
+
+        <div class="border-t border-b border-gray-200 py-4 my-4 space-y-2">
+          <span class="inline-block px-2 py-0.5 border border-gray-900 text-[10px] font-bold uppercase tracking-wider">
+            सुरक्षित प्रवेश (Secure Gateway)
+          </span>
+          <h2 class="text-base font-bold text-gray-900">यो प्रवेशद्वार कसका लागि हो?</h2>
+          <p class="text-xs text-gray-600 leading-relaxed">
+            यो पोर्टल समुदायका साधारण तथा आजीवन सदस्यहरू, २४ वटै इलाकाका संयोजकहरू र समाजका आधिकारिक कर्मचारीहरूका लागि मात्र हो।
+          </p>
+        </div>
+
+        <!-- Role Guidance Matrix -->
+        <div class="space-y-3 text-xs">
+          <div class="border border-gray-200 p-3 rounded bg-white">
+            <span class="font-bold block text-gray-900">१. साधारण तथा आजीवन सदस्य (Members):</span>
+            <span class="text-gray-600">डिजिटल परिचयपत्र हेर्न, सदस्यता शुल्क नविकरण गर्न र परिवारको विवरण अद्यावधिक गर्न।</span>
+          </div>
+
+          <div class="border border-gray-200 p-3 rounded bg-white">
+            <span class="font-bold block text-gray-900">२. इलाका संयोजक तथा प्रतिनिधि (Coordinators):</span>
+            <span class="text-gray-600">स्थानीय इलाकाका नयाँ सदस्य आवेदन प्रमाणित गर्न र रक्तदाता विवरण अद्यावधिक गर्न।</span>
+          </div>
+
+          <div class="border border-gray-200 p-3 rounded bg-white">
+            <span class="font-bold block text-gray-900">३. लेखा तथा प्रशासनिक कर्मचारी (Staff / Accounting):</span>
+            <span class="text-gray-600">दैनिक आयव्यय रसिद जारी गर्न र स्यस्यः धुकू लेखा प्रणाली (/app) सञ्चालन गर्न।</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Notice Footer -->
+      <div class="pt-6 border-t border-gray-200 text-[11px] text-gray-500 space-y-1">
+        <p class="font-bold text-gray-800">⚠️ सुरक्षा सचेतना:</p>
+        <p>आफ्नो पासवर्ड वा मोबाइलमा प्राप्त भएको OTP कोड कसैलाई पनि नदिनुहोस्।</p>
+        <p class="pt-1">प्रविधि सहायता: info@syasyahsamaj.org.np</p>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Authentication Form (7 of 12) -->
+    <div class="lg:col-span-7 bg-white p-8 sm:p-16 flex flex-col justify-center items-center">
+      <div class="max-w-md w-full space-y-6">
+
+        <!-- Form Heading -->
+        <div>
+          <h2 class="text-2xl font-bold tracking-tight text-gray-950">प्रणालीमा प्रवेश गर्नुहोस्</h2>
+          <p class="text-xs text-gray-500 mt-1" id="loginSubheading">
+            कृपया आफ्नो दर्ता विवरण प्रविष्ट गरी अगाडि बढ्नुहोस्।
+          </p>
+        </div>
+
+        <!-- Persona Toggle Switcher (Interactive) -->
+        <div class="grid grid-cols-2 border border-gray-300 p-1 rounded bg-gray-100 text-xs font-semibold">
+          <button
+            id="tabMember"
+            onclick="switchPersona('member')"
+            class="py-2 rounded bg-white border border-gray-300 text-gray-900 shadow-sm"
+          >
+            सदस्य लगइन (Member)
+          </button>
+          <button
+            id="tabOrg"
+            onclick="switchPersona('org')"
+            class="py-2 rounded text-gray-600 hover:text-black"
+          >
+            संस्थागत / इलाका (Staff)
+          </button>
+        </div>
+
+        <!-- Login Form -->
+        <form class="space-y-4 text-xs" onsubmit="handleLoginSubmit(event)">
+          
+          <!-- Identifier Input -->
+          <div>
+            <label id="identifierLabel" class="block font-bold text-gray-800 mb-1">
+              सदस्य नम्बर वा दर्ता मोबाइल नम्बर (Member ID / Mobile)
+            </label>
+            <input
+              type="text"
+              id="identifierInput"
+              placeholder="उदा. SS-2083-049 वा ९८४१२३४५६७"
+              required
+              class="w-full px-3 py-2.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
+            />
+            <p id="identifierHint" class="text-[10px] text-gray-500 mt-1">
+              फारममा उल्लेख गरिएको आधिकारिक मोबाइल नम्बर वा सदस्यता कार्डमा भएको ID
+            </p>
+          </div>
+
+          <!-- Password / PIN Input -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block font-bold text-gray-800">
+                पासवर्ड वा ६-अंकको सुरक्षा पिन (Password / PIN)
+              </label>
+              <a href="#" class="text-[11px] underline text-gray-600 hover:text-black">
+                पासवर्ड बिर्सनुभयो?
+              </a>
+            </div>
+            <input
+              type="password"
+              id="passwordInput"
+              placeholder="••••••••"
+              required
+              class="w-full px-3 py-2.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
+            />
+          </div>
+
+          <!-- Remember & Routing Preview -->
+          <div class="flex items-center justify-between pt-1">
+            <label class="flex items-center gap-2 text-gray-700 cursor-pointer">
+              <input type="checkbox" class="rounded border-gray-300" checked />
+              <span>मलाई यो यन्त्रमा सम्झिरहनुहोस् (३० दिन)</span>
+            </label>
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            id="submitBtn"
+            class="w-full py-2.5 border-2 border-gray-900 bg-gray-900 text-white font-bold rounded hover:bg-black transition-colors"
+          >
+            लगइन गर्नुहोस् (Sign In to Member Portal) →
+          </button>
+
+          <!-- Alternative Fast Sign In for Elders (SMS OTP) -->
+          <div class="pt-2 text-center">
+            <span class="text-[11px] text-gray-500">वा</span>
+            <button
+              type="button"
+              onclick="toggleOtpMode()"
+              class="block w-full mt-2 py-2 border border-gray-300 rounded font-medium text-gray-700 hover:bg-gray-50"
+            >
+              📱 मोबाइलमा OTP कोड पठाएर तुरुन्त लगइन गर्नुहोस्
+            </button>
+          </div>
+        </form>
+
+        <!-- New Member Registration Link -->
+        <div class="pt-4 border-t border-gray-200 text-center text-xs text-gray-600">
+          <span>तपाईं नयाँ सदस्य हुनुहुन्छ?</span>
+          <a href="/members/apply" class="font-bold underline text-gray-900 ml-1">
+            यहाँ नयाँ सदस्यता आवेदन दिनुहोस् →
+          </a>
+        </div>
+
+        <!-- Super Admin CMS Link Disclaimer -->
+        <div class="p-3 border border-gray-200 rounded bg-gray-50 text-[11px] text-gray-500 flex items-center justify-between">
+          <span>प्रणाली विकासकर्ता तथा डाटाबेस व्यवस्थापन:</span>
+          <a href="/admin" class="underline font-semibold text-gray-700 hover:text-black">
+            Payload CMS Admin (/admin) →
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Interactive Scripts -->
+  <script>
+    let currentPersona = 'member';
+
+    function switchPersona(type) {
+      currentPersona = type;
+      const tabMember = document.getElementById('tabMember');
+      const tabOrg = document.getElementById('tabOrg');
+      const label = document.getElementById('identifierLabel');
+      const hint = document.getElementById('identifierHint');
+      const input = document.getElementById('identifierInput');
+      const submitBtn = document.getElementById('submitBtn');
+      const sub = document.getElementById('loginSubheading');
+
+      if (type === 'member') {
+        tabMember.className = 'py-2 rounded bg-white border border-gray-300 text-gray-900 shadow-sm';
+        tabOrg.className = 'py-2 rounded text-gray-600 hover:text-black';
+        label.innerText = 'सदस्य नम्बर वा दर्ता मोबाइल नम्बर (Member ID / Mobile)';
+        hint.innerText = 'फारममा उल्लेख गरिएको आधिकारिक मोबाइल नम्बर वा सदस्यता कार्डमा भएको ID';
+        input.placeholder = 'उदा. SS-2083-049 वा ९८४१२३४५६७';
+        submitBtn.innerText = 'लगइन गर्नुहोस् (Sign In to Member Portal) →';
+        sub.innerText = 'कृपया आफ्नो दर्ता विवरण प्रविष्ट गरी नागरिक पोर्टलमा प्रवेश गर्नुहोस्।';
+      } else {
+        tabOrg.className = 'py-2 rounded bg-white border border-gray-300 text-gray-900 shadow-sm';
+        tabMember.className = 'py-2 rounded text-gray-600 hover:text-black';
+        label.innerText = 'संस्थागत इमेल वा कर्मचारी कोड (Staff Email / Coordinator ID)';
+        hint.innerText = 'इलाका संयोजक वा समाज सचिवालयबाट उपलब्ध गराइएको आधिकारिक पहिचान';
+        input.placeholder = 'उदा. coordinator.ilaka01@syasyahsamaj.org.np';
+        submitBtn.innerText = 'संस्थागत डेस्कमा प्रवेश (Sign In to Staff Desk) →';
+        sub.innerText = 'इलाका संयोजक तथा कार्यसमिति पदाधिकारीहरूको आधिकारिक व्यवस्थापन डेस्क।';
+      }
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('identifierInput').value;
+      if (currentPersona === 'member') {
+        alert('सफल प्रमाणीकरण: सदस्य पोर्टल (Digital ID & Dues) मा रिडाइरेक्ट हुँदैछ...');
+      } else {
+        alert('सफल प्रमाणीकरण: इलाका संयोजक / संस्थागत डेस्कमा रिडाइरेक्ट हुँदैछ...');
+      }
+    }
+
+    function toggleOtpMode() {
+      alert('OTP लगइन मोड: तपाईंको दर्ता मोबाइल नम्बरमा ६-अंकको एसएमएस कोड पठाइनेछ।');
+    }
+  </script>
+</body>
+</html>

@@ -7,9 +7,11 @@ import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
 import { Categories } from './collections/Categories'
+import { Elders } from './collections/Elders'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
+import { Timeline } from './collections/Timeline'
 import { Users } from './collections/Users'
 import { Footer } from './Footer/config'
 import { Header } from './Header/config'
@@ -107,6 +109,7 @@ export default buildConfig({
     Media,
     Categories,
     Users,
+    Timeline,
     Events,
     Orders,
     Tickets,
@@ -126,6 +129,7 @@ export default buildConfig({
     Archives,
     Messages,
     ChatRooms,
+    Elders,
     MembershipTypes,
     BankStatements,
     FixedAssets,

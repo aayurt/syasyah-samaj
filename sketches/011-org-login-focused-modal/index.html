@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Organisation Login — Focused Gov Trust Card (Grayscale Wireframe)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #f9f9fb;
+      --card: #ffffff;
+      --border: #d1d5db;
+      --text: #111827;
+      --muted: #6b7280;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    .num-tabular {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between font-sans">
+
+  <!-- Top Simple Return Header -->
+  <header class="border-b border-gray-200 bg-white py-3.5 px-6">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 text-xs font-semibold text-gray-700 hover:text-black">
+        <span>←</span>
+        <span>स्यस्यः समाज मुख्य वेबसाइट</span>
+      </a>
+      <div class="flex items-center gap-2 text-xs text-gray-600">
+        <span class="w-2 h-2 rounded-full bg-gray-900"></span>
+        <span class="font-medium">सुरक्षित नागरिक प्रमाणीकरण (SSL 256-bit)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Centered Single-Column Card -->
+  <main class="flex-1 flex items-center justify-center p-4 sm:p-8">
+    <div class="max-w-md w-full border-2 border-gray-900 bg-white p-6 sm:p-8 rounded-lg shadow-sm space-y-6">
+
+      <!-- Card Header -->
+      <div class="text-center space-y-2 border-b border-gray-200 pb-5">
+        <div class="w-12 h-12 border-2 border-gray-900 rounded mx-auto flex items-center justify-center font-bold text-xl bg-gray-50">
+          स्य
+        </div>
+        <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-gray-950">
+          स्यस्यः नागरिक तथा संस्थागत लगइन
+        </h1>
+        <p class="text-xs text-gray-600 max-w-xs mx-auto">
+          डिजिटल सदस्यता परिचयपत्र, लेबी नविकरण तथा इलाका समन्वय डेस्क
+        </p>
+      </div>
+
+      <!-- Auth Method Switcher (Password vs Instant SMS OTP) -->
+      <div class="grid grid-cols-2 border border-gray-300 rounded p-1 bg-gray-100 text-xs font-semibold">
+        <button
+          id="btnPass"
+          onclick="switchAuthMethod('password')"
+          class="py-2 rounded bg-white border border-gray-300 text-gray-900 shadow-sm"
+        >
+          पासवर्ड मार्फत (Password)
+        </button>
+        <button
+          id="btnOtp"
+          onclick="switchAuthMethod('otp')"
+          class="py-2 rounded text-gray-600 hover:text-black"
+        >
+          मोबाइल OTP मार्फत (SMS Code)
+        </button>
+      </div>
+
+      <!-- Smart Input Form -->
+      <form class="space-y-4 text-xs" onsubmit="handleAuthSubmit(event)">
+
+        <!-- Universal Identifier -->
+        <div>
+          <label class="block font-bold text-gray-900 mb-1">
+            सदस्य नम्बर / मोबाइल / संस्थागत इमेल
+          </label>
+          <div class="relative">
+            <input
+              type="text"
+              id="universalInput"
+              placeholder="SS-2083-XXX वा ९८४१२३४५६७"
+              required
+              oninput="detectIdentifierType()"
+              class="w-full pl-3 pr-20 py-2.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
+            />
+            <!-- Detected Badge Pill -->
+            <span
+              id="typeBadge"
+              class="absolute right-2 top-2 px-1.5 py-0.5 border border-gray-300 bg-gray-50 text-[10px] text-gray-500 rounded font-medium"
+            >
+              पहिचान...
+            </span>
+          </div>
+          <p id="detectHint" class="text-[10px] text-gray-500 mt-1">
+            सदस्य ID, फोन नम्बर वा इमेल प्रविष्ट गर्दा प्रणालीले स्वचालित पहिचान गर्दछ।
+          </p>
+        </div>
+
+        <!-- Password Field (Conditional for Password Mode) -->
+        <div id="passwordBlock">
+          <div class="flex justify-between items-center mb-1">
+            <label class="block font-bold text-gray-900">
+              पासवर्ड (Password)
+            </label>
+            <a href="#" class="text-[11px] underline text-gray-600 hover:text-black">
+              बिर्सनुभयो?
+            </a>
+          </div>
+          <input
+            type="password"
+            id="pwdField"
+            placeholder="••••••••"
+            class="w-full px-3 py-2.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
+          />
+        </div>
+
+        <!-- OTP Field (Conditional for OTP Mode) -->
+        <div id="otpBlock" class="hidden space-y-2">
+          <div class="flex justify-between items-center">
+            <label class="block font-bold text-gray-900">
+              ६-अंकको एसएमएस सुरक्षा कोड (SMS OTP)
+            </label>
+            <button type="button" onclick="sendOtp()" class="text-[11px] underline text-gray-900 font-bold">
+              कोड पठाउनुहोस् (Send Code)
+            </button>
+          </div>
+          <input
+            type="text"
+            maxlength="6"
+            placeholder="उदा. ४९२-१०८"
+            class="w-full px-3 py-2.5 border border-gray-300 rounded text-xs text-center font-mono tracking-widest text-base focus:outline-none focus:border-gray-900"
+          />
+          <p class="text-[10px] text-gray-500">
+            तपाईंको दर्ता फोन नम्बरमा प्राप्त भएको ६ अंकको कोड प्रविष्ट गर्नुहोस्।
+          </p>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          id="mainSubmitBtn"
+          class="w-full py-2.5 border-2 border-gray-900 bg-gray-900 text-white font-bold rounded hover:bg-black transition-colors"
+        >
+          सुरक्षित प्रवेश गर्नुहोस् (Continue) →
+        </button>
+
+      </form>
+
+      <!-- Trust & Help Footer -->
+      <div class="border-t border-gray-200 pt-4 text-center space-y-2 text-xs text-gray-600">
+        <p>
+          नयाँ सदस्य आवेदन दिन <a href="/members/apply" class="font-bold underline text-gray-900">यहाँ क्लिक गर्नुहोस्</a>
+        </p>
+        <div class="text-[11px] text-gray-500 pt-1">
+          समस्या परेमा: ०१-५५२३४५६ (सचिवालय) • <a href="/admin" class="underline hover:text-black">CMS Admin</a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Minimal Footer -->
+  <footer class="border-t border-gray-200 py-3 text-center text-[11px] text-gray-500 bg-white">
+    © २०८३ स्यस्यः समाज, यल (ललितपुर) • सर्वाधिकार सुरक्षित
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    let authMode = 'password';
+
+    function switchAuthMethod(mode) {
+      authMode = mode;
+      const btnPass = document.getElementById('btnPass');
+      const btnOtp = document.getElementById('btnOtp');
+      const passBlock = document.getElementById('passwordBlock');
+      const otpBlock = document.getElementById('otpBlock');
+      const submitBtn = document.getElementById('mainSubmitBtn');
+
+      if (mode === 'password') {
+        btnPass.className = 'py-2 rounded bg-white border border-gray-300 text-gray-900 shadow-sm';
+        btnOtp.className = 'py-2 rounded text-gray-600 hover:text-black';
+        passBlock.classList.remove('hidden');
+        otpBlock.classList.add('hidden');
+        submitBtn.innerText = 'सुरक्षित प्रवेश गर्नुहोस् (Continue with Password) →';
+      } else {
+        btnOtp.className = 'py-2 rounded bg-white border border-gray-300 text-gray-900 shadow-sm';
+        btnPass.className = 'py-2 rounded text-gray-600 hover:text-black';
+        passBlock.classList.add('hidden');
+        otpBlock.classList.remove('hidden');
+        submitBtn.innerText = 'OTP प्रमाणीकरण गरी प्रवेश गर्नुहोस् →';
+      }
+    }
+
+    function detectIdentifierType() {
+      const val = document.getElementById('universalInput').value.trim();
+      const badge = document.getElementById('typeBadge');
+      const hint = document.getElementById('detectHint');
+
+      if (val.startsWith('SS-') || val.startsWith('ss-')) {
+        badge.innerText = 'सदस्य ID (Member)';
+        badge.className = 'absolute right-2 top-2 px-1.5 py-0.5 border border-gray-900 bg-gray-900 text-white text-[10px] rounded font-medium';
+        hint.innerText = 'सदस्यता कार्ड पहिचान भएको छ → सदस्य पोर्टलमा रिडाइरेक्ट हुनेछ।';
+      } else if (/^[0-9]{9,10}$/.test(val) || val.startsWith('98') || val.startsWith('97')) {
+        badge.innerText = 'मोबाइल (Mobile)';
+        badge.className = 'absolute right-2 top-2 px-1.5 py-0.5 border border-gray-900 bg-gray-900 text-white text-[10px] rounded font-medium';
+        hint.innerText = 'दर्ता मोबाइल नम्बर पहिचान भएको छ → OTP वा पासवर्ड मार्फत प्रवेश गर्नुहोस्।';
+      } else if (val.includes('@')) {
+        badge.innerText = 'संस्थागत इमेल (Staff)';
+        badge.className = 'absolute right-2 top-2 px-1.5 py-0.5 border border-gray-900 bg-gray-900 text-white text-[10px] rounded font-medium';
+        hint.innerText = 'संस्थागत इमेल पहिचान भएको छ → इलाका डेस्क वा लेखा प्रणालीमा रिडाइरेक्ट हुनेछ।';
+      } else {
+        badge.innerText = 'पहिचान...';
+        badge.className = 'absolute right-2 top-2 px-1.5 py-0.5 border border-gray-300 bg-gray-50 text-[10px] text-gray-500 rounded font-medium';
+        hint.innerText = 'सदस्य ID, फोन नम्बर वा इमेल प्रविष्ट गर्दा प्रणालीले स्वचालित पहिचान गर्दछ।';
+      }
+    }
+
+    function sendOtp() {
+      const val = document.getElementById('universalInput').value.trim();
+      if (!val) {
+        alert('कृपया पहिले आफ्नो मोबाइल नम्बर वा सदस्य ID प्रविष्ट गर्नुहोस्।');
+        return;
+      }
+      alert(`OTP कोड पठाइयो: ${val} मा ६-अंकको सुरक्षा कोड पठाइएको छ।`);
+    }
+
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      alert('प्रमाणीकरण सफल भयो! सम्बन्धित ड्यासबोर्ड खुल्दैछ...');
+    }
+  </script>
+</body>
+</html>

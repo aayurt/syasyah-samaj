@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Organisation Login — Multi-Portal Command Hub (Grayscale Wireframe)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --border: #e2e8f0;
+      --text: #0f172a;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    .num-tabular {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between font-sans">
+
+  <!-- Header -->
+  <header class="border-b border-gray-200 bg-white py-3 px-6">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded border border-gray-900 bg-gray-900 text-white flex items-center justify-center font-bold text-xs">
+          स्य
+        </div>
+        <span class="font-bold text-sm">स्यस्यः समाज — एकीकृत प्रवेशद्वार (Gateway Station)</span>
+      </div>
+      <a href="/" class="text-xs text-gray-600 hover:text-black font-semibold">
+        ← बाहिर निस्कनुहोस् (Exit)
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Multi-Portal Selector -->
+  <main class="max-w-5xl mx-auto w-full px-4 sm:px-6 py-10 space-y-8">
+
+    <!-- Top Guidance -->
+    <div class="text-center max-w-xl mx-auto space-y-2">
+      <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 border border-gray-900 rounded">
+        गेटवे चयन (Step 1: Choose Portal)
+      </span>
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-950">
+        तपाईं कुन प्रणालीमा प्रवेश गर्न चाहनुहुन्छ?
+      </h1>
+      <p class="text-xs text-gray-600">
+        आफ्नो जिम्मेवारी वा आवश्यकता अनुसार सम्बन्धित डेस्क छानेर लगइन गर्नुहोस्।
+      </p>
+    </div>
+
+    <!-- 3-Portal Card Grid (Interactive Selection) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+      <!-- Portal Card 1: Member Desk -->
+      <div
+        id="card-member"
+        onclick="selectPortal('member')"
+        class="portal-card cursor-pointer border-2 border-gray-900 bg-white p-5 rounded-lg shadow-sm hover:border-black transition-all space-y-3"
+      >
+        <div class="flex justify-between items-start">
+          <span class="text-2xl">🪪</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 border border-gray-900 bg-gray-900 text-white rounded">
+            सक्रिय (Active)
+          </span>
+        </div>
+        <div>
+          <h3 class="font-bold text-base text-gray-900">नागरिक तथा सदस्य पोर्टल</h3>
+          <p class="text-xs text-gray-500 font-medium">Citizen & Member Portal</p>
+        </div>
+        <ul class="text-xs text-gray-600 space-y-1 pt-2 border-t border-gray-100">
+          <li>• डिजिटल परिचयपत्र हेर्न तथा डाउनलोड</li>
+          <li>• वार्षिक सदस्यता शुल्क (लेबी) नविकरण</li>
+          <li>• पारिवारिक अभिलेख तथा रक्तदान दर्ता</li>
+        </ul>
+        <div class="text-xs font-bold text-gray-900 pt-2 flex items-center justify-between">
+          <span>प्रवेश छान्नुहोस्</span>
+          <span>→</span>
+        </div>
+      </div>
+
+      <!-- Portal Card 2: Ilaka Coordinator Desk -->
+      <div
+        id="card-coordinator"
+        onclick="selectPortal('coordinator')"
+        class="portal-card cursor-pointer border border-gray-300 bg-white p-5 rounded-lg hover:border-gray-900 transition-all space-y-3"
+      >
+        <div class="flex justify-between items-start">
+          <span class="text-2xl">🏛️</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 border border-gray-300 bg-gray-100 text-gray-700 rounded">
+            इलाका डेस्क
+          </span>
+        </div>
+        <div>
+          <h3 class="font-bold text-base text-gray-900">इलाका सचिवालय डेस्क</h3>
+          <p class="text-xs text-gray-500 font-medium">Ilaka Coordinator Desk</p>
+        </div>
+        <ul class="text-xs text-gray-600 space-y-1 pt-2 border-t border-gray-100">
+          <li>• स्थानीय २४ इलाकाका सदस्य आवेदन प्रमाणीकरण</li>
+          <li>• टोलस्तरीय बैठक तथा गुठी उपस्थिति अभिलेख</li>
+          <li>• स्थानीय रक्तदाता समन्वय तथा सूचना प्रवाह</li>
+        </ul>
+        <div class="text-xs font-bold text-gray-900 pt-2 flex items-center justify-between">
+          <span>प्रवेश छान्नुहोस्</span>
+          <span>→</span>
+        </div>
+      </div>
+
+      <!-- Portal Card 3: Accounting / Dhuku Desk -->
+      <div
+        id="card-accounting"
+        onclick="selectPortal('accounting')"
+        class="portal-card cursor-pointer border border-gray-300 bg-white p-5 rounded-lg hover:border-gray-900 transition-all space-y-3"
+      >
+        <div class="flex justify-between items-start">
+          <span class="text-2xl">💼</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 border border-gray-300 bg-gray-100 text-gray-700 rounded">
+            लेखा प्रणाली
+          </span>
+        </div>
+        <div>
+          <h3 class="font-bold text-base text-gray-900">स्यस्यः धुकू (लेखा तथा क्यासियर)</h3>
+          <p class="text-xs text-gray-500 font-medium">Accounting & Billing SPA (/app)</p>
+        </div>
+        <ul class="text-xs text-gray-600 space-y-1 pt-2 border-t border-gray-100">
+          <li>• दैनिक रसिद, भुक्तानी तथा जर्नल भौचर</li>
+          <li>• लेजर खाता, रोक्का मौज्दात र बैंक समाधान</li>
+          <li>• अफलाइन-फर्स्ट क्यासियर काउन्टर सञ्चालन</li>
+        </ul>
+        <div class="text-xs font-bold text-gray-900 pt-2 flex items-center justify-between">
+          <span>प्रवेश छान्नुहोस्</span>
+          <span>→</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Interactive Authentication Form Box (Step 2) -->
+    <div class="border-2 border-gray-900 bg-white p-6 sm:p-8 rounded-lg max-w-xl mx-auto shadow-sm space-y-5">
+      <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Step 2: प्रमाणीकरण (Authentication)</span>
+          <h3 id="formPortalTitle" class="font-bold text-base text-gray-950">
+            नागरिक तथा सदस्य पोर्टलमा लगइन
+          </h3>
+        </div>
+        <span id="formPortalBadge" class="text-xs font-semibold px-2 py-0.5 border border-gray-300 rounded bg-gray-50">
+          सदस्य स्तर (Member)
+        </span>
+      </div>
+
+      <form class="space-y-4 text-xs" onsubmit="handleCommandLogin(event)">
+        <div>
+          <label id="formInputLabel" class="block font-bold text-gray-900 mb-1">
+            सदस्य नम्बर वा दर्ता मोबाइल नम्बर
+          </label>
+          <input
+            type="text"
+            id="formInputVal"
+            placeholder="उदा. SS-2083-049 वा ९८४१२३४५६७"
+            required
+            class="w-full px-3 py-2.5 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:border-gray-900"
+          />
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block font-bold text-gray-900">सुरक्षा पासवर्ड / पिन</label>
+            <a href="#" class="text-[11px] underline text-gray-600 hover:text-black">बिर्सनुभयो?</a>
+          </div>
+          <input
+            type="password"
+            placeholder="••••••••"
+            required
+            class="w-full px-3 py-2.5 border border-gray-300 rounded bg-white text-xs focus:outline-none focus:border-gray-900"
+          />
+        </div>
+
+        <button
+          type="submit"
+          id="formSubmitBtn"
+          class="w-full py-2.5 bg-gray-900 text-white font-bold rounded hover:bg-black transition-colors"
+        >
+          सदस्य पोर्टलमा प्रवेश गर्नुहोस् →
+        </button>
+      </form>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-200 bg-white py-4 text-center text-xs text-gray-500">
+    <span>स्यस्यः समाज, यल (ललितपुर) • </span>
+    <a href="/admin" class="underline hover:text-black">डेभलपर CMS Admin (/admin)</a>
+  </footer>
+
+  <!-- Script -->
+  <script>
+    let activePortal = 'member';
+
+    function selectPortal(p) {
+      activePortal = p;
+      document.querySelectorAll('.portal-card').forEach(c => {
+        c.className = 'portal-card cursor-pointer border border-gray-300 bg-white p-5 rounded-lg hover:border-gray-900 transition-all space-y-3';
+      });
+
+      const card = document.getElementById('card-' + p);
+      card.className = 'portal-card cursor-pointer border-2 border-gray-900 bg-white p-5 rounded-lg shadow-sm hover:border-black transition-all space-y-3';
+
+      const title = document.getElementById('formPortalTitle');
+      const badge = document.getElementById('formPortalBadge');
+      const label = document.getElementById('formInputLabel');
+      const input = document.getElementById('formInputVal');
+      const btn = document.getElementById('formSubmitBtn');
+
+      if (p === 'member') {
+        title.innerText = 'नागरिक तथा सदस्य पोर्टलमा लगइन';
+        badge.innerText = 'सदस्य स्तर (Member)';
+        label.innerText = 'सदस्य नम्बर वा दर्ता मोबाइल नम्बर';
+        input.placeholder = 'उदा. SS-2083-049 वा ९८४१२३४५६७';
+        btn.innerText = 'सदस्य पोर्टलमा प्रवेश गर्नुहोस् →';
+      } else if (p === 'coordinator') {
+        title.innerText = 'इलाका सचिवालय डेस्कमा लगइन';
+        badge.innerText = 'इलाका संयोजक (Coordinator)';
+        label.innerText = 'इलाका संयोजक कोड वा आधिकारिक इमेल';
+        input.placeholder = 'उदा. coordinator.ilaka01@syasyahsamaj.org.np';
+        btn.innerText = 'इलाका सचिवालय डेस्कमा प्रवेश गर्नुहोस् →';
+      } else if (p === 'accounting') {
+        title.innerText = 'स्यस्यः धुकू (लेखा तथा क्यासियर) मा लगइन';
+        badge.innerText = 'लेखा अधिकृत (Accounting /app)';
+        label.innerText = 'क्यासियर युजरनेम वा आधिकारिक इमेल';
+        input.placeholder = 'उदा. cashier@syasyahsamaj.org.np';
+        btn.innerText = 'स्यस्यः धुकू (/app) मा प्रवेश गर्नुहोस् →';
+      }
+    }
+
+    function handleCommandLogin(e) {
+      e.preventDefault();
+      alert(`सफल प्रवेश: तपाईं ${activePortal} पोर्टलमा रिडाइरेक्ट हुँदै हुनुहुन्छ...`);
+    }
+  </script>
+</body>
+</html>

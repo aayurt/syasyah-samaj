@@ -68,6 +68,40 @@ export const Archives: CollectionConfig = {
       type: 'upload',
       relationTo: 'media',
     },
+    {
+      name: 'category',
+      type: 'select',
+      defaultValue: 'general',
+      index: true,
+      options: [
+        {
+          label: 'पाण्डुलिपि तथा तमसुक (Manuscript / Deed)',
+          value: 'manuscript',
+        },
+        {
+          label: 'ऐतिहासिक तस्बिर (Historical Photo)',
+          value: 'photo',
+        },
+        {
+          label: 'गुठी विधान (Guthi By-laws)',
+          value: 'guthi',
+        },
+        {
+          label: 'सामान्य अभिलेख (General Archive)',
+          value: 'general',
+        },
+      ],
+    },
+    {
+      name: 'documentFile',
+      type: 'upload',
+      relationTo: 'media',
+    },
+    {
+      name: 'sourceOrLocation',
+      type: 'text',
+      localized: true,
+    },
     ...slugField(),
   ],
 }

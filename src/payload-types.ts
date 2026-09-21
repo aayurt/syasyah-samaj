@@ -72,6 +72,7 @@ export interface Config {
     media: Media;
     categories: Category;
     users: User;
+    timeline: Timeline;
     events: Event;
     orders: Order;
     tickets: Ticket;
@@ -91,6 +92,7 @@ export interface Config {
     archives: Archive;
     messages: Message;
     'chat-rooms': ChatRoom;
+    elders: Elder;
     'membership-types': MembershipType;
     'bank-statements': BankStatement;
     'fixed-assets': FixedAsset;
@@ -121,6 +123,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    timeline: TimelineSelect<false> | TimelineSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     tickets: TicketsSelect<false> | TicketsSelect<true>;
@@ -140,6 +143,7 @@ export interface Config {
     archives: ArchivesSelect<false> | ArchivesSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
     'chat-rooms': ChatRoomsSelect<false> | ChatRoomsSelect<true>;
+    elders: EldersSelect<false> | EldersSelect<true>;
     'membership-types': MembershipTypesSelect<false> | MembershipTypesSelect<true>;
     'bank-statements': BankStatementsSelect<false> | BankStatementsSelect<true>;
     'fixed-assets': FixedAssetsSelect<false> | FixedAssetsSelect<true>;
@@ -878,6 +882,21 @@ export interface Form {
         id?: string | null;
       }[]
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "timeline".
+ */
+export interface Timeline {
+  id: number;
+  year: string;
+  adYear?: number | null;
+  title: string;
+  description: string;
+  tag?: string | null;
+  order?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1763,6 +1782,9 @@ export interface Archive {
     [k: string]: unknown;
   };
   heroImage?: (number | null) | Media;
+  category?: ('manuscript' | 'photo' | 'guthi' | 'general') | null;
+  documentFile?: (number | null) | Media;
+  sourceOrLocation?: string | null;
   slug?: string | null;
   slugLock?: boolean | null;
   updatedAt: string;
@@ -1792,6 +1814,22 @@ export interface ChatRoom {
   name: string;
   type: 'direct' | 'group';
   members: (number | User)[];
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "elders".
+ */
+export interface Elder {
+  id: number;
+  name: string;
+  honorificTitle?: string | null;
+  field?: string | null;
+  bio?: string | null;
+  photo?: (number | null) | Media;
+  isLiving?: boolean | null;
+  order?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2407,6 +2445,10 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'timeline';
+        value: number | Timeline;
+      } | null)
+    | ({
         relationTo: 'events';
         value: number | Event;
       } | null)
@@ -2481,6 +2523,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'chat-rooms';
         value: number | ChatRoom;
+      } | null)
+    | ({
+        relationTo: 'elders';
+        value: number | Elder;
       } | null)
     | ({
         relationTo: 'membership-types';
@@ -2868,6 +2914,20 @@ export interface UsersSelect<T extends boolean = true> {
   enableAPIKey?: T;
   apiKey?: T;
   apiKeyIndex?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "timeline_select".
+ */
+export interface TimelineSelect<T extends boolean = true> {
+  year?: T;
+  adYear?: T;
+  title?: T;
+  description?: T;
+  tag?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3282,6 +3342,9 @@ export interface ArchivesSelect<T extends boolean = true> {
   year?: T;
   content?: T;
   heroImage?: T;
+  category?: T;
+  documentFile?: T;
+  sourceOrLocation?: T;
   slug?: T;
   slugLock?: T;
   updatedAt?: T;
@@ -3309,6 +3372,21 @@ export interface ChatRoomsSelect<T extends boolean = true> {
   name?: T;
   type?: T;
   members?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "elders_select".
+ */
+export interface EldersSelect<T extends boolean = true> {
+  name?: T;
+  honorificTitle?: T;
+  field?: T;
+  bio?: T;
+  photo?: T;
+  isLiving?: T;
+  order?: T;
   updatedAt?: T;
   createdAt?: T;
 }

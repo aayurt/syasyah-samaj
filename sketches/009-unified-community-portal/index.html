@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>स्यस्यः समाज, यल — एकीकृत सामुदायिक पोर्टल तथा डिजिटल अभिलेखालय</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            crimson: {
+              50: '#fff1f2',
+              100: '#ffe4e6',
+              600: '#e11d48',
+              700: '#be123c',
+              800: '#9f1239',
+              900: '#881337',
+              950: '#4c0519',
+            },
+            stone: {
+              850: '#23201e',
+              950: '#141210'
+            }
+          },
+          fontFamily: {
+            serif: ['Georgia', 'Cambria', '"Noto Serif Devanagari"', 'serif'],
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Noto Sans Devanagari"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --brand: #b91c1c;
+      --brand-dark: #881337;
+      --paper: #fcfbf9;
+      --ink: #1c1917;
+      --muted: #78716c;
+      --border: #e7e5e4;
+    }
+    body {
+      background-color: var(--paper);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+    .num-tabular {
+      font-variant-numeric: tabular-nums;
+    }
+    .badge-heritage {
+      background-color: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+  <!-- Top Urgent Notice Bar -->
+  <div id="notice-banner" class="border-b border-stone-200 bg-stone-100 text-xs py-2 px-4 transition-all">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="inline-block px-1.5 py-0.5 bg-crimson-700 text-white font-bold uppercase tracking-wider text-[10px] rounded">
+          सूचना
+        </span>
+        <span class="font-medium text-stone-800">
+          २०८३ असोज १० — २४ औं वार्षिक साधारण सभा, छात्रवृत्ति वितरण तथा ज्येष्ठ नागरिक सम्मान कार्यक्रम मंगलबजार हलमा।
+        </span>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="#events" class="underline hover:text-crimson-700 text-xs font-semibold">विवरण हेर्नुहोस्</a>
+        <button onclick="document.getElementById('notice-banner').classList.add('hidden')" class="text-stone-400 hover:text-stone-800 text-sm px-1">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Primary Navigation Header -->
+  <header class="border-b border-stone-200 bg-white sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded bg-crimson-800 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+            स्य
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base font-bold leading-tight tracking-tight text-stone-900">स्यस्यः समाज, यल</h1>
+              <span class="text-[10px] px-1.5 py-0.2 badge-heritage rounded font-semibold">केन्द्रीय पोर्टल</span>
+            </div>
+            <p class="text-[11px] text-stone-500 font-medium">Syasyah Samaj Lalitpur • संस्कृति, सेवा र गुठी ऐक्यबद्धता</p>
+          </div>
+        </div>
+
+        <!-- Desktop Navigation -->
+        <nav class="hidden lg:flex items-center gap-1 pl-4 border-l border-stone-200 text-xs font-medium">
+          <a href="#" class="px-3 py-1.5 font-bold text-crimson-700 border-b-2 border-crimson-700">गृहपृष्ठ (Home)</a>
+          <a href="#timeline" class="px-3 py-1.5 text-stone-600 hover:text-stone-900">कालक्रम (Timeline)</a>
+          <a href="#archives" class="px-3 py-1.5 text-stone-600 hover:text-stone-900">डिजिटल संग्रह (Archives)</a>
+          <a href="#elders" class="px-3 py-1.5 text-stone-600 hover:text-stone-900">धरोहर व्यक्तित्व (Elders)</a>
+          <a href="#ilakas" class="px-3 py-1.5 text-stone-600 hover:text-stone-900">२४ इलाका (Ilakas)</a>
+          <a href="#services" class="px-3 py-1.5 text-stone-600 hover:text-stone-900">नागरिक सेवा (Services)</a>
+        </nav>
+      </div>
+
+      <!-- Quick Utilities & Actions -->
+      <div class="flex items-center gap-3 text-xs">
+        <!-- Multi-language Switcher -->
+        <div class="hidden sm:flex border border-stone-300 rounded overflow-hidden">
+          <button class="px-2.5 py-1 bg-stone-900 text-white font-medium">नेपाली</button>
+          <button class="px-2.5 py-1 text-stone-600 hover:bg-stone-100">English</button>
+          <button class="px-2.5 py-1 text-stone-600 hover:bg-stone-100">नेवाः</button>
+        </div>
+
+        <a href="/app" class="px-3 py-1.5 border border-stone-300 rounded font-medium text-stone-700 hover:bg-stone-50 flex items-center gap-1.5">
+          <span>लेखा धुकू</span>
+          <span class="text-stone-400">↗</span>
+        </a>
+
+        <button onclick="scrollToSection('memberActionBox')" class="px-3.5 py-1.5 bg-crimson-700 hover:bg-crimson-800 text-white font-bold rounded shadow-sm transition-colors">
+          सदस्य लगइन (Sign In)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero & Command Search Bar -->
+  <section class="border-b border-stone-200 bg-gradient-to-b from-white to-stone-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+        <div class="max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-stone-100 border border-stone-200 text-stone-700 text-[11px] font-semibold mb-2">
+            <span>स्थापना वि.सं. २०५६</span>
+            <span>•</span>
+            <span>ललितपुर महानगरपालिका</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-serif font-black tracking-tight text-stone-950">
+            ऐतिहासिक संस्कृति, नागरिक सेवा र गुठी सहकार्यको साझा मञ्च
+          </h2>
+          <p class="text-xs sm:text-sm text-stone-600 mt-2 leading-relaxed">
+            पाटनका २४ इलाका, परम्परागत गुठी अभिलेख, आपतकालीन रक्तदाता सञ्जाल र डिजिटल सदस्यता प्रणाली।
+          </p>
+        </div>
+
+        <!-- Search Bar with Live Filter -->
+        <div class="w-full md:w-96 shrink-0">
+          <div class="relative">
+            <input
+              id="masterSearch"
+              type="text"
+              placeholder="इलाका, व्यक्तित्व, पाण्डुलिपि, वा रक्त समूह खोज्नुहोस्..."
+              class="w-full pl-9 pr-4 py-2.5 text-xs border border-stone-300 rounded-lg bg-white shadow-sm focus:outline-none focus:border-crimson-700 focus:ring-1 focus:ring-crimson-700"
+              oninput="runMasterSearch()"
+            />
+            <span class="absolute left-3 top-3 text-stone-400 text-xs">🔍</span>
+          </div>
+          <p class="text-[11px] text-stone-500 mt-1.5 flex items-center justify-between">
+            <span>उदा: मंगलबजार, सी गुठी, O+, पूर्णमान श्रेष्ठ</span>
+            <span id="searchResultCount" class="font-bold text-crimson-700"></span>
+          </p>
+        </div>
+      </div>
+
+      <!-- 4-Stat Community Health Ribbon -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8 border border-stone-200 bg-white p-4 rounded-xl shadow-xs">
+        <div class="border-r border-stone-100 last:border-0 pr-2">
+          <span class="text-[11px] text-stone-500 font-medium block">सक्रिय इलाकाहरू (Ilakas)</span>
+          <span class="text-2xl font-black text-stone-900 num-tabular">२४</span>
+          <span class="text-[10px] text-stone-500 block mt-0.5">यल नगर तथा उपनगर क्षेत्र</span>
+        </div>
+        <div class="border-r border-stone-100 last:border-0 pr-2">
+          <span class="text-[11px] text-stone-500 font-medium block">दर्ता सदस्य परिवार (Families)</span>
+          <span class="text-2xl font-black text-stone-900 num-tabular">१,८४२</span>
+          <span class="text-[10px] text-stone-500 block mt-0.5">डिजिटल परिचयपत्र प्राप्त</span>
+        </div>
+        <div class="border-r border-stone-100 last:border-0 pr-2">
+          <span class="text-[11px] text-stone-500 font-medium block">संरक्षित पाण्डुलिपि तथा अभिलेख</span>
+          <span class="text-2xl font-black text-stone-900 num-tabular">१२०+</span>
+          <span class="text-[10px] text-stone-500 block mt-0.5">ऐतिहासिक तमसुक र विधान</span>
+        </div>
+        <div>
+          <span class="text-[11px] text-stone-500 font-medium block">आपतकालीन रक्तदाता (Donors)</span>
+          <span class="text-2xl font-black text-crimson-700 num-tabular">२१०+</span>
+          <span class="text-[10px] text-stone-500 block mt-0.5">तत्काल सम्पर्कका लागि उपलब्ध</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN OPERATIONAL CONTENT -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full space-y-16">
+
+    <!-- 1. TWO-COLUMN CIVIC & SERVICE ACTIONS -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+      <!-- LEFT COLUMN: 8 of 12 (Upcoming Events & 24 Ilakas) -->
+      <div class="lg:col-span-8 space-y-8">
+
+        <!-- Upcoming Events & Festivals -->
+        <section id="events" class="border border-stone-200 bg-white rounded-xl p-6 shadow-xs">
+          <div class="flex items-center justify-between pb-3 border-b border-stone-100 mb-4">
+            <div>
+              <h3 class="font-serif font-bold text-lg text-stone-900">आसन्न गुठी, पर्व तथा कार्यक्रमहरू (Upcoming Events)</h3>
+              <p class="text-xs text-stone-500">केन्द्रीय सभा, सांस्कृतिक झाँकी र सामुदायिक भेला विवरण</p>
+            </div>
+            <span class="text-xs font-bold text-crimson-700">असोज / कार्तिक २०८३</span>
+          </div>
+
+          <div class="space-y-3">
+            <div class="border border-stone-200 p-3.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-crimson-700 transition-colors">
+              <div class="flex items-start gap-3.5">
+                <div class="w-12 h-12 rounded border border-stone-200 bg-stone-50 flex flex-col items-center justify-center shrink-0">
+                  <span class="text-[9px] font-bold text-stone-500 uppercase">असोज</span>
+                  <span class="text-lg font-black leading-none text-stone-900 num-tabular">१०</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-stone-900">२४ औं वार्षिक साधारण सभा तथा छात्रवृत्ति वितरण</span>
+                    <span class="px-1.5 py-0.2 bg-stone-100 text-[10px] text-stone-600 rounded">केन्द्रीय</span>
+                  </div>
+                  <p class="text-xs text-stone-600 mt-0.5">स्थान: स्यस्यः समाज भवन, मंगलबजार • समय: बिहान ११:०० बजे</p>
+                </div>
+              </div>
+              <button onclick="alert('साधारण सभा कार्यसूची: १. वार्षिक आयव्यय २. छात्रवृत्ति सम्मान ३. इलाका प्रतिवेदन।')" class="px-3 py-1.5 text-xs border border-stone-300 rounded font-medium hover:bg-stone-50">
+                कार्यसूची हेर्नुहोस्
+              </button>
+            </div>
+
+            <div class="border border-stone-200 p-3.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-crimson-700 transition-colors">
+              <div class="flex items-start gap-3.5">
+                <div class="w-12 h-12 rounded border border-stone-200 bg-stone-50 flex flex-col items-center justify-center shrink-0">
+                  <span class="text-[9px] font-bold text-stone-500 uppercase">असोज</span>
+                  <span class="text-lg font-black leading-none text-stone-900 num-tabular">१५</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-stone-900">यँयाः (इन्द्रजात्रा) समय् बजि वितरण तथा सांस्कृतिक परिक्रमा</span>
+                    <span class="px-1.5 py-0.2 badge-heritage text-[10px] rounded">सांस्कृतिक</span>
+                  </div>
+                  <p class="text-xs text-stone-600 mt-0.5">स्थान: पाटन दरवार परिसर • समय: दिउँसो २:०० बजे</p>
+                </div>
+              </div>
+              <button onclick="alert('यँयाः परिक्रमा: मंगलबजार, इखालखु, च्यासल हुँदै पुन: दरबार क्षेत्र।')" class="px-3 py-1.5 text-xs border border-stone-300 rounded font-medium hover:bg-stone-50">
+                मार्ग नक्शा
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 24 Ilaka Directory -->
+        <section id="ilakas" class="border border-stone-200 bg-white rounded-xl p-6 shadow-xs">
+          <div class="flex items-center justify-between pb-3 border-b border-stone-100 mb-4">
+            <div>
+              <h3 class="font-serif font-bold text-lg text-stone-900">इलाका प्रतिनिधि तथा सम्पर्क सूची (Ilaka Directory)</h3>
+              <p class="text-xs text-stone-500">ललितपुरका २४ वटै इलाका संयोजक र स्थानीय टोल समन्वय</p>
+            </div>
+            <span class="text-xs text-stone-500">कुल २४ इलाका</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="ilakaGrid">
+            <div class="border border-stone-200 p-3 rounded-lg hover:border-crimson-700 transition-colors searchable-card" data-search="मंगलबजार mangalbazar राजेन्द्र श्रेष्ठ">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="font-bold text-xs text-stone-900">इलाका नं. १: मंगलबजार (Mangal Bazaar)</div>
+                  <p class="text-xs text-stone-600 mt-0.5">संयोजक: श्री राजेन्द्र श्रेष्ठ (९८४१२३४५६७)</p>
+                  <p class="text-[11px] text-stone-500">क्वाछें, पाटन • सदस्य: १२४ परिवार</p>
+                </div>
+                <a href="tel:9841234567" class="text-xs border border-stone-300 px-2 py-1 rounded hover:bg-stone-100">कल</a>
+              </div>
+            </div>
+
+            <div class="border border-stone-200 p-3 rounded-lg hover:border-crimson-700 transition-colors searchable-card" data-search="पुल्चोक pulchowk कुपण्डोल सुरेन्द्र श्रेष्ठ">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="font-bold text-xs text-stone-900">इलाका नं. २: पुल्चोक / कुपण्डोल (Pulchowk)</div>
+                  <p class="text-xs text-stone-600 mt-0.5">संयोजक: श्री सुरेन्द्र राज श्रेष्ठ (९८५१०१२३४५)</p>
+                  <p class="text-[11px] text-stone-500">दमकल चोक नजिक • सदस्य: ९८ परिवार</p>
+                </div>
+                <a href="tel:9851012345" class="text-xs border border-stone-300 px-2 py-1 rounded hover:bg-stone-100">कल</a>
+              </div>
+            </div>
+
+            <div class="border border-stone-200 p-3 rounded-lg hover:border-crimson-700 transition-colors searchable-card" data-search="त्यागल tyagal लगनखेल सुनिता श्रेष्ठ">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="font-bold text-xs text-stone-900">इलाका नं. ३: त्यागल / लगनखेल (Tyagal)</div>
+                  <p class="text-xs text-stone-600 mt-0.5">संयोजक: श्रीमती सुनिता श्रेष्ठ (९८४१५५६६७७)</p>
+                  <p class="text-[11px] text-stone-500">त्यागल टोल • सदस्य: १४२ परिवार</p>
+                </div>
+                <a href="tel:9841556677" class="text-xs border border-stone-300 px-2 py-1 rounded hover:bg-stone-100">कल</a>
+              </div>
+            </div>
+
+            <div class="border border-stone-200 p-3 rounded-lg hover:border-crimson-700 transition-colors searchable-card" data-search="पाटनढोका patandhoka इखालखु किरण श्रेष्ठ">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="font-bold text-xs text-stone-900">इलाका नं. ४: पाटनढोका / इखालखु (Patan Dhoka)</div>
+                  <p class="text-xs text-stone-600 mt-0.5">संयोजक: श्री किरण कुमार श्रेष्ठ (९८०१२३४५६७)</p>
+                  <p class="text-[11px] text-stone-500">नःबहाल • सदस्य: ११० परिवार</p>
+                </div>
+                <a href="tel:9801234567" class="text-xs border border-stone-300 px-2 py-1 rounded hover:bg-stone-100">कल</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- RIGHT COLUMN: 4 of 12 (Member Actions, Services, Blood Network) -->
+      <div class="lg:col-span-4 space-y-6">
+
+        <!-- Member Action Box -->
+        <div id="memberActionBox" class="border-2 border-stone-900 bg-white p-5 rounded-xl shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-stone-900 text-white rounded">
+              सदस्य सेवा केन्द्र
+            </span>
+            <span class="text-[11px] font-bold text-crimson-700">Digital ID</span>
+          </div>
+          <h4 class="font-serif font-bold text-base text-stone-900">डिजिटल परिचयपत्र तथा शुल्क नविकरण</h4>
+          <p class="text-xs text-stone-600 mt-1">
+            आफ्नो सदस्यता कार्ड डाउनलोड गर्न, परिवारको विवरण अद्यावधिक गर्न र वार्षिक लेबी भुक्तानी गर्न यहाँ लगइन गर्नुहोस्।
+          </p>
+
+          <div class="mt-4 space-y-2">
+            <button onclick="alert('डिजिटल परिचयपत्र पूर्वावलोकन: QR कोड सहितको स्मार्ट नागरिक कार्ड खुल्नेछ।')" class="w-full py-2 bg-crimson-700 hover:bg-crimson-800 text-white font-bold text-xs rounded transition-colors">
+              परिचयपत्र हेर्नुहोस् (View Digital ID)
+            </button>
+            <button onclick="alert('अनलाइन भुक्तानी गेटवे: eSewa / Khalti / ConnectIPS मार्फत लेबी भुक्तान प्रक्रिया खुल्नेछ।')" class="w-full py-2 border border-stone-300 font-medium text-stone-800 text-xs rounded hover:bg-stone-50 transition-colors">
+              सदस्यता शुल्क भुक्तानी (Pay Dues)
+            </button>
+          </div>
+        </div>
+
+        <!-- Citizen Services Tracker & Short Links -->
+        <div id="services" class="border border-stone-200 bg-white p-5 rounded-xl shadow-xs space-y-3">
+          <h4 class="font-bold text-xs uppercase tracking-wider text-stone-500">नागरिक सेवा तथा आवेदन ट्र्याक</h4>
+          
+          <div class="flex gap-2">
+            <input
+              id="citizenTrackInput"
+              type="text"
+              placeholder="आवेदन नं. (उदा. SS-2083-492)"
+              class="flex-1 px-3 py-1.5 text-xs border border-stone-300 rounded focus:outline-none focus:border-crimson-700"
+            />
+            <button onclick="checkAppStatus()" class="px-3 py-1.5 bg-stone-900 text-white text-xs font-bold rounded">
+              जाँच
+            </button>
+          </div>
+          <div id="citizenTrackResult" class="hidden p-2.5 bg-stone-50 border border-stone-200 text-xs rounded">
+            <span class="font-bold text-stone-900">स्थिति:</span> आवेदन #SS-2083-492 (नयाँ सदस्यता) — मंगलबजार इलाका संयोजकबाट सिफारिस भएको छ।
+          </div>
+
+          <div class="pt-2 border-t border-stone-100 space-y-1.5 text-xs">
+            <a href="javascript:void(0)" onclick="openArchiveModal('भवन बुकिङ फारम', 'मंगलबजारस्थित स्यस्यः समाज भवनमा भोज, विवाह तथा सभाका लागि हल आरक्षण फारम।')" class="flex items-center justify-between p-2 rounded hover:bg-stone-50 text-stone-800 font-medium">
+              <span>🏛️ सामुदायिक भवन बुकिङ</span>
+              <span class="text-stone-400">→</span>
+            </a>
+            <a href="javascript:void(0)" onclick="openArchiveModal('छात्रवृत्ति फारम', 'जेहेन्दार तथा विपन्न विद्यार्थीहरूका लागि उच्च शिक्षा छात्रवृत्ति आवेदन फारम।')" class="flex items-center justify-between p-2 rounded hover:bg-stone-50 text-stone-800 font-medium">
+              <span>🎓 छात्रवृत्ति आवेदन फारम</span>
+              <span class="text-stone-400">→</span>
+            </a>
+            <a href="javascript:void(0)" onclick="openArchiveModal('कल्याणकारी कोष राहत', 'आकस्मिक उपचार तथा प्राकृतिक विपद् सहयोगका लागि आर्थिक अनुदान सिफारिस।')" class="flex items-center justify-between p-2 rounded hover:bg-stone-50 text-stone-800 font-medium">
+              <span>🏥 आकस्मिक राहत कोष सहयोग</span>
+              <span class="text-stone-400">→</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Emergency Blood Matrix (Interactive Filter) -->
+        <div id="bloodMatrix" class="border border-stone-200 bg-white p-5 rounded-xl shadow-xs">
+          <div class="flex items-center justify-between pb-2 border-b border-stone-100 mb-3">
+            <h4 class="font-bold text-xs uppercase tracking-wider text-crimson-700">रक्त समूह आपतकालीन सञ्जाल</h4>
+            <span class="text-[10px] text-stone-500">२४ सै घण्टा</span>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5 mb-3 text-[11px]">
+            <button onclick="filterBloodDonor('ALL')" class="blood-pill active px-2 py-0.5 bg-stone-900 text-white rounded">सबै</button>
+            <button onclick="filterBloodDonor('O+')" class="blood-pill px-2 py-0.5 border border-stone-300 rounded hover:border-stone-900">O+ (६८)</button>
+            <button onclick="filterBloodDonor('A+')" class="blood-pill px-2 py-0.5 border border-stone-300 rounded hover:border-stone-900">A+ (५४)</button>
+            <button onclick="filterBloodDonor('B+')" class="blood-pill px-2 py-0.5 border border-stone-300 rounded hover:border-stone-900">B+ (५१)</button>
+            <button onclick="filterBloodDonor('AB+')" class="blood-pill px-2 py-0.5 border border-stone-300 rounded hover:border-stone-900">AB+ (२२)</button>
+          </div>
+
+          <div class="divide-y divide-stone-100 text-xs" id="donorList">
+            <div class="py-2 flex items-center justify-between donor-item" data-group="O+" data-search="अमित श्रेष्ठ amit shrestha o+ मंगलबजार">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded bg-stone-100 border border-stone-200 font-bold flex items-center justify-center text-[10px] text-crimson-800">O+</span>
+                <span class="font-medium text-stone-900">अमित श्रेष्ठ (मंगलबजार)</span>
+              </div>
+              <a href="tel:9841012345" class="text-stone-600 hover:text-crimson-700 font-semibold num-tabular">९८४१-०१२३४५</a>
+            </div>
+            <div class="py-2 flex items-center justify-between donor-item" data-group="A+" data-search="प्रमिला श्रेष्ठ pramila a+ पुल्चोक">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded bg-stone-100 border border-stone-200 font-bold flex items-center justify-center text-[10px] text-crimson-800">A+</span>
+                <span class="font-medium text-stone-900">प्रमिला श्रेष्ठ (पुल्चोक)</span>
+              </div>
+              <a href="tel:9851234567" class="text-stone-600 hover:text-crimson-700 font-semibold num-tabular">९८५१-२३४५६७</a>
+            </div>
+            <div class="py-2 flex items-center justify-between donor-item" data-group="B+" data-search="सञ्जय मान श्रेष्ठ sanjay b+ त्यागल">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded bg-stone-100 border border-stone-200 font-bold flex items-center justify-center text-[10px] text-crimson-800">B+</span>
+                <span class="font-medium text-stone-900">सञ्जय मान श्रेष्ठ (त्यागल)</span>
+              </div>
+              <a href="tel:9801987654" class="text-stone-600 hover:text-crimson-700 font-semibold num-tabular">९८०१-९८७६५४</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 2. कालक्रम (TIMELINE) SECTION -->
+    <section id="timeline" class="border-t border-b border-stone-200 bg-white py-12 px-6 rounded-2xl shadow-xs">
+      <div class="max-w-4xl mx-auto text-center mb-10">
+        <span class="text-xs uppercase tracking-widest text-crimson-700 font-bold">ऐतिहासिक यात्रा</span>
+        <h3 class="text-2xl sm:text-3xl font-serif font-black text-stone-950 mt-1">
+          कालक्रम (Timeline): समाज निर्माणका ऐतिहासिक कोशेढुङ्गाहरू
+        </h3>
+        <p class="text-xs sm:text-sm text-stone-600 mt-2">
+          वि.सं. २०५६ को स्थापनादेखि आधुनिक डिजिटल सुशासनसम्मको गौरवमय चार दशक
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
+        <!-- Milestone 1 -->
+        <div class="border-t-4 border-crimson-700 pt-4 bg-stone-50/60 p-4 rounded-b-xl searchable-card" data-search="२०५६ स्थापना विधान founding">
+          <div class="flex items-center justify-between">
+            <span class="text-2xl font-serif font-black text-crimson-800 num-tabular">२०५६</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 bg-crimson-100 text-crimson-900 rounded">स्थापना वर्ष</span>
+          </div>
+          <h4 class="font-bold text-sm text-stone-900 mt-2">समाजको औपचारिक स्थापना</h4>
+          <p class="text-xs text-stone-600 mt-1.5 leading-relaxed">
+            पाटनका विभिन्न टोलका श्रेष्ठ अग्रजहरूको भेलाद्वारा स्यस्यः समाजको गठन र विधान दर्ता (दर्ता नं: २३४/०५६/५७)।
+          </p>
+        </div>
+
+        <!-- Milestone 2 -->
+        <div class="border-t-4 border-stone-400 pt-4 bg-stone-50/60 p-4 rounded-b-xl searchable-card" data-search="२०६२ २४ इलाका decentralization">
+          <div class="flex items-center justify-between">
+            <span class="text-2xl font-serif font-black text-stone-800 num-tabular">२०६२</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 bg-stone-200 text-stone-800 rounded">विकेन्द्रीकरण</span>
+          </div>
+          <h4 class="font-bold text-sm text-stone-900 mt-2">२४ इलाका संरचना घोषणा</h4>
+          <p class="text-xs text-stone-600 mt-1.5 leading-relaxed">
+            ललितपुर नगरलाई प्रशासनिक तथा सामाजिक सहजताका लागि २४ इलाकामा विभाजन गरी स्थानीय संयोजक नियुक्ति।
+          </p>
+        </div>
+
+        <!-- Milestone 3 -->
+        <div class="border-t-4 border-stone-400 pt-4 bg-stone-50/60 p-4 rounded-b-xl searchable-card" data-search="२०७२ महाभूकम्प राहत earthquake reconstruction">
+          <div class="flex items-center justify-between">
+            <span class="text-2xl font-serif font-black text-stone-800 num-tabular">२०७२</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 bg-stone-200 text-stone-800 rounded">विपद् उद्धार</span>
+          </div>
+          <h4 class="font-bold text-sm text-stone-900 mt-2">महाभूकम्प राहत तथा पुनर्निर्माण</h4>
+          <p class="text-xs text-stone-600 mt-1.5 leading-relaxed">
+            पाटनका भूकम्प प्रभावित परिवारलाई आपतकालीन आश्रय, खाद्यान्न वितरण, सम्पदा संरक्षण र अक्षयकोष परिचालन।
+          </p>
+        </div>
+
+        <!-- Milestone 4 -->
+        <div class="border-t-4 border-stone-800 pt-4 bg-stone-50/60 p-4 rounded-b-xl searchable-card" data-search="२०८० २०८३ डिजिटल लेखा digital transformation billing">
+          <div class="flex items-center justify-between">
+            <span class="text-2xl font-serif font-black text-stone-900 num-tabular">२०८०-८३</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 bg-stone-900 text-white rounded">डिजिटल युग</span>
+          </div>
+          <h4 class="font-bold text-sm text-stone-900 mt-2">डिजिटल अभिलेखीकरण र लेखा</h4>
+          <p class="text-xs text-stone-600 mt-1.5 leading-relaxed">
+            अफलाइन-फर्स्ट लेखा प्रणाली (स्यस्यः धुकू), डिजिटल सदस्यता कार्ड तथा ऐतिहासिक पाण्डुलिपि संरक्षण।
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. डिजिटल संग्रह (ARCHIVES) — सामुदायिक अभिलेख तथा पाण्डुलिपि -->
+    <section id="archives" class="border border-stone-200 bg-white rounded-2xl p-6 sm:p-8 shadow-xs space-y-6">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-stone-100">
+        <div>
+          <span class="text-xs uppercase tracking-widest text-crimson-700 font-bold">ऐतिहासिक सम्पदा</span>
+          <h3 class="text-2xl font-serif font-black text-stone-950 mt-1">
+            डिजिटल संग्रह (Archives): सामुदायिक अभिलेख तथा पाण्डुलिपि
+          </h3>
+          <p class="text-xs sm:text-sm text-stone-600 mt-1">
+            पाटनका प्राचीन गुठी तमसुक, रीतिथिति निर्णय, पाण्डुलिपि र दुर्लभ ऐतिहासिक तस्बिरहरू
+          </p>
+        </div>
+
+        <!-- Interactive Filter Tabs -->
+        <div class="flex border border-stone-300 rounded-lg p-0.5 bg-stone-50 text-xs shrink-0">
+          <button onclick="filterArchiveCategory('all')" class="arch-pill active px-3 py-1.5 rounded-md font-bold bg-stone-900 text-white">सबै संग्रह</button>
+          <button onclick="filterArchiveCategory('doc')" class="arch-pill px-3 py-1.5 rounded-md text-stone-700 hover:bg-stone-200">तमसुक तथा पाण्डुलिपि</button>
+          <button onclick="filterArchiveCategory('photo')" class="arch-pill px-3 py-1.5 rounded-md text-stone-700 hover:bg-stone-200">ऐतिहासिक तस्बिर</button>
+          <button onclick="filterArchiveCategory('guthi')" class="arch-pill px-3 py-1.5 rounded-md text-stone-700 hover:bg-stone-200">गुठी विधान</button>
+        </div>
+      </div>
+
+      <!-- Archive Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="archiveGrid">
+
+        <!-- Archive 1: Ancient Deed -->
+        <div class="border border-stone-200 rounded-xl p-5 bg-stone-50/50 hover:border-stone-900 transition-all searchable-card archive-card" data-cat="doc" data-search="पाटन तलेजु गुठी तमसुक पाण्डुलिपि नेपाल संवत १०४८ विसं १९८४ taleju guthi deed">
+          <div class="aspect-[16/9] border border-dashed border-stone-300 rounded-lg bg-stone-100 flex flex-col items-center justify-center p-3 text-center mb-3">
+            <span class="text-2xl mb-1">📜</span>
+            <span class="text-[11px] font-bold text-stone-700">नेपाल संवत् १०४८ (वि.सं. १९८४)</span>
+            <span class="text-[10px] text-stone-500">तलेजु भवानी गुठी पूजा व्यवस्थापन तमसुक</span>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-stone-200 text-stone-800 rounded">ऐतिहासिक पाण्डुलिपि</span>
+          <h4 class="font-serif font-bold text-base text-stone-900 mt-2 leading-snug">
+            पाटन तलेजु गुठी व्यवस्थापन सम्बन्धी प्राचीन निर्णय
+          </h4>
+          <p class="text-xs text-stone-600 mt-1.5 leading-relaxed">
+            नेवारी लिपिमा लेखिएको ऐतिहासिक तमसुक जसमा स्यस्यः समुदायको तलेजु मन्दिरमा वार्षिक पर्व पूजा तथा समय् बजि वितरण दायित्व किटान गरिएको छ।
+          </p>
+          <div class="mt-4 pt-3 border-t border-stone-200 flex items-center justify-between text-xs">
+            <span class="text-stone-500">स्क्यान पृष्ठ: ४</span>
+            <button onclick="openArchiveModal('पाटन तलेजु गुठी प्राचीन तमसुक', 'नेपाल संवत् १०४८ (वि.सं. १९८४) मा राजा त्रिभुवनको शासनकालमा पाटनका स्यस्यः समुदाय बीच भएको मूल गुठी सम्झौता।')" class="font-bold text-crimson-700 hover:underline">
+              अध्ययन गर्नुहोस् →
+            </button>
+          </div>
+        </div>
+
+        <!-- Archive 2: Historical Photo -->
+        <div class="border border-stone-200 rounded-xl p-5 bg-stone-50/50 hover:border-stone-900 transition-all searchable-card archive-card" data-cat="photo" data-search="गुँला बाजा टोली च्यासल महाबौद्ध विसं २०२४ gunla baja photo">
+          <div class="aspect-[16/9] border border-dashed border-stone-300 rounded-lg bg-stone-100 flex flex-col items-center justify-center p-3 text-center mb-3">
+            <span class="text-2xl mb-1">📷</span>
+            <span class="text-[11px] font-bold text-stone-700">वि.सं. २०२४ को दुर्लभ तस्बिर</span>
+            <span class="text-[10px] text-stone-500">मंगलबजार गुँला बाजा खलः को सामूहिक प्रस्तुति</span>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider badge-heritage rounded px-2 py-0.5">तस्बिर अभिलेख</span>
+          <h4 class="font-serif font-bold text-base text-stone-900 mt-2 leading-snug">
+            मंगलबजार तथा च्यासल गुँला बाजा खलः (वि.सं. २०२४)
+          </h4>
+          <p class="text-xs text-stone-600 mt-1.5 leading-relaxed">
+            परम्परागत धाः बाजा, भुस्याः र बाँसुरी बजाउँदै पाटनका ऐतिहासिक बहाः बही परिक्रमा गर्दा खिचिएको श्यामश्वेत ऐतिहासिक तस्बिर।
+          </p>
+          <div class="mt-4 pt-3 border-t border-stone-200 flex items-center justify-between text-xs">
+            <span class="text-stone-500">स्रोत: च्यासल अभिलेख</span>
+            <button onclick="openArchiveModal('गुँला बाजा खलः तस्बिर २०२४', 'वि.सं. २०२४ सालमा पाटनका २२ बहाः बही परिक्रमा गर्दा मंगलबजार र च्यासलका ६० जना बादकहरूको सामूहिक तस्बिर।')" class="font-bold text-crimson-700 hover:underline">
+              तस्बिर हेर्नुहोस् →
+            </button>
+          </div>
+        </div>
+
+        <!-- Archive 3: Guthi Rules & By-laws -->
+        <div class="border border-stone-200 rounded-xl p-5 bg-stone-50/50 hover:border-stone-900 transition-all searchable-card archive-card" data-cat="guthi" data-search="सी गुठी सनः गुठी विधान संस्कार नियम guthi by-laws">
+          <div class="aspect-[16/9] border border-dashed border-stone-300 rounded-lg bg-stone-100 flex flex-col items-center justify-center p-3 text-center mb-3">
+            <span class="text-2xl mb-1">⚖️</span>
+            <span class="text-[11px] font-bold text-stone-700">गुठी विधान तथा आचारसंहिता</span>
+            <span class="text-[10px] text-stone-500">सी गुठी तथा सनः गुठी परम्परागत नियम</span>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-stone-200 text-stone-800 rounded">गुठी आचारसंहिता</span>
+          <h4 class="font-serif font-bold text-base text-stone-900 mt-2 leading-snug">
+            सी गुठी तथा सनः गुठी परम्परागत आचारसंहिता
+          </h4>
+          <p class="text-xs text-stone-600 mt-1.5 leading-relaxed">
+            मृत्यु संस्कार, दाहसंस्कार सहयोग र सदस्यहरू बीचको आपसी सद्भाव कायम राख्न तयार गरिएको नियम संग्रह (अद्यावधिक २०८१)।
+          </p>
+          <div class="mt-4 pt-3 border-t border-stone-200 flex items-center justify-between text-xs">
+            <span class="text-stone-500">पूर्ण मस्यौदा (PDF)</span>
+            <button onclick="openArchiveModal('सी गुठी परम्परागत आचारसंहिता', 'गुठी सदस्यहरूको हक, दायित्व, पालो अनुसारको पूजा व्यवस्थापन र आकस्मिक सहयोगका स्पष्ट नियमहरू।')" class="font-bold text-crimson-700 hover:underline">
+              अध्ययन गर्नुहोस् →
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 4. आदरणीय अग्रज (ELDERS) — समाजका विशिष्ट धरोहर व्यक्तित्वहरू -->
+    <section id="elders" class="border border-stone-200 bg-white rounded-2xl p-6 sm:p-8 shadow-xs">
+      <div class="max-w-3xl mb-8">
+        <span class="text-xs uppercase tracking-widest text-crimson-700 font-bold">धरोहर व्यक्तित्व</span>
+        <h3 class="text-2xl font-serif font-black text-stone-950 mt-1">
+          आदरणीय अग्रज (Elders): समाजका विशिष्ट धरोहर व्यक्तित्वहरू
+        </h3>
+        <p class="text-xs sm:text-sm text-stone-600 mt-1">
+          भाषा, संस्कृति, गुठी व्यवस्थापन र सामाजिक जागरणमा अमूल्य योगदान पुर्याउने सम्मानित महानुभावहरू
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+
+        <!-- Elder 1 -->
+        <div class="border border-stone-200 rounded-xl p-5 bg-stone-50/40 text-center searchable-card hover:border-stone-900 transition-colors" data-search="स्व. पूर्णमान श्रेष्ठ purnaman shrestha भाषाविद् संस्थापक इतिहास">
+          <div class="w-20 h-20 rounded-full border-2 border-crimson-700 mx-auto mb-3 flex items-center justify-center bg-stone-100 text-stone-500 text-xl font-bold">
+            प
+          </div>
+          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-stone-200 rounded text-stone-800">संस्थापक सल्लाहकार</span>
+          <h4 class="font-serif font-bold text-base text-stone-900 mt-2">स्व. पूर्णमान श्रेष्ठ</h4>
+          <p class="text-xs text-crimson-700 font-medium">इतिहासविद् तथा संस्कृतिविद्</p>
+          <p class="text-xs text-stone-600 mt-2 leading-relaxed">
+            पाटनको स्यस्यः इतिहास, नेवार जातिको उत्पत्ति र पाण्डुलिपि अन्वेषणमा ५ दशक लामो शोध र ग्रन्थ प्रकाशन।
+          </p>
+          <button onclick="alert('स्व. पूर्णमान श्रेष्ठ: प्रमुख कृतिहरू: १. यलया स्यस्यः तमुसुक २. पाटनका प्राचीन गुठीहरू।')" class="mt-3 text-xs font-bold text-stone-800 underline">
+            व्यक्तित्व परिचय →
+          </button>
+        </div>
+
+        <!-- Elder 2 -->
+        <div class="border border-stone-200 rounded-xl p-5 bg-stone-50/40 text-center searchable-card hover:border-stone-900 transition-colors" data-search="श्री सत्यनारायण श्रेष्ठ satyanarayan shrestha गुठी गुरु च्यासल दाफा भजन">
+          <div class="w-20 h-20 rounded-full border-2 border-stone-400 mx-auto mb-3 flex items-center justify-center bg-stone-100 text-stone-500 text-xl font-bold">
+            स
+          </div>
+          <span class="text-[10px] uppercase font-bold tracking-wider badge-heritage rounded px-2 py-0.5">वरिष्ठ गुठी गुरु</span>
+          <h4 class="font-serif font-bold text-base text-stone-900 mt-2">श्री सत्यनारायण श्रेष्ठ</h4>
+          <p class="text-xs text-crimson-700 font-medium">दाफा भजन तथा राग प्रशिक्षक (८४ वर्ष)</p>
+          <p class="text-xs text-stone-600 mt-2 leading-relaxed">
+            च्यासल र मंगलबजारमा चार पुस्तालाई शास्त्रीय दाफा भजन, चर्या नृत्य र परम्परागत बाँसुरी वादन प्रशिक्षण।
+          </p>
+          <button onclick="alert('श्री सत्यनारायण श्रेष्ठ: २०८२ मा समाजद्वारा अभिनन्दन पत्र र ताम्रपत्रद्वारा सम्मानित।')" class="mt-3 text-xs font-bold text-stone-800 underline">
+            व्यक्तित्व परिचय →
+          </button>
+        </div>
+
+        <!-- Elder 3 -->
+        <div class="border border-stone-200 rounded-xl p-5 bg-stone-50/40 text-center searchable-card hover:border-stone-900 transition-colors" data-search="श्रीमती चन्द्रलक्ष्मी श्रेष्ठ chandralakshmi shrestha महिला सशक्तिकरण त्यागल बचत समूह">
+          <div class="w-20 h-20 rounded-full border-2 border-stone-400 mx-auto mb-3 flex items-center justify-center bg-stone-100 text-stone-500 text-xl font-bold">
+            च
+          </div>
+          <span class="text-[10px] uppercase font-bold tracking-wider bg-stone-200 rounded px-2 py-0.5 text-stone-800">सामुदायिक अभियन्ता</span>
+          <h4 class="font-serif font-bold text-base text-stone-900 mt-2">श्रीमती चन्द्रलक्ष्मी श्रेष्ठ</h4>
+          <p class="text-xs text-crimson-700 font-medium">महिला जागरण तथा बचत कोष अग्रणी</p>
+          <p class="text-xs text-stone-600 mt-2 leading-relaxed">
+            पाटनका विभिन्न टोलमा महिला समूह गठन, परम्परागत नेवारी व्यञ्जन उत्पादन र आत्मनिर्भरता अभियानका नेतृत्वकर्ता।
+          </p>
+          <button onclick="alert('श्रीमती चन्द्रलक्ष्मी श्रेष्ठ: महिला समिति संस्थापक अध्यक्ष (वि.सं. २०६०-२०६८)।')" class="mt-3 text-xs font-bold text-stone-800 underline">
+            व्यक्तित्व परिचय →
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Interactive Document / Detail Modal -->
+  <div id="archiveModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white border-2 border-stone-900 rounded-xl p-6 max-w-lg w-full shadow-2xl">
+      <div class="flex justify-between items-start">
+        <h4 id="modalHeading" class="font-serif font-bold text-lg text-stone-900">अभिलेख विवरण</h4>
+        <button onclick="closeArchiveModal()" class="text-stone-400 hover:text-stone-900 text-lg font-bold">✕</button>
+      </div>
+      <div id="modalDescription" class="text-xs text-stone-700 mt-3 leading-relaxed border-t border-b border-stone-100 py-3">
+        विवरण यहाँ देखिनेछ।
+      </div>
+      <div class="mt-4 flex justify-between items-center text-xs">
+        <span class="text-stone-500">केन्द्रीय अभिलेख शाखा, मंगलबजार</span>
+        <div class="flex gap-2">
+          <button onclick="closeArchiveModal()" class="px-3 py-1.5 border border-stone-300 rounded hover:bg-stone-100">बन्द गर्नुहोस्</button>
+          <button onclick="alert('अभिलेख फाइल (PDF) डाउनलोड सुरु भयो।'); closeArchiveModal();" class="px-3.5 py-1.5 bg-crimson-700 text-white font-bold rounded hover:bg-crimson-800">डाउनलोड (PDF)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unified Footer -->
+  <footer class="border-t border-stone-300 bg-stone-900 text-stone-300 py-12 text-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <div class="space-y-3">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded bg-crimson-700 text-white flex items-center justify-center font-bold text-sm">
+            स्य
+          </div>
+          <span class="font-bold text-white text-sm">स्यस्यः समाज, यल</span>
+        </div>
+        <p class="text-stone-400 text-xs leading-relaxed">
+          ललितपुरका श्रेष्ठ (स्यस्यः) समुदायको ऐतिहासिक, सामाजिक र सांस्कृतिक साझा संगठन। दर्ता नं: २३४/०५६/५७ (ललितपुर)।
+        </p>
+      </div>
+
+      <div>
+        <h5 class="font-bold text-white uppercase text-[11px] mb-3 tracking-wider">द्रुत लिङ्कहरू</h5>
+        <ul class="space-y-2 text-stone-400">
+          <li><a href="#timeline" class="hover:text-white">कालक्रम (Timeline)</a></li>
+          <li><a href="#archives" class="hover:text-white">डिजिटल संग्रह (Archives)</a></li>
+          <li><a href="#elders" class="hover:text-white">धरोहर व्यक्तित्व (Elders)</a></li>
+          <li><a href="#ilakas" class="hover:text-white">२४ इलाका समन्वय सूची</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h5 class="font-bold text-white uppercase text-[11px] mb-3 tracking-wider">नागरिक तथा लेखा प्रणाली</h5>
+        <ul class="space-y-2 text-stone-400">
+          <li><a href="/app" class="hover:text-white font-semibold text-crimson-400">स्यस्यः धुकू (Billing & Accounts) ↗</a></li>
+          <li><a href="#services" class="hover:text-white">नागरिक बडापत्र तथा सेवा</a></li>
+          <li><a href="#memberActionBox" class="hover:text-white">डिजिटल सदस्यता परिचयपत्र</a></li>
+          <li><a href="#bloodMatrix" class="hover:text-white">रक्त समूह आपतकालीन सञ्जाल</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h5 class="font-bold text-white uppercase text-[11px] mb-3 tracking-wider">सम्पर्क तथा सचिवालय</h5>
+        <p class="text-stone-400">केन्द्रीय कार्यालय: मंगलबजार, यल (ललितपुर)</p>
+        <p class="text-stone-400 mt-1">फोन: ०१-५५२३४५६</p>
+        <p class="text-stone-400 mt-1">इमेल: info@syasyahsamaj.org.np</p>
+        <p class="text-stone-500 mt-2 text-[11px]">खुल्ने समय: बिहान १०:०० - साँझ ५:०० (शनिबार बाहेक)</p>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between text-stone-500 text-[11px] gap-2">
+      <div>© २०८३ स्यस्यः समाज, यल। सर्वाधिकार सुरक्षित।</div>
+      <div class="flex gap-4">
+        <a href="#" class="hover:text-stone-300">गोपनीयता नीति</a>
+        <a href="#" class="hover:text-stone-300">विधान तथा नियमावली</a>
+        <a href="#" class="hover:text-stone-300">साइटम्याप</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive JavaScript Functionality -->
+  <script>
+    // 1. Master Search: Real-time client-side filter
+    function runMasterSearch() {
+      const q = document.getElementById('masterSearch').value.toLowerCase().trim();
+      const cards = document.querySelectorAll('.searchable-card');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const text = (card.getAttribute('data-search') || '') + ' ' + card.innerText.toLowerCase();
+        if (!q || text.includes(q)) {
+          card.style.display = '';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      const countEl = document.getElementById('searchResultCount');
+      if (q) {
+        countEl.innerText = `${visibleCount} नतिजा भेटियो`;
+      } else {
+        countEl.innerText = '';
+      }
+    }
+
+    // 2. Archive Category Filter
+    function filterArchiveCategory(cat) {
+      document.querySelectorAll('.arch-pill').forEach(pill => {
+        pill.classList.remove('active', 'bg-stone-900', 'text-white');
+        pill.classList.add('text-stone-700');
+      });
+      event.currentTarget.classList.remove('text-stone-700');
+      event.currentTarget.classList.add('active', 'bg-stone-900', 'text-white');
+
+      document.querySelectorAll('.archive-card').forEach(card => {
+        if (cat === 'all' || card.getAttribute('data-cat') === cat) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    // 3. Blood Donor Filter
+    function filterBloodDonor(group) {
+      document.querySelectorAll('.blood-pill').forEach(pill => {
+        pill.classList.remove('active', 'bg-stone-900', 'text-white');
+        pill.classList.add('border-stone-300');
+      });
+      event.currentTarget.classList.add('active', 'bg-stone-900', 'text-white');
+
+      document.querySelectorAll('.donor-item').forEach(item => {
+        if (group === 'ALL' || item.getAttribute('data-group') === group) {
+          item.style.display = '';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+
+    // 4. Citizen Application Status Check
+    function checkAppStatus() {
+      const v = document.getElementById('citizenTrackInput').value.trim();
+      const res = document.getElementById('citizenTrackResult');
+      if (!v) {
+        alert('कृपया आवेदन नम्बर प्रविष्ट गर्नुहोस्।');
+        return;
+      }
+      res.classList.remove('hidden');
+    }
+
+    // 5. Modals
+    function openArchiveModal(title, text) {
+      document.getElementById('modalHeading').innerText = title;
+      document.getElementById('modalDescription').innerText = text;
+      document.getElementById('archiveModal').classList.remove('hidden');
+    }
+
+    function closeArchiveModal() {
+      document.getElementById('archiveModal').classList.add('hidden');
+    }
+
+    // 6. Smooth Scroll
+    function scrollToSection(id) {
+      document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>
