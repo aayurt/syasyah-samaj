@@ -17,8 +17,8 @@ export default async function LoginPage({
   setStaticParamsLocale(locale)
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] bg-gradient-to-b from-stone-50 to-white flex items-center justify-center py-10">
-      <Suspense fallback={<div className="p-12 text-center text-xs text-stone-500">फारम लोड हुँदैछ...</div>}>
+    <div className="min-h-[calc(100vh-8rem)] bg-gradient-to-b from-stone-50 to-white dark:from-stone-950 dark:to-stone-900 flex items-center justify-center py-10 transition-colors">
+      <Suspense fallback={<div className="p-12 text-center text-xs text-stone-500 dark:text-stone-400">फारम लोड हुँदैछ...</div>}>
         <OrganisationLoginForm />
       </Suspense>
     </div>
