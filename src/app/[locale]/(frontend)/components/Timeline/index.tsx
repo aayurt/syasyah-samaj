@@ -68,28 +68,31 @@ export default async function TimelineSection({ locale }: { locale: 'en' | 'ne' 
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {milestones.map((m, idx) => (
-            <div
-              key={idx}
-              className="border-t-4 border-stone-900 pt-4 bg-stone-50/70 p-5 rounded-b-xl border border-stone-200 hover:border-stone-400 transition-all space-y-2"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-serif font-black text-stone-950 tabular-nums">
-                  {m.year}
-                </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-stone-200 text-stone-800 rounded">
-                  {m.tag}
-                </span>
+        <div className="overflow-x-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {milestones.map((m, idx) => (
+              <div
+                key={idx}
+                className="border-t-4 border-stone-900 pt-4 bg-stone-50/70 p-5 rounded-b-xl border border-stone-200 hover:border-stone-400 transition-all space-y-2"
+                style={{ flexShrink: 0 }}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-serif font-black text-stone-950 tabular-nums">
+                    {m.year}
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-stone-200 text-stone-800 rounded">
+                    {m.tag}
+                  </span>
+                </div>
+                <h3 className="font-bold text-sm text-stone-900 leading-snug">
+                  {m.title}
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  {m.description}
+                </p>
               </div>
-              <h3 className="font-bold text-sm text-stone-900 leading-snug">
-                {m.title}
-              </h3>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                {m.description}
-              </p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>

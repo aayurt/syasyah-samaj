@@ -98,7 +98,7 @@ export default function ArchivesSection({ initialDocs }: { initialDocs?: Archive
                 category === 'guthi' ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-100'
               }`}
             >
-              गुठी विधान
+              गुठीविधान
             </button>
           </div>
         </div>
