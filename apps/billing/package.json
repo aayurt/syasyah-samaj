@@ -10,6 +10,7 @@
     "test:e2e": "playwright test --config e2e/playwright.config.ts"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.1.0",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-sql": "^2.4.0",
     "better-auth": "^1.4.18",

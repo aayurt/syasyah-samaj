@@ -1,53 +1,51 @@
-
+import React from 'react'
 import { getI18n, getCurrentLocale } from '@/locales/server'
-import { IlakaTabs } from './IlakaTabs'
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
+import { IlakaShowcase } from './IlakaShowcase'
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowRight, Sparkles } from 'lucide-react'
+import { Locale } from '@/lib/homeTranslations'
 
-export default async function Ilakas({ locale: propLocale }: { locale?: 'en' | 'ne' | 'new' }) {
-    const t = await getI18n()
-    const locale = propLocale || await getCurrentLocale()
-    const payload = await getPayload({ config: configPromise })
+export default async function Ilakas({ locale: propLocale }: { locale?: Locale }) {
+  const t = await getI18n()
+  const locale = (propLocale || (await getCurrentLocale())) as Locale
 
-    const { docs: ilakas } = await payload.find({
-        collection: 'tenants',
-        locale: locale as 'en' | 'ne' | 'new',
-        limit: 10,
-        where: {
-            enabled: {
-                equals: true
-            }
-        }
-    })
+  return (
+    <section id="ilakas" className="py-16 bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        
+        {/* Section Heading */}
+        <div className="max-w-3xl mx-auto text-center space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{locale === 'en' ? 'Neighborhood Governance' : 'विकेन्द्रीकृत टोल समन्वय'}</span>
+          </div>
 
-    return (
-        <section id="ilakas" className="py-24 dark:bg-muted">
-            <div className="container mx-auto px-4">
-                <div className="mb-12 text-center">
-                    <h2 className="text-3xl md:text-4xl font-bold text-primary dark:text-foreground">
-                        {t('home.ilakas')}
-                    </h2>
-                    <p className="text-muted-foreground mt-3 max-w-2xl mx-auto dark:text-muted-foreground">
-                        {t('home.ilakasDescription')}
-                    </p>
-                </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-black text-foreground tracking-tight">
+            {t('home.ilakas')}
+          </h2>
 
-                <div className="max-w-5xl mx-auto mt-12 w-full">
-                    <IlakaTabs ilakas={ilakas} />
-                </div>
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+            {t('home.ilakasDescription')}
+          </p>
+        </div>
 
-                <div className="mt-16 text-center">
-                    <Button asChild size="lg" className="rounded-full">
-                        <Link href="/ilakas" className="inline-flex items-center gap-2">
-                            {t('ilaka.viewAllIlakas')}
-                            <ArrowRight className="w-5 h-5" />
-                        </Link>
-                    </Button>
-                </div>
-            </div>
-        </section>
-    )
+        {/* Aceternity Interactive Showcase */}
+        <div className="w-full">
+          <IlakaShowcase locale={locale} />
+        </div>
+
+        {/* All Ilakas Button */}
+        <div className="text-center pt-4">
+          <Link
+            href="/ilakas"
+            className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm shadow-md transition-all hover:scale-105 active:scale-95"
+          >
+            <span>{t('ilaka.viewAllIlakas')}</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+      </div>
+    </section>
+  )
 }

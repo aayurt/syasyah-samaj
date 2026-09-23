@@ -49,6 +49,15 @@ export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
           <LanguageSwitcher />
         </div>
 
+        {/* Portal / Member Login Button (Desktop) */}
+        <Link
+          href="/login"
+          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:bg-muted hover:border-primary/50 transition-all shadow-2xs"
+        >
+          <span>👤</span>
+          <span>लगइन</span>
+        </Link>
+
         {/* Mobile Menu Toggle */}
         <button
           className="lg:hidden p-2 rounded-xl hover:bg-muted transition-colors"
@@ -80,6 +89,14 @@ export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
               <ThemeSelector />
               <LanguageSwitcher />
             </div>
+            <Link
+              href="/login"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="px-4 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-base flex items-center justify-between shadow-xs"
+            >
+              <span>नागरिक तथा संस्थागत लगइन</span>
+              <span>→</span>
+            </Link>
             {navItems.map(({ link }, i) => (
               <div key={i} onClick={() => setIsMobileMenuOpen(false)}>
                 <CMSLink
