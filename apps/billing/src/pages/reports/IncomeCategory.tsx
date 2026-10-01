@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, Download, FileText, Printer } from 'lucide-react'
+import { ArrowLeft, Download, FileText, Printer, Table } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api, fmt } from '../../lib/api'
 import { downloadCsv } from '../../lib/csv'
+import { buildExportExcel, EXPORT_COLUMNS, downloadBlob } from '../../lib/importExport'
 import { exportReportPdf } from '../../lib/pdf'
 import { useCalendar } from '../../lib/calendar'
 import { useTenant, useTenantQuery } from '../../lib/tenant'
@@ -70,10 +71,22 @@ export default function IncomeCategory() {
 
   useEffect(() => { load() }, [load])
 
-  const toggle = (name: string) => setExpanded((prev) => { const next = new Set(prev); next.has(name) ? next.delete(name) : next.add(name); return next })
+  const toggle = (name: string) => setExpanded((prev) => { const next = new Set(prev); if (next.has(name)) next.delete(name); else next.add(name); return next })
 
   const csv = () => downloadCsv('income-category.csv', ['Category', 'Account', 'Amount'],
     categories.flatMap((c) => c.accounts.map((a) => [c.name, a.name, a.amount])))
+    const excel = async () => {
+    //
+    const dataRows = categories.flatMap((c) => c.accounts.map((a) => [c.name, a.name, a.amount]))
+    const keys = ['category', 'account', 'amount']
+    const docs = dataRows.map((row) => {
+      const obj: any = {}
+      keys.forEach((k, i) => obj[k] = row[i])
+      return obj
+    })
+    const blob = await buildExportExcel('Report', docs, { columns: EXPORT_COLUMNS['income-category'] })
+    downloadBlob('income-category.xlsx', blob)
+  }
   const pdf = () => exportReportPdf({
     filename: 'income-category.pdf', title: 'Income Categories',
     meta: [['From', from || 'Earliest'], ['To', to || 'Latest'], ['Total Income', fmt(total)]],
@@ -90,6 +103,7 @@ export default function IncomeCategory() {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={csv} disabled={loading} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Download size={14} /> {t('common.csv', 'CSV')}</button>
+          <button onClick={excel} disabled={loading} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Table size={14} /> {t('common.excel', 'Excel')}</button>
           <button onClick={pdf} disabled={loading} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><FileText size={14} /> {t('common.pdf', 'PDF')}</button>
           <button onClick={() => window.print()} disabled={loading} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Printer size={14} /> {t('common.print', 'Print')}</button>
         </div>

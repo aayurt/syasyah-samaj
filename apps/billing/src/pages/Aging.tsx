@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Download, FileText, Printer, FileSearch } from 'lucide-react'
+import { Download, FileSearch, FileText, Printer, Table } from 'lucide-react'
 import { api } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
 import { downloadCsv } from '../lib/csv'
+import { buildExportExcel, downloadBlob } from '../lib/importExport'
 import { exportReportPdf } from '../lib/pdf'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
@@ -111,6 +112,24 @@ export default function Aging() {
             >
               <Download size={14} />
               CSV
+            </button>
+            <button
+              onClick={() => {
+                if (!data) return
+                const cols = ['Party', ...BUCKETS, 'Total']
+                const dataRows = data.parties.map((p) => [p.party.name, ...BUCKETS.map((b) => p.buckets[b] || 0), p.total])
+                const docs = dataRows.map((row) => {
+                  const obj: any = {}
+                  cols.forEach((col, i) => obj[col] = row[i])
+                  return obj
+                })
+                buildExportExcel('Aging', docs).then(blob => downloadBlob(`aging-${side}.xlsx`, blob))
+              }}
+              disabled={!data}
+              className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+            >
+              <Table size={14} />
+              Excel
             </button>
             <button
               onClick={pdf}
