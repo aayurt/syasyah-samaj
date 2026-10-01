@@ -388,7 +388,7 @@ export function parseCsvText(text: string): Record<string, unknown>[] {
   const rawHeaders = nonEmptyLines[0]
   // Normalize headers (camelCase and strip quotes/spaces)
   const headers = rawHeaders.map((h) => {
-    const clean = h.trim()
+    const clean = h.trim().replace(/^[\uFEFF]/, '')
     // Map common human/Nepali headers to field names
     const lower = clean.toLowerCase()
     if (lower === 'name' || lower === 'fullname' || lower === 'full name' || clean.includes('नाम')) return 'fullName'

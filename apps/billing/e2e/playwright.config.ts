@@ -59,6 +59,14 @@ export default defineConfig({
         // SPA origin the browser actually posts from (via the Vite proxy).
         BETTER_AUTH_URL: `${WEB_URL}/`,
         NEXT_PUBLIC_SERVER_URL: `${WEB_URL}/`,
+        RESEND_API_KEY: 're_123456789',
+        PAYLOAD_SECRET: 'test-secret-1234567890-very-long',
+        CRON_SECRET: 'test-cron-secret-1234',
+        PREVIEW_SECRET: 'test-preview-secret',
+        DATABASE_URI: process.env.E2E_DATABASE_URI || 'postgresql://postgres:test@localhost:5432/billing_e2e',
+        REDIS_HOST: 'localhost',
+        REDIS_PORT: '6379',
+        REDIS_PASSWORD: '',
       },
       // A real API path: `/api` (exact) hits the 404/next-international path.
       url: `${API_URL}/api/users`,
@@ -66,7 +74,7 @@ export default defineConfig({
     },
     {
       // Billing SPA on :5174, proxying /api to the API instance above.
-      command: `npx vite --port ${WEB_PORT} --strictPort`,
+      command: `pnpm run dev -- --port ${WEB_PORT} --strictPort`,
       cwd: '..', // apps/billing — the Vite app
       env: { E2E_API_TARGET: API_URL },
       url: WEB_URL,

@@ -4,6 +4,8 @@ import {
   classifyRecords,
   executeImport,
   fetchAllDocs,
+  validateImportRows,
+  type ValidationError,
   type DedupResult,
   type ImportAction,
 } from '../lib/importExport'
@@ -34,6 +36,8 @@ export default function ImportPreviewModal({
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [result, setResult] = useState<{ created: number; updated: number; skipped: number; errors: string[] } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
+  const [isValidated, setIsValidated] = useState(false)
 
   // Fetch existing records and classify
   useEffect(() => {
@@ -61,6 +65,40 @@ export default function ImportPreviewModal({
 
   const setAction = (key: number, action: ImportAction) => {
     setActions((prev) => new Map(prev).set(key, action))
+  }
+
+  const handleValidateAll = () => {
+    const { errors } = validateImportRows(docs, collection)
+    setValidationErrors(errors)
+    setIsValidated(true)
+  }
+
+  const handleSetValidToCreate = () => {
+    if (!dedup) return
+    const errorRows = new Set(validationErrors.filter(e => e.severity === 'error').map(e => e.row))
+    const newActions = new Map(actions)
+
+    const processGroup = (records: any[], offset: number) => {
+      records.forEach((r, i) => {
+        const doc = r.imported || r
+        const rowNum = docs.indexOf(doc) + 2
+        if (!errorRows.has(rowNum)) {
+          newActions.set(offset + i, 'create')
+        }
+      })
+    }
+    processGroup(dedup.newRecords, 0)
+    processGroup(dedup.exactDuplicates, docs.length)
+    processGroup(dedup.similarRecords, docs.length * 2)
+    setActions(newActions)
+  }
+
+  const handleSetDuplicatesToUpdate = () => {
+    if (!dedup) return
+    const newActions = new Map(actions)
+    dedup.exactDuplicates.forEach((_, i) => newActions.set(docs.length + i, 'update'))
+    dedup.similarRecords.forEach((_, i) => newActions.set(docs.length * 2 + i, 'update'))
+    setActions(newActions)
   }
 
   const handleImport = async () => {
@@ -101,6 +139,50 @@ export default function ImportPreviewModal({
   const totalSimilar = dedup?.similarRecords.length || 0
   const willImport = [...actions.values()].filter((a) => a !== 'skip').length
 
+  const renderRow = (doc: AnyDoc, key: number, existingDoc?: AnyDoc, matchField?: string) => {
+    const rowNum = docs.indexOf(doc) + 2;
+    const errs = validationErrors.filter(e => e.row === rowNum);
+    const errors = errs.filter(e => e.severity === 'error');
+    const warnings = errs.filter(e => e.severity === 'warning');
+    const action = actions.get(key) || 'skip';
+
+    return (
+      <div key={key} className={`flex items-start justify-between border-t px-3 py-2 text-xs ${errors.length > 0 ? 'bg-red-50/50' : warnings.length > 0 ? 'bg-amber-50/50' : 'border-slate-100'}`}>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400 font-mono text-[10px]">Line {rowNum}</span>
+            <span className="font-medium text-slate-700">{String(doc.fullName || doc.name || doc.email || `Record ${rowNum}`)}</span>
+            {errors.length > 0 && <span className="rounded bg-red-100 text-red-700 px-1.5 py-0.5 text-[10px] font-bold">Error</span>}
+            {warnings.length > 0 && <span className="rounded bg-amber-100 text-amber-700 px-1.5 py-0.5 text-[10px] font-bold">Warning</span>}
+          </div>
+          {existingDoc && (
+            <div className="text-slate-500 text-[10px] mt-0.5">
+              Matches "{String(existingDoc.fullName || existingDoc.name || existingDoc.email)}"
+            </div>
+          )}
+          {errs.length > 0 && (
+            <div className="mt-1 space-y-0.5">
+              {errs.map((e, idx) => (
+                <div key={idx} className={`text-[10px] ${e.severity === 'error' ? 'text-red-600' : 'text-amber-600'}`}>
+                  • {e.field}: {e.message}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <select
+          value={action}
+          onChange={(e) => setAction(key, e.target.value as ImportAction)}
+          className="ml-4 shrink-0 rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-crimson-500"
+        >
+          <option value="create">{t('importPreview.createNew', 'Create')}</option>
+          <option value="update">{t('importPreview.update', 'Update')}</option>
+          <option value="skip">{t('importPreview.skip', 'Skip')}</option>
+        </select>
+      </div>
+    )
+  }
+
   return (
     <div className="anim-fade-in fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-[8vh]">
       <div className="anim-modal-in w-full max-w-2xl rounded-lg border border-slate-200 bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
@@ -123,6 +205,28 @@ export default function ImportPreviewModal({
 
           {step === 'review' && dedup && (
             <>
+              {/* Bulk Actions */}
+              <div className="mb-4 flex flex-wrap gap-2 rounded bg-slate-50 p-3">
+                <button
+                  onClick={handleValidateAll}
+                  className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  {isValidated ? 'Re-Validate All' : 'Validate All'}
+                </button>
+                <button
+                  onClick={handleSetValidToCreate}
+                  className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800 hover:bg-emerald-100"
+                >
+                  Set all valid to Create
+                </button>
+                <button
+                  onClick={handleSetDuplicatesToUpdate}
+                  className="rounded border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100"
+                >
+                  Set all duplicates to Update
+                </button>
+              </div>
+
               {/* Summary */}
               <div className="mb-4 space-y-1 text-sm">
                 {totalNew > 0 && (
@@ -144,17 +248,11 @@ export default function ImportPreviewModal({
 
               {/* New records */}
               {totalNew > 0 && (
-                <div className="mb-4 max-h-40 overflow-y-auto rounded border border-slate-200">
+                <div className="mb-4 max-h-60 overflow-y-auto rounded border border-slate-200">
                   <div className="bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
                     {t('importPreview.newRecords').replace('{n}', String(totalNew))}
                   </div>
-                  {dedup.newRecords.slice(0, 10).map((doc, i) => (
-                    <div key={i} className="flex items-center justify-between border-t border-slate-100 px-3 py-2 text-xs">
-                      <span className="text-slate-700">{String(doc.fullName || doc.name || doc.email || `Record ${i + 1}`)}</span>
-                      <span className="text-emerald-600">{t('importPreview.willCreate')}</span>
-                    </div>
-                  ))}
-                  {totalNew > 10 && <div className="px-3 py-1.5 text-xs text-slate-400">{t('importPreview.andMore').replace('{n}', String(totalNew - 10))}</div>}
+                  {dedup.newRecords.map((doc, i) => renderRow(doc, i))}
                 </div>
               )}
 
@@ -164,39 +262,7 @@ export default function ImportPreviewModal({
                   <div className="bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
                     {t('importPreview.similarRecords').replace('{n}', String(totalSimilar))}
                   </div>
-                  {dedup.similarRecords.map((pair, i) => {
-                    const key = docs.length * 2 + i
-                    const action = actions.get(key) || 'skip'
-                    return (
-                      <div key={i} className="border-t border-amber-100 px-3 py-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <div>
-                            <span className="font-medium text-slate-700">
-                              {String(pair.imported.fullName || pair.imported.name || pair.imported.email)}
-                            </span>
-                            <span className="ml-2 text-slate-400">
-                              matches "{String(pair.existing.fullName || pair.existing.name || pair.existing.email)}"
-                            </span>
-                          </div>
-                          <div className="flex gap-1">
-                            {(['skip', 'update', 'create'] as ImportAction[]).map((a) => (
-                              <button
-                                key={a}
-                                onClick={() => setAction(key, a)}
-                                className={`rounded px-2 py-0.5 text-[10px] font-medium ${
-                                  action === a
-                                    ? a === 'skip' ? 'bg-slate-200 text-slate-700' : a === 'update' ? 'bg-amber-200 text-amber-800' : 'bg-emerald-200 text-emerald-800'
-                                    : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                                }`}
-                              >
-                                {a === 'skip' ? t('importPreview.skip') : a === 'update' ? t('importPreview.update') : t('importPreview.createNew')}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
+                  {dedup.similarRecords.map((pair, i) => renderRow(pair.imported, docs.length * 2 + i, pair.existing, pair.matchField))}
                 </div>
               )}
 
@@ -206,14 +272,7 @@ export default function ImportPreviewModal({
                   <div className="bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700">
                     {t('importPreview.exactDuplicates').replace('{n}', String(totalExact))}
                   </div>
-                  {dedup.exactDuplicates.slice(0, 5).map((pair, i) => (
-                    <div key={i} className="flex items-center justify-between border-t border-red-100 px-3 py-2 text-xs">
-                      <span className="text-slate-700">
-                        {String(pair.imported.fullName || pair.imported.name || pair.imported.email)}
-                      </span>
-                      <span className="text-red-500">{t('importPreview.duplicateSkip')}</span>
-                    </div>
-                  ))}
+                  {dedup.exactDuplicates.map((pair, i) => renderRow(pair.imported, docs.length + i, pair.existing))}
                 </div>
               )}
 
