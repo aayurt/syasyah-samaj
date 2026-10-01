@@ -178,7 +178,7 @@ export default function LoginForm({
           <CardHeader className="access-denied-header">
             <CardTitle className="access-denied-title">Access Denied</CardTitle>
             <CardDescription className="access-denied-description">
-              You don't have permission to access the admin panel.
+              You don&apos;t have permission to access the admin panel.
             </CardDescription>
           </CardHeader>
           <CardContent className="access-denied-content">

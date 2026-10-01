@@ -17,6 +17,7 @@ import { pushToast } from '../lib/toast'
 import type { BillingSettings } from '../lib/types'
 import { fetchAllDocs, buildExportJson, buildExportExcel, downloadBlob, parseImportFile, EXPORT_COLUMNS } from '../lib/importExport'
 import ImportPreviewModal from '../components/ImportPreviewModal'
+import { getEngine } from '../lib/offline/index'
 
 /**
  * Data Management — bulk operations that shape a tenant's books.
@@ -323,7 +324,15 @@ export default function DataManagement() {
                             onClick={async () => {
                               try {
                                 pushToast('info', 'Exporting…', `Fetching ${slug} (JSON)`)
-                                const docs = await fetchAllDocs(slug, tenantQuery)
+                                let docs = []
+                                const engine = getEngine()
+                                if (!engine.getState().online) {
+                                  const cache = await engine.readCollection(slug, tenantId || undefined)
+                                  if (cache) docs = cache.docs as any[]
+                                  else throw new Error("Not cached offline")
+                                } else {
+                                  docs = await fetchAllDocs(slug, tenantQuery)
+                                }
                                 const blob = buildExportJson(slug, docs)
                                 downloadBlob(`${slug}-export.json`, blob)
                                 pushToast('success', 'Exported', `${docs.length} ${slug} records (JSON)`)
@@ -339,7 +348,15 @@ export default function DataManagement() {
                             onClick={async () => {
                               try {
                                 pushToast('info', 'Exporting…', `Fetching ${slug} (Excel)`)
-                                const docs = await fetchAllDocs<Record<string, unknown>>(slug, tenantQuery)
+                                let docs = []
+                                const engine = getEngine()
+                                if (!engine.getState().online) {
+                                  const cache = await engine.readCollection(slug, tenantId || undefined)
+                                  if (cache) docs = cache.docs as any[]
+                                  else throw new Error("Not cached offline")
+                                } else {
+                                  docs = await fetchAllDocs<Record<string, unknown>>(slug, tenantQuery)
+                                }
                                 const columns = EXPORT_COLUMNS[slug]
                                 const blob = await buildExportExcel(slug, docs, { columns })
                                 downloadBlob(`${slug}-export.xlsx`, blob)

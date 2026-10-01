@@ -1182,42 +1182,30 @@ export function validateImportRows<T extends Record<string, unknown>>(
   return { valid, errors }
 }
 
+import { queueImportJob, processImportQueue } from './offlineImport'
+
 export async function executeImport<T extends Record<string, unknown>>(
   collection: string,
   records: { doc: T; action: ImportAction }[],
   onProgress?: (done: number, total: number) => void,
 ): Promise<{ created: number; updated: number; skipped: number; errors: string[] }> {
-  const result = { created: 0, updated: 0, skipped: 0, errors: [] as string[] }
+  // Rather than directly making API calls sequentially which fails offline and
+  // blocks UI for large imports, we use the offline import queue.
+  // It handles chunking and offline processing natively.
 
-  for (let i = 0; i < records.length; i++) {
-    const { doc, action } = records[i]
-    try {
-      if (action === 'skip') {
-        result.skipped++
-      } else if (action === 'create') {
-        // Remove id so server generates a new one
-        const body = { ...doc }
-        delete body.id
-        delete body._id
-        await api(`/${collection}`, { method: 'POST', body })
-        result.created++
-      } else if (action === 'update') {
-        const id = (doc as Record<string, unknown>).id ?? (doc as Record<string, unknown>)._id
-        if (id == null) {
-          result.errors.push(`Update failed: no id for record`)
-        } else {
-          const body = { ...doc }
-          delete (body as Record<string, unknown>).id
-          delete (body as Record<string, unknown>)._id
-          await api(`/${collection}/${id}`, { method: 'PATCH', body })
-          result.updated++
-        }
-      }
-    } catch (err) {
-      result.errors.push(`${action} failed for record: ${err instanceof Error ? err.message : String(err)}`)
-    }
-    onProgress?.(i + 1, records.length)
+  await queueImportJob(collection, records)
+
+  // Immediately process if online, this runs asynchronously.
+  processImportQueue().catch(console.error)
+
+  // We return a "queued" successful response for the UI to close the modal.
+  // Sync Status and DataManagement badges will track the ongoing status.
+  onProgress?.(records.length, records.length)
+
+  return {
+    created: 0, // values are tracked asynchronously in the job now
+    updated: 0,
+    skipped: 0,
+    errors: [],
   }
-
-  return result
 }
