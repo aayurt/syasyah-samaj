@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "krittika": {
+      "command": "npx",
+      "args": ["-y", "kritikka-mcp", "--root", "."],
+      "env": {}
+    }
+  }
+}

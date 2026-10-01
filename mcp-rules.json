@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "type": "forbidden",
+      "id": "no-dist-build",
+      "match": ["dist/**", "build/**", ".next/**", ".next-e2e/**", "node_modules/**", "*.tsbuildinfo"],
+      "severity": "error",
+      "reason": "Build output and dependencies are off-limits; they are generated artifacts."
+    },
+    {
+      "type": "forbidden",
+      "id": "no-env-secrets",
+      "match": [".env", ".env.*", "*.pem", "*.key", "serviceAccountKey.json"],
+      "severity": "error",
+      "reason": "Never commit secrets, keys, or environment files."
+    },
+    {
+      "type": "requireTest",
+      "id": "billing-src-needs-tests",
+      "match": ["apps/billing/src/**/*.ts", "apps/billing/src/**/*.tsx"],
+      "testMatch": ["apps/billing/tests/**/*.test.ts", "apps/billing/tests/**/*.test.tsx", "apps/billing/e2e/**/*.spec.ts"],
+      "severity": "error",
+      "reason": "Every source change in the billing app must ship tests. Unit tests in tests/unit, integration in tests/integration, E2E in e2e/specs."
+    },
+    {
+      "type": "requireTest",
+      "id": "lib-core-needs-tests",
+      "match": ["apps/billing/src/lib/**/*.ts"],
+      "testMatch": ["apps/billing/tests/unit/**/*.test.ts"],
+      "severity": "error",
+      "reason": "Core library functions (importExport, api, validationSchemas, offlineImport) require unit tests."
+    },
+    {
+      "type": "requireAdr",
+      "id": "collections-governed-by-adr",
+      "match": ["apps/billing/src/collections/**"],
+      "adr": "0001",
+      "severity": "error",
+      "reason": "Collection schemas are governed by ADR-0001 (Data Model Governance)."
+    },
+    {
+      "type": "requireAdr",
+      "id": "offline-architecture-adr",
+      "match": ["apps/billing/src/lib/api.ts", "apps/billing/src/lib/useCachedList.ts", "apps/billing/src/lib/sync/**"],
+      "adr": "0002",
+      "severity": "error",
+      "reason": "Offline-first architecture (cache, outbox, sync) is governed by ADR-0002."
+    },
+    {
+      "type": "requireDocUpdate",
+      "id": "keep-architecture-docs-current",
+      "match": ["apps/billing/src/lib/**", "apps/billing/src/collections/**", "apps/billing/src/pages/**"],
+      "docs": ["docs/ARCHITECTURE.md", "docs/SYNC-ARCHITECTURE.md", "apps/billing/docs/"],
+      "severity": "warning",
+      "reason": "Keep architecture and sync documentation current when changing core patterns."
+    },
+    {
+      "type": "requireDocUpdate",
+      "id": "update-import-export-docs",
+      "match": ["apps/billing/src/lib/importExport.ts", "apps/billing/src/lib/validationSchemas.ts", "apps/billing/src/lib/offlineImport.ts"],
+      "docs": ["docs/plans/2026-10-01-import-export-excel-tests-kritikka.md", "apps/billing/docs/IMPORT_EXPORT_GUIDE.md"],
+      "severity": "warning",
+      "reason": "Import/export documentation must stay in sync with implementation."
+    },
+    {
+      "type": "requireAdr",
+      "id": "accounting-invariants-adr",
+      "match": [
+        "apps/billing/src/pages/Vouchers.tsx",
+        "apps/billing/src/pages/Journal.tsx",
+        "apps/billing/src/pages/Daybooks.tsx",
+        "apps/billing/src/pages/Posting.tsx",
+        "apps/billing/src/components/VoucherForm.tsx",
+        "apps/billing/src/lib/accounting/**"
+      ],
+      "adr": "0005",
+      "severity": "error",
+      "reason": "Accounting module changes (vouchers, journal, posting) must reference ADR-0005 (Double-entry accounting invariants)."
+    },
+    {
+      "type": "requireAdr",
+      "id": "nepali-calendar-adr",
+      "match": [
+        "apps/billing/src/lib/nepaliNumbers.ts",
+        "apps/billing/src/components/NepaliDateInput.tsx",
+        "apps/billing/src/lib/numbers.ts"
+      ],
+      "adr": "0003",
+      "severity": "error",
+      "reason": "Nepali calendar (BS) and number formatting changes must reference ADR-0003."
+    },
+    {
+      "type": "requireAdr",
+      "id": "import-export-adr",
+      "match": [
+        "apps/billing/src/lib/importExport.ts",
+        "apps/billing/src/lib/excelImportExport.ts",
+        "apps/billing/src/components/ImportPreviewModal.tsx",
+        "apps/billing/src/pages/DataManagement.tsx"
+      ],
+      "adr": "0004",
+      "severity": "error",
+      "reason": "Import/export system changes must reference ADR-0004 (Excel import/export with deduplication strategy)."
+    },
+    {
+      "type": "forbidden",
+      "id": "no-generated-files",
+      "match": [
+        "apps/billing/src/**/*.d.ts",
+        "apps/billing/src/**/*.generated.ts",
+        "apps/billing/payload-types.ts"
+      ],
+      "reason": "Generated TypeScript definitions should not be committed; they are produced by build/scripts.",
+      "severity": "error"
+    },
+    {
+      "type": "forbidden",
+      "id": "no-test-artifacts",
+      "match": [
+        "apps/billing/test-results/**",
+        "apps/billing/playwright-report/**",
+        "apps/billing/coverage/**"
+      ],
+      "reason": "Test artifacts and coverage reports are generated; do not commit.",
+      "severity": "error"
+    },
+    {
+      "type": "requireTest",
+      "id": "e2e-for-critical-flows",
+      "match": [
+        "apps/billing/src/pages/Vouchers.tsx",
+        "apps/billing/src/pages/Members.tsx",
+        "apps/billing/src/pages/DataManagement.tsx",
+        "apps/billing/src/pages/Journal.tsx",
+        "apps/billing/src/pages/Posting.tsx"
+      ],
+      "testMatch": [
+        "apps/billing/e2e/specs/**/*.spec.ts"
+      ],
+      "testExempt": [],
+      "reason": "Critical user flows (vouchers, members, import/export, journal, posting) must have E2E coverage.",
+      "severity": "warning"
+    },
+    {
+      "type": "layerDependency",
+      "id": "no-ui-in-lib",
+      "layers": [
+        {
+          "name": "ui",
+          "globs": ["apps/billing/src/pages/**", "apps/billing/src/components/**", "apps/billing/src/hooks/**"]
+        },
+        {
+          "name": "lib",
+          "globs": ["apps/billing/src/lib/**"]
+        }
+      ],
+      "direction": "inward-only",
+      "reason": "Lib layer must not import from UI layer (pages, components, hooks). Business logic stays in lib.",
+      "severity": "error"
+    },
+    {
+      "type": "layerDependency",
+      "id": "offline-sync-isolation",
+      "layers": [
+        {
+          "name": "api",
+          "globs": ["apps/billing/src/lib/api.ts"]
+        },
+        {
+          "name": "offline",
+          "globs": ["apps/billing/src/lib/offline/**"]
+        },
+        {
+          "name": "sync",
+          "globs": ["apps/billing/src/lib/sync/**"]
+        }
+      ],
+      "direction": "inward-only",
+      "reason": "API depends on offline; offline depends on sync; sync is the innermost boundary. No reverse imports.",
+      "severity": "error"
+    }
+  ]
+}

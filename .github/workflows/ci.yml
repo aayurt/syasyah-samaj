@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '10'
+
+jobs:
+  validate:
+    name: Validate (lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed for kritikka-mcp git diff
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Generate Payload types
+        run: pnpm generate:types
+
+      - name: Test (unit + integration + component)
+        run: pnpm test
+        env:
+          CI: true
+
+      - name: Build
+        run: pnpm build
+
+      - name: Kritikka-MCP validation
+        run: |
+          npx kritikka-mcp validate-change --changed-files "${{ github.event.pull_request.changed_files || 'HEAD~1..HEAD' }}"
+        continue-on-error: false
+
+  e2e:
+    name: E2E Tests
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: billing_e2e
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Payload types
+        run: pnpm generate:types
+
+      - name: Build billing app
+        run: cd apps/billing && pnpm build
+
+      - name: Run E2E tests
+        run: |
+          cd apps/billing
+          E2E_DATABASE_URI=postgresql://postgres:test@localhost:5432/billing_e2e \
+          pnpm test:e2e
+        env:
+          CI: true
+          PLAYWRIGHT_BROWSERS_PATH: 0
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/billing/playwright-report/
+          retention-days: 7
+
+      - name: Upload test screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots
+          path: apps/billing/test-results/
+          retention-days: 7
+
+  deploy-preview:
+    name: Deploy Preview
+    needs: [validate, e2e]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to preview
+        run: |
+          echo "Deploy preview would go here (Vercel/Netlify)"
+          # vercel --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG }}
+
+  notify:
+    name: Notify
+    needs: [validate, e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check status
+        run: |
+          if [[ "${{ needs.validate.result }}" == "success" && "${{ needs.e2e.result }}" == "success" ]]; then
+            echo "✅ All checks passed"
+          else
+            echo "❌ Some checks failed"
+            exit 1
+          fi

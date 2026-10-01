@@ -15,7 +15,7 @@ import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import type { BillingSettings } from '../lib/types'
-import { fetchAllDocs, buildExportJson, downloadBlob, parseImportFile } from '../lib/importExport'
+import { fetchAllDocs, buildExportJson, buildExportExcel, downloadBlob, parseImportFile, EXPORT_COLUMNS } from '../lib/importExport'
 import ImportPreviewModal from '../components/ImportPreviewModal'
 
 /**
@@ -311,60 +311,79 @@ export default function DataManagement() {
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {/* Export */}
-          <div className="rounded-lg border border-slate-200 p-5">
-            <h3 className="text-sm font-semibold text-slate-700">{t('dataManagement.exportData', 'Export Data')}</h3>
-            <p className="mt-1 text-xs text-slate-500">{t('dataManagement.exportDesc', 'Download all records for a collection as JSON.')}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {['members', 'parties', 'items', 'accounts', 'documents'].map((slug) => (
-                <button
-                  key={slug}
-                  onClick={async () => {
-                    try {
-                      pushToast('info', 'Exporting…', `Fetching ${slug}`)
-                      const docs = await fetchAllDocs(slug, tenantQuery)
-                      const blob = buildExportJson(slug, docs)
-                      downloadBlob(`${slug}-export.json`, blob)
-                      pushToast('success', 'Exported', `${docs.length} ${slug} records`)
-                    } catch (err) {
-                      pushToast('error', 'Export failed', err instanceof Error ? err.message : String(err))
-                    }
-                  }}
-                  className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  {slug}
-                </button>
-              ))}
-            </div>
-          </div>
+                  {/* Export */}
+                  <div className="rounded-lg border border-slate-200 p-5">
+                    <h3 className="text-sm font-semibold text-slate-700">{t('dataManagement.exportData', 'Export Data')}</h3>
+                    <p className="mt-1 text-xs text-slate-500">{t('dataManagement.exportDesc', 'Download all records for a collection as JSON or Excel.')}</p>
+                    <div className="mt-3 space-y-2">
+                      {['members', 'parties', 'items', 'accounts', 'documents'].map((slug) => (
+                        <div key={slug} className="flex flex-wrap gap-2 items-center">
+                          <span className="text-xs font-medium text-slate-600 w-24">{slug}</span>
+                          <button
+                            onClick={async () => {
+                              try {
+                                pushToast('info', 'Exporting…', `Fetching ${slug} (JSON)`)
+                                const docs = await fetchAllDocs(slug, tenantQuery)
+                                const blob = buildExportJson(slug, docs)
+                                downloadBlob(`${slug}-export.json`, blob)
+                                pushToast('success', 'Exported', `${docs.length} ${slug} records (JSON)`)
+                              } catch (err) {
+                                pushToast('error', 'Export failed', err instanceof Error ? err.message : String(err))
+                              }
+                            }}
+                            className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                          >
+                            📄 JSON
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                pushToast('info', 'Exporting…', `Fetching ${slug} (Excel)`)
+                                const docs = await fetchAllDocs<Record<string, unknown>>(slug, tenantQuery)
+                                const columns = EXPORT_COLUMNS[slug]
+                                const blob = await buildExportExcel(slug, docs, { columns })
+                                downloadBlob(`${slug}-export.xlsx`, blob)
+                                pushToast('success', 'Exported', `${docs.length} ${slug} records (Excel)`)
+                              } catch (err) {
+                                pushToast('error', 'Export failed', err instanceof Error ? err.message : String(err))
+                              }
+                            }}
+                            className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                          >
+                            📊 Excel (.xlsx)
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-          {/* Import */}
-          <div className="rounded-lg border border-slate-200 p-5">
-            <h3 className="text-sm font-semibold text-slate-700">{t('dataManagement.importData', 'Import Data')}</h3>
-            <p className="mt-1 text-xs text-slate-500">{t('dataManagement.importDesc', 'Upload a JSON export file. Duplicates are detected automatically.')}</p>
-            <div className="mt-3">
-              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-                <Database size={12} /> Choose JSON file
-                <input
-                  type="file"
-                  accept=".json"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]
-                    if (!file) return
-                    try {
-                      const parsed = await parseImportFile<Record<string, unknown>>(file)
-                      setImportData({ collection: parsed.collection, docs: parsed.docs })
-                    } catch (err) {
-                      pushToast('error', 'Parse failed', err instanceof Error ? err.message : String(err))
-                    }
-                    e.target.value = ''
-                  }}
-                />
-              </label>
-            </div>
-          </div>
-        </div>
+                  {/* Import */}
+                  <div className="rounded-lg border border-slate-200 p-5">
+                    <h3 className="text-sm font-semibold text-slate-700">{t('dataManagement.importData', 'Import Data')}</h3>
+                    <p className="mt-1 text-xs text-slate-500">{t('dataManagement.importDesc', 'Upload a JSON, CSV, or Excel export file. Duplicates are detected automatically.')}</p>
+                    <div className="mt-3">
+                      <label className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+                        <Database size={12} /> Choose file (JSON, CSV, Excel)
+                        <input
+                          type="file"
+                          accept=".json,.csv,.xlsx,.xls"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0]
+                            if (!file) return
+                            try {
+                              const parsed = await parseImportFile<Record<string, unknown>>(file)
+                              setImportData({ collection: parsed.collection, docs: parsed.docs })
+                            } catch (err) {
+                              pushToast('error', 'Parse failed', err instanceof Error ? err.message : String(err))
+                            }
+                            e.target.value = ''
+                          }}
+                      />
+                      </label>
+                    </div>
+                  </div>
+                </div>
       </section>
 
       {importData && (
