@@ -52,9 +52,9 @@ jobs:
         run: pnpm build
 
       - name: Kritikka-MCP validation
+        if: github.event_name == 'pull_request'
         run: |
-          npx kritikka-mcp validate-change --changed-files "${{ github.event.pull_request.changed_files || 'HEAD~1..HEAD' }}"
-        continue-on-error: false
+          npx kritikka-mcp validate-change --diff ${{ github.event.pull_request.diff_url }}
 
   e2e:
     name: E2E Tests

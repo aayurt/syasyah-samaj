@@ -125,6 +125,13 @@ Every few days, use a scheduled automation to read recent `memory/YYYY-MM-DD.md`
 
 Be helpful without being annoying: check in a few times a day, do useful background work, respect quiet time.
 
+## Governance
+
+This project is governed by `kritikka-mcp`, an MCP server that enforces architectural boundaries, security constraints, and best practices. Before making changes, you should be aware of the rules defined in `mcp-rules.json`. For a full guide and understanding of these rules, read `docs/KRITTIKA_MCP.md`.
+
+- Validate your changes manually with: `npx kritikka-mcp validate-change --changed-files "path/to/files"`
+- CI will run validation on pull requests using the PR diff.
+
 ## Make It Yours
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.
