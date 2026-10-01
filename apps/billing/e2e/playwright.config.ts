@@ -59,6 +59,8 @@ export default defineConfig({
         // SPA origin the browser actually posts from (via the Vite proxy).
         BETTER_AUTH_URL: `${WEB_URL}/`,
         NEXT_PUBLIC_SERVER_URL: `${WEB_URL}/`,
+        RESEND_API_KEY: 're_123456789',
+        PAYLOAD_SECRET: 'test-secret-1234567890-very-long',
       },
       // A real API path: `/api` (exact) hits the 404/next-international path.
       url: `${API_URL}/api/users`,
