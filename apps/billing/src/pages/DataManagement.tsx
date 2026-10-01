@@ -15,7 +15,7 @@ import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import type { BillingSettings } from '../lib/types'
-import { fetchAllDocs, buildExportJson, buildExportExcel, downloadBlob, parseImportFile, EXPORT_COLUMNS } from '../lib/importExport'
+import { fetchAllDocs, buildExportJson, buildExportExcel, generateTemplate, downloadBlob, parseImportFile, EXPORT_COLUMNS } from '../lib/importExport'
 import ImportPreviewModal from '../components/ImportPreviewModal'
 
 /**
@@ -258,7 +258,7 @@ export default function DataManagement() {
         {!demoEnabled ? (
           <div className="mt-4 flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
             <AlertTriangle size={15} />
-            Demo data is disabled in Settings → Feature Toggles → "Demo seed". Enable it to run the
+            Demo data is disabled in Settings → Feature Toggles → &quot;Demo seed&quot;. Enable it to run the
             seeder.
           </div>
         ) : (
@@ -351,6 +351,20 @@ export default function DataManagement() {
                             className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
                           >
                             📊 Excel (.xlsx)
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const blob = await generateTemplate(slug)
+                                downloadBlob(`${slug}-template.xlsx`, blob)
+                                pushToast('success', 'Template Generated', `Downloaded template for ${slug}`)
+                              } catch (err) {
+                                pushToast('error', 'Template failed', err instanceof Error ? err.message : String(err))
+                              }
+                            }}
+                            className="rounded border border-purple-300 bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100"
+                          >
+                            📋 Template
                           </button>
                         </div>
                       ))}

@@ -1050,6 +1050,52 @@ export function classifyRecords<T extends Record<string, unknown>>(
   return result
 }
 
+/** Generate an empty template Excel file for a given collection. */
+export async function generateTemplate(collection: string): Promise<Blob> {
+  const workbook = new ExcelJS.Workbook()
+  workbook.creator = 'System'
+  workbook.created = new Date()
+
+  const config = EXPORT_CONFIGS[collection]
+  const sheetName = config?.sheetName || collection
+  const dataSheet = workbook.addWorksheet(sheetName, {
+    views: [{ state: 'frozen', ySplit: 1 }],
+  })
+
+  // Get columns for the collection
+  const columns = EXPORT_COLUMNS[collection] || []
+
+  // Set up headers
+  dataSheet.columns = columns.map((c) => ({
+    header: c.header,
+    key: c.key,
+    width: c.width || Math.max(c.header.length, 15),
+  }))
+
+  // Style header row
+  const headerRow = dataSheet.getRow(1)
+  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF334155' }, // slate-700
+  }
+  headerRow.alignment = { vertical: 'middle', horizontal: 'left' }
+  headerRow.commit()
+
+  // Add an optional example row
+  const exampleRow: Record<string, unknown> = {}
+  columns.forEach((c) => {
+    exampleRow[c.key] = `Example ${c.header}`
+  })
+  dataSheet.addRow(exampleRow)
+
+  const buffer = await workbook.xlsx.writeBuffer()
+  return new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+}
+
 /* ── Import: Execute ──────────────────────────────────────── */
 
 export type ImportAction = 'skip' | 'create' | 'update'
