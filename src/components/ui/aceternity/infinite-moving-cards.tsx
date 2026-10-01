@@ -109,7 +109,7 @@ export const InfiniteMovingCards = ({
               </div>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed italic line-clamp-3">
-              "{item.quote}"
+              &quot;{item.quote}&quot;
             </p>
           </li>
         ))}
