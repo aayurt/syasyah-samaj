@@ -44,7 +44,7 @@ export const InitTheme: React.FC = () => {
   `,
       }}
       id="theme-script"
-      strategy="beforeInteractive"
+
     />
   )
 }
