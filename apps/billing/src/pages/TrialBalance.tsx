@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Download, FileText, Printer } from 'lucide-react'
+import { Download, FileText, Printer, Table } from 'lucide-react'
 import { api, fmt, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
+import { buildExportExcel, EXPORT_COLUMNS, downloadBlob } from '../lib/importExport'
 import { exportReportPdf } from '../lib/pdf'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
@@ -139,6 +140,29 @@ export default function TrialBalance() {
           >
             <Download size={14} />
             CSV
+          </button>
+            <button
+            onClick={() => {
+              //
+              const dataRows = rows.map((r) => [
+                  t(TYPE_LABELS[r.account.type] as any, r.account.type),
+                  r.account.name,
+                  r.debit || '',
+                  r.credit || '',
+                  r.balance,
+                ])
+              const keys = ['type', 'account', 'debit', 'credit', 'balance']
+    const docs = dataRows.map((row) => {
+      const obj: any = {}
+      keys.forEach((k, i) => obj[k] = row[i])
+      return obj
+    })
+              buildExportExcel('TrialBalance', docs, { columns: EXPORT_COLUMNS['trial-balance'] }).then(blob => downloadBlob('trial-balance.xlsx', blob))
+            }}
+            className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            <Table size={14} />
+            Excel
           </button>
           <button
             onClick={pdf}

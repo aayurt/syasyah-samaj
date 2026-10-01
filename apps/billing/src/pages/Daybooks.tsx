@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Download, FileText, Printer } from 'lucide-react'
+import { Download, FileText, Printer, Table } from 'lucide-react'
 import { api, fmt } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
+import { buildExportExcel, EXPORT_COLUMNS, downloadBlob } from '../lib/importExport'
 import { exportReportPdf } from '../lib/pdf'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
@@ -112,6 +113,25 @@ export default function Daybooks() {
     }
   const label = t(labelKey[type] || '', TYPES.find((ty) => ty.value === type)?.label ?? type)
 
+    const excel = async () => {
+    if (!data) return
+
+    const dataRows = data.rows.map((r) => [
+        r.date?.slice(0, 10),
+        r.docNumber || '',
+        (r as any).partyName || r.narration,
+        isCash ? ((r as any).amount > 0 ? (r as any).amount : '') : '',
+        isCash ? ((r as any).amount < 0 ? Math.abs((r as any).amount) : '') : ((r as any).amount || ''),
+      ])
+    const keys = ['date', 'docNumber', 'partyNarration', 'in', 'out']
+    const docs = dataRows.map((row) => {
+      const obj: any = {}
+      keys.forEach((k, i) => obj[k] = row[i])
+      return obj
+    })
+    const blob = await buildExportExcel('Daybooks', docs, { columns: EXPORT_COLUMNS['daybook'] })
+    downloadBlob(`daybook-${type}.xlsx`, blob)
+  }
   const pdf = () => {
     if (!data) return
     exportReportPdf({

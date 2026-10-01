@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, Download, FileText, Printer } from 'lucide-react'
+import { ArrowLeft, Download, FileText, Printer, Table } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api, fmt } from '../../lib/api'
 import { downloadCsv } from '../../lib/csv'
+import { buildExportExcel, EXPORT_COLUMNS, downloadBlob } from '../../lib/importExport'
 import { exportReportPdf } from '../../lib/pdf'
 import { useTenant, useTenantQuery } from '../../lib/tenant'
 import { ReportSkeleton } from '../../components/Skeleton'
@@ -71,6 +72,18 @@ export default function InventoryValuation() {
   const csv = () => downloadCsv('inventory-valuation.csv',
     ['Code', 'Name', 'Unit', 'Opening Qty', 'Opening Value', 'Receipts Qty', 'Receipts Value', 'Issues Qty', 'Issues Value', 'Closing Qty', 'Closing Value', 'Avg Cost', 'Status'],
     rows.map((r) => [r.item.code, r.item.name, r.item.unit, r.openingQty, r.openingValue, r.receiptsQty, r.receiptsValue, r.issuesQty, r.issuesValue, r.closingQty, r.closingValue, r.avgCost, r.belowReorder ? 'Low' : 'OK']))
+    const excel = async () => {
+    //
+    const dataRows = rows.map((r) => [r.item.code, r.item.name, r.item.unit, r.openingQty, r.openingValue, r.receiptsQty, r.receiptsValue, r.issuesQty, r.issuesValue, r.closingQty, r.closingValue, r.avgCost, r.belowReorder ? 'Low' : 'OK'])
+    const keys = ['code', 'name', 'unit', 'openingQty', 'openingValue', 'receiptsQty', 'receiptsValue', 'issuesQty', 'issuesValue', 'closingQty', 'closingValue', 'avgCost', 'status']
+    const docs = dataRows.map((row) => {
+      const obj: any = {}
+      keys.forEach((k, i) => obj[k] = row[i])
+      return obj
+    })
+    const blob = await buildExportExcel('Report', docs, { columns: EXPORT_COLUMNS['inventory-valuation'] })
+    downloadBlob('inventory-valuation.xlsx', blob)
+  }
   const pdf = () => exportReportPdf({
     filename: 'inventory-valuation.pdf', title: 'Inventory Valuation Report',
     meta: [['Items', String(rows.length)], ['Closing Value', fmt(totals.closingValue)]],
@@ -88,6 +101,7 @@ export default function InventoryValuation() {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={csv} disabled={loading} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Download size={14} /> {t('common.csv', 'CSV')}</button>
+          <button onClick={excel} disabled={loading} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Table size={14} /> {t('common.excel', 'Excel')}</button>
           <button onClick={pdf} disabled={loading} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><FileText size={14} /> {t('common.pdf', 'PDF')}</button>
           <button onClick={() => window.print()} disabled={loading} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Printer size={14} /> {t('common.print', 'Print')}</button>
         </div>

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Download, FileText, Printer } from 'lucide-react'
+import { ArrowLeft, Download, FileText, Printer, Table } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api, fmt, list } from '../../lib/api'
 import { downloadCsv } from '../../lib/csv'
+import { buildExportExcel, EXPORT_COLUMNS, downloadBlob } from '../../lib/importExport'
 import { exportReportPdf } from '../../lib/pdf'
 import { useCalendar } from '../../lib/calendar'
 import { useTenant, useTenantQuery } from '../../lib/tenant'
@@ -82,6 +83,18 @@ export default function PartyStatement() {
     ['Date', 'Type', 'Number', 'Narration', 'Amount', 'Running Balance'],
     filtered.map((d) => [formatDate(d.date), DOC_TYPE_LABELS[d.docType] || d.docType, d.number || '', d.narration || '', effectiveAmount(d), d.runningBalance]))
 
+    const excel = async () => {
+    //
+    const dataRows = filtered.map((d) => [formatDate(d.date), DOC_TYPE_LABELS[d.docType] || d.docType, d.number || '', d.narration || '', effectiveAmount(d), d.runningBalance])
+    const keys = ['date', 'type', 'number', 'narration', 'amount', 'runningBalance']
+    const docs = dataRows.map((row) => {
+      const obj: any = {}
+      keys.forEach((k, i) => obj[k] = row[i])
+      return obj
+    })
+    const blob = await buildExportExcel('Report', docs, { columns: EXPORT_COLUMNS['party-statement'] })
+    downloadBlob(`${party?.name || 'party'}-statement.xlsx`, blob)
+  }
   const pdf = () => exportReportPdf({
     filename: `${party?.name || 'party'}-statement.pdf`, title: `Party Statement — ${party?.name || ''}`,
     meta: [['Total Debit', fmt(totalDebit)], ['Total Credit', fmt(totalCredit)], ['Balance', fmt(running[running.length - 1]?.runningBalance || 0)]],
@@ -98,6 +111,7 @@ export default function PartyStatement() {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={csv} disabled={!selectedParty} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Download size={14} /> {t('common.csv', 'CSV')}</button>
+          <button onClick={excel} disabled={!selectedParty} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Table size={14} /> {t('common.excel', 'Excel')}</button>
           <button onClick={pdf} disabled={!selectedParty} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><FileText size={14} /> {t('common.pdf', 'PDF')}</button>
           <button onClick={() => window.print()} disabled={!selectedParty} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Printer size={14} /> {t('common.print', 'Print')}</button>
         </div>
