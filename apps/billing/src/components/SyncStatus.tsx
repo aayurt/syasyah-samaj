@@ -3,6 +3,8 @@ import { Cloud, CloudOff, RefreshCw } from 'lucide-react'
 import { getEngine, useSyncState } from '../lib/api'
 import { useT } from '../lib/i18n'
 import ConflictDrawer from './ConflictDrawer'
+import { getImportJobs } from '../lib/offlineImport'
+import SyncConflictsModal from './SyncConflictsModal'
 
 /**
  * Compact, non-intrusive sync status in the header:
@@ -17,6 +19,10 @@ export default function SyncStatus() {
   const state = useSyncState()
   const [syncing, setSyncing] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [importConflictsOpen, setImportConflictsOpen] = useState(false)
+  const [pendingImports, setPendingImports] = useState(0)
+  const [importConflicts, setImportConflicts] = useState(0)
+
   // 1s tick so the "Resync in Xs" countdown stays smooth between the 2s
   // state polls.
   const [now, setNow] = useState(() => Date.now())
@@ -26,6 +32,24 @@ export default function SyncStatus() {
     const t = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(t)
   }, [state.online, state.syncingCount])
+
+  useEffect(() => {
+    // Poll import jobs status
+    const pollImports = async () => {
+      try {
+        const jobs = await getImportJobs()
+        const pending = jobs.filter(j => j.status === 'pending' || j.status === 'syncing').length
+        const conflicts = jobs.filter(j => j.conflicts && j.conflicts.length > 0).length
+        setPendingImports(pending)
+        setImportConflicts(conflicts)
+      } catch {
+        // ignore
+      }
+    }
+    pollImports()
+    const intv = setInterval(pollImports, 2000)
+    return () => clearInterval(intv)
+  }, [])
 
   const syncNow = async () => {
     setSyncing(true)
@@ -39,7 +63,8 @@ export default function SyncStatus() {
   }
 
   const offline = !state.online
-  const hasConflicts = state.conflicts > 0
+  const hasConflicts = state.conflicts > 0 || importConflicts > 0
+  const pendingTotal = state.pending + pendingImports
   // Seconds until the next scheduled automatic sync (debounced flush,
   // backoff retry, or the 60s periodic sync). Null when none is scheduled.
   const nextIn =
@@ -70,14 +95,14 @@ export default function SyncStatus() {
             {t('sync.savedLocally', 'Saved locally')}
           </span>
         </span>
-        {state.pending > 0 && (
+        {pendingTotal > 0 && (
           <span className="text-red-500">
-            · {t('sync.pendingSync', '{n} pending sync').replace('{n}', String(state.pending))}
+            · {t('sync.pendingSync', '{n} pending sync').replace('{n}', String(pendingTotal))}
           </span>
         )}
       </button>
     )
-  } else if (syncing || state.pending > 0 || state.syncingCount > 0) {
+  } else if (syncing || pendingTotal > 0 || state.syncingCount > 0) {
     // 🟡 Pending — amber, subtle spin while anything is in flight.
     pill = (
       <button
@@ -90,8 +115,8 @@ export default function SyncStatus() {
           size={13}
           className={syncing || state.syncingCount > 0 ? 'animate-spin' : ''}
         />
-        {state.pending > 0
-          ? t('sync.pendingSync', '{n} pending sync').replace('{n}', String(state.pending))
+        {pendingTotal > 0
+          ? t('sync.pendingSync', '{n} pending sync').replace('{n}', String(pendingTotal))
           : t('sync.syncing', 'Syncing…')}
       </button>
     )
@@ -123,21 +148,24 @@ export default function SyncStatus() {
       {pill}
       {hasConflicts && (
         <button
-          onClick={() => setDrawerOpen(true)}
+          onClick={() => {
+             if (state.conflicts > 0) setDrawerOpen(true)
+             if (importConflicts > 0) setImportConflictsOpen(true)
+          }}
           title={t(
             'sync.reviewHint',
             'Changes the server could not accept — review, edit, or discard them.',
           )}
           className="flex items-center gap-1.5 rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700 hover:bg-orange-100"
         >
-          {t('sync.reviewQueued', '{n} to review').replace('{n}', String(state.conflicts))}
+          {t('sync.reviewQueued', '{n} to review').replace('{n}', String(state.conflicts + importConflicts))}
         </button>
       )}
       <button
         onClick={() => void syncNow()}
-        disabled={syncing || (!offline && state.pending === 0 && !state.reportsStale)}
+        disabled={syncing || (!offline && pendingTotal === 0 && !state.reportsStale)}
         title={
-          offline || state.pending > 0 || state.reportsStale
+          offline || pendingTotal > 0 || state.reportsStale
             ? t('sync.resyncAria', 'Resync — push queued changes and pull the latest data from the server')
             : t('sync.syncedTitle', 'All changes synced')
         }
@@ -150,6 +178,7 @@ export default function SyncStatus() {
         </span>
       </button>
       {drawerOpen && <ConflictDrawer onClose={() => setDrawerOpen(false)} />}
+      {importConflictsOpen && <SyncConflictsModal onClose={() => setImportConflictsOpen(false)} />}
     </span>
   )
 }
