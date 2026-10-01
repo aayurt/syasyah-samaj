@@ -8,7 +8,7 @@ on:
 
 env:
   NODE_VERSION: '20'
-  PNPM_VERSION: '10'
+  # Removing PNPM_VERSION because it causes conflicts with package.json 'packageManager' setting for pnpm/action-setup@v4
 
 jobs:
   validate:
@@ -22,8 +22,7 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
+        # action-setup@v4 automatically reads the version from packageManager in package.json
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -81,8 +80,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
