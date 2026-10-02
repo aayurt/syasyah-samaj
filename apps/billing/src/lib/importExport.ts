@@ -129,6 +129,10 @@ export async function buildExportExcel<T extends Record<string, unknown>>(
   docs: T[],
   options: ExcelExportOptions = {},
 ): Promise<Blob> {
+  if (collection === 'accounts' || EXPORT_CONFIGS[collection]?.isHierarchical) {
+    return buildCoaExcel(docs, { ...options, sheetName: options.sheetName || EXPORT_CONFIGS[collection]?.sheetName });
+  }
+
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'Syasyah Samaj'
   workbook.created = new Date()
@@ -426,7 +430,11 @@ export async function parseImportFile<T>(file: File): Promise<ParsedImport<T>> {
 
   if (isExcel) {
     try {
-      return await parseExcelFile<T>(file)
+      const parsed = await parseExcelFile<T>(file)
+      if (parsed.collection === 'accounts' || guessCollection(file.name) === 'accounts') {
+        return await parseCoaExcel<T>(file)
+      }
+      return parsed
     } catch (e) {
       throw e
     }
@@ -588,8 +596,9 @@ export async function buildCoaExcel<T extends Record<string, unknown>>(
     groupRow.font = { bold: true, size: 12 }
     groupRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } }
     groupRow.height = 25
-    // Merge first two cells for group name
-    dataSheet.mergeCells(rowIndex, 1, rowIndex, 2)
+    // Note: merging cells causes issue with Excel parsing back if the first cell (code) is merged with name.
+    // We will not merge cells, just put name in the name column.
+    groupRow.getCell(2).value = groupName // Set explicitly to name column
 
     // Child accounts with indentation
     for (const child of children) {
@@ -655,15 +664,24 @@ export async function parseCoaExcel<T>(file: File): Promise<ParsedImport<T>> {
   let currentGroup = ''
 
   for (const doc of parsed.docs) {
-    const name = String((doc as any).name || '').trim()
-    if (name && !name.startsWith('  ') && !name.startsWith('\t')) {
+    // Note: The header normalizer in parseExcelFile maps "name" to "fullName"
+    // so we should check both.
+    const rawName = String((doc as any).name || (doc as any).fullName || '')
+    const isIndented = rawName.startsWith('  ') || rawName.startsWith('\t')
+    const name = rawName.trim()
+
+    if (name && !isIndented) {
       currentGroup = name
-      // This is a group header - we might skip it or add as a group account
-      const withGroup = { ...doc, group: currentGroup } as T
-      results.push(withGroup)
+      // This is a group header, but in our output we want children to have their group property set correctly.
+      // Usually, group headers themselves might not be an account, but in case they are, we can include them
+      // if they have other properties like type or code. If they only have a name, we can skip them to avoid duplicates.
+      if ((doc as any).code || (doc as any).type) {
+        const withGroup = { ...doc, name, group: currentGroup } as T
+        results.push(withGroup)
+      }
     } else if (name) {
       // This is an account under current group
-      const withGroup = { ...doc, group: currentGroup } as T
+      const withGroup = { ...doc, name, group: currentGroup } as T
       results.push(withGroup)
     }
   }
@@ -1142,6 +1160,8 @@ export function validateImportRows<T extends Record<string, unknown>>(
   const valid: T[] = []
   const errors: ValidationError[] = []
 
+  const codes = new Set<string>()
+
   for (let i = 0; i < docs.length; i++) {
     const doc = docs[i]
     const rowNum = i + 2 // +1 for header, +1 for 0-index
@@ -1161,8 +1181,19 @@ export function validateImportRows<T extends Record<string, unknown>>(
       if (!doc.name || String(doc.name).trim() === '') {
         errors.push({ row: rowNum, field: 'name', message: 'Account name is required', severity: 'error' })
       }
-      if (!['asset', 'liability', 'equity', 'income', 'expense'].includes(String(doc.type || ''))) {
+      if (!['asset', 'liability', 'equity', 'income', 'expense'].includes(String(doc.type || '').toLowerCase())) {
         errors.push({ row: rowNum, field: 'type', message: 'Invalid account type', severity: 'error' })
+      }
+      if (doc.code) {
+        const codeStr = String(doc.code).trim()
+        if (codes.has(codeStr)) {
+          errors.push({ row: rowNum, field: 'code', message: `Duplicate account code: ${codeStr}`, severity: 'error' })
+        } else {
+          codes.add(codeStr)
+        }
+      }
+      if (!doc.group || String(doc.group).trim() === '') {
+        errors.push({ row: rowNum, field: 'group', message: 'Parent group is required', severity: 'error' })
       }
     } else if (collection === 'parties') {
       if (!doc.name || String(doc.name).trim() === '') {
@@ -1188,6 +1219,42 @@ export async function executeImport<T extends Record<string, unknown>>(
   onProgress?: (done: number, total: number) => void,
 ): Promise<{ created: number; updated: number; skipped: number; errors: string[] }> {
   const result = { created: 0, updated: 0, skipped: 0, errors: [] as string[] }
+
+  // Specific logic for accounts to create missing groups dynamically
+  if (collection === 'accounts') {
+    try {
+      const existingGroupsRes = await api<{ docs: any[] }>(`/account-groups`, { query: { limit: 1000 } });
+      const existingGroupsDocs = existingGroupsRes.docs || [];
+      const groupMap = new Map<string, number | string>(existingGroupsDocs.map(g => [g.name, g.id]));
+
+      const importedGroups = new Set(records.map(r => String(r.doc.group)).filter(g => g && g !== 'undefined' && g !== ''));
+
+      let createdGroups = 0;
+      for (const groupName of importedGroups) {
+        if (!groupMap.has(groupName)) {
+           // We infer type from the first account under this group
+           const sampleAccount = records.find(r => r.doc.group === groupName);
+           const groupType = sampleAccount?.doc.type || 'asset'; // Default to asset if missing
+           const newGroup = await api<{ id: number | string }>(`/account-groups`, { method: 'POST', body: { name: groupName, type: groupType } });
+           groupMap.set(groupName, newGroup.id);
+           createdGroups++;
+        }
+      }
+
+      // Update the records with the proper group IDs
+      for (const record of records) {
+        if (record.doc.group && typeof record.doc.group === 'string') {
+          const groupId = groupMap.get(record.doc.group);
+          if (groupId) {
+            record.doc.group = groupId as unknown as any;
+          }
+        }
+      }
+
+    } catch (err) {
+      result.errors.push(`Failed to pre-create missing parent groups: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
 
   for (let i = 0; i < records.length; i++) {
     const { doc, action } = records[i]
