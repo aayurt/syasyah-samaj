@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       console.error('[auth] betterAuth not initialized on payload')
       return NextResponse.json({ error: 'Auth not initialized' }, { status: 500 })
     }
-    return payload.betterAuth.handler(request)
+    return await payload.betterAuth.handler(request)
   } catch (err: any) {
     console.error('[auth] Error handling GET:', err)
     return NextResponse.json({ error: err.message, stack: err.stack }, { status: 500 })
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       console.error('[auth] betterAuth not initialized on payload')
       return NextResponse.json({ error: 'Auth not initialized' }, { status: 500 })
     }
-    return payload.betterAuth.handler(request)
+    return await payload.betterAuth.handler(request)
   } catch (err: any) {
     console.error('[auth] Error handling POST:', err)
     return NextResponse.json({ error: err.message, stack: err.stack }, { status: 500 })
