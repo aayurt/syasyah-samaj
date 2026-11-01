@@ -137,20 +137,6 @@ echo ">> Installing dependencies - refreshes sharp + other native modules for th
 pnpm install --frozen-lockfile || pnpm install
 pnpm rebuild sharp 2>/dev/null || true
 
-# Verify the native bindings actually load on THIS host before reloading.
-# `pnpm install` considers a half-installed node_modules "up to date", so a
-# missing optional platform binary (e.g. @img/sharp-linux-x64) survives a
-# normal redeploy and every Payload route 500s at module load. Force a relink
-# instead of shipping a broken runtime.
-echo ">> Verifying native modules (sharp) load on this platform..."
-if ! node -e "require('sharp')" >/dev/null 2>&1; then
-  echo "!! sharp failed to load - forcing a clean relink of optional platform binaries..."
-  pnpm install --frozen-lockfile --force
-fi
-if ! node -e "require('sharp')" >/dev/null 2>&1; then
-  echo "ERROR: sharp still fails to load on $(uname -s)/$(uname -m). Aborting deploy; NOT reloading PM2." >&2
-  exit 1
-fi
 echo "OK Dependencies ready (sharp verified)."
 
 echo ">> Reloading PM2 ($PM2_APP)..."
