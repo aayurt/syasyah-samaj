@@ -32,7 +32,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/49</span>
+                <span class='fraction'>0/51</span>
             </div>
         
             
@@ -552,7 +552,10 @@
 <a name='L487'></a><a href='#L487'>487</a>
 <a name='L488'></a><a href='#L488'>488</a>
 <a name='L489'></a><a href='#L489'>489</a>
-<a name='L490'></a><a href='#L490'>490</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L490'></a><a href='#L490'>490</a>
+<a name='L491'></a><a href='#L491'>491</a>
+<a name='L492'></a><a href='#L492'>492</a>
+<a name='L493'></a><a href='#L493'>493</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -860,6 +863,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -930,6 +934,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -942,6 +947,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1188,7 +1194,7 @@ const navGroups: { title?: string; titleKey?: string; items: NavItem[] }[] = <sp
   },
   { items: [{ to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: SettingsIcon }] },
   // Entry point into the separate Payroll system (india-payroll).
-  { items: [{ to: '/payroll', label: 'Payroll System', labelKey: 'nav.payrollSystem', icon: ArrowLeftRight, end: true }] },
+  { items: [{ to: '/payroll', label: 'Payroll System', labelKey: 'nav.payrollSystem', icon: ArrowLeftRight, end: true, feature: 'payrollEnabled' }] },
 ]
 &nbsp;
 /**
@@ -1344,6 +1350,7 @@ function <span class="fstat-no" title="function not covered" >Shell({</span> ema
   const refreshFeatures = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >    api&lt;BillingSettings&gt;('/globals/billing-settings', { query: { depth: 0 } })</span>
       .then(<span class="fstat-no" title="function not covered" >(s</span>) =&gt; <span class="cstat-no" title="statement not covered" >setFeatures({</span>
+        payrollEnabled: s.payrollEnabled !== false,
         bankReconciliationEnabled: !!s.bankReconciliationEnabled,
         demoSeedEnabled: s.demoSeedEnabled !== false,
       }))
@@ -1413,34 +1420,36 @@ function <span class="fstat-no" title="function not covered" >Shell({</span> ema
         &lt;header className="print:hidden flex flex-wrap items-center justify-between border-b border-slate-200 bg-white px-3 py-2 md:px-6 md:py-2.5 gap-2"&gt;
           &lt;div className="flex items-center gap-3"&gt;
             &lt;Breadcrumbs /&gt;
-            {/* System switcher — Accounting ⇄ Payroll (india-payroll). */}
-            &lt;div
-              data-testid="system-switcher"
-              className="hidden items-center rounded-lg bg-slate-100 p-0.5 md:flex"
-            &gt;
-              &lt;button
-                onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >n</span>avigate('/')}</span>
-                aria-pressed={!inPayroll}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                  !inPayroll
-                    ? 'bg-white text-slate-900 shadow'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
+            {/* System switcher — Accounting ⇄ Payroll (india-payroll). Only visible when payrollEnabled */}
+            {features.payrollEnabled !== false &amp;&amp; (
+              &lt;div
+                data-testid="system-switcher"
+                className="hidden items-center rounded-lg bg-slate-100 p-0.5 md:flex"
               &gt;
-                {t('switcher.accounting', 'Accounting')}
-              &lt;/button&gt;
-              &lt;button
-                onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >n</span>avigate('/payroll')}</span>
-                aria-pressed={inPayroll}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                  inPayroll
-                    ? 'bg-white text-slate-900 shadow'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              &gt;
-                {t('switcher.payroll', 'Payroll')}
-              &lt;/button&gt;
-            &lt;/div&gt;
+                &lt;button
+                  onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >n</span>avigate('/')}</span>
+                  aria-pressed={!inPayroll}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                    !inPayroll
+                      ? 'bg-white text-slate-900 shadow'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                &gt;
+                  {t('switcher.accounting', 'Accounting')}
+                &lt;/button&gt;
+                &lt;button
+                  onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >n</span>avigate('/payroll')}</span>
+                  aria-pressed={inPayroll}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                    inPayroll
+                      ? 'bg-white text-slate-900 shadow'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                &gt;
+                  {t('switcher.payroll', 'Payroll')}
+                &lt;/button&gt;
+              &lt;/div&gt;
+            )}
           &lt;/div&gt;
           &lt;div className="flex flex-wrap items-center justify-end gap-2 md:gap-3"&gt;
             &lt;FiscalYearSwitcher /&gt;
@@ -1537,7 +1546,7 @@ function <span class="fstat-no" title="function not covered" >Shell({</span> ema
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-11-01T16:04:07.774Z
+                at 2026-11-01T16:20:00.470Z
             </div>
         <script src="../prettify.js"></script>
         <script>
