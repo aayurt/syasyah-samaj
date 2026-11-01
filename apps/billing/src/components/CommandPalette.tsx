@@ -81,7 +81,8 @@ export default function CommandPalette({ open, onClose }: Props) {
       setResults([])
       setActiveIdx(0)
       // Small delay so the DOM is mounted
-      setTimeout(() => inputRef.current?.focus(), 50)
+      const timer = setTimeout(() => inputRef.current?.focus(), 50)
+      return () => clearTimeout(timer)
     }
   }, [open])
 
@@ -264,7 +265,7 @@ export default function CommandPalette({ open, onClose }: Props) {
             /* ---- Shortcut grid ---- */
             <>
               <div className="mb-2 px-1 text-xs font-medium text-slate-400">
-                {t('palette.shortcuts')}
+                Shortcuts
               </div>
               <div className="grid grid-cols-4 gap-2">
                 {SHORTCUTS.map((s, i) => {

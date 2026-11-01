@@ -99,9 +99,24 @@ export interface Config {
     'audit-logs': AuditLog;
     'recurring-schedules': RecurringSchedule;
     'expense-claims': ExpenseClaim;
+    employees: Employee;
     'fiscal-years': FiscalYear;
     'opening-balances': OpeningBalance;
     'data-ops': DataOp;
+    'payroll-runs': PayrollRun;
+    'payroll-slips': PayrollSlip;
+    'salary-components': SalaryComponent;
+    'salary-structures': SalaryStructure;
+    'salary-structure-assignments': SalaryStructureAssignment;
+    'additional-salaries': AdditionalSalary;
+    loans: Loan;
+    'loan-types': LoanType;
+    'tax-exemption-declarations': TaxExemptionDeclaration;
+    'payroll-periods': PayrollPeriod;
+    'payroll-component-accounts': PayrollComponentAccount;
+    'flexible-benefit-returns': FlexibleBenefitReturn;
+    'salary-structure-flexible-benefits': SalaryStructureFlexibleBenefit;
+    'payroll-run-employees': PayrollRunEmployee;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -150,9 +165,24 @@ export interface Config {
     'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
     'recurring-schedules': RecurringSchedulesSelect<false> | RecurringSchedulesSelect<true>;
     'expense-claims': ExpenseClaimsSelect<false> | ExpenseClaimsSelect<true>;
+    employees: EmployeesSelect<false> | EmployeesSelect<true>;
     'fiscal-years': FiscalYearsSelect<false> | FiscalYearsSelect<true>;
     'opening-balances': OpeningBalancesSelect<false> | OpeningBalancesSelect<true>;
     'data-ops': DataOpsSelect<false> | DataOpsSelect<true>;
+    'payroll-runs': PayrollRunsSelect<false> | PayrollRunsSelect<true>;
+    'payroll-slips': PayrollSlipsSelect<false> | PayrollSlipsSelect<true>;
+    'salary-components': SalaryComponentsSelect<false> | SalaryComponentsSelect<true>;
+    'salary-structures': SalaryStructuresSelect<false> | SalaryStructuresSelect<true>;
+    'salary-structure-assignments': SalaryStructureAssignmentsSelect<false> | SalaryStructureAssignmentsSelect<true>;
+    'additional-salaries': AdditionalSalariesSelect<false> | AdditionalSalariesSelect<true>;
+    loans: LoansSelect<false> | LoansSelect<true>;
+    'loan-types': LoanTypesSelect<false> | LoanTypesSelect<true>;
+    'tax-exemption-declarations': TaxExemptionDeclarationsSelect<false> | TaxExemptionDeclarationsSelect<true>;
+    'payroll-periods': PayrollPeriodsSelect<false> | PayrollPeriodsSelect<true>;
+    'payroll-component-accounts': PayrollComponentAccountsSelect<false> | PayrollComponentAccountsSelect<true>;
+    'flexible-benefit-returns': FlexibleBenefitReturnsSelect<false> | FlexibleBenefitReturnsSelect<true>;
+    'salary-structure-flexible-benefits': SalaryStructureFlexibleBenefitsSelect<false> | SalaryStructureFlexibleBenefitsSelect<true>;
+    'payroll-run-employees': PayrollRunEmployeesSelect<false> | PayrollRunEmployeesSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -175,11 +205,13 @@ export interface Config {
     header: Header;
     footer: Footer;
     'billing-settings': BillingSetting;
+    'payroll-settings': PayrollSetting;
   };
   globalsSelect: {
     header: HeaderSelect<false> | HeaderSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
     'billing-settings': BillingSettingsSelect<false> | BillingSettingsSelect<true>;
+    'payroll-settings': PayrollSettingsSelect<false> | PayrollSettingsSelect<true>;
   };
   locale: 'en' | 'ne' | 'new';
   user: User;
@@ -2114,6 +2146,119 @@ export interface ExpenseClaim {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "employees".
+ */
+export interface Employee {
+  id: number;
+  /**
+   * Payroll code, e.g. EMP-001
+   */
+  employeeId: string;
+  name: string;
+  /**
+   * Job title / role
+   */
+  position?: string | null;
+  phone?: string | null;
+  /**
+   * Tax PAN (for TDS withholding)
+   */
+  pan?: string | null;
+  /**
+   * Work state — drives Professional Tax slabs and LWF frequency (india-payroll). Falls back to the payroll setting default.
+   */
+  employmentState?:
+    | (
+        | 'Andhra Pradesh'
+        | 'Assam'
+        | 'Bihar'
+        | 'Chandigarh'
+        | 'Chhattisgarh'
+        | 'Delhi'
+        | 'Goa'
+        | 'Gujarat'
+        | 'Haryana'
+        | 'Jharkhand'
+        | 'Karnataka'
+        | 'Kerala'
+        | 'Madhya Pradesh'
+        | 'Maharashtra'
+        | 'Meghalaya'
+        | 'Odisha'
+        | 'Punjab'
+        | 'Sikkim'
+        | 'Tamil Nadu'
+        | 'Telangana'
+        | 'Tripura'
+        | 'West Bengal'
+      )
+    | null;
+  /**
+   * Universal Account Number (EPF member ID)
+   */
+  uan?: string | null;
+  /**
+   * ESIC IP number
+   */
+  esicNumber?: string | null;
+  /**
+   * Needed for the Maharashtra women’s PT exemption
+   */
+  gender?: ('Female' | 'Male' | 'Other') | null;
+  /**
+   * Income-tax regime used for the TDS projection
+   */
+  taxRegime?: ('new' | 'old') | null;
+  /**
+   * Deduct employee EPF (12 % of PF wage) when EPF is enabled
+   */
+  epfApplicable?: boolean | null;
+  /**
+   * Manual exemption from LWF deduction
+   */
+  lwfExempt?: boolean | null;
+  /**
+   * Voluntary Provident Fund — extra monthly employee contribution (₹)
+   */
+  vpfAmount?: number | null;
+  /**
+   * Inactive employees are excluded from payroll runs
+   */
+  active?: boolean | null;
+  /**
+   * Monthly basic salary
+   */
+  basicSalary?: number | null;
+  /**
+   * Earnings added to basic (house, transport, …)
+   */
+  allowances?:
+    | {
+        label: string;
+        amount: number;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Deductions from gross (PF, TDS, advances, …)
+   */
+  deductions?:
+    | {
+        label: string;
+        amount: number;
+        /**
+         * Payable GL account; defaults to Accrued Payables when empty
+         */
+        account?: (number | null) | GlAccount;
+        id?: string | null;
+      }[]
+    | null;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "opening-balances".
  */
 export interface OpeningBalance {
@@ -2135,6 +2280,1386 @@ export interface OpeningBalance {
 export interface DataOp {
   id: number;
   kind?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payroll-runs".
+ */
+export interface PayrollRun {
+  id: number;
+  /**
+   * Human-readable run name, e.g. September 2083 Payroll
+   */
+  name: string;
+  /**
+   * Fiscal year this payroll run belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  /**
+   * Pay period, e.g. 2026-09
+   */
+  period: string;
+  /**
+   * Posting date for the journal entry
+   */
+  postingDate: string;
+  /**
+   * Draft → Submitted (accrual) → Paid (payment) → Cancelled
+   */
+  status?: ('Draft' | 'Submitted' | 'Paid' | 'Cancelled') | null;
+  /**
+   * Total gross pay (auto-computed from lines)
+   */
+  grossPay?: number | null;
+  /**
+   * Total deductions (auto-computed from lines)
+   */
+  totalDeductions?: number | null;
+  /**
+   * Total net pay (auto-computed from lines)
+   */
+  netPay?: number | null;
+  /**
+   * Total employer contributions (auto-computed)
+   */
+  totalEmployerContributions?: number | null;
+  /**
+   * Employees included in this payroll run (Frappe HR-style salary slip lines)
+   */
+  lines?:
+    | {
+        employee: number | Employee;
+        /**
+         * Snapshot of employee name at run time
+         */
+        employeeName?: string | null;
+        designation?: string | null;
+        department?: string | null;
+        /**
+         * Basic salary for the period
+         */
+        base?: number | null;
+        /**
+         * Gross pay for this employee
+         */
+        grossPay?: number | null;
+        /**
+         * Total deductions for this employee
+         */
+        totalDeductions?: number | null;
+        /**
+         * Net pay for this employee
+         */
+        netPay?: number | null;
+        /**
+         * Salary slip created for this employee in this run
+         */
+        salarySlip?: (number | null) | PayrollSlip;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Salary slips created from this payroll run
+   */
+  salarySlips?:
+    | {
+        salarySlip: number | PayrollSlip;
+        employee?: (number | null) | Employee;
+        netPay?: number | null;
+        status?: ('Draft' | 'Submitted' | 'Paid' | 'Cancelled') | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Journal entry created for accrual/payment
+   */
+  journalEntry?: (number | null) | JournalEntry;
+  /**
+   * Journal entry created for payment
+   */
+  paymentJournalEntry?: (number | null) | JournalEntry;
+  /**
+   * Date when payment was made
+   */
+  paidAt?: string | null;
+  /**
+   * User who created this payroll run
+   */
+  createdBy?: (number | null) | User;
+  /**
+   * Notes for this payroll run
+   */
+  notes?: string | null;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payroll-slips".
+ */
+export interface PayrollSlip {
+  id: number;
+  /**
+   * Salary slip identifier, e.g. SS-2026-09-001
+   */
+  slipNumber: string;
+  /**
+   * Employee this slip belongs to
+   */
+  employee: number | Employee;
+  /**
+   * Snapshot of employee name at slip time
+   */
+  employeeName?: string | null;
+  /**
+   * Company this slip belongs to
+   */
+  company?: (number | null) | Tenant;
+  currency?: string | null;
+  /**
+   * Pay period, e.g. 2026-09
+   */
+  period: string;
+  /**
+   * Posting date for the journal entry
+   */
+  postingDate: string;
+  /**
+   * Period start date
+   */
+  startDate?: string | null;
+  /**
+   * Period end date
+   */
+  endDate?: string | null;
+  payrollFrequency?: ('Monthly' | 'Fortnightly' | 'Bimonthly' | 'Weekly' | 'Daily') | null;
+  /**
+   * Structure used to compute this slip
+   */
+  salaryStructure?: (number | null) | SalaryStructure;
+  /**
+   * Assignment used to compute this slip
+   */
+  salaryStructureAssignment?: (number | null) | SalaryStructureAssignment;
+  /**
+   * Payroll run this slip belongs to
+   */
+  payrollRun?: (number | null) | PayrollRun;
+  department?: string | null;
+  designation?: string | null;
+  branch?: string | null;
+  totalWorkingDays?: number | null;
+  paymentDays?: number | null;
+  leaveWithoutPay?: number | null;
+  absentDays?: number | null;
+  /**
+   * Employee salary mode (cash/bank)
+   */
+  salaryMode?: string | null;
+  bankName?: string | null;
+  /**
+   * Employee bank account (masked as needed)
+   */
+  bankAccountNumber?: string | null;
+  /**
+   * Base pay used for this slip
+   */
+  base?: number | null;
+  /**
+   * Variable pay used for this slip
+   */
+  variable?: number | null;
+  /**
+   * Earning lines for this slip
+   */
+  earnings?:
+    | {
+        component?: (number | null) | SalaryComponent;
+        label?: string | null;
+        amount?: number | null;
+        isTaxApplicable?: boolean | null;
+        exemptedFromIncomeTax?: boolean | null;
+        doNotIncludeInTotal?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Deduction lines for this slip
+   */
+  deductions?:
+    | {
+        component?: (number | null) | SalaryComponent;
+        label?: string | null;
+        amount?: number | null;
+        isTaxApplicable?: boolean | null;
+        doNotIncludeInTotal?: boolean | null;
+        doNotIncludeInAccounts?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Employer contribution lines for this slip
+   */
+  employerContributions?:
+    | {
+        component?: (number | null) | SalaryComponent;
+        label?: string | null;
+        amount?: number | null;
+        doNotIncludeInTotal?: boolean | null;
+        doNotIncludeInAccounts?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Leave details for this slip
+   */
+  leaveDetails?:
+    | {
+        leaveType?: string | null;
+        days?: number | null;
+        paidDays?: number | null;
+        unpaidDays?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Timesheet references for this slip
+   */
+  timesheets?:
+    | {
+        /**
+         * Timesheet reference
+         */
+        timesheet?: string | null;
+        days?: number | null;
+        amount?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Accrued benefits for this slip
+   */
+  accruedBenefits?:
+    | {
+        component?: (number | null) | SalaryComponent;
+        label?: string | null;
+        amount?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Total gross pay
+   */
+  grossPay?: number | null;
+  /**
+   * Total earnings
+   */
+  totalEarnings?: number | null;
+  /**
+   * Total deductions
+   */
+  totalDeductionsAmount?: number | null;
+  /**
+   * Total employer contributions
+   */
+  totalEmployerContributions?: number | null;
+  /**
+   * Net pay
+   */
+  netPay?: number | null;
+  /**
+   * Rounded total
+   */
+  roundedTotal?: number | null;
+  /**
+   * Employee gross pay (employee share)
+   */
+  employeeGrossPay?: number | null;
+  /**
+   * Employer gross pay (employer share)
+   */
+  employerGrossPay?: number | null;
+  /**
+   * Employee total deduction
+   */
+  employeeTotalDeduction?: number | null;
+  /**
+   * Employer total contribution
+   */
+  employerTotalContribution?: number | null;
+  /**
+   * Employee net pay
+   */
+  employeeNetPay?: number | null;
+  /**
+   * Employer net pay
+   */
+  employerNetPay?: number | null;
+  /**
+   * Cost to company
+   */
+  ctc?: number | null;
+  /**
+   * Annual taxable amount
+   */
+  annualTaxableAmount?: number | null;
+  /**
+   * Total income tax
+   */
+  totalIncomeTax?: number | null;
+  /**
+   * Income tax deducted till date
+   */
+  incomeTaxDeductedTillDate?: number | null;
+  /**
+   * Current month income tax
+   */
+  currentMonthIncomeTax?: number | null;
+  /**
+   * Year to date
+   */
+  yearToDate?: number | null;
+  /**
+   * Month to date
+   */
+  monthToDate?: number | null;
+  /**
+   * Taxable earnings till date
+   */
+  taxableEarningsTillDate?: number | null;
+  /**
+   * Tax deducted till date
+   */
+  taxDeductedTillDate?: number | null;
+  status?: ('Draft' | 'Submitted' | 'Cancelled') | null;
+  /**
+   * Journal entry created for this slip
+   */
+  journalEntry?: (number | null) | JournalEntry;
+  /**
+   * Journal entry created for payment
+   */
+  paymentJournalEntry?: (number | null) | JournalEntry;
+  /**
+   * Date when payment was made
+   */
+  paidAt?: string | null;
+  /**
+   * User who created this slip
+   */
+  createdBy?: (number | null) | User;
+  /**
+   * User who approved this slip
+   */
+  approvedBy?: (number | null) | User;
+  /**
+   * Notes for this slip
+   */
+  notes?: string | null;
+  /**
+   * Additional salary entries (advances, loans, etc.)
+   */
+  additionalSalary?:
+    | {
+        additionalSalary?: (number | null) | AdditionalSalary;
+        amount?: number | null;
+        type?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Loan repayment entries
+   */
+  loanRepayment?:
+    | {
+        loan?: (number | null) | Loan;
+        amount?: number | null;
+        principalAmount?: number | null;
+        interestAmount?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Advance recovery entries
+   */
+  advanceRecovery?:
+    | {
+        additionalSalary?: (number | null) | AdditionalSalary;
+        amount?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Flexible benefits for this slip
+   */
+  flexibleBenefits?:
+    | {
+        component?: (number | null) | SalaryComponent;
+        label?: string | null;
+        amount?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Tax exemption declaration for this slip
+   */
+  taxExemptionDeclaration?: (number | null) | TaxExemptionDeclaration;
+  /**
+   * Cost center allocation for this slip
+   */
+  payrollCostCenters?:
+    | {
+        /**
+         * Cost center code/name
+         */
+        costCenter?: string | null;
+        percentage?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Fiscal year this document belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "salary-structures".
+ */
+export interface SalaryStructure {
+  id: number;
+  /**
+   * Structure name, e.g. Accountant — Monthly Fixed
+   */
+  label: string;
+  /**
+   * Optional notes
+   */
+  description?: string | null;
+  /**
+   * Tenants in this app serve as companies for payroll
+   */
+  company: number | Tenant;
+  /**
+   * Currency code
+   */
+  currency?: string | null;
+  /**
+   * Letterhead reference (reserved for parity)
+   */
+  letterHead?: string | null;
+  payrollFrequency?: ('Monthly' | 'Fortnightly' | 'Bimonthly' | 'Weekly' | 'Daily') | null;
+  /**
+   * Use timesheet-based payroll
+   */
+  salarySlipBasedOnTimesheet?: boolean | null;
+  /**
+   * Component used for timesheet-based pay
+   */
+  timesheetSalaryComponent?: (number | null) | SalaryComponent;
+  /**
+   * Hourly-rate component when used
+   */
+  hourlyRateComponent?: (number | null) | SalaryComponent;
+  /**
+   * Hourly rate fallback when no component set
+   */
+  hourlyRateAmount?: number | null;
+  /**
+   * Encashment rate per day
+   */
+  leaveEncashmentAmountPerDay?: number | null;
+  /**
+   * Maximum benefits amount
+   */
+  maxBenefits?: number | null;
+  /**
+   * Payment mode reference (reserved for parity)
+   */
+  modeOfPayment?: string | null;
+  /**
+   * Default payment account used by this structure
+   */
+  paymentAccount?: (number | null) | GlAccount;
+  /**
+   * Earning components for this structure
+   */
+  earnings?:
+    | {
+        component: number | SalaryComponent;
+        amount?: number | null;
+        amountBasedOnFormula?: boolean | null;
+        formula?: string | null;
+        condition?: string | null;
+        dependsOnPaymentDays?: boolean | null;
+        isTaxApplicable?: boolean | null;
+        exemptedFromIncomeTax?: boolean | null;
+        doNotIncludeInTotal?: boolean | null;
+        statisticalComponent?: boolean | null;
+        doNotIncludeInAccounts?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Deduction components for this structure
+   */
+  deductions?:
+    | {
+        component: number | SalaryComponent;
+        amount?: number | null;
+        amountBasedOnFormula?: boolean | null;
+        formula?: string | null;
+        condition?: string | null;
+        dependsOnPaymentDays?: boolean | null;
+        isTaxApplicable?: boolean | null;
+        doNotIncludeInAccounts?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Employer contribution components for this structure
+   */
+  employerContributions?:
+    | {
+        component: number | SalaryComponent;
+        amount?: number | null;
+        amountBasedOnFormula?: boolean | null;
+        formula?: string | null;
+        condition?: string | null;
+        dependsOnPaymentDays?: boolean | null;
+        doNotIncludeInTotal?: boolean | null;
+        doNotIncludeInAccounts?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Only active structures are assignable
+   */
+  isActive?: boolean | null;
+  /**
+   * Default structure for the company
+   */
+  isDefault?: boolean | null;
+  /**
+   * Fiscal year this document belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "salary-components".
+ */
+export interface SalaryComponent {
+  id: number;
+  /**
+   * Readable name, e.g. Basic, House Rent Allowance, Provident Fund
+   */
+  label: string;
+  /**
+   * Abbreviation used in formulas, e.g. BASIC, HRA, PF
+   */
+  abbr: string;
+  /**
+   * Frappe HR doctype type
+   */
+  type: 'Earning' | 'Deduction' | 'EmployerContribution';
+  /**
+   * Optional Python-style condition string used by frappe; store for parity, evaluate locally if needed
+   */
+  condition?: string | null;
+  /**
+   * Default component amount when no formula
+   */
+  amount?: number | null;
+  /**
+   * Amount is derived from a formula
+   */
+  amountBasedOnFormula?: boolean | null;
+  /**
+   * Frappe formula string, e.g. base * 0.4, base + 2000
+   */
+  formula?: string | null;
+  /**
+   * Pro-rate by payment days
+   */
+  dependsOnPaymentDays?: boolean | null;
+  /**
+   * Include in taxable income
+   */
+  isTaxApplicable?: boolean | null;
+  /**
+   * Treat as exempt for income tax
+   */
+  exemptedFromIncomeTax?: boolean | null;
+  /**
+   * Statistical only — no GL posting
+   */
+  statisticalComponent?: boolean | null;
+  doNotIncludeInTotal?: boolean | null;
+  doNotIncludeInAccounts?: boolean | null;
+  removeIfZeroValued?: boolean | null;
+  variableBasedOnTaxableSalary?: boolean | null;
+  isFlexibleBenefit?: boolean | null;
+  /**
+   * Employer side accrual component
+   */
+  accrualComponent?: boolean | null;
+  active?: boolean | null;
+  /**
+   * Per-company account mapping (Salary Component Account)
+   */
+  accounts?:
+    | {
+        company: number | Tenant;
+        /**
+         * Earning/deduction GL account for this component
+         */
+        account?: (number | null) | GlAccount;
+        /**
+         * Employer expense account (used by employer contributions)
+         */
+        expenseAccount?: (number | null) | GlAccount;
+        /**
+         * Employer liability account for accrual
+         */
+        liabilityAccount?: (number | null) | GlAccount;
+        id?: string | null;
+      }[]
+    | null;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "salary-structure-assignments".
+ */
+export interface SalaryStructureAssignment {
+  id: number;
+  /**
+   * Readable assignment label, e.g. EMP-001 — Accountant — from 2026-01-01
+   */
+  label: string;
+  /**
+   * Employee receiving this pay structure
+   */
+  employee: number | Employee;
+  /**
+   * Reused pay template
+   */
+  salaryStructure: number | SalaryStructure;
+  /**
+   * Effective start date; use a new assignment to change pay later
+   */
+  fromDate: string;
+  /**
+   * Company this assignment belongs to
+   */
+  company?: (number | null) | Tenant;
+  currency?: string | null;
+  /**
+   * Base pay used by the structure formulas
+   */
+  base?: number | null;
+  /**
+   * Variable pay component
+   */
+  variable?: number | null;
+  /**
+   * Annual gross earning (computed in frappe)
+   */
+  annualGrossEarning?: number | null;
+  /**
+   * Cost to company (computed in frappe)
+   */
+  ctc?: number | null;
+  /**
+   * Income tax slab reference; this app uses taxRegime on Employee instead
+   */
+  incomeTaxSlab?: string | null;
+  /**
+   * Payroll payable account for this assignment
+   */
+  payrollPayableAccount?: (number | null) | GlAccount;
+  /**
+   * Year-to-date taxable earnings for tax calculation
+   */
+  taxableEarningsTillDate?: number | null;
+  /**
+   * Year-to-date tax deducted for tax calculation
+   */
+  taxDeductedTillDate?: number | null;
+  leaveEncashmentAmountPerDay?: number | null;
+  maxBenefits?: number | null;
+  /**
+   * Employee benefit details (parity with frappe)
+   */
+  employeeBenefits?:
+    | {
+        component?: (number | null) | SalaryComponent;
+        amount?: number | null;
+        description?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Cost center allocation rows
+   */
+  costCenters?:
+    | {
+        /**
+         * Cost center code/name
+         */
+        costCenter?: string | null;
+        percentage?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Fiscal year this document belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "additional-salaries".
+ */
+export interface AdditionalSalary {
+  id: number;
+  /**
+   * Description of the additional salary entry
+   */
+  description: string;
+  /**
+   * Employee this additional salary belongs to
+   */
+  employee: number | Employee;
+  /**
+   * Assignment this additional salary is linked to
+   */
+  salaryStructureAssignment?: (number | null) | SalaryStructureAssignment;
+  /**
+   * Component used for this entry
+   */
+  component?: (number | null) | SalaryComponent;
+  /**
+   * Type of additional salary
+   */
+  type: 'Earning' | 'Deduction' | 'Flex Benefit';
+  /**
+   * Amount for this entry
+   */
+  amount: number;
+  payrollFrequency?: ('Once' | 'Monthly' | 'Yearly') | null;
+  /**
+   * Recurring additional salary
+   */
+  isRecurring?: boolean | null;
+  /**
+   * Repeat every N periods
+   */
+  repeatEvery?: number | null;
+  /**
+   * Start date for recurring
+   */
+  startDate?: string | null;
+  /**
+   * End date for recurring
+   */
+  endDate?: string | null;
+  /**
+   * Reference, e.g. advance/loan reference
+   */
+  reference?: string | null;
+  /**
+   * Include in taxable income
+   */
+  isTaxApplicable?: boolean | null;
+  /**
+   * Include in payable
+   */
+  isPayable?: boolean | null;
+  /**
+   * Recoverable (advance/loan recovery)
+   */
+  isRecoverable?: boolean | null;
+  /**
+   * Effected through payroll
+   */
+  isEffectedThroughPayroll?: boolean | null;
+  status?: ('Active' | 'Inactive' | 'Cancelled') | null;
+  /**
+   * User who created this entry
+   */
+  createdBy?: (number | null) | User;
+  /**
+   * Fiscal year this document belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "loans".
+ */
+export interface Loan {
+  id: number;
+  /**
+   * Loan name, e.g. EMP-001 — Vehicle Loan
+   */
+  loanName: string;
+  /**
+   * Employee this loan belongs to
+   */
+  employee: number | Employee;
+  /**
+   * Snapshot of employee name at loan creation
+   */
+  employeeName?: string | null;
+  /**
+   * Loan type (car, housing, personal, etc.)
+   */
+  loanType: number | LoanType;
+  /**
+   * Sanction date
+   */
+  sanctionDate: string;
+  /**
+   * Sanction amount
+   */
+  sanctionAmount: number;
+  /**
+   * Principal amount disbursed
+   */
+  principalAmount: number;
+  /**
+   * Interest rate percentage
+   */
+  interestRate: number;
+  /**
+   * Disbursement date
+   */
+  disbursementDate?: string | null;
+  /**
+   * Account used for disbursement
+   */
+  disbursementAccount?: (number | null) | GlAccount;
+  /**
+   * Journal entry for disbursement
+   */
+  disbursementJournalEntry?: (number | null) | JournalEntry;
+  /**
+   * Account used for repayment
+   */
+  paymentAccount?: (number | null) | GlAccount;
+  /**
+   * Repayment start date
+   */
+  repaymentStartDate?: string | null;
+  /**
+   * Repayment end date
+   */
+  repaymentEndDate?: string | null;
+  /**
+   * Repayment schedule
+   */
+  repaymentSchedule?:
+    | {
+        date?: string | null;
+        principal?: number | null;
+        interest?: number | null;
+        total?: number | null;
+        status?: ('Paid' | 'Unpaid' | 'Partially Paid') | null;
+        journalEntry?: (number | null) | JournalEntry;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Total payment amount
+   */
+  totalPayment?: number | null;
+  /**
+   * Total interest amount
+   */
+  totalInterest?: number | null;
+  /**
+   * Total principal amount
+   */
+  totalPrincipal?: number | null;
+  /**
+   * Total paid amount
+   */
+  paidAmount?: number | null;
+  /**
+   * Balance amount remaining
+   */
+  balanceAmount?: number | null;
+  /**
+   * Repay from salary (appears on salary slip)
+   */
+  repayFromSalary?: boolean | null;
+  /**
+   * Amount to repay from salary each period
+   */
+  repayAmount?: number | null;
+  /**
+   * Account used for salary repayment
+   */
+  repayFromSalaryAccount?: (number | null) | GlAccount;
+  status?: ('Active' | 'Closed' | 'Cancelled') | null;
+  /**
+   * User who created this loan
+   */
+  createdBy?: (number | null) | User;
+  /**
+   * Fiscal year this document belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "loan-types".
+ */
+export interface LoanType {
+  id: number;
+  /**
+   * Loan type label, e.g. Vehicle Loan, Housing Loan, Personal Loan
+   */
+  label: string;
+  /**
+   * Frappe HR Loan Type
+   */
+  type: 'Staff Loan' | 'Car Loan' | 'Housing Loan' | 'Personal Loan' | 'Education Loan' | 'Other Loan';
+  /**
+   * Interest calculation type
+   */
+  interestType?: ('Flat Rate' | 'Declining Balance' | 'Reducing Balance') | null;
+  /**
+   * Repayment method
+   */
+  repaymentMethod?: ('Installment' | 'Bullet' | 'Flexible' | 'Staff Recovery') | null;
+  /**
+   * Repayment method detail (reserved for parity)
+   */
+  repaymentMethodDetail?: string | null;
+  /**
+   * Minimum principal amount
+   */
+  minPrincipalAmount?: number | null;
+  /**
+   * Maximum principal amount
+   */
+  maxPrincipalAmount?: number | null;
+  /**
+   * Minimum rate of interest
+   */
+  minRateOfInterest?: number | null;
+  /**
+   * Maximum rate of interest
+   */
+  maxRateOfInterest?: number | null;
+  /**
+   * Minimum tenure in months
+   */
+  minTenure?: number | null;
+  /**
+   * Maximum tenure in months
+   */
+  maxTenure?: number | null;
+  /**
+   * Maximum loan amount
+   */
+  maxLoanAmount?: number | null;
+  /**
+   * Minimum loan amount
+   */
+  minLoanAmount?: number | null;
+  /**
+   * Active loan type
+   */
+  active?: boolean | null;
+  /**
+   * Status field value for this loan type
+   */
+  docFieldForStatus?: ('Active' | 'Inactive' | 'Paid' | 'Overdue' | 'Closed') | null;
+  /**
+   * Status in list for this loan type
+   */
+  docFieldForStatusInList?: ('Active' | 'Inactive' | 'Paid' | 'Overdue' | 'Closed') | null;
+  /**
+   * Maximum number of loans of this type per employee
+   */
+  maxCount?: number | null;
+  /**
+   * Allow overpayment
+   */
+  allowOverpayment?: boolean | null;
+  /**
+   * Allow recall
+   */
+  recall?: boolean | null;
+  /**
+   * Recall message (reserved for parity)
+   */
+  recallMsg?: string | null;
+  /**
+   * Loan schedule based on
+   */
+  loanSchedule_basedOn?: ('Repayment' | 'Disbursement') | null;
+  /**
+   * Is slab based
+   */
+  isSlabBased?: boolean | null;
+  /**
+   * Notes for this loan type
+   */
+  notes?: string | null;
+  /**
+   * Fiscal year this document belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tax-exemption-declarations".
+ */
+export interface TaxExemptionDeclaration {
+  id: number;
+  /**
+   * Declaration title, e.g. EMP-001 — 2026-27 Declaration
+   */
+  title: string;
+  /**
+   * Employee this declaration belongs to
+   */
+  employee: number | Employee;
+  /**
+   * Snapshot of employee name at declaration time
+   */
+  employeeName?: string | null;
+  /**
+   * Income year, e.g. 2026-27
+   */
+  incomeYear: string;
+  /**
+   * Declaration date
+   */
+  declarationDate: string;
+  /**
+   * Submission date
+   */
+  submitDate?: string | null;
+  /**
+   * Submit for
+   */
+  submitFor?: ('ITR Filing' | 'Tax Exemption') | null;
+  status?: ('Draft' | 'Submitted' | 'Approved' | 'Rejected' | 'Cancelled') | null;
+  /**
+   * Deduction declaration lines
+   */
+  deductions?:
+    | {
+        deductionType?:
+          | (
+              | 'Section 80C'
+              | 'Section 80D'
+              | 'Section 80E'
+              | 'Section 80G'
+              | 'Section 80GG'
+              | 'Section 80CCD(1B)'
+              | 'Section 80CCD(2)'
+              | 'Section 80TTA'
+              | 'Section 80TTB'
+              | 'Other'
+            )
+          | null;
+        description?: string | null;
+        amount?: number | null;
+        proofAttached?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Total deduction amount
+   */
+  totalDeduction?: number | null;
+  /**
+   * Notes for this declaration
+   */
+  notes?: string | null;
+  /**
+   * User who created this declaration
+   */
+  createdBy?: (number | null) | User;
+  /**
+   * User who approved this declaration
+   */
+  approvedBy?: (number | null) | User;
+  /**
+   * Fiscal year this document belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payroll-periods".
+ */
+export interface PayrollPeriod {
+  id: number;
+  /**
+   * Payroll period, e.g. 2026-09
+   */
+  period: string;
+  /**
+   * Company this payroll period belongs to
+   */
+  company: number | Tenant;
+  /**
+   * Period start date
+   */
+  startDate: string;
+  /**
+   * Period end date
+   */
+  endDate: string;
+  payrollFrequency?: ('Monthly' | 'Fortnightly' | 'Bimonthly' | 'Weekly' | 'Daily') | null;
+  /**
+   * Active payroll period
+   */
+  active?: boolean | null;
+  /**
+   * Is draft
+   */
+  isDraft?: boolean | null;
+  /**
+   * Is submitted
+   */
+  isSubmit?: boolean | null;
+  /**
+   * Document status
+   */
+  docStatus?: ('Draft' | 'Submitted' | 'Cancelled') | null;
+  /**
+   * Payroll run created for this period
+   */
+  payroll_entry?: (number | null) | PayrollRun;
+  /**
+   * Fiscal year this document belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payroll-component-accounts".
+ */
+export interface PayrollComponentAccount {
+  id: number;
+  /**
+   * Label, e.g. Basic — Account
+   */
+  label: string;
+  /**
+   * Company this component account belongs to
+   */
+  company: number | Tenant;
+  /**
+   * Salary component this account mapping belongs to
+   */
+  salaryComponent: number | SalaryComponent;
+  /**
+   * Earning/deduction GL account
+   */
+  account?: (number | null) | GlAccount;
+  /**
+   * Expense account for employer contributions
+   */
+  expenseAccount?: (number | null) | GlAccount;
+  /**
+   * Liability account for employer accrual
+   */
+  liabilityAccount?: (number | null) | GlAccount;
+  /**
+   * Fiscal year this document belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "flexible-benefit-returns".
+ */
+export interface FlexibleBenefitReturn {
+  id: number;
+  /**
+   * Flexible benefit return label
+   */
+  label: string;
+  /**
+   * Employee this flexible benefit return belongs to
+   */
+  employee: number | Employee;
+  /**
+   * Snapshot of employee name at return time
+   */
+  employeeName?: string | null;
+  /**
+   * Assignment this flexible benefit return is linked to
+   */
+  salaryStructureAssignment?: (number | null) | SalaryStructureAssignment;
+  /**
+   * Component this flexible benefit return belongs to
+   */
+  component?: (number | null) | SalaryComponent;
+  /**
+   * Amount for this flexible benefit return
+   */
+  amount: number;
+  /**
+   * Return type
+   */
+  returnType?: ('Cash' | 'Non-Cash') | null;
+  /**
+   * Description of the flexible benefit return
+   */
+  description?: string | null;
+  /**
+   * Active flexible benefit return
+   */
+  active?: boolean | null;
+  /**
+   * Retire on declaration
+   */
+  retireOnDeclaration?: boolean | null;
+  /**
+   * Declaration this flexible benefit return is linked to
+   */
+  declaration?: (number | null) | TaxExemptionDeclaration;
+  /**
+   * User who created this return
+   */
+  createdBy?: (number | null) | User;
+  /**
+   * Fiscal year this document belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "salary-structure-flexible-benefits".
+ */
+export interface SalaryStructureFlexibleBenefit {
+  id: number;
+  /**
+   * Flexible benefit label, e.g. Health Insurance
+   */
+  label: string;
+  /**
+   * Salary structure this flexible benefit belongs to
+   */
+  salaryStructure: number | SalaryStructure;
+  /**
+   * Component this flexible benefit belongs to
+   */
+  component: number | SalaryComponent;
+  /**
+   * Flexible benefit amount
+   */
+  amount: number;
+  /**
+   * Base amount for this flexible benefit
+   */
+  baseAmount?: number | null;
+  /**
+   * Benefit amount for this flexible benefit
+   */
+  benefitAmount?: number | null;
+  /**
+   * Flexible benefit type
+   */
+  type?: ('Flex Benefit' | 'Flexible Benefit') | null;
+  /**
+   * Fiscal year this document belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payroll-run-employees".
+ */
+export interface PayrollRunEmployee {
+  id: number;
+  /**
+   * Payroll run employee label
+   */
+  label: string;
+  /**
+   * Payroll run this employee detail belongs to
+   */
+  payrollRun: number | PayrollRun;
+  /**
+   * Employee this detail belongs to
+   */
+  employee: number | Employee;
+  /**
+   * Snapshot of employee name at detail time
+   */
+  employeeName?: string | null;
+  /**
+   * Assignment this detail is linked to
+   */
+  salaryStructureAssignment?: (number | null) | SalaryStructureAssignment;
+  /**
+   * Base pay for this employee
+   */
+  base?: number | null;
+  /**
+   * Variable pay for this employee
+   */
+  variable?: number | null;
+  /**
+   * Create payroll slip for this employee
+   */
+  createPayrollSlip?: boolean | null;
+  status?: ('Active' | 'Inactive') | null;
+  /**
+   * Fiscal year this document belongs to (Frappe HR-style annual payroll period)
+   */
+  fiscalYear: number | FiscalYear;
+  tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -2553,6 +4078,10 @@ export interface PayloadLockedDocument {
         value: number | ExpenseClaim;
       } | null)
     | ({
+        relationTo: 'employees';
+        value: number | Employee;
+      } | null)
+    | ({
         relationTo: 'fiscal-years';
         value: number | FiscalYear;
       } | null)
@@ -2563,6 +4092,62 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'data-ops';
         value: number | DataOp;
+      } | null)
+    | ({
+        relationTo: 'payroll-runs';
+        value: number | PayrollRun;
+      } | null)
+    | ({
+        relationTo: 'payroll-slips';
+        value: number | PayrollSlip;
+      } | null)
+    | ({
+        relationTo: 'salary-components';
+        value: number | SalaryComponent;
+      } | null)
+    | ({
+        relationTo: 'salary-structures';
+        value: number | SalaryStructure;
+      } | null)
+    | ({
+        relationTo: 'salary-structure-assignments';
+        value: number | SalaryStructureAssignment;
+      } | null)
+    | ({
+        relationTo: 'additional-salaries';
+        value: number | AdditionalSalary;
+      } | null)
+    | ({
+        relationTo: 'loans';
+        value: number | Loan;
+      } | null)
+    | ({
+        relationTo: 'loan-types';
+        value: number | LoanType;
+      } | null)
+    | ({
+        relationTo: 'tax-exemption-declarations';
+        value: number | TaxExemptionDeclaration;
+      } | null)
+    | ({
+        relationTo: 'payroll-periods';
+        value: number | PayrollPeriod;
+      } | null)
+    | ({
+        relationTo: 'payroll-component-accounts';
+        value: number | PayrollComponentAccount;
+      } | null)
+    | ({
+        relationTo: 'flexible-benefit-returns';
+        value: number | FlexibleBenefitReturn;
+      } | null)
+    | ({
+        relationTo: 'salary-structure-flexible-benefits';
+        value: number | SalaryStructureFlexibleBenefit;
+      } | null)
+    | ({
+        relationTo: 'payroll-run-employees';
+        value: number | PayrollRunEmployee;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -3539,6 +5124,45 @@ export interface ExpenseClaimsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "employees_select".
+ */
+export interface EmployeesSelect<T extends boolean = true> {
+  employeeId?: T;
+  name?: T;
+  position?: T;
+  phone?: T;
+  pan?: T;
+  employmentState?: T;
+  uan?: T;
+  esicNumber?: T;
+  gender?: T;
+  taxRegime?: T;
+  epfApplicable?: T;
+  lwfExempt?: T;
+  vpfAmount?: T;
+  active?: T;
+  basicSalary?: T;
+  allowances?:
+    | T
+    | {
+        label?: T;
+        amount?: T;
+        id?: T;
+      };
+  deductions?:
+    | T
+    | {
+        label?: T;
+        amount?: T;
+        account?: T;
+        id?: T;
+      };
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "fiscal-years_select".
  */
 export interface FiscalYearsSelect<T extends boolean = true> {
@@ -3569,6 +5193,588 @@ export interface OpeningBalancesSelect<T extends boolean = true> {
  */
 export interface DataOpsSelect<T extends boolean = true> {
   kind?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payroll-runs_select".
+ */
+export interface PayrollRunsSelect<T extends boolean = true> {
+  name?: T;
+  fiscalYear?: T;
+  period?: T;
+  postingDate?: T;
+  status?: T;
+  grossPay?: T;
+  totalDeductions?: T;
+  netPay?: T;
+  totalEmployerContributions?: T;
+  lines?:
+    | T
+    | {
+        employee?: T;
+        employeeName?: T;
+        designation?: T;
+        department?: T;
+        base?: T;
+        grossPay?: T;
+        totalDeductions?: T;
+        netPay?: T;
+        salarySlip?: T;
+        id?: T;
+      };
+  salarySlips?:
+    | T
+    | {
+        salarySlip?: T;
+        employee?: T;
+        netPay?: T;
+        status?: T;
+        id?: T;
+      };
+  journalEntry?: T;
+  paymentJournalEntry?: T;
+  paidAt?: T;
+  createdBy?: T;
+  notes?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payroll-slips_select".
+ */
+export interface PayrollSlipsSelect<T extends boolean = true> {
+  slipNumber?: T;
+  employee?: T;
+  employeeName?: T;
+  company?: T;
+  currency?: T;
+  period?: T;
+  postingDate?: T;
+  startDate?: T;
+  endDate?: T;
+  payrollFrequency?: T;
+  salaryStructure?: T;
+  salaryStructureAssignment?: T;
+  payrollRun?: T;
+  department?: T;
+  designation?: T;
+  branch?: T;
+  totalWorkingDays?: T;
+  paymentDays?: T;
+  leaveWithoutPay?: T;
+  absentDays?: T;
+  salaryMode?: T;
+  bankName?: T;
+  bankAccountNumber?: T;
+  base?: T;
+  variable?: T;
+  earnings?:
+    | T
+    | {
+        component?: T;
+        label?: T;
+        amount?: T;
+        isTaxApplicable?: T;
+        exemptedFromIncomeTax?: T;
+        doNotIncludeInTotal?: T;
+        id?: T;
+      };
+  deductions?:
+    | T
+    | {
+        component?: T;
+        label?: T;
+        amount?: T;
+        isTaxApplicable?: T;
+        doNotIncludeInTotal?: T;
+        doNotIncludeInAccounts?: T;
+        id?: T;
+      };
+  employerContributions?:
+    | T
+    | {
+        component?: T;
+        label?: T;
+        amount?: T;
+        doNotIncludeInTotal?: T;
+        doNotIncludeInAccounts?: T;
+        id?: T;
+      };
+  leaveDetails?:
+    | T
+    | {
+        leaveType?: T;
+        days?: T;
+        paidDays?: T;
+        unpaidDays?: T;
+        id?: T;
+      };
+  timesheets?:
+    | T
+    | {
+        timesheet?: T;
+        days?: T;
+        amount?: T;
+        id?: T;
+      };
+  accruedBenefits?:
+    | T
+    | {
+        component?: T;
+        label?: T;
+        amount?: T;
+        id?: T;
+      };
+  grossPay?: T;
+  totalEarnings?: T;
+  totalDeductionsAmount?: T;
+  totalEmployerContributions?: T;
+  netPay?: T;
+  roundedTotal?: T;
+  employeeGrossPay?: T;
+  employerGrossPay?: T;
+  employeeTotalDeduction?: T;
+  employerTotalContribution?: T;
+  employeeNetPay?: T;
+  employerNetPay?: T;
+  ctc?: T;
+  annualTaxableAmount?: T;
+  totalIncomeTax?: T;
+  incomeTaxDeductedTillDate?: T;
+  currentMonthIncomeTax?: T;
+  yearToDate?: T;
+  monthToDate?: T;
+  taxableEarningsTillDate?: T;
+  taxDeductedTillDate?: T;
+  status?: T;
+  journalEntry?: T;
+  paymentJournalEntry?: T;
+  paidAt?: T;
+  createdBy?: T;
+  approvedBy?: T;
+  notes?: T;
+  additionalSalary?:
+    | T
+    | {
+        additionalSalary?: T;
+        amount?: T;
+        type?: T;
+        id?: T;
+      };
+  loanRepayment?:
+    | T
+    | {
+        loan?: T;
+        amount?: T;
+        principalAmount?: T;
+        interestAmount?: T;
+        id?: T;
+      };
+  advanceRecovery?:
+    | T
+    | {
+        additionalSalary?: T;
+        amount?: T;
+        id?: T;
+      };
+  flexibleBenefits?:
+    | T
+    | {
+        component?: T;
+        label?: T;
+        amount?: T;
+        id?: T;
+      };
+  taxExemptionDeclaration?: T;
+  payrollCostCenters?:
+    | T
+    | {
+        costCenter?: T;
+        percentage?: T;
+        id?: T;
+      };
+  fiscalYear?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "salary-components_select".
+ */
+export interface SalaryComponentsSelect<T extends boolean = true> {
+  label?: T;
+  abbr?: T;
+  type?: T;
+  condition?: T;
+  amount?: T;
+  amountBasedOnFormula?: T;
+  formula?: T;
+  dependsOnPaymentDays?: T;
+  isTaxApplicable?: T;
+  exemptedFromIncomeTax?: T;
+  statisticalComponent?: T;
+  doNotIncludeInTotal?: T;
+  doNotIncludeInAccounts?: T;
+  removeIfZeroValued?: T;
+  variableBasedOnTaxableSalary?: T;
+  isFlexibleBenefit?: T;
+  accrualComponent?: T;
+  active?: T;
+  accounts?:
+    | T
+    | {
+        company?: T;
+        account?: T;
+        expenseAccount?: T;
+        liabilityAccount?: T;
+        id?: T;
+      };
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "salary-structures_select".
+ */
+export interface SalaryStructuresSelect<T extends boolean = true> {
+  label?: T;
+  description?: T;
+  company?: T;
+  currency?: T;
+  letterHead?: T;
+  payrollFrequency?: T;
+  salarySlipBasedOnTimesheet?: T;
+  timesheetSalaryComponent?: T;
+  hourlyRateComponent?: T;
+  hourlyRateAmount?: T;
+  leaveEncashmentAmountPerDay?: T;
+  maxBenefits?: T;
+  modeOfPayment?: T;
+  paymentAccount?: T;
+  earnings?:
+    | T
+    | {
+        component?: T;
+        amount?: T;
+        amountBasedOnFormula?: T;
+        formula?: T;
+        condition?: T;
+        dependsOnPaymentDays?: T;
+        isTaxApplicable?: T;
+        exemptedFromIncomeTax?: T;
+        doNotIncludeInTotal?: T;
+        statisticalComponent?: T;
+        doNotIncludeInAccounts?: T;
+        id?: T;
+      };
+  deductions?:
+    | T
+    | {
+        component?: T;
+        amount?: T;
+        amountBasedOnFormula?: T;
+        formula?: T;
+        condition?: T;
+        dependsOnPaymentDays?: T;
+        isTaxApplicable?: T;
+        doNotIncludeInAccounts?: T;
+        id?: T;
+      };
+  employerContributions?:
+    | T
+    | {
+        component?: T;
+        amount?: T;
+        amountBasedOnFormula?: T;
+        formula?: T;
+        condition?: T;
+        dependsOnPaymentDays?: T;
+        doNotIncludeInTotal?: T;
+        doNotIncludeInAccounts?: T;
+        id?: T;
+      };
+  isActive?: T;
+  isDefault?: T;
+  fiscalYear?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "salary-structure-assignments_select".
+ */
+export interface SalaryStructureAssignmentsSelect<T extends boolean = true> {
+  label?: T;
+  employee?: T;
+  salaryStructure?: T;
+  fromDate?: T;
+  company?: T;
+  currency?: T;
+  base?: T;
+  variable?: T;
+  annualGrossEarning?: T;
+  ctc?: T;
+  incomeTaxSlab?: T;
+  payrollPayableAccount?: T;
+  taxableEarningsTillDate?: T;
+  taxDeductedTillDate?: T;
+  leaveEncashmentAmountPerDay?: T;
+  maxBenefits?: T;
+  employeeBenefits?:
+    | T
+    | {
+        component?: T;
+        amount?: T;
+        description?: T;
+        id?: T;
+      };
+  costCenters?:
+    | T
+    | {
+        costCenter?: T;
+        percentage?: T;
+        id?: T;
+      };
+  fiscalYear?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "additional-salaries_select".
+ */
+export interface AdditionalSalariesSelect<T extends boolean = true> {
+  description?: T;
+  employee?: T;
+  salaryStructureAssignment?: T;
+  component?: T;
+  type?: T;
+  amount?: T;
+  payrollFrequency?: T;
+  isRecurring?: T;
+  repeatEvery?: T;
+  startDate?: T;
+  endDate?: T;
+  reference?: T;
+  isTaxApplicable?: T;
+  isPayable?: T;
+  isRecoverable?: T;
+  isEffectedThroughPayroll?: T;
+  status?: T;
+  createdBy?: T;
+  fiscalYear?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "loans_select".
+ */
+export interface LoansSelect<T extends boolean = true> {
+  loanName?: T;
+  employee?: T;
+  employeeName?: T;
+  loanType?: T;
+  sanctionDate?: T;
+  sanctionAmount?: T;
+  principalAmount?: T;
+  interestRate?: T;
+  disbursementDate?: T;
+  disbursementAccount?: T;
+  disbursementJournalEntry?: T;
+  paymentAccount?: T;
+  repaymentStartDate?: T;
+  repaymentEndDate?: T;
+  repaymentSchedule?:
+    | T
+    | {
+        date?: T;
+        principal?: T;
+        interest?: T;
+        total?: T;
+        status?: T;
+        journalEntry?: T;
+        id?: T;
+      };
+  totalPayment?: T;
+  totalInterest?: T;
+  totalPrincipal?: T;
+  paidAmount?: T;
+  balanceAmount?: T;
+  repayFromSalary?: T;
+  repayAmount?: T;
+  repayFromSalaryAccount?: T;
+  status?: T;
+  createdBy?: T;
+  fiscalYear?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "loan-types_select".
+ */
+export interface LoanTypesSelect<T extends boolean = true> {
+  label?: T;
+  type?: T;
+  interestType?: T;
+  repaymentMethod?: T;
+  repaymentMethodDetail?: T;
+  minPrincipalAmount?: T;
+  maxPrincipalAmount?: T;
+  minRateOfInterest?: T;
+  maxRateOfInterest?: T;
+  minTenure?: T;
+  maxTenure?: T;
+  maxLoanAmount?: T;
+  minLoanAmount?: T;
+  active?: T;
+  docFieldForStatus?: T;
+  docFieldForStatusInList?: T;
+  maxCount?: T;
+  allowOverpayment?: T;
+  recall?: T;
+  recallMsg?: T;
+  loanSchedule_basedOn?: T;
+  isSlabBased?: T;
+  notes?: T;
+  fiscalYear?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tax-exemption-declarations_select".
+ */
+export interface TaxExemptionDeclarationsSelect<T extends boolean = true> {
+  title?: T;
+  employee?: T;
+  employeeName?: T;
+  incomeYear?: T;
+  declarationDate?: T;
+  submitDate?: T;
+  submitFor?: T;
+  status?: T;
+  deductions?:
+    | T
+    | {
+        deductionType?: T;
+        description?: T;
+        amount?: T;
+        proofAttached?: T;
+        id?: T;
+      };
+  totalDeduction?: T;
+  notes?: T;
+  createdBy?: T;
+  approvedBy?: T;
+  fiscalYear?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payroll-periods_select".
+ */
+export interface PayrollPeriodsSelect<T extends boolean = true> {
+  period?: T;
+  company?: T;
+  startDate?: T;
+  endDate?: T;
+  payrollFrequency?: T;
+  active?: T;
+  isDraft?: T;
+  isSubmit?: T;
+  docStatus?: T;
+  payroll_entry?: T;
+  fiscalYear?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payroll-component-accounts_select".
+ */
+export interface PayrollComponentAccountsSelect<T extends boolean = true> {
+  label?: T;
+  company?: T;
+  salaryComponent?: T;
+  account?: T;
+  expenseAccount?: T;
+  liabilityAccount?: T;
+  fiscalYear?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "flexible-benefit-returns_select".
+ */
+export interface FlexibleBenefitReturnsSelect<T extends boolean = true> {
+  label?: T;
+  employee?: T;
+  employeeName?: T;
+  salaryStructureAssignment?: T;
+  component?: T;
+  amount?: T;
+  returnType?: T;
+  description?: T;
+  active?: T;
+  retireOnDeclaration?: T;
+  declaration?: T;
+  createdBy?: T;
+  fiscalYear?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "salary-structure-flexible-benefits_select".
+ */
+export interface SalaryStructureFlexibleBenefitsSelect<T extends boolean = true> {
+  label?: T;
+  salaryStructure?: T;
+  component?: T;
+  amount?: T;
+  baseAmount?: T;
+  benefitAmount?: T;
+  type?: T;
+  fiscalYear?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payroll-run-employees_select".
+ */
+export interface PayrollRunEmployeesSelect<T extends boolean = true> {
+  label?: T;
+  payrollRun?: T;
+  employee?: T;
+  employeeName?: T;
+  salaryStructureAssignment?: T;
+  base?: T;
+  variable?: T;
+  createPayrollSlip?: T;
+  status?: T;
+  fiscalYear?: T;
+  tenant?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -4128,6 +6334,110 @@ export interface BillingSetting {
   createdAt?: string | null;
 }
 /**
+ * Indian statutory payroll (EPF, ESIC, Professional Tax, LWF, TDS). Enable a scheme to apply it when generating payroll runs.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payroll-settings".
+ */
+export interface PayrollSetting {
+  id: number;
+  /**
+   * Employees’ Provident Fund — 12 % of PF wage (Basic + DA), capped at the statutory ceiling (₹15,000 → ₹25,000 from 17 Sep 2026). Employer EPF/EPS/EDLI/admin are accrued as employer contributions.
+   */
+  epfEnabled?: boolean | null;
+  /**
+   * Employee State Insurance — 0.75 % employee / 3.25 % employer on ESI wage when gross ≤ ₹21,000 (₹25,000 for PwD).
+   */
+  esicEnabled?: boolean | null;
+  /**
+   * State Professional Tax — deducted per the employment state’s slabs (monthly, half-yearly or yearly with cumulative adjustment).
+   */
+  professionalTaxEnabled?: boolean | null;
+  /**
+   * Labour Welfare Fund — employee + employer amounts per the employment state’s frequency (monthly, June+December, or December only).
+   */
+  lwfEnabled?: boolean | null;
+  /**
+   * TDS on salary — monthly instalment of the projected annual tax (new or old regime, standard deduction, 87A rebate, surcharge + marginal relief, 4 % cess).
+   */
+  tdsEnabled?: boolean | null;
+  /**
+   * EPF establishment account number (prints on the PF register / ECR).
+   */
+  pfNumber?: string | null;
+  /**
+   * ESIC registration number (prints on the ESIC register).
+   */
+  esiNumber?: string | null;
+  /**
+   * Labour Welfare Fund number (prints on the LWF register).
+   */
+  lwfNumber?: string | null;
+  /**
+   * Used for employees without an employment state — PT slabs and LWF frequency follow it.
+   */
+  defaultEmploymentState?:
+    | (
+        | 'Andhra Pradesh'
+        | 'Assam'
+        | 'Bihar'
+        | 'Chandigarh'
+        | 'Chhattisgarh'
+        | 'Delhi'
+        | 'Goa'
+        | 'Gujarat'
+        | 'Haryana'
+        | 'Jharkhand'
+        | 'Karnataka'
+        | 'Kerala'
+        | 'Madhya Pradesh'
+        | 'Maharashtra'
+        | 'Meghalaya'
+        | 'Odisha'
+        | 'Punjab'
+        | 'Sikkim'
+        | 'Tamil Nadu'
+        | 'Telangana'
+        | 'Tripura'
+        | 'West Bengal'
+      )
+    | null;
+  /**
+   * Cr employee + employer EPF share (falls back to Accrued Payables).
+   */
+  epfPayableAccount?: (number | null) | GlAccount;
+  /**
+   * Cr employer EPS (pension) 8.33 % (falls back to EPF payable).
+   */
+  epsPayableAccount?: (number | null) | GlAccount;
+  /**
+   * Cr EDLI 0.5 % + EPF admin 0.5 % (falls back to EPF payable).
+   */
+  edliPayableAccount?: (number | null) | GlAccount;
+  /**
+   * Cr ESI employee + employer shares (falls back to Accrued Payables).
+   */
+  esicPayableAccount?: (number | null) | GlAccount;
+  /**
+   * Cr Professional Tax deducted (falls back to Accrued Payables).
+   */
+  ptPayableAccount?: (number | null) | GlAccount;
+  /**
+   * Cr LWF employee + employer shares (falls back to Accrued Payables).
+   */
+  lwfPayableAccount?: (number | null) | GlAccount;
+  /**
+   * Cr TDS withheld (falls back to Accrued Payables).
+   */
+  tdsPayableAccount?: (number | null) | GlAccount;
+  /**
+   * Dr employer statutory contributions (EPF/EPS/EDLI/admin, ESI employer, LWF employer). Falls back to the salary expense account.
+   */
+  statutoryExpenseAccount?: (number | null) | GlAccount;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header_select".
  */
@@ -4214,6 +6524,32 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   accumulatedDepreciationAccount?: T;
   defAccountOrder?: T;
   dataEpoch?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payroll-settings_select".
+ */
+export interface PayrollSettingsSelect<T extends boolean = true> {
+  epfEnabled?: T;
+  esicEnabled?: T;
+  professionalTaxEnabled?: T;
+  lwfEnabled?: T;
+  tdsEnabled?: T;
+  pfNumber?: T;
+  esiNumber?: T;
+  lwfNumber?: T;
+  defaultEmploymentState?: T;
+  epfPayableAccount?: T;
+  epsPayableAccount?: T;
+  edliPayableAccount?: T;
+  esicPayableAccount?: T;
+  ptPayableAccount?: T;
+  lwfPayableAccount?: T;
+  tdsPayableAccount?: T;
+  statutoryExpenseAccount?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

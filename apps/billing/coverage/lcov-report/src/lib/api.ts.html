@@ -1,0 +1,1630 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/lib/api.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/lib</a> api.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">3.07% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>7/228</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/223</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/20</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">3.33% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>7/210</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a>
+<a name='L212'></a><a href='#L212'>212</a>
+<a name='L213'></a><a href='#L213'>213</a>
+<a name='L214'></a><a href='#L214'>214</a>
+<a name='L215'></a><a href='#L215'>215</a>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a>
+<a name='L218'></a><a href='#L218'>218</a>
+<a name='L219'></a><a href='#L219'>219</a>
+<a name='L220'></a><a href='#L220'>220</a>
+<a name='L221'></a><a href='#L221'>221</a>
+<a name='L222'></a><a href='#L222'>222</a>
+<a name='L223'></a><a href='#L223'>223</a>
+<a name='L224'></a><a href='#L224'>224</a>
+<a name='L225'></a><a href='#L225'>225</a>
+<a name='L226'></a><a href='#L226'>226</a>
+<a name='L227'></a><a href='#L227'>227</a>
+<a name='L228'></a><a href='#L228'>228</a>
+<a name='L229'></a><a href='#L229'>229</a>
+<a name='L230'></a><a href='#L230'>230</a>
+<a name='L231'></a><a href='#L231'>231</a>
+<a name='L232'></a><a href='#L232'>232</a>
+<a name='L233'></a><a href='#L233'>233</a>
+<a name='L234'></a><a href='#L234'>234</a>
+<a name='L235'></a><a href='#L235'>235</a>
+<a name='L236'></a><a href='#L236'>236</a>
+<a name='L237'></a><a href='#L237'>237</a>
+<a name='L238'></a><a href='#L238'>238</a>
+<a name='L239'></a><a href='#L239'>239</a>
+<a name='L240'></a><a href='#L240'>240</a>
+<a name='L241'></a><a href='#L241'>241</a>
+<a name='L242'></a><a href='#L242'>242</a>
+<a name='L243'></a><a href='#L243'>243</a>
+<a name='L244'></a><a href='#L244'>244</a>
+<a name='L245'></a><a href='#L245'>245</a>
+<a name='L246'></a><a href='#L246'>246</a>
+<a name='L247'></a><a href='#L247'>247</a>
+<a name='L248'></a><a href='#L248'>248</a>
+<a name='L249'></a><a href='#L249'>249</a>
+<a name='L250'></a><a href='#L250'>250</a>
+<a name='L251'></a><a href='#L251'>251</a>
+<a name='L252'></a><a href='#L252'>252</a>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a>
+<a name='L261'></a><a href='#L261'>261</a>
+<a name='L262'></a><a href='#L262'>262</a>
+<a name='L263'></a><a href='#L263'>263</a>
+<a name='L264'></a><a href='#L264'>264</a>
+<a name='L265'></a><a href='#L265'>265</a>
+<a name='L266'></a><a href='#L266'>266</a>
+<a name='L267'></a><a href='#L267'>267</a>
+<a name='L268'></a><a href='#L268'>268</a>
+<a name='L269'></a><a href='#L269'>269</a>
+<a name='L270'></a><a href='#L270'>270</a>
+<a name='L271'></a><a href='#L271'>271</a>
+<a name='L272'></a><a href='#L272'>272</a>
+<a name='L273'></a><a href='#L273'>273</a>
+<a name='L274'></a><a href='#L274'>274</a>
+<a name='L275'></a><a href='#L275'>275</a>
+<a name='L276'></a><a href='#L276'>276</a>
+<a name='L277'></a><a href='#L277'>277</a>
+<a name='L278'></a><a href='#L278'>278</a>
+<a name='L279'></a><a href='#L279'>279</a>
+<a name='L280'></a><a href='#L280'>280</a>
+<a name='L281'></a><a href='#L281'>281</a>
+<a name='L282'></a><a href='#L282'>282</a>
+<a name='L283'></a><a href='#L283'>283</a>
+<a name='L284'></a><a href='#L284'>284</a>
+<a name='L285'></a><a href='#L285'>285</a>
+<a name='L286'></a><a href='#L286'>286</a>
+<a name='L287'></a><a href='#L287'>287</a>
+<a name='L288'></a><a href='#L288'>288</a>
+<a name='L289'></a><a href='#L289'>289</a>
+<a name='L290'></a><a href='#L290'>290</a>
+<a name='L291'></a><a href='#L291'>291</a>
+<a name='L292'></a><a href='#L292'>292</a>
+<a name='L293'></a><a href='#L293'>293</a>
+<a name='L294'></a><a href='#L294'>294</a>
+<a name='L295'></a><a href='#L295'>295</a>
+<a name='L296'></a><a href='#L296'>296</a>
+<a name='L297'></a><a href='#L297'>297</a>
+<a name='L298'></a><a href='#L298'>298</a>
+<a name='L299'></a><a href='#L299'>299</a>
+<a name='L300'></a><a href='#L300'>300</a>
+<a name='L301'></a><a href='#L301'>301</a>
+<a name='L302'></a><a href='#L302'>302</a>
+<a name='L303'></a><a href='#L303'>303</a>
+<a name='L304'></a><a href='#L304'>304</a>
+<a name='L305'></a><a href='#L305'>305</a>
+<a name='L306'></a><a href='#L306'>306</a>
+<a name='L307'></a><a href='#L307'>307</a>
+<a name='L308'></a><a href='#L308'>308</a>
+<a name='L309'></a><a href='#L309'>309</a>
+<a name='L310'></a><a href='#L310'>310</a>
+<a name='L311'></a><a href='#L311'>311</a>
+<a name='L312'></a><a href='#L312'>312</a>
+<a name='L313'></a><a href='#L313'>313</a>
+<a name='L314'></a><a href='#L314'>314</a>
+<a name='L315'></a><a href='#L315'>315</a>
+<a name='L316'></a><a href='#L316'>316</a>
+<a name='L317'></a><a href='#L317'>317</a>
+<a name='L318'></a><a href='#L318'>318</a>
+<a name='L319'></a><a href='#L319'>319</a>
+<a name='L320'></a><a href='#L320'>320</a>
+<a name='L321'></a><a href='#L321'>321</a>
+<a name='L322'></a><a href='#L322'>322</a>
+<a name='L323'></a><a href='#L323'>323</a>
+<a name='L324'></a><a href='#L324'>324</a>
+<a name='L325'></a><a href='#L325'>325</a>
+<a name='L326'></a><a href='#L326'>326</a>
+<a name='L327'></a><a href='#L327'>327</a>
+<a name='L328'></a><a href='#L328'>328</a>
+<a name='L329'></a><a href='#L329'>329</a>
+<a name='L330'></a><a href='#L330'>330</a>
+<a name='L331'></a><a href='#L331'>331</a>
+<a name='L332'></a><a href='#L332'>332</a>
+<a name='L333'></a><a href='#L333'>333</a>
+<a name='L334'></a><a href='#L334'>334</a>
+<a name='L335'></a><a href='#L335'>335</a>
+<a name='L336'></a><a href='#L336'>336</a>
+<a name='L337'></a><a href='#L337'>337</a>
+<a name='L338'></a><a href='#L338'>338</a>
+<a name='L339'></a><a href='#L339'>339</a>
+<a name='L340'></a><a href='#L340'>340</a>
+<a name='L341'></a><a href='#L341'>341</a>
+<a name='L342'></a><a href='#L342'>342</a>
+<a name='L343'></a><a href='#L343'>343</a>
+<a name='L344'></a><a href='#L344'>344</a>
+<a name='L345'></a><a href='#L345'>345</a>
+<a name='L346'></a><a href='#L346'>346</a>
+<a name='L347'></a><a href='#L347'>347</a>
+<a name='L348'></a><a href='#L348'>348</a>
+<a name='L349'></a><a href='#L349'>349</a>
+<a name='L350'></a><a href='#L350'>350</a>
+<a name='L351'></a><a href='#L351'>351</a>
+<a name='L352'></a><a href='#L352'>352</a>
+<a name='L353'></a><a href='#L353'>353</a>
+<a name='L354'></a><a href='#L354'>354</a>
+<a name='L355'></a><a href='#L355'>355</a>
+<a name='L356'></a><a href='#L356'>356</a>
+<a name='L357'></a><a href='#L357'>357</a>
+<a name='L358'></a><a href='#L358'>358</a>
+<a name='L359'></a><a href='#L359'>359</a>
+<a name='L360'></a><a href='#L360'>360</a>
+<a name='L361'></a><a href='#L361'>361</a>
+<a name='L362'></a><a href='#L362'>362</a>
+<a name='L363'></a><a href='#L363'>363</a>
+<a name='L364'></a><a href='#L364'>364</a>
+<a name='L365'></a><a href='#L365'>365</a>
+<a name='L366'></a><a href='#L366'>366</a>
+<a name='L367'></a><a href='#L367'>367</a>
+<a name='L368'></a><a href='#L368'>368</a>
+<a name='L369'></a><a href='#L369'>369</a>
+<a name='L370'></a><a href='#L370'>370</a>
+<a name='L371'></a><a href='#L371'>371</a>
+<a name='L372'></a><a href='#L372'>372</a>
+<a name='L373'></a><a href='#L373'>373</a>
+<a name='L374'></a><a href='#L374'>374</a>
+<a name='L375'></a><a href='#L375'>375</a>
+<a name='L376'></a><a href='#L376'>376</a>
+<a name='L377'></a><a href='#L377'>377</a>
+<a name='L378'></a><a href='#L378'>378</a>
+<a name='L379'></a><a href='#L379'>379</a>
+<a name='L380'></a><a href='#L380'>380</a>
+<a name='L381'></a><a href='#L381'>381</a>
+<a name='L382'></a><a href='#L382'>382</a>
+<a name='L383'></a><a href='#L383'>383</a>
+<a name='L384'></a><a href='#L384'>384</a>
+<a name='L385'></a><a href='#L385'>385</a>
+<a name='L386'></a><a href='#L386'>386</a>
+<a name='L387'></a><a href='#L387'>387</a>
+<a name='L388'></a><a href='#L388'>388</a>
+<a name='L389'></a><a href='#L389'>389</a>
+<a name='L390'></a><a href='#L390'>390</a>
+<a name='L391'></a><a href='#L391'>391</a>
+<a name='L392'></a><a href='#L392'>392</a>
+<a name='L393'></a><a href='#L393'>393</a>
+<a name='L394'></a><a href='#L394'>394</a>
+<a name='L395'></a><a href='#L395'>395</a>
+<a name='L396'></a><a href='#L396'>396</a>
+<a name='L397'></a><a href='#L397'>397</a>
+<a name='L398'></a><a href='#L398'>398</a>
+<a name='L399'></a><a href='#L399'>399</a>
+<a name='L400'></a><a href='#L400'>400</a>
+<a name='L401'></a><a href='#L401'>401</a>
+<a name='L402'></a><a href='#L402'>402</a>
+<a name='L403'></a><a href='#L403'>403</a>
+<a name='L404'></a><a href='#L404'>404</a>
+<a name='L405'></a><a href='#L405'>405</a>
+<a name='L406'></a><a href='#L406'>406</a>
+<a name='L407'></a><a href='#L407'>407</a>
+<a name='L408'></a><a href='#L408'>408</a>
+<a name='L409'></a><a href='#L409'>409</a>
+<a name='L410'></a><a href='#L410'>410</a>
+<a name='L411'></a><a href='#L411'>411</a>
+<a name='L412'></a><a href='#L412'>412</a>
+<a name='L413'></a><a href='#L413'>413</a>
+<a name='L414'></a><a href='#L414'>414</a>
+<a name='L415'></a><a href='#L415'>415</a>
+<a name='L416'></a><a href='#L416'>416</a>
+<a name='L417'></a><a href='#L417'>417</a>
+<a name='L418'></a><a href='#L418'>418</a>
+<a name='L419'></a><a href='#L419'>419</a>
+<a name='L420'></a><a href='#L420'>420</a>
+<a name='L421'></a><a href='#L421'>421</a>
+<a name='L422'></a><a href='#L422'>422</a>
+<a name='L423'></a><a href='#L423'>423</a>
+<a name='L424'></a><a href='#L424'>424</a>
+<a name='L425'></a><a href='#L425'>425</a>
+<a name='L426'></a><a href='#L426'>426</a>
+<a name='L427'></a><a href='#L427'>427</a>
+<a name='L428'></a><a href='#L428'>428</a>
+<a name='L429'></a><a href='#L429'>429</a>
+<a name='L430'></a><a href='#L430'>430</a>
+<a name='L431'></a><a href='#L431'>431</a>
+<a name='L432'></a><a href='#L432'>432</a>
+<a name='L433'></a><a href='#L433'>433</a>
+<a name='L434'></a><a href='#L434'>434</a>
+<a name='L435'></a><a href='#L435'>435</a>
+<a name='L436'></a><a href='#L436'>436</a>
+<a name='L437'></a><a href='#L437'>437</a>
+<a name='L438'></a><a href='#L438'>438</a>
+<a name='L439'></a><a href='#L439'>439</a>
+<a name='L440'></a><a href='#L440'>440</a>
+<a name='L441'></a><a href='#L441'>441</a>
+<a name='L442'></a><a href='#L442'>442</a>
+<a name='L443'></a><a href='#L443'>443</a>
+<a name='L444'></a><a href='#L444'>444</a>
+<a name='L445'></a><a href='#L445'>445</a>
+<a name='L446'></a><a href='#L446'>446</a>
+<a name='L447'></a><a href='#L447'>447</a>
+<a name='L448'></a><a href='#L448'>448</a>
+<a name='L449'></a><a href='#L449'>449</a>
+<a name='L450'></a><a href='#L450'>450</a>
+<a name='L451'></a><a href='#L451'>451</a>
+<a name='L452'></a><a href='#L452'>452</a>
+<a name='L453'></a><a href='#L453'>453</a>
+<a name='L454'></a><a href='#L454'>454</a>
+<a name='L455'></a><a href='#L455'>455</a>
+<a name='L456'></a><a href='#L456'>456</a>
+<a name='L457'></a><a href='#L457'>457</a>
+<a name='L458'></a><a href='#L458'>458</a>
+<a name='L459'></a><a href='#L459'>459</a>
+<a name='L460'></a><a href='#L460'>460</a>
+<a name='L461'></a><a href='#L461'>461</a>
+<a name='L462'></a><a href='#L462'>462</a>
+<a name='L463'></a><a href='#L463'>463</a>
+<a name='L464'></a><a href='#L464'>464</a>
+<a name='L465'></a><a href='#L465'>465</a>
+<a name='L466'></a><a href='#L466'>466</a>
+<a name='L467'></a><a href='#L467'>467</a>
+<a name='L468'></a><a href='#L468'>468</a>
+<a name='L469'></a><a href='#L469'>469</a>
+<a name='L470'></a><a href='#L470'>470</a>
+<a name='L471'></a><a href='#L471'>471</a>
+<a name='L472'></a><a href='#L472'>472</a>
+<a name='L473'></a><a href='#L473'>473</a>
+<a name='L474'></a><a href='#L474'>474</a>
+<a name='L475'></a><a href='#L475'>475</a>
+<a name='L476'></a><a href='#L476'>476</a>
+<a name='L477'></a><a href='#L477'>477</a>
+<a name='L478'></a><a href='#L478'>478</a>
+<a name='L479'></a><a href='#L479'>479</a>
+<a name='L480'></a><a href='#L480'>480</a>
+<a name='L481'></a><a href='#L481'>481</a>
+<a name='L482'></a><a href='#L482'>482</a>
+<a name='L483'></a><a href='#L483'>483</a>
+<a name='L484'></a><a href='#L484'>484</a>
+<a name='L485'></a><a href='#L485'>485</a>
+<a name='L486'></a><a href='#L486'>486</a>
+<a name='L487'></a><a href='#L487'>487</a>
+<a name='L488'></a><a href='#L488'>488</a>
+<a name='L489'></a><a href='#L489'>489</a>
+<a name='L490'></a><a href='#L490'>490</a>
+<a name='L491'></a><a href='#L491'>491</a>
+<a name='L492'></a><a href='#L492'>492</a>
+<a name='L493'></a><a href='#L493'>493</a>
+<a name='L494'></a><a href='#L494'>494</a>
+<a name='L495'></a><a href='#L495'>495</a>
+<a name='L496'></a><a href='#L496'>496</a>
+<a name='L497'></a><a href='#L497'>497</a>
+<a name='L498'></a><a href='#L498'>498</a>
+<a name='L499'></a><a href='#L499'>499</a>
+<a name='L500'></a><a href='#L500'>500</a>
+<a name='L501'></a><a href='#L501'>501</a>
+<a name='L502'></a><a href='#L502'>502</a>
+<a name='L503'></a><a href='#L503'>503</a>
+<a name='L504'></a><a href='#L504'>504</a>
+<a name='L505'></a><a href='#L505'>505</a>
+<a name='L506'></a><a href='#L506'>506</a>
+<a name='L507'></a><a href='#L507'>507</a>
+<a name='L508'></a><a href='#L508'>508</a>
+<a name='L509'></a><a href='#L509'>509</a>
+<a name='L510'></a><a href='#L510'>510</a>
+<a name='L511'></a><a href='#L511'>511</a>
+<a name='L512'></a><a href='#L512'>512</a>
+<a name='L513'></a><a href='#L513'>513</a>
+<a name='L514'></a><a href='#L514'>514</a>
+<a name='L515'></a><a href='#L515'>515</a>
+<a name='L516'></a><a href='#L516'>516</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { API_BASE } from './base'
+import { getEngine, useSyncState } from './offline'
+import {
+  isNetworkError,
+  isReportPath,
+  parsePath,
+  reportCacheKey,
+} from './offline/syncEngine'
+import { pushToast } from './toast'
+import { toNepaliDigits } from './nepaliNumbers'
+&nbsp;
+/** Human noun per collection, used in CRUD toasts. */
+const NOUNS: Record&lt;string, string&gt; = {
+  documents: 'voucher',
+  'gl-accounts': 'account',
+  'account-groups': 'account group',
+  'journal-entries': 'journal entry',
+  parties: 'party',
+  items: 'item',
+  'stock-movements': 'stock movement',
+  users: 'user',
+  tenants: 'tenant',
+  settings: 'setting',
+  globals: 'settings',
+}
+&nbsp;
+function <span class="fstat-no" title="function not covered" >crudToast(m</span>ethod: string, path: string, error?: string): void {
+  const { slug <span class="cstat-no" title="statement not covered" >} = parsePath(path)</span>
+  const noun = <span class="cstat-no" title="statement not covered" >NOUNS[slug] ?? slug.replace(/-/g, ' ')</span>
+  // Globals (Settings) use POST to update an existing singleton — "Saved",
+  // not "Created".
+  const action = <span class="cstat-no" title="statement not covered" >path === '/globals/billing-settings'</span>
+    ? 'Saved'
+    : path.endsWith('/post')
+      ? 'Posted'
+      : path.endsWith('/void')
+        ? 'Voided'
+        : method === 'POST'
+          ? 'Created'
+          : method === 'PATCH'
+            ? 'Updated'
+            : method === 'DELETE'
+              ? 'Deleted'
+              : 'Saved'
+  const nounCap = <span class="cstat-no" title="statement not covered" >noun.charAt(0).toUpperCase() + noun.slice(1)</span>
+<span class="cstat-no" title="statement not covered" >  if (error) {</span>
+<span class="cstat-no" title="statement not covered" >    pushToast('error', `${action} ${noun} failed`, error)</span>
+<span class="cstat-no" title="statement not covered" >  } else if (method === 'DELETE' &amp;&amp; !getEngine().getState().online) {</span>
+    // Offline deletes queue in the outbox and flush on reconnect — say so,
+    // otherwise "Deleted" reads as if the server already dropped the row.
+<span class="cstat-no" title="statement not covered" >    pushToast('info', `${nounCap} delete queued`, 'Will sync to the server when you reconnect.')</span>
+  } else {
+<span class="cstat-no" title="statement not covered" >    pushToast('success', `${nounCap} ${action.toLowerCase()}`)</span>
+  }
+}
+&nbsp;
+interface ApiOptions extends Omit&lt;RequestInit, 'body'&gt; {
+  query?: Record&lt;string, string | number | undefined&gt;
+  body?: unknown
+  /** Skip the offline outbox and hit the server immediately. Use for
+   * atomic server-side transactions (e.g. cross-illaka transfers) where
+   * queuing a partial replay would be wrong. */
+  immediate?: boolean
+}
+&nbsp;
+async function <span class="fstat-no" title="function not covered" >doFetch&lt;T&gt;(p</span>ath: string, options: ApiOptions): Promise&lt;T&gt; {
+  const { query, body, headers, ...rest } = <span class="cstat-no" title="statement not covered" >options</span>
+  const url = <span class="cstat-no" title="statement not covered" >new URL(`${API_BASE}/api${path}`)</span>
+<span class="cstat-no" title="statement not covered" >  if (query) {</span>
+<span class="cstat-no" title="statement not covered" >    for (const [k, v] of Object.entries(query)) {</span>
+      // Nested `where` objects become bracket params — Payload ignores the
+      // JSON form and returns the first rows unfiltered otherwise.
+<span class="cstat-no" title="statement not covered" >      if (k === 'where' &amp;&amp; v &amp;&amp; typeof v === 'object') {</span>
+<span class="cstat-no" title="statement not covered" >        for (const [field, cond] of Object.entries(v as Record&lt;string, Record&lt;string, unknown&gt;&gt;)) {</span>
+<span class="cstat-no" title="statement not covered" >          for (const [op, val] of Object.entries(cond)) {</span>
+<span class="cstat-no" title="statement not covered" >            if (val !== undefined &amp;&amp; val !== '') {</span>
+<span class="cstat-no" title="statement not covered" >              url.searchParams.set(`where[${field}][${op}]`, String(val))</span>
+            }
+          }
+        }
+<span class="cstat-no" title="statement not covered" >        continue</span>
+      }
+<span class="cstat-no" title="statement not covered" >      if (v !== undefined &amp;&amp; v !== '') <span class="cstat-no" title="statement not covered" >url.searchParams.set(k, String(v))</span></span>
+    }
+    // A bare `tenant` param filters custom report endpoints, but Payload's
+    // standard list endpoints only filter through `where[tenant][equals]`.
+    // Emit both so selecting an illaka filters plain collection lists too.
+    const t = <span class="cstat-no" title="statement not covered" >query.tenant</span>
+<span class="cstat-no" title="statement not covered" >    if (t !== undefined &amp;&amp; t !== '') {</span>
+<span class="cstat-no" title="statement not covered" >      url.searchParams.set('where[tenant][equals]', String(t))</span>
+    }
+  }
+  const init: RequestInit = <span class="cstat-no" title="statement not covered" >{</span>
+    ...rest,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...headers },
+  }
+<span class="cstat-no" title="statement not covered" >  if (body !== undefined) {</span>
+<span class="cstat-no" title="statement not covered" >    init.body = typeof body === 'string' ? body : JSON.stringify(body)</span>
+  }    // A hang (half-open connection, captive portal, killed server mid-
+    // handshake) never rejects with a clean TypeError — without a timeout the
+    // offline path never engages and the user sees a raw error. Time out and
+    // throw a TypeError so the caller queues the write instead.
+  const timeout = <span class="cstat-no" title="statement not covered" >new AbortController()</span>
+  const timer = <span class="cstat-no" title="statement not covered" >setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >t</span>imeout.abort(), 1</span>5_000)</span>
+<span class="cstat-no" title="statement not covered" >  try {</span>
+    const res = <span class="cstat-no" title="statement not covered" >await fetch(url, { ...init, signal: timeout.signal })</span>
+<span class="cstat-no" title="statement not covered" >    if (!res.ok) {</span>
+      let msg = <span class="cstat-no" title="statement not covered" >`${res.status} ${res.statusText}`</span>
+<span class="cstat-no" title="statement not covered" >      try {</span>
+        const b = <span class="cstat-no" title="statement not covered" >await res.json()</span>
+<span class="cstat-no" title="statement not covered" >        msg = b?.errors?.[0]?.message || b?.message || b?.error || msg</span>
+      } catch {
+        // non-JSON error body
+      }
+<span class="cstat-no" title="statement not covered" >      throw new Error(msg)</span>
+    }
+<span class="cstat-no" title="statement not covered" >    return res.json() as Promise&lt;T&gt;</span>
+  } catch (err) {
+    // AbortError is a DOMException, not a TypeError — normalize it so
+    // isNetworkError() (instanceof TypeError) treats it as offline.
+<span class="cstat-no" title="statement not covered" >    if (err instanceof DOMException &amp;&amp; err.name === 'AbortError') {</span>
+<span class="cstat-no" title="statement not covered" >      throw new TypeError('network timeout')</span>
+    }
+<span class="cstat-no" title="statement not covered" >    throw err</span>
+  } finally {
+<span class="cstat-no" title="statement not covered" >    clearTimeout(timer)</span>
+  }
+}
+&nbsp;
+/** True for plain collection reads: `GET /slug` (list) or `GET /slug/:id`. */
+function <span class="fstat-no" title="function not covered" >pathSegments(p</span>ath: string): string[] {
+<span class="cstat-no" title="statement not covered" >  return path</span>
+    .split('?')[0]
+    .replace(/^\/+|\/+$/g, '')
+    .split('/')
+    .filter(Boolean)
+}
+&nbsp;
+/** Client-side sort matching Payload's `sort=-field` convention. */
+function <span class="fstat-no" title="function not covered" >sortCached(</span>
+  docs: Record&lt;string, unknown&gt;[],
+  sort?: string | number,
+): Record&lt;string, unknown&gt;[] {
+<span class="cstat-no" title="statement not covered" >  if (!sort || docs.length &lt; 2) <span class="cstat-no" title="statement not covered" >return docs</span></span>
+  const raw = <span class="cstat-no" title="statement not covered" >String(sort)</span>
+  const desc = <span class="cstat-no" title="statement not covered" >raw.startsWith('-')</span>
+  const field = <span class="cstat-no" title="statement not covered" >desc ? raw.slice(1) : raw</span>
+  const get = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(d</span>: Record&lt;string, unknown&gt;) =&gt; <span class="cstat-no" title="statement not covered" >d?.[field]</span></span>
+  const sorted = <span class="cstat-no" title="statement not covered" >[...docs].sort(<span class="fstat-no" title="function not covered" >(a</span>, b) =&gt; {</span>
+    const av = <span class="cstat-no" title="statement not covered" >get(a)</span>
+    const bv = <span class="cstat-no" title="statement not covered" >get(b)</span>
+<span class="cstat-no" title="statement not covered" >    if (av === bv) <span class="cstat-no" title="statement not covered" >return 0</span></span>
+<span class="cstat-no" title="statement not covered" >    if (av == null) <span class="cstat-no" title="statement not covered" >return 1</span></span>
+<span class="cstat-no" title="statement not covered" >    if (bv == null) <span class="cstat-no" title="statement not covered" >return -1</span></span>
+<span class="cstat-no" title="statement not covered" >    if (typeof av === 'number' &amp;&amp; typeof bv === 'number') <span class="cstat-no" title="statement not covered" >return av - bv</span></span>
+<span class="cstat-no" title="statement not covered" >    return String(av).localeCompare(String(bv))</span>
+  })
+<span class="cstat-no" title="statement not covered" >  return desc ? sorted.reverse() : sorted</span>
+}
+&nbsp;
+/* ── Global settings localStorage cache ─────────────────────────────── */
+const GS_KEY = 'billing.settingsCache'
+const GS_TTL = 5 * 60 * 1000 // 5 minutes
+// Fields that were written locally and must NOT be overwritten by background
+// server refreshes until the POST confirms the server has the new values.
+const GS_PROTECT_KEY = 'billing.settingsProtectedFields'
+const GS_PROTECT_TTL = 30_000 // 30 seconds protection window
+&nbsp;
+function <span class="fstat-no" title="function not covered" >readGlobalsCache(): Record&lt;string, unknown&gt; | null {</span>
+<span class="cstat-no" title="statement not covered" >  try {</span>
+    const raw = <span class="cstat-no" title="statement not covered" >localStorage.getItem(GS_KEY)</span>
+<span class="cstat-no" title="statement not covered" >    if (!raw) <span class="cstat-no" title="statement not covered" >return null</span></span>
+    const { data, ts } = <span class="cstat-no" title="statement not covered" >JSON.parse(raw)</span>
+<span class="cstat-no" title="statement not covered" >    return Date.now() - ts &lt; GS_TTL ? data : null</span>
+  } catch { <span class="cstat-no" title="statement not covered" >return null }</span>
+}
+&nbsp;
+/**
+ * Stale-tolerant read for the OFFLINE fallback path only. The 5-minute TTL
+ * exists to keep background-refresh merges fresh while online; when the
+ * device is offline the last-known settings are the best (and only) data
+ * available — dropping them after 5 minutes would blank the org name,
+ * calendar, feature toggles and the setup gate mid-event. Cache-first
+ * callers always get a value once any sync has ever succeeded.
+ */
+function <span class="fstat-no" title="function not covered" >readGlobalsCacheStale(): Record&lt;string, unknown&gt; | null {</span>
+<span class="cstat-no" title="statement not covered" >  try {</span>
+    const raw = <span class="cstat-no" title="statement not covered" >localStorage.getItem(GS_KEY)</span>
+<span class="cstat-no" title="statement not covered" >    if (!raw) <span class="cstat-no" title="statement not covered" >return null</span></span>
+    const { data } = <span class="cstat-no" title="statement not covered" >JSON.parse(raw)</span>
+<span class="cstat-no" title="statement not covered" >    return data ?? null</span>
+  } catch { <span class="cstat-no" title="statement not covered" >return null }</span>
+}
+&nbsp;
+function <span class="fstat-no" title="function not covered" >writeGlobalsCache(d</span>ata: unknown): void {
+<span class="cstat-no" title="statement not covered" >  try {</span>
+<span class="cstat-no" title="statement not covered" >    localStorage.setItem(GS_KEY, JSON.stringify({ data, ts: Date.now() }))</span>
+  } catch { /* quota exceeded — ignore */ }
+}
+&nbsp;
+/** Mark fields as locally-written so background merges skip them. */
+export function <span class="fstat-no" title="function not covered" >protectGlobalsFields(f</span>ields: string[]): void {
+<span class="cstat-no" title="statement not covered" >  try {</span>
+<span class="cstat-no" title="statement not covered" >    localStorage.setItem(GS_PROTECT_KEY, JSON.stringify({ fields, ts: Date.now() }))</span>
+  } catch { /* ignore */ }
+}
+&nbsp;
+/** Clear protected fields (called after POST success confirms server has new values). */
+function <span class="fstat-no" title="function not covered" >clearProtectedFields(): void {</span>
+<span class="cstat-no" title="statement not covered" >  try { <span class="cstat-no" title="statement not covered" >localStorage.removeItem(GS_PROTECT_KEY) }</span> catch { /* ignore */ }</span>
+}
+&nbsp;
+function <span class="fstat-no" title="function not covered" >getProtectedFields(): Set&lt;string&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  try {</span>
+    const raw = <span class="cstat-no" title="statement not covered" >localStorage.getItem(GS_PROTECT_KEY)</span>
+<span class="cstat-no" title="statement not covered" >    if (!raw) <span class="cstat-no" title="statement not covered" >return new Set()</span></span>
+    const { fields, ts } = <span class="cstat-no" title="statement not covered" >JSON.parse(raw)</span>
+<span class="cstat-no" title="statement not covered" >    if (Date.now() - ts &gt; GS_PROTECT_TTL) {</span>
+<span class="cstat-no" title="statement not covered" >      clearProtectedFields()</span>
+<span class="cstat-no" title="statement not covered" >      return new Set()</span>
+    }
+<span class="cstat-no" title="statement not covered" >    return new Set(fields)</span>
+  } catch { <span class="cstat-no" title="statement not covered" >return new Set() }</span>
+}
+&nbsp;
+/**
+ * Cache-first API client for plain collection reads: serve the local copy
+ * instantly (no skeleton on warm caches). Fresh data is pulled only when the
+ * user hits the resync button (or after a write invalidates the cache, which
+ * makes the next read fall through to the network). Writes are network-first
+ * and queue to the outbox when offline; computed endpoints stay
+ * network-first. See lib/offline.
+ */
+export async function <span class="fstat-no" title="function not covered" >api&lt;T = unknown&gt;(</span>
+  path: string,
+  options: ApiOptions = <span class="branch-0 cbranch-no" title="branch not covered" >{},</span>
+): Promise&lt;T&gt; {
+  const <span class="cstat-no" title="statement not covered" >engine = getEngine()</span>
+  const <span class="cstat-no" title="statement not covered" >method = (options.method || 'GET').toUpperCase()</span>
+  const { slug, id <span class="cstat-no" title="statement not covered" >} = parsePath(path)</span>
+  const segments = <span class="cstat-no" title="statement not covered" >pathSegments(path)</span>
+  const plainList = <span class="cstat-no" title="statement not covered" >method === 'GET' &amp;&amp; segments.length === 1 &amp;&amp; !!slug</span>
+  const plainDoc = <span class="cstat-no" title="statement not covered" >method === 'GET' &amp;&amp; segments.length === 2 &amp;&amp; !!id</span>
+  // Only known computed endpoints (trial-balance, ledger, daybook, aging)
+  // are reports — NOT every /slug/:action (e.g. /documents/number/next).
+  const report = <span class="cstat-no" title="statement not covered" >method === 'GET' &amp;&amp; isReportPath(path)</span>
+  const reportKey = <span class="cstat-no" title="statement not covered" >report ? reportCacheKey(path, options.query) : null</span>
+&nbsp;
+  const isGlobals = <span class="cstat-no" title="statement not covered" >method === 'GET' &amp;&amp; path === '/globals/billing-settings'</span>
+&nbsp;
+  // Extract tenant for scope-partitioned cache keys.
+  const tenant = <span class="cstat-no" title="statement not covered" >options.query?.tenant ? String(options.query.tenant) : undefined</span>
+&nbsp;
+  // Cache-first for globals — calendar settings must be instant on page load.
+<span class="cstat-no" title="statement not covered" >  if (isGlobals) {</span>
+    const cached = <span class="cstat-no" title="statement not covered" >readGlobalsCache()</span>
+<span class="cstat-no" title="statement not covered" >    if (cached) {</span>
+      // Serve from cache, but refresh in background
+<span class="cstat-no" title="statement not covered" >      doFetch&lt;T&gt;(path, options).then(<span class="fstat-no" title="function not covered" >(f</span>resh) =&gt; {</span>
+        // Merge: server nulls must NOT overwrite locally-saved values.
+        // Also skip fields protected by local writes (prevent race where
+        // background refresh fires after a save but before POST syncs).
+        const freshObj = <span class="cstat-no" title="statement not covered" >fresh as Record&lt;string, unknown&gt;</span>
+        const cachedObj = <span class="cstat-no" title="statement not covered" >cached as Record&lt;string, unknown&gt;</span>
+        const protectedFields = <span class="cstat-no" title="statement not covered" >getProtectedFields()</span>
+        const merged: Record&lt;string, unknown&gt; = <span class="cstat-no" title="statement not covered" >{ ...cachedObj }</span>
+<span class="cstat-no" title="statement not covered" >        for (const [k, v] of Object.entries(freshObj)) {</span>
+<span class="cstat-no" title="statement not covered" >          if (v != null &amp;&amp; !protectedFields.has(k)) <span class="cstat-no" title="statement not covered" >merged[k] = v</span></span>
+        }
+<span class="cstat-no" title="statement not covered" >        writeGlobalsCache(merged)</span>
+      }).catch(<span class="fstat-no" title="function not covered" >() =&gt; {</span> /* stale cache is fine */ })
+<span class="cstat-no" title="statement not covered" >      return cached as unknown as T</span>
+    }
+  }
+&nbsp;
+  // A `where` filter cannot be answered from cache: the cached collection is
+  // the unfiltered copy, so serving it silently ignores the filter (e.g. the
+  // command palette's name-contains search returned the same rows for any
+  // query). tenant/sort/depth/limit stay cache-safe — the cache is
+  // tenant-scoped and sort is applied client-side below.
+  const cacheSafeQuery = <span class="cstat-no" title="statement not covered" >options.query</span>
+    ? Object.keys(options.query).every(<span class="fstat-no" title="function not covered" >(k</span>) =&gt; <span class="cstat-no" title="statement not covered" >['tenant', 'sort', 'depth', 'limit'].includes(k))</span>
+    : true
+  // Cache-first: a warm collection list renders immediately. Fresh data is
+  // pulled on demand via the resync button — reads never trigger a network
+  // fetch on their own.
+<span class="cstat-no" title="statement not covered" >  if (plainList &amp;&amp; !options.immediate &amp;&amp; cacheSafeQuery) {</span>
+    const cached = <span class="cstat-no" title="statement not covered" >await engine.readCollection(slug, tenant)</span>
+<span class="cstat-no" title="statement not covered" >    if (cached) {</span>
+<span class="cstat-no" title="statement not covered" >      return {</span>
+        ...cached,
+        docs: sortCached(cached.docs, options.query?.sort),
+        totalPages: 1,
+        page: 1,
+      } as unknown as T
+    }
+  }
+&nbsp;
+  // ── Standard CRUD writes: queue to outbox, batch via POST /api/sync ──
+  // All writes go to the outbox for batch sync. Custom endpoints (/:id/post,
+  // /:id/void, etc.) are queued as custom ops — the sync engine sends them
+  // to the server directly (not through Payload's collection endpoints).
+  const isWrite = <span class="cstat-no" title="statement not covered" >method !== 'GET' &amp;&amp; !path.startsWith('/globals/') &amp;&amp; !options.immediate</span>
+  const isStandardCrud = <span class="cstat-no" title="statement not covered" >isWrite &amp;&amp; slug &amp;&amp; segments.length &lt;= 2 &amp;&amp; !/\/[a-z-]+$/.test(path)</span>
+&nbsp;
+  // Immediate writes (admin deletes, custom endpoints) must not fire at a
+  // `local-*` id still held by React state after an outbox create — resolve
+  // it to the mapped server id first. If the row hasn't reached the server
+  // yet, fail loudly rather than pretend the write happened.
+<span class="cstat-no" title="statement not covered" >  if (options.immediate &amp;&amp; method !== 'GET' &amp;&amp; !path.startsWith('/globals/') &amp;&amp; id?.startsWith('local-')) {</span>
+    const serverId = <span class="cstat-no" title="statement not covered" >await engine.resolveLocalId(id)</span>
+<span class="cstat-no" title="statement not covered" >    if (serverId == null) {</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error('This row has not synced to the server yet — wait a moment and retry.')</span>
+    }
+    // Swap the local id for the server id, keeping any trailing action
+    // segments (e.g. /documents/{id}/copy-to-invoice) — rewriting to a bare
+    // /collection/{id} would silently hit the wrong endpoint.
+    const segs = <span class="cstat-no" title="statement not covered" >pathSegments(path)</span>
+    const rest = <span class="cstat-no" title="statement not covered" >segs.slice(2).join('/')</span>
+<span class="cstat-no" title="statement not covered" >    path = `/${slug}/${serverId}${rest ? `/${rest}` : ''}`</span>
+    // Re-derive path segments so later cache handling targets the server id.
+<span class="cstat-no" title="statement not covered" >    segments.length = 0</span>
+<span class="cstat-no" title="statement not covered" >    segments.push(...pathSegments(path))</span>
+  }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  if (isWrite) {</span>
+    // Queue the write to the outbox for batch sync
+<span class="cstat-no" title="statement not covered" >    try {</span>
+      const result = <span class="cstat-no" title="statement not covered" >await engine.offlineRequest(method, path, options.body || {})</span>
+<span class="cstat-no" title="statement not covered" >      engine.setOnline(true)</span>
+<span class="cstat-no" title="statement not covered" >      crudToast(method, path)</span>
+      // Also warm the tenant-scoped cache so the list page reads it
+      // immediately (offlineWrite stores in plain collection, but
+      // readCollection reads from tenant-scoped collection).
+<span class="cstat-no" title="statement not covered" >      if (slug &amp;&amp; segments.length &lt;= 2 &amp;&amp; tenant) {</span>
+<span class="cstat-no" title="statement not covered" >        try {</span>
+          const queuedId = (<span class="cstat-no" title="statement not covered" >result as Record&lt;string, unknown&gt;)?.doc as Record&lt;string, unknown&gt; | undefined</span>
+          const docId = <span class="cstat-no" title="statement not covered" >queuedId?.id as string | undefined</span>
+<span class="cstat-no" title="statement not covered" >          if (method === 'POST' &amp;&amp; docId) {</span>
+            // Store the full body (with local ID) in the tenant-scoped cache
+            const body = <span class="cstat-no" title="statement not covered" >options.body as Record&lt;string, unknown&gt; | undefined</span>
+<span class="cstat-no" title="statement not covered" >            await engine.warmCache(slug, [{ ...body, id: docId }], tenant)</span>
+<span class="cstat-no" title="statement not covered" >          } else if (method === 'PATCH' &amp;&amp; id) {</span>
+            const existing = <span class="cstat-no" title="statement not covered" >await engine.readDoc(slug, String(id))</span>
+            const body = <span class="cstat-no" title="statement not covered" >options.body as Record&lt;string, unknown&gt; | undefined</span>
+<span class="cstat-no" title="statement not covered" >            if (existing) <span class="cstat-no" title="statement not covered" >await engine.warmCache(slug, [{ ...existing, ...body }], tenant)</span></span>
+<span class="cstat-no" title="statement not covered" >          } else if (method === 'DELETE' &amp;&amp; id) {</span>
+            // Outboxed delete — remove just this row from every cache key
+            // that holds it (both the plain and tenant-scoped list). A full
+            // invalidate would blank cache-first lists until the next pull.
+<span class="cstat-no" title="statement not covered" >            await getEngine().removeDoc(slug, String(id), tenant).catch(<span class="fstat-no" title="function not covered" >() =&gt; {</span>})</span>
+          }
+        } catch { /* best-effort */ }
+      }
+<span class="cstat-no" title="statement not covered" >      return result as T</span>
+    } catch {
+      // Queue failed — fall through to direct fetch
+    }
+  }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  try {</span>
+    const res = <span class="cstat-no" title="statement not covered" >await doFetch&lt;T&gt;(path, options)</span>
+<span class="cstat-no" title="statement not covered" >    engine.setOnline(true)</span>
+    // Cache globals on successful read
+<span class="cstat-no" title="statement not covered" >    if (isGlobals) <span class="cstat-no" title="statement not covered" >writeGlobalsCache(res)</span></span>
+    // A successful write changes the collection — optimistically update the
+    // cache so the list re-renders immediately (no skeleton / stale data).
+<span class="cstat-no" title="statement not covered" >    if (method !== 'GET' &amp;&amp; slug &amp;&amp; segments.length &lt;= 2) {</span>
+<span class="cstat-no" title="statement not covered" >      try {</span>
+        const resData = <span class="cstat-no" title="statement not covered" >res as Record&lt;string, unknown&gt;</span>
+        const doc = <span class="cstat-no" title="statement not covered" >resData?.doc as Record&lt;string, unknown&gt; | undefined</span>
+<span class="cstat-no" title="statement not covered" >        if (method === 'POST' &amp;&amp; doc?.id) {</span>
+          // New document — upsert into collection cache
+<span class="cstat-no" title="statement not covered" >          await engine.warmCache(slug, [doc], tenant)</span>
+<span class="cstat-no" title="statement not covered" >        } else if (method === 'PATCH' &amp;&amp; id &amp;&amp; doc) {</span>
+          // Updated document — upsert into collection cache
+<span class="cstat-no" title="statement not covered" >          await engine.warmCache(slug, [doc], tenant)</span>
+        } else {
+          // Fallback: invalidate so next read is fresh
+<span class="cstat-no" title="statement not covered" >          await engine.invalidate(slug, tenant)</span>
+        }
+      } catch {
+        // best-effort
+      }
+    }
+<span class="cstat-no" title="statement not covered" >    if (method !== 'GET') {</span>
+<span class="cstat-no" title="statement not covered" >      crudToast(method, path)</span>
+      // Update globals cache with fresh data (merge to preserve local-only fields)
+<span class="cstat-no" title="statement not covered" >      if (path === '/globals/billing-settings') {</span>
+<span class="cstat-no" title="statement not covered" >        try {</span>
+          const prev = <span class="cstat-no" title="statement not covered" >readGlobalsCache()</span>
+          const resObj = <span class="cstat-no" title="statement not covered" >res as Record&lt;string, unknown&gt;</span>
+          const merged: Record&lt;string, unknown&gt; = <span class="cstat-no" title="statement not covered" >{ ...(prev || {}) }</span>
+<span class="cstat-no" title="statement not covered" >          for (const [k, v] of Object.entries(resObj)) {</span>
+<span class="cstat-no" title="statement not covered" >            if (v != null) <span class="cstat-no" title="statement not covered" >merged[k] = v</span></span>
+          }
+<span class="cstat-no" title="statement not covered" >          writeGlobalsCache(merged)</span>
+<span class="cstat-no" title="statement not covered" >          clearProtectedFields() // POST confirmed — server has new values</span>
+        } catch { /* ignore */ }
+      }
+    }
+    // Warm the read cache only for plain collection lists — never for
+    // computed endpoints (trial-balance, daybook…) whose `docs` array has a
+    // different shape than the collection's documents. Only a *complete* list
+    // may replace the cached one: a truncated read (e.g. the setup gate's
+    // limit=1 existence probe) would overwrite the full cached list and leave
+    // cache-first pages rendering a single row.
+<span class="cstat-no" title="statement not covered" >    if (plainList &amp;&amp; Array.isArray((res as { docs?: unknown }).docs)) {</span>
+<span class="cstat-no" title="statement not covered" >      try {</span>
+        const resAny = <span class="cstat-no" title="statement not covered" >res as { docs: Record&lt;string, unknown&gt;[]; totalDocs?: number }</span>
+<span class="cstat-no" title="statement not covered" >        if (resAny.totalDocs == null || resAny.docs.length &gt;= Number(resAny.totalDocs)) {</span>
+<span class="cstat-no" title="statement not covered" >          await engine.warmCache(slug, resAny.docs, tenant)</span>
+        }
+      } catch {
+        // cache writes are best-effort
+      }
+    }
+    // Reports stay network-first for freshness, but snapshot the payload
+    // for offline use and record when it was last truly synced.
+<span class="cstat-no" title="statement not covered" >    if (report &amp;&amp; reportKey) {</span>
+<span class="cstat-no" title="statement not covered" >      try {</span>
+<span class="cstat-no" title="statement not covered" >        await engine.writeReport(reportKey, res)</span>
+<span class="cstat-no" title="statement not covered" >        engine.markReportsSynced()</span>
+      } catch {
+        // cache writes are best-effort
+      }
+    }
+<span class="cstat-no" title="statement not covered" >    return res</span>
+  } catch (err) {
+<span class="cstat-no" title="statement not covered" >    if (isNetworkError(err)) {</span>
+      // Don't set offline here — the heartbeat determines connectivity.
+      // Fall through to the offline path (cache / outbox) instead.
+    } else {
+<span class="cstat-no" title="statement not covered" >      if (method !== 'GET') {</span>
+<span class="cstat-no" title="statement not covered" >        crudToast(</span>
+          method,
+          path,
+          err instanceof Error ? err.message : String(err),
+        )
+      }
+<span class="cstat-no" title="statement not covered" >      throw err</span>
+    }
+  }
+&nbsp;
+  // --- offline path ---
+<span class="cstat-no" title="statement not covered" >  if (method === 'GET') {</span>
+<span class="cstat-no" title="statement not covered" >    if (isGlobals) {</span>
+      // Stale-tolerant: offline the last-synced settings are better than an
+      // error (see readGlobalsCacheStale above).
+      const cached = <span class="cstat-no" title="statement not covered" >readGlobalsCacheStale()</span>
+<span class="cstat-no" title="statement not covered" >      if (cached) <span class="cstat-no" title="statement not covered" >return cached as unknown as T</span></span>
+<span class="cstat-no" title="statement not covered" >      throw new Error('Offline — billing settings have not been synced yet.')</span>
+    }
+<span class="cstat-no" title="statement not covered" >    if (report &amp;&amp; reportKey) {</span>
+      const hit = <span class="cstat-no" title="statement not covered" >await engine.readReport(reportKey)</span>
+<span class="cstat-no" title="statement not covered" >      if (hit) {</span>
+<span class="cstat-no" title="statement not covered" >        engine.markReportsStale()</span>
+<span class="cstat-no" title="statement not covered" >        return hit.payload as T</span>
+      }
+<span class="cstat-no" title="statement not covered" >      throw new Error('Offline — this report has not been synced yet.')</span>
+    }
+<span class="cstat-no" title="statement not covered" >    if (plainDoc) {</span>
+      const doc = <span class="cstat-no" title="statement not covered" >await engine.readDoc(slug, id)</span>
+<span class="cstat-no" title="statement not covered" >      if (doc) <span class="cstat-no" title="statement not covered" >return doc as unknown as T</span></span>
+<span class="cstat-no" title="statement not covered" >    } else if (plainList) {</span>
+      const cached = <span class="cstat-no" title="statement not covered" >await engine.readCollection(slug, tenant)</span>
+<span class="cstat-no" title="statement not covered" >      if (cached) {</span>
+<span class="cstat-no" title="statement not covered" >        return {</span>
+          ...cached,
+          docs: sortCached(cached.docs, options.query?.sort),
+          totalPages: 1,
+          page: 1,
+        } as unknown as T
+      }
+    }
+<span class="cstat-no" title="statement not covered" >    throw new Error('Offline — this view is not in the local cache yet.')</span>
+  }
+&nbsp;
+  // Writes queue to the outbox and resolve immediately.
+<span class="cstat-no" title="statement not covered" >  return (await engine.offlineRequest(method, path, options.body)) as T</span>
+}
+&nbsp;
+export interface ListResponse&lt;T&gt; {
+  docs: T[]
+  totalDocs: number
+  totalPages: number
+  page: number
+}
+&nbsp;
+export const list = <span class="fstat-no" title="function not covered" >&lt;T&gt;(</span>
+  slug: string,
+  query?: Record&lt;string, string | number | undefined&gt;,
+) =&gt;
+<span class="cstat-no" title="statement not covered" >  api&lt;ListResponse&lt;T&gt;&gt;(`/${slug}`, {</span>
+    query: { limit: 1000, depth: 1, ...query },
+  })
+&nbsp;
+export const fmt = <span class="fstat-no" title="function not covered" >(n</span>: number | undefined | null): string =&gt; {
+  const <span class="cstat-no" title="statement not covered" >western = (n ?? 0).toLocaleString('en-US', {</span>
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  // Nepali digits setting is read synchronously from the localStorage globals
+  // cache (same pattern as readGlobalsCache above) — fmt stays sync and cheap.
+  // The cache is kept fresh by every api('/globals/billing-settings') read and
+  // the Settings save path, so the toggle applies on the next render. The
+  // stale-tolerant read keeps the toggle working offline past the TTL.
+<span class="cstat-no" title="statement not covered" >  if (readGlobalsCacheStale()?.nepaliDigitsEnabled) {</span>
+<span class="cstat-no" title="statement not covered" >    return toNepaliDigits(western)</span>
+  }
+<span class="cstat-no" title="statement not covered" >  return western</span>
+}
+&nbsp;
+export { getEngine, useSyncState }
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-10-08T04:11:48.394Z
+            </div>
+        <script src="../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
+    </body>
+</html>
+    

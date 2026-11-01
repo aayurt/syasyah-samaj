@@ -39,6 +39,7 @@ export const en = {
     members: 'Members',
     recurringBilling: 'Billing',
     expenseClaims: 'Expenses',
+    payroll: 'Payroll',
     inventory: 'Inventory',
     bankReconciliation: 'Bank Management',
     fixedAssets: 'Fixed Assets',
@@ -57,9 +58,22 @@ export const en = {
     approvals: 'Approvals',
     logs: 'Logs',
     recentActivity: 'Recent Activity',
-    settings: 'Settings',
+settings: 'Settings',
     help: 'Help',
     guide: 'Guide',
+    // Payroll system (india-payroll)
+    payrollSystem: 'Payroll System',
+    payrollRuns: 'Payroll Runs',
+    employees: 'Employees',
+    statutoryRegisters: 'Statutory Registers',
+    payrollSettings: 'Payroll Settings',
+    switchToAccounting: 'Switch to Accounting',
+  },
+
+  // ── Accounting ⇄ Payroll system switcher ──
+  switcher: {
+    accounting: 'Accounting',
+    payroll: 'Payroll',
   },
 
   // ── Header / chrome ──

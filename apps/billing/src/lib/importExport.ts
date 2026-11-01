@@ -4,21 +4,34 @@
 
 import { api } from './api'
 import ExcelJS from 'exceljs'
+import {
+  ENTITY_REGISTRY,
+  type EntityExcelConfig,
+  type ExcelExportColumn,
+  type ImportContext,
+  type ValidationError,
+} from './excel/entities'
+
+// Types live with the registry (single source of truth); re-exported here
+// so existing imports keep working.
+export type { ExcelExportColumn, ValidationError, EntityExcelConfig, ImportContext }
 
 /* ── Export ───────────────────────────────────────────────── */
 
-/** Fetch all docs for a collection (handles pagination). */
+/** Fetch all docs for a collection (handles pagination).
+ *  `depth` > 0 populates relation objects so exports show display names. */
 export async function fetchAllDocs<T>(
   slug: string,
   tenantQuery: Record<string, unknown> = {},
   limit = 500,
+  depth = 0,
 ): Promise<T[]> {
   const all: T[] = []
   let page = 0
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const res = await api<{ docs: T[] }>(`/${slug}`, {
-      query: { limit, page, depth: 0, ...tenantQuery },
+      query: { limit, page, depth, ...tenantQuery },
     })
     all.push(...(res.docs || []))
     if (!res.docs || res.docs.length < limit) break
@@ -109,12 +122,6 @@ export function downloadBlob(filename: string, blob: Blob) {
 }
 
 /* ── Excel Export ──────────────────────────────────────────── */
-
-export interface ExcelExportColumn {
-  key: string
-  header: string
-  width?: number
-}
 
 export interface ExcelExportOptions {
   sheetName?: string
@@ -243,6 +250,7 @@ export async function parseExcelFile<T>(file: File): Promise<ParsedImport<T>> {
 
   // Read meta sheet if present
   let meta: ParsedImport<T>['meta'] = { count: 0, format: 'excel' }
+  let metaCollection: string | undefined
   const metaSheet = workbook.getWorksheet('_Meta')
   if (metaSheet) {
     const metaObj: Record<string, unknown> = {}
@@ -259,6 +267,7 @@ export async function parseExcelFile<T>(file: File): Promise<ParsedImport<T>> {
       count: (metaObj['Record Count'] as number) || undefined,
       format: 'excel',
     }
+    metaCollection = metaObj['Collection'] as string | undefined
   }
 
   // Get headers from first row
@@ -272,7 +281,11 @@ export async function parseExcelFile<T>(file: File): Promise<ParsedImport<T>> {
   const normalizedHeaders = headers.map((h) => {
     const clean = h.trim()
     const lower = clean.toLowerCase()
-    if (lower === 'name' || lower === 'fullname' || lower === 'full name' || clean.includes('नाम')) return 'fullName'
+    // Bare `name` stays `name` (canonical field for parties/items/accounts —
+    // renaming it to fullName would break their round-trip). Members map
+    // `name` → `fullName` in the per-collection mapping step instead.
+    if (lower === 'name') return 'name'
+    if (lower === 'fullname' || lower === 'full name' || clean.includes('नाम')) return 'fullName'
     if (lower === 'phone' || lower === 'mobile' || lower === 'contact' || clean.includes('फोन') || clean.includes('सम्पर्क')) return 'phone'
     if (lower === 'email' || clean.includes('इमेल')) return 'email'
     if (lower === 'address' || lower === 'locality' || clean.includes('ठेगाना') || clean.includes('टोल')) return 'address'
@@ -314,7 +327,9 @@ export async function parseExcelFile<T>(file: File): Promise<ParsedImport<T>> {
   })
 
   return {
-    collection: (meta as any).collection || guessCollection(file.name),
+    // _Meta wins over the filename guess — master-workbook sheets and
+    // renamed files still route to the right entity.
+    collection: metaCollection || guessCollection(file.name),
     docs: results,
     meta: { ...meta, count: results.length },
   }
@@ -389,9 +404,11 @@ export function parseCsvText(text: string): Record<string, unknown>[] {
   // Normalize headers (camelCase and strip quotes/spaces)
   const headers = rawHeaders.map((h) => {
     const clean = h.trim()
-    // Map common human/Nepali headers to field names
+    // Map common human/Nepali headers to field names. Bare `name` stays
+    // `name` (parties/items/accounts round-trip); see parseExcelFile note.
     const lower = clean.toLowerCase()
-    if (lower === 'name' || lower === 'fullname' || lower === 'full name' || clean.includes('नाम')) return 'fullName'
+    if (lower === 'name') return 'name'
+    if (lower === 'fullname' || lower === 'full name' || clean.includes('नाम')) return 'fullName'
     if (lower === 'phone' || lower === 'mobile' || lower === 'contact' || clean.includes('फोन') || clean.includes('सम्पर्क')) return 'phone'
     if (lower === 'email' || clean.includes('इमेल')) return 'email'
     if (lower === 'address' || lower === 'locality' || clean.includes('ठेगाना') || clean.includes('टोल')) return 'address'
@@ -425,11 +442,7 @@ export async function parseImportFile<T>(file: File): Promise<ParsedImport<T>> {
   const isCsv = file.name.toLowerCase().endsWith('.csv') || text.trim().startsWith('"') || text.includes(',')
 
   if (isExcel) {
-    try {
-      return await parseExcelFile<T>(file)
-    } catch (e) {
-      throw e
-    }
+    return parseEntityExcel<T>(file)
   }
 
   if (isCsv) {
@@ -486,14 +499,100 @@ export async function parseImportFile<T>(file: File): Promise<ParsedImport<T>> {
   throw new Error('Unrecognised import format — expected CSV, Excel (.xlsx), or JSON with { docs: [...] }')
 }
 
+/**
+ * Parse a single-entity sheet (or template) back into canonical docs.
+ * Reads the slug from `_Meta` → applies that entity's header aliases,
+ * drops `_`-prefixed derived columns, and flattens hierarchical CoA rows.
+ */
+export async function parseEntityExcel<T = Record<string, unknown>>(
+  file: File,
+): Promise<ParsedImport<T>> {
+  // Guard: master workbooks import through excel/masterWorkbook.import —
+  // parsing their _Index as a data sheet would silently produce garbage.
+  const guard = new ExcelJS.Workbook()
+  await guard.xlsx.load(await file.arrayBuffer())
+  if (guard.getWorksheet('_Manifest')) {
+    throw new Error(
+      'This file is a master workbook — use the "Import ALL data" action instead of a single-entity import.',
+    )
+  }
+
+  const parsed = await parseExcelFile<Record<string, unknown>>(file)
+  const cfg = ENTITY_REGISTRY.get(parsed.collection)
+  if (!cfg) return parsed as ParsedImport<T>
+
+  // Header → canonical key: exporters write human headers ('Opening Balance')
+  // while docs use camelCase keys ('openingBalance'). Match on both the
+  // original header and the key, case-insensitively.
+  const headerToKey = new Map<string, string>()
+  for (const c of cfg.columns) {
+    headerToKey.set(c.header.trim().toLowerCase(), c.key)
+    headerToKey.set(c.key.trim().toLowerCase(), c.key)
+  }
+
+  const validTypes = new Set(['asset', 'liability', 'equity', 'income', 'expense'])
+  let currentGroup = ''
+
+  const docs = parsed.docs
+    .map((doc) => {
+      // 1. Remap normalized headers to canonical field keys.
+      for (const key of Object.keys(doc)) {
+        const mapped = headerToKey.get(String(key).trim().toLowerCase())
+        if (mapped && mapped !== key) {
+          doc[mapped] = doc[key]
+          delete doc[key]
+        }
+      }
+      // 2. Per-entity header aliases (e.g. members: name → fullName).
+      for (const [from, to] of Object.entries(cfg.headerAliases || {})) {
+        if (from !== to && from in doc && !(to in doc)) {
+          doc[to] = doc[from]
+          delete doc[from]
+        }
+      }
+      // 3. Round-trip rule: `_`-prefixed columns are derived/display-only.
+      for (const key of Object.keys(doc)) {
+        if (key.startsWith('_')) delete doc[key]
+      }
+      return doc
+    })
+    .filter((doc) => {
+      if (!cfg.isHierarchical) return true
+
+      // Hierarchical CoA: rows without a valid type are group headers —
+      // remember the group name, don't import them as accounts.
+      if (!validTypes.has(String(doc.type || ''))) {
+        currentGroup = String(doc.name || doc.code || '').trim()
+        return false
+      }
+      if (!doc.group) doc.group = currentGroup
+      if (typeof doc.name === 'string') doc.name = doc.name.trim()
+      return true
+    })
+
+  return { ...parsed, docs, meta: { ...parsed.meta, count: docs.length } } as ParsedImport<T>
+}
+
 function guessCollection(filename: string): string {
+  // Filename fallback only — xlsx files carry their slug in _Meta/Collection,
+  // JSON in _export.collection. Order matters: more specific terms first.
   const lower = filename.toLowerCase()
+  if (lower.includes('membership')) return 'membership-types'
   if (lower.includes('member')) return 'members'
-  if (lower.includes('party')) return 'parties'
+  if (lower.includes('party') || lower.includes('parties')) return 'parties'
+  if (lower.includes('account-group') || lower.includes('group')) return 'account-groups'
+  if (lower.includes('account')) return 'gl-accounts'
   if (lower.includes('item')) return 'items'
-  if (lower.includes('account')) return 'accounts'
   if (lower.includes('journal')) return 'journal-entries'
   if (lower.includes('voucher') || lower.includes('document')) return 'documents'
+  if (lower.includes('fiscal')) return 'fiscal-years'
+  if (lower.includes('tax')) return 'tax-types'
+  if (lower.includes('opening')) return 'opening-balances'
+  if (lower.includes('fixed') || lower.includes('asset')) return 'fixed-assets'
+  if (lower.includes('stock')) return 'stock-movements'
+  if (lower.includes('bank')) return 'bank-statements'
+  if (lower.includes('expense')) return 'expense-claims'
+  if (lower.includes('recurring')) return 'recurring-schedules'
   return 'unknown'
 }
 
@@ -508,14 +607,9 @@ export type DedupResult<T> = {
   similarRecords: { imported: T; existing: T; matchField: string }[]
 }
 
-const DEDUP_KEYS: Record<string, { key: string; field: string }[]> = {
-  members: [{ key: 'fullName', field: 'fullName' }, { key: 'phone', field: 'phone' }],
-  parties: [{ key: 'name', field: 'name' }, { key: 'phone', field: 'phone' }],
-  items: [{ key: 'name', field: 'name' }, { key: 'code', field: 'code' }],
-  accounts: [{ key: 'name', field: 'name' }, { key: 'code', field: 'code' }],
-  'opening-balances': [{ key: 'accountId', field: 'accountId' }],
-  'journal-entries': [{ key: 'voucherNo', field: 'voucherNo' }],
-}
+// Business keys per entity — derived from the registry (ADR-0004).
+const DEDUP_KEYS: Record<string, { key: string; field: string }[]> =
+  Object.fromEntries(ENTITY_REGISTRY.map((e) => [e.slug, e.dedupKeys]))
 
 /* ── Accounting Excel Features ─────────────────────────────── */
 
@@ -588,8 +682,10 @@ export async function buildCoaExcel<T extends Record<string, unknown>>(
     groupRow.font = { bold: true, size: 12 }
     groupRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } }
     groupRow.height = 25
-    // Merge first two cells for group name
+    // Merge first two cells for group name. Merging suppresses the slave
+    // cell on write — set the master cell AFTER merging so the name survives.
     dataSheet.mergeCells(rowIndex, 1, rowIndex, 2)
+    dataSheet.getCell(rowIndex, 1).value = groupName
 
     // Child accounts with indentation
     for (const child of children) {
@@ -629,7 +725,7 @@ export async function buildCoaExcel<T extends Record<string, unknown>>(
   }
 
   const metaData = [
-    { property: 'Collection', value: 'accounts' },
+    { property: 'Collection', value: 'gl-accounts' },
     { property: 'Tenant', value: options.tenantName || 'default' },
     { property: 'Exported At', value: new Date().toISOString() },
     { property: 'Record Count', value: docs.length },
@@ -1056,130 +1152,174 @@ export type ImportAction = 'skip' | 'create' | 'update'
 
 /* ── Collection Export Configurations ─────────────────────── */
 
-export const EXPORT_COLUMNS: Record<string, ExcelExportColumn[]> = {
-  members: [
-    { key: 'memberId', header: 'Member ID', width: 15 },
-    { key: 'fullName', header: 'Full Name', width: 30 },
-    { key: 'phone', header: 'Phone', width: 20 },
-    { key: 'email', header: 'Email', width: 30 },
-    { key: 'address', header: 'Address', width: 40 },
-    { key: 'ward', header: 'Ward', width: 10 },
-    { key: 'bloodGroup', header: 'Blood Group', width: 15 },
-    { key: 'membershipType', header: 'Membership Type', width: 20 },
-    { key: 'appliedDateBs', header: 'Applied Date (BS)', width: 20 },
-    { key: 'familyMembers', header: 'Family Members', width: 50 },
-  ],
-  parties: [
-    { key: 'name', header: 'Name', width: 30 },
-    { key: 'phone', header: 'Phone', width: 20 },
-    { key: 'email', header: 'Email', width: 30 },
-    { key: 'address', header: 'Address', width: 40 },
-    { key: 'pan', header: 'PAN', width: 20 },
-    { key: 'gstin', header: 'GSTIN', width: 20 },
-    { key: 'type', header: 'Type', width: 15 },
-    { key: 'openingBalance', header: 'Opening Balance', width: 20 },
-  ],
-  items: [
-    { key: 'name', header: 'Name', width: 30 },
-    { key: 'code', header: 'Code', width: 15 },
-    { key: 'unit', header: 'Unit', width: 15 },
-    { key: 'rate', header: 'Rate', width: 15 },
-    { key: 'taxType', header: 'Tax Type', width: 15 },
-    { key: 'openingStock', header: 'Opening Stock', width: 15 },
-    { key: 'openingValue', header: 'Opening Value', width: 15 },
-  ],
-  accounts: [
-    { key: 'code', header: 'Code', width: 15 },
-    { key: 'name', header: 'Name', width: 30 },
-    { key: 'type', header: 'Type', width: 15 },
-    { key: 'class', header: 'Class', width: 15 },
-    { key: 'group', header: 'Group', width: 20 },
-    { key: 'openingBalance', header: 'Opening Balance', width: 20 },
-  ],
-  documents: [
-    { key: 'voucherNo', header: 'Voucher No', width: 20 },
-    { key: 'date', header: 'Date', width: 15 },
-    { key: 'type', header: 'Type', width: 15 },
-    { key: 'party', header: 'Party', width: 30 },
-    { key: 'narration', header: 'Narration', width: 50 },
-    { key: 'fy', header: 'Fiscal Year', width: 15 },
-    { key: 'status', header: 'Status', width: 15 },
-  ],
-  'journal-entries': [
-    { key: 'voucherNo', header: 'Voucher No', width: 20 },
-    { key: 'date', header: 'Date', width: 15 },
-    { key: 'type', header: 'Type', width: 15 },
-    { key: 'party', header: 'Party', width: 30 },
-    { key: 'narration', header: 'Narration', width: 50 },
-    { key: 'fy', header: 'Fiscal Year', width: 15 },
-    { key: 'status', header: 'Status', width: 15 },
-  ],
-}
+// Derived from the registry — every entity, canonical columns.
+export const EXPORT_COLUMNS: Record<string, ExcelExportColumn[]> =
+  Object.fromEntries(ENTITY_REGISTRY.map((e) => [e.slug, e.columns]))
 
-export const EXPORT_CONFIGS: Record<string, { sheetName: string; isHierarchical?: boolean }> = {
-  members: { sheetName: 'Members' },
-  parties: { sheetName: 'Parties' },
-  items: { sheetName: 'Items' },
-  accounts: { sheetName: 'Chart of Accounts', isHierarchical: true },
-  documents: { sheetName: 'Vouchers' },
-  'journal-entries': { sheetName: 'Journal Entries' },
-}
+export const EXPORT_CONFIGS: Record<string, { sheetName: string; isHierarchical?: boolean }> =
+  Object.fromEntries(
+    ENTITY_REGISTRY.map((e) => [e.slug, { sheetName: e.sheetName, isHierarchical: e.isHierarchical }]),
+  )
 
-/* ── Validation Schemas (inline for now, will extract to validationSchemas.ts) ─────────────────────── */
+/* ── Validation (rules live on the registry — see excel/entities.ts) ───── */
 
-// Export types for validation
-export type ValidationError = {
-  row: number
-  field: string
-  message: string
-  severity: 'error' | 'warning'
-}
-
+/**
+ * Validate parsed rows for a collection. `valid` = clean rows only (zero
+ * issues of any severity); rows with warnings are still importable — callers
+ * surface them amber in the preview and the user decides (ADR-0004
+ * three-bucket colour model).
+ */
 export function validateImportRows<T extends Record<string, unknown>>(
   docs: T[],
   collection: string,
 ): { valid: T[]; errors: ValidationError[] } {
   const valid: T[] = []
   const errors: ValidationError[] = []
+  const cfg = ENTITY_REGISTRY.get(collection)
 
   for (let i = 0; i < docs.length; i++) {
     const doc = docs[i]
     const rowNum = i + 2 // +1 for header, +1 for 0-index
-
-    // Collection-specific validation
-    if (collection === 'members') {
-      if (!doc.fullName || String(doc.fullName).trim() === '') {
-        errors.push({ row: rowNum, field: 'fullName', message: 'Full name is required', severity: 'error' })
-      }
-      if (doc.phone && !/^\+?[0-9]{10,15}$/.test(String(doc.phone))) {
-        errors.push({ row: rowNum, field: 'phone', message: 'Invalid phone format', severity: 'warning' })
-      }
-      if (doc.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(doc.email))) {
-        errors.push({ row: rowNum, field: 'email', message: 'Invalid email format', severity: 'warning' })
-      }
-    } else if (collection === 'accounts') {
-      if (!doc.name || String(doc.name).trim() === '') {
-        errors.push({ row: rowNum, field: 'name', message: 'Account name is required', severity: 'error' })
-      }
-      if (!['asset', 'liability', 'equity', 'income', 'expense'].includes(String(doc.type || ''))) {
-        errors.push({ row: rowNum, field: 'type', message: 'Invalid account type', severity: 'error' })
-      }
-    } else if (collection === 'parties') {
-      if (!doc.name || String(doc.name).trim() === '') {
-        errors.push({ row: rowNum, field: 'name', message: 'Party name is required', severity: 'error' })
-      }
-    } else if (collection === 'items') {
-      if (!doc.name || String(doc.name).trim() === '') {
-        errors.push({ row: rowNum, field: 'name', message: 'Item name is required', severity: 'error' })
-      }
+    const rowErrors = cfg?.validate?.(doc) ?? []
+    for (const e of rowErrors) {
+      errors.push({ ...e, row: rowNum })
     }
-
-    if (errors.filter((e) => e.row === rowNum && e.severity === 'error').length === 0) {
+    if (rowErrors.length === 0) {
       valid.push(doc)
     }
   }
 
   return { valid, errors }
+}
+
+/**
+ * Build the FK resolver for one executeImport run: fetch each referenced
+ * entity once, index business key → id per (slug, field).
+ */
+async function buildImportContext(cfg?: EntityExcelConfig): Promise<ImportContext> {
+  const docsBySlug = new Map<string, Record<string, unknown>[]>()
+  const maps = new Map<string, Map<string, number>>() // `${slug}|${field}` → value → id
+
+  const ensureSlug = async (slug: string) => {
+    if (!docsBySlug.has(slug)) {
+      docsBySlug.set(slug, await fetchAllDocs<Record<string, unknown>>(slug))
+    }
+  }
+  const ensureField = async (slug: string, field: string) => {
+    const key = `${slug}|${field}`
+    if (maps.has(key)) return
+    await ensureSlug(slug)
+    const map = new Map<string, number>()
+    for (const d of docsBySlug.get(slug) ?? []) {
+      const v = d[field]
+      if (v !== null && v !== undefined && d.id !== null && d.id !== undefined) {
+        map.set(String(v).toLowerCase().trim(), Number(d.id))
+      }
+    }
+    maps.set(key, map)
+  }
+
+  for (const link of cfg?.fkLinks ?? []) {
+    await ensureField(link.refSlug, link.refField)
+  }
+
+  const pending: string[] = []
+  return {
+    findId: (slug, field, value) => {
+      if (value === null || value === undefined || value === '') return undefined
+      if (typeof value === 'object') return (value as { id?: number }).id ?? undefined
+      const hit = maps.get(`${slug}|${field}`)?.get(String(value).toLowerCase().trim())
+      if (hit !== undefined) return hit
+      if (typeof value === 'number') return value // already an id
+      return undefined
+    },
+    missing: (slug, field, value) => {
+      pending.push(`${field}: '${String(value)}' not found in ${slug}`)
+    },
+    takeMissing: () => {
+      // The same FK can be flagged by resolveFks AND mapForApi — one message
+      // per distinct failure is enough for the preview.
+      const drained = [...new Set(pending)]
+      pending.length = 0
+      return drained
+    },
+  }
+}
+
+/** Replace FK business keys with existing record ids (per cfg.fkLinks). */
+function resolveFks(
+  cfg: EntityExcelConfig | undefined,
+  doc: Record<string, unknown>,
+  ctx: ImportContext,
+): Record<string, unknown> {
+  const out = { ...doc }
+  for (const link of cfg?.fkLinks ?? []) {
+    const raw = out[link.field]
+    if (raw === null || raw === undefined || raw === '') continue
+    const target = link.to ?? link.field
+    const id = ctx.findId(link.refSlug, link.refField, raw)
+    if (id === undefined) {
+      ctx.missing(link.refSlug, link.field, raw)
+      continue
+    }
+    out[target] = id
+    if (target !== link.field) delete out[link.field]
+  }
+  return out
+}
+
+const TRUE_STRINGS = new Set(['true', 'yes', 'y', '1', 'on'])
+
+function coerceBooleans(cfg: EntityExcelConfig | undefined, doc: Record<string, unknown>): void {
+  for (const f of cfg?.booleanFields ?? []) {
+    if (f in doc) {
+      const v = doc[f]
+      doc[f] =
+        typeof v === 'boolean' ? v : TRUE_STRINGS.has(String(v ?? '').toLowerCase().trim())
+    }
+  }
+}
+
+/** Canonical doc → payload body; returns { errors } instead of a body when
+ *  any FK failed to resolve (the record is skipped, nothing is POSTed). */
+function prepareBody(
+  cfg: EntityExcelConfig | undefined,
+  ctx: ImportContext,
+  rawDoc: Record<string, unknown>,
+): { body?: Record<string, unknown>; errors: string[] } {
+  const doc = { ...rawDoc }
+  delete doc.id
+  delete doc._id
+  const resolved = resolveFks(cfg, doc, ctx)
+  coerceBooleans(cfg, resolved)
+  const body = cfg?.mapForApi ? cfg.mapForApi(resolved, ctx) : resolved
+  const errors = ctx.takeMissing()
+  if (errors.length > 0) return { errors }
+  return { body, errors: [] }
+}
+
+/** Group flattened rows (journal lines) into one doc per groupBy key. */
+function groupRecords<T extends Record<string, unknown>>(
+  records: { doc: T; action: ImportAction }[],
+  groupBy: string,
+): { doc: T; action: ImportAction }[] {
+  const groups = new Map<
+    string,
+    { doc: Record<string, unknown>; action: ImportAction; rows: Record<string, unknown>[] }
+  >()
+  for (const { doc, action } of records) {
+    const key = String((doc as Record<string, unknown>)[groupBy] ?? '')
+    let g = groups.get(key)
+    if (!g) {
+      g = { doc: { ...(doc as Record<string, unknown>) }, action, rows: [] }
+      groups.set(key, g)
+    }
+    g.rows.push(doc as Record<string, unknown>)
+  }
+  return Array.from(groups.values()).map((g) => ({
+    doc: { ...g.doc, _rows: g.rows } as unknown as T,
+    action: g.action,
+  }))
 }
 
 export async function executeImport<T extends Record<string, unknown>>(
@@ -1188,35 +1328,41 @@ export async function executeImport<T extends Record<string, unknown>>(
   onProgress?: (done: number, total: number) => void,
 ): Promise<{ created: number; updated: number; skipped: number; errors: string[] }> {
   const result = { created: 0, updated: 0, skipped: 0, errors: [] as string[] }
+  const cfg = ENTITY_REGISTRY.get(collection)
+  const ctx = await buildImportContext(cfg)
+  const queue = cfg?.groupBy ? groupRecords(records, cfg.groupBy) : records
 
-  for (let i = 0; i < records.length; i++) {
-    const { doc, action } = records[i]
+  for (let i = 0; i < queue.length; i++) {
+    const { doc, action } = queue[i]
     try {
       if (action === 'skip') {
         result.skipped++
       } else if (action === 'create') {
-        // Remove id so server generates a new one
-        const body = { ...doc }
-        delete body.id
-        delete body._id
-        await api(`/${collection}`, { method: 'POST', body })
-        result.created++
+        const { body, errors } = prepareBody(cfg, ctx, doc)
+        if (errors.length > 0) {
+          result.errors.push(...errors)
+        } else {
+          await api(`/${collection}`, { method: 'POST', body })
+          result.created++
+        }
       } else if (action === 'update') {
         const id = (doc as Record<string, unknown>).id ?? (doc as Record<string, unknown>)._id
         if (id == null) {
           result.errors.push(`Update failed: no id for record`)
         } else {
-          const body = { ...doc }
-          delete (body as Record<string, unknown>).id
-          delete (body as Record<string, unknown>)._id
-          await api(`/${collection}/${id}`, { method: 'PATCH', body })
-          result.updated++
+          const { body, errors } = prepareBody(cfg, ctx, doc)
+          if (errors.length > 0) {
+            result.errors.push(...errors)
+          } else {
+            await api(`/${collection}/${id}`, { method: 'PATCH', body })
+            result.updated++
+          }
         }
       }
     } catch (err) {
       result.errors.push(`${action} failed for record: ${err instanceof Error ? err.message : String(err)}`)
     }
-    onProgress?.(i + 1, records.length)
+    onProgress?.(i + 1, queue.length)
   }
 
   return result

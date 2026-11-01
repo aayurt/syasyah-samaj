@@ -16,7 +16,8 @@ import {
   EXPORT_COLUMNS,
   type ParsedImport,
   type ValidationError,
-} from '../lib/importExport'
+} from './importExport'
+import { ENTITY_REGISTRY } from './excel/entities'
 
 // Mock data
 const sampleMembers = [
@@ -84,9 +85,8 @@ describe('buildExportCsv', () => {
 
   it('handles empty docs array', () => {
     const blob = buildExportCsv([])
-    expect(blob.size).toBeGreaterThan(0)
-    // Should still have BOM
-    expect(blob.size).toBe(1) // Just BOM
+    // BOM only — 3 bytes in UTF-8 (EF BB BF)
+    expect(blob.size).toBe(3)
   })
 
   it('escapes commas and quotes', async () => {
@@ -155,7 +155,8 @@ describe('buildExportExcel', () => {
     const dataSheet = workbook.getWorksheet('members')
     const headerRow = dataSheet?.getRow(1)
     expect(headerRow?.font?.bold).toBe(true)
-    expect(headerRow?.fill?.fgColor?.argb).toBe('FFBE1A1A') // crimson-700
+    const fill = headerRow?.fill as { fgColor?: { argb?: string } } | undefined
+    expect(fill?.fgColor?.argb).toBe('FFBE1A1A') // crimson-700
   })
 
   it('freezes header row', async () => {
@@ -165,7 +166,8 @@ describe('buildExportExcel', () => {
     const workbook = new Workbook()
     await workbook.xlsx.load(arrayBuffer)
     const dataSheet = workbook.getWorksheet('members')
-    expect(dataSheet?.views?.[0]?.ySplit).toBe(1)
+    const view = dataSheet?.views?.[0] as { ySplit?: number } | undefined
+    expect(view?.ySplit).toBe(1)
   })
 
   it('applies auto-filter', async () => {
@@ -175,8 +177,8 @@ describe('buildExportExcel', () => {
     const workbook = new Workbook()
     await workbook.xlsx.load(arrayBuffer)
     const dataSheet = workbook.getWorksheet('members')
-    expect(dataSheet?.autoFilter).toBeDefined()
-    expect(dataSheet?.autoFilter?.to?.row).toBe(4)
+    // ExcelJS reads autoFilter back as the ref string, not {from,to}
+    expect(String(dataSheet?.autoFilter)).toBe('A1:I4') // 9 keys on sampleMembers × header+3 rows
   })
 
   it('uses custom columns when provided', async () => {
@@ -192,7 +194,7 @@ describe('buildExportExcel', () => {
     const dataSheet = workbook.getWorksheet('members')
     expect(dataSheet?.getCell('A1').value).toBe('Name')
     expect(dataSheet?.getCell('B1').value).toBe('Phone')
-    expect(dataSheet?.getCell('C1').value).toBeUndefined()
+    expect(dataSheet?.getCell('C1').value).toBeNull() // ExcelJS: empty cell value is null
   })
 
   it('handles empty docs array', async () => {
@@ -265,7 +267,7 @@ describe('parseExcelFile', () => {
     const buffer = await workbook.xlsx.writeBuffer()
     const file = new File([buffer], 'members.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
 
-    const result = await parseExcelFile(file)
+    const result = await parseExcelFile<{ fullName: string }>(file)
     expect(result.collection).toBe('members')
     expect(result.docs).toHaveLength(1)
     expect(result.docs[0].fullName).toBe('रत्नकाजी शाक्य')
@@ -317,7 +319,7 @@ describe('parseExcelFile', () => {
     const buffer = await workbook.xlsx.writeBuffer()
     const file = new File([buffer], 'test.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
 
-    const result = await parseExcelFile(file)
+    const result = await parseExcelFile<{ date?: string }>(file)
     expect(result.docs[0].date).toContain('2024-01-15')
   })
 
@@ -370,6 +372,45 @@ describe('parseImportFile (unified)', () => {
     const result = await parseImportFile(file)
     expect(result.collection).toBe('members')
   })
+
+  it('routes xlsx via _Meta collection even when the filename lies', async () => {
+    const { Workbook } = await import('exceljs')
+    const workbook = new Workbook()
+    const meta = workbook.addWorksheet('_Meta')
+    meta.addRow(['Property', 'Value'])
+    meta.addRow(['Collection', 'parties'])
+    const sheet = workbook.addWorksheet('Parties')
+    sheet.addRow(['Name', 'Phone'])
+    sheet.addRow(['Kiran Trading', '9841234567'])
+    const buffer = await workbook.xlsx.writeBuffer()
+    const file = new File([buffer], 'renamed.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+
+    const result = await parseImportFile<{ name?: string; phone?: string }>(file)
+    expect(result.collection).toBe('parties')
+    expect(result.docs[0].name).toBe('Kiran Trading')
+    expect(result.docs[0].phone).toBe('9841234567')
+  })
+
+  it('skips hierarchical CoA group-header rows on xlsx import', async () => {
+    const { Workbook } = await import('exceljs')
+    const workbook = new Workbook()
+    const meta = workbook.addWorksheet('_Meta')
+    meta.addRow(['Property', 'Value'])
+    meta.addRow(['Collection', 'gl-accounts'])
+    const sheet = workbook.addWorksheet('Chart of Accounts')
+    sheet.addRow(['Code', 'Name', 'Type', 'Class', 'Group', 'Opening Balance'])
+    sheet.addRow(['', 'Current Assets', '', '', '', '']) // group header row
+    sheet.addRow(['1000', '  Cash in Hand', 'asset', 'cash', 'Current Assets', 50000])
+    const buffer = await workbook.xlsx.writeBuffer()
+    const file = new File([buffer], 'coa.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+
+    const result = await parseImportFile<{ code?: string; name?: string; group?: string }>(file)
+    expect(result.collection).toBe('gl-accounts')
+    expect(result.docs).toHaveLength(1) // group header filtered out
+    expect(result.docs[0].code).toBe('1000')
+    expect(result.docs[0].name).toBe('Cash in Hand')
+    expect(result.docs[0].group).toBe('Current Assets')
+  })
 })
 
 describe('classifyRecords', () => {
@@ -400,7 +441,7 @@ describe('classifyRecords', () => {
       { code: '1000', name: 'Cash Updated', type: 'asset' },
       { code: '9999', name: 'New Account', type: 'asset' },
     ]
-    const result = classifyRecords(imported, existingAccounts, 'accounts')
+    const result = classifyRecords(imported, existingAccounts, 'gl-accounts')
     expect(result.similarRecords).toHaveLength(1)
     expect(result.similarRecords[0].matchField).toBe('code')
     expect(result.newRecords).toHaveLength(1)
@@ -441,7 +482,7 @@ describe('validateImportRows', () => {
       { name: '', type: 'asset' }, // missing name
       { name: 'Invalid Type', type: 'invalid' }, // invalid type
     ]
-    const { valid, errors } = validateImportRows(docs, 'accounts')
+    const { valid, errors } = validateImportRows(docs, 'gl-accounts')
     expect(valid).toHaveLength(1)
     expect(errors.filter((e) => e.severity === 'error')).toHaveLength(2)
   })
@@ -474,14 +515,17 @@ describe('validateImportRows', () => {
   })
 })
 
-describe('executeImport', () => {
-  const mockApi = vi.fn()
+// Module mocks must be hoisted to top level (vitest ≥3 rule);
+// vi.hoisted keeps the spy available inside the factory.
+const mockApi = vi.hoisted(() => vi.fn())
 
+vi.mock('./api', () => ({
+  api: mockApi,
+}))
+
+describe('executeImport', () => {
   beforeEach(() => {
-    vi.resetModules()
-    vi.mock('../lib/api', () => ({
-      api: mockApi,
-    }))
+    mockApi.mockReset()
   })
 
   it('creates new records via POST', async () => {
@@ -535,9 +579,15 @@ describe('EXPORT_COLUMNS', () => {
     expect(EXPORT_COLUMNS.members).toBeDefined()
     expect(EXPORT_COLUMNS.parties).toBeDefined()
     expect(EXPORT_COLUMNS.items).toBeDefined()
-    expect(EXPORT_COLUMNS.accounts).toBeDefined()
+    expect(EXPORT_COLUMNS['gl-accounts']).toBeDefined()
     expect(EXPORT_COLUMNS.documents).toBeDefined()
     expect(EXPORT_COLUMNS['journal-entries']).toBeDefined()
+  })
+
+  it('covers exactly the registry slugs (single source of truth)', () => {
+    expect(Object.keys(EXPORT_COLUMNS).sort()).toEqual(
+      ENTITY_REGISTRY.map((e) => e.slug).sort(),
+    )
   })
 
   it('has key and header for each column', () => {

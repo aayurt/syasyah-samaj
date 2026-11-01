@@ -34,6 +34,20 @@ import { Parties } from './collections/Parties'
 import { Documents } from './collections/Documents'
 import { DocSequences } from './collections/DocSequences'
 import { BillingSettings } from './globals/BillingSettings'
+import { PayrollSettings } from './globals/PayrollSettings'
+import { SalaryComponents } from './collections/SalaryComponents'
+import { SalaryStructures } from './collections/SalaryStructures'
+import { SalaryStructureAssignments } from './collections/SalaryStructureAssignments'
+import { AdditionalSalaries } from './collections/AdditionalSalaries'
+import { Loans } from './collections/Loans'
+import { LoanTypes } from './collections/LoanTypes'
+import { TaxExemptionDeclarations } from './collections/TaxExemptionDeclarations'
+import { PayrollPeriods } from './collections/PayrollPeriods'
+import { PayrollComponentAccounts } from './collections/PayrollComponentAccounts'
+import { FlexibleBenefitReturns } from './collections/FlexibleBenefitReturns'
+import { SalaryStructureFlexibleBenefits } from './collections/SalaryStructureFlexibleBenefits'
+import { PayrollRunEmployees } from './collections/PayrollRunEmployees'
+import { PayrollSlips } from './collections/PayrollSlips'
 import { ChatRooms } from './collections/ChatRooms'
 import { AccountGroups } from './collections/AccountGroups'
 import { Accounts } from './collections/Accounts'
@@ -47,7 +61,9 @@ import { FixedAssets } from './collections/FixedAssets'
 import { AuditLogs } from './collections/AuditLogs'
 import { RecurringSchedules } from './collections/RecurringSchedules'
 import { ExpenseClaims } from './collections/ExpenseClaims'
-import { FiscalYears } from './collections/FiscalYears'
+import { Employees } from './collections/Employees'
+import { PayrollRuns } from './collections/PayrollRuns'
+import { FiscalYears } from './collections/FiscalYears/index'
 import { OpeningBalances } from './collections/OpeningBalances'
 import { DataOps } from './collections/DataOps'
 
@@ -136,12 +152,27 @@ export default buildConfig({
     AuditLogs,
     RecurringSchedules,
     ExpenseClaims,
+    Employees,
     FiscalYears,
     OpeningBalances,
     DataOps,
+    PayrollRuns,
+  PayrollSlips,
+  SalaryComponents,
+  SalaryStructures,
+  SalaryStructureAssignments,
+  AdditionalSalaries,
+  Loans,
+  LoanTypes,
+  TaxExemptionDeclarations,
+  PayrollPeriods,
+  PayrollComponentAccounts,
+  FlexibleBenefitReturns,
+  SalaryStructureFlexibleBenefits,
+  PayrollRunEmployees,
   ],
   cors: [getServerSideURL(), ...trustedOriginsValues].filter(Boolean),
-  globals: [Header, Footer, BillingSettings],
+  globals: [Header, Footer, BillingSettings, PayrollSettings],
   plugins: [
     ...plugins,
     // storage-adapter-placeholder

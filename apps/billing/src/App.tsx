@@ -4,6 +4,7 @@ import { AnimatedSidebar } from './components/ui/AnimatedSidebar'
 import { Breadcrumbs } from './components/ui/Breadcrumbs'
 import {
   ArrowLeftRight,
+  Banknote,
   BarChart3,
   BookOpenText,
   Boxes,
@@ -56,6 +57,9 @@ import Members from './pages/Members'
 import MembershipTypes from './pages/MembershipTypes'
 import RecurringBilling from './pages/RecurringBilling'
 import ExpenseClaims from './pages/ExpenseClaims'
+import Payroll from './pages/Payroll'
+import PayrollRegisters from './pages/PayrollRegisters'
+import PayrollSettingsPage from './pages/PayrollSettingsPage'
 import ConnectingBanner from './components/ConnectingBanner'
 import SyncStatus from './components/SyncStatus'
 import CommandPalette from './components/CommandPalette'
@@ -139,6 +143,28 @@ const navGroups: { title?: string; titleKey?: string; items: NavItem[] }[] = [
     items: [{ to: '/activity', label: 'Recent Activity', labelKey: 'nav.recentActivity', icon: History }],
   },
   { items: [{ to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: SettingsIcon }] },
+  // Entry point into the separate Payroll system (india-payroll).
+  { items: [{ to: '/payroll', label: 'Payroll System', labelKey: 'nav.payrollSystem', icon: ArrowLeftRight, end: true }] },
+]
+
+/**
+ * Payroll system nav — rendered instead of the accounting nav on /payroll
+ * routes, mirroring how frappe separates India Payroll from ERPNext: the
+ * statutory workspace has its own navigation and a switch back to the
+ * accounting books.
+ */
+const payrollNavGroups: { title?: string; titleKey?: string; items: NavItem[] }[] = [
+  { items: [{ to: '/payroll', label: 'Payroll Runs', labelKey: 'nav.payrollRuns', icon: Banknote, end: true }] },
+  {
+    title: 'Payroll',
+    titleKey: 'nav.payroll',
+    items: [
+      { to: '/payroll/employees', label: 'Employees', labelKey: 'nav.employees', icon: Users },
+      { to: '/payroll/registers', label: 'Statutory Registers', labelKey: 'nav.statutoryRegisters', icon: ClipboardList },
+      { to: '/payroll/settings', label: 'Payroll Settings', labelKey: 'nav.payrollSettings', icon: SettingsIcon },
+    ],
+  },
+  { items: [{ to: '/', label: 'Switch to Accounting', labelKey: 'nav.switchToAccounting', icon: ArrowLeftRight, end: true }] },
 ]
 
 export default function App() {
@@ -234,11 +260,16 @@ function Shell({ email }: { email: string }) {
   // into it (e.g. via the command palette or a report link), so the active
   // item is never hidden behind a closed section.
   const location = useLocation()
+  // The Payroll system (india-payroll) is a separate workspace: on
+  // /payroll routes the accounting nav is replaced by the payroll nav and
+  // the header carries the system switcher.
+  const inPayroll = location.pathname.startsWith('/payroll')
+  const activeNavGroups = inPayroll ? payrollNavGroups : navGroups
   useEffect(() => {
     setClosedGroups((prev) => {
       const next = { ...prev }
       let changed = false
-      for (const group of navGroups) {
+      for (const group of activeNavGroups) {
         if (!group.title) continue
         const inside = group.items.some((i) =>
           i.end
@@ -253,7 +284,7 @@ function Shell({ email }: { email: string }) {
       }
       return changed ? next : prev
     })
-  }, [location.pathname])
+  }, [location.pathname]) // eslint-disable-line react-hooks/exhaustive-deps
   const [tourOpen, setTourOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [features, setFeatures] = useState<Record<string, boolean>>({})
@@ -324,7 +355,7 @@ function Shell({ email }: { email: string }) {
       <AnimatedSidebar
         collapsed={collapsed}
         onToggle={toggleSidebar}
-        navGroups={navGroups}
+        navGroups={activeNavGroups}
         features={features}
         closedGroups={closedGroups}
         onToggleGroup={toggleGroup}
@@ -338,6 +369,34 @@ function Shell({ email }: { email: string }) {
         <header className="print:hidden flex flex-wrap items-center justify-between border-b border-slate-200 bg-white px-3 py-2 md:px-6 md:py-2.5 gap-2">
           <div className="flex items-center gap-3">
             <Breadcrumbs />
+            {/* System switcher — Accounting ⇄ Payroll (india-payroll). */}
+            <div
+              data-testid="system-switcher"
+              className="hidden items-center rounded-lg bg-slate-100 p-0.5 md:flex"
+            >
+              <button
+                onClick={() => navigate('/')}
+                aria-pressed={!inPayroll}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  !inPayroll
+                    ? 'bg-white text-slate-900 shadow'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {t('switcher.accounting', 'Accounting')}
+              </button>
+              <button
+                onClick={() => navigate('/payroll')}
+                aria-pressed={inPayroll}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  inPayroll
+                    ? 'bg-white text-slate-900 shadow'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {t('switcher.payroll', 'Payroll')}
+              </button>
+            </div>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3">
             <FiscalYearSwitcher />
@@ -403,6 +462,10 @@ function Shell({ email }: { email: string }) {
             <Route path="/membership-types" element={<MembershipTypes />} />
             <Route path="/recurring-billing" element={<RecurringBilling />} />
             <Route path="/expense-claims" element={<ExpenseClaims />} />
+            <Route path="/payroll" element={<Payroll />} />
+            <Route path="/payroll/employees" element={<Payroll initialTab="employees" />} />
+            <Route path="/payroll/registers" element={<PayrollRegisters />} />
+            <Route path="/payroll/settings" element={<PayrollSettingsPage />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/setup" element={<SetupWizard />} />
             <Route path="/data-management" element={<DataManagement />} />

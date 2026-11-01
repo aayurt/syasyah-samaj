@@ -11,24 +11,24 @@ const ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight'
   'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
 const TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
 
-function numToWords(n: number): string {
+function numToWordsRaw(n: number): string {
   if (n === 0) return 'Zero'
-  if (n < 0) return 'Minus ' + numToWords(-n)
+  if (n < 0) return 'Minus ' + numToWordsRaw(-n)
 
   const intPart = Math.floor(n)
   const decPart = Math.round((n - intPart) * 100)
 
   let result = ''
   if (intPart >= 10000000) {
-    result += numToWords(Math.floor(intPart / 10000000)) + ' Crore '
+    result += numToWordsRaw(Math.floor(intPart / 10000000)) + ' Crore '
     n = intPart % 10000000
   } else { n = intPart }
   if (n >= 100000) {
-    result += numToWords(Math.floor(n / 100000)) + ' Lakh '
+    result += numToWordsRaw(Math.floor(n / 100000)) + ' Lakh '
     n = n % 100000
   }
   if (n >= 1000) {
-    result += numToWords(Math.floor(n / 1000)) + ' Thousand '
+    result += numToWordsRaw(Math.floor(n / 1000)) + ' Thousand '
     n = n % 1000
   }
   if (n >= 100) {
@@ -45,9 +45,16 @@ function numToWords(n: number): string {
 
   result = result.trim()
   if (decPart > 0) {
-    result += ' and ' + numToWords(decPart) + ' Paisa'
+    result += ' and ' + numToWordsRaw(decPart) + ' Paisa'
   }
-  return result + ' Only'
+  return result
+}
+
+/** Full phrase — the "Only" suffix belongs to the whole amount, not each
+ * recursive level (it used to print "One Only Thousand Only"). */
+function numToWords(n: number): string {
+  const words = numToWordsRaw(n)
+  return words ? `${words} Only` : 'Zero Only'
 }
 
 /* ── Component ─────────────────────────────────────────────────── */

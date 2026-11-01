@@ -472,3 +472,127 @@ export interface AgingResponse {
   parties: AgingParty[]
   totals: { total: number; buckets: Record<AgingBucket, number> }
 }
+
+/* ── Payroll (MVP) ───────────────────────────────────────────── */
+
+export interface PayrollEarning {
+  label: string
+  amount: number
+}
+
+export interface PayrollDeduction {
+  label: string
+  amount: number
+  account?: number | Account | null
+}
+
+export interface Employee {
+  id: number
+  employeeId: string
+  name: string
+  position?: string
+  phone?: string
+  pan?: string
+  /** Work state — drives PT slabs and LWF frequency (india-payroll). */
+  employmentState?: string | null
+  /** EPF Universal Account Number. */
+  uan?: string | null
+  /** ESIC IP number. */
+  esicNumber?: string | null
+  gender?: 'Female' | 'Male' | 'Other' | null
+  /** Income-tax regime for the TDS projection. */
+  taxRegime?: 'new' | 'old' | null
+  epfApplicable?: boolean | null
+  lwfExempt?: boolean | null
+  /** Voluntary Provident Fund — extra monthly employee contribution. */
+  vpfAmount?: number | null
+  active?: boolean
+  basicSalary: number
+  allowances: PayrollEarning[]
+  deductions: PayrollDeduction[]
+  tenant?: number | null
+}
+
+/** Per-line India-payroll snapshot stored on a run (register reports read it). */
+export interface PayrollStatutorySnapshot {
+  pfWage?: number
+  esiWage?: number
+  epf?: {
+    cappedWage: number
+    employee: number
+    eps: number
+    employerEpf: number
+    edli: number
+    admin: number
+  }
+  esi?: { covered: boolean; ceiling: number; employee: number; employer: number }
+  pt?: number
+  lwf?: { employee: number; employer: number }
+  tds?: number
+}
+
+/** Run-level employer statutory contribution accrued on post. */
+export interface PayrollEmployerContribution {
+  label: string
+  amount: number
+  account?: number | Account | null
+}
+
+/** /globals/payroll-settings — india-payroll compliance configuration. */
+export interface PayrollSettings {
+  epfEnabled?: boolean
+  esicEnabled?: boolean
+  professionalTaxEnabled?: boolean
+  lwfEnabled?: boolean
+  tdsEnabled?: boolean
+  pfNumber?: string | null
+  esiNumber?: string | null
+  lwfNumber?: string | null
+  defaultEmploymentState?: string | null
+  epfPayableAccount?: number | Account | null
+  epsPayableAccount?: number | Account | null
+  edliPayableAccount?: number | Account | null
+  esicPayableAccount?: number | Account | null
+  ptPayableAccount?: number | Account | null
+  lwfPayableAccount?: number | Account | null
+  tdsPayableAccount?: number | Account | null
+  statutoryExpenseAccount?: number | Account | null
+}
+
+export interface PayrollRunLine {
+  employee?: number | Employee | null
+  /** Employee code snapshot at run time. */
+  empCode?: string
+  name: string
+  basic: number
+  allowances: PayrollEarning[]
+  gross: number
+  deductions: PayrollDeduction[]
+  net: number
+  statutory?: PayrollStatutorySnapshot | null
+}
+
+export type PayrollRunStatus = 'draft' | 'posted' | 'void'
+
+export interface PayrollRun {
+  id: number
+  runNumber: string
+  /** Pay period, YYYY-MM. */
+  period: string
+  /** Pay / journal date, YYYY-MM-DD. */
+  payDate: string
+  status: PayrollRunStatus
+  lines: PayrollRunLine[]
+  grossPay: number
+  totalDeductions: number
+  netPay: number
+  expenseAccount?: number | Account | null
+  paymentAccount?: number | Account | null
+  employerContributions?: PayrollEmployerContribution[]
+  statutoryExpenseAccount?: number | Account | null
+  journalEntry?: number | null
+  postedAt?: string
+  postedBy?: string
+  voidedAt?: string
+  tenant?: number | null
+}

@@ -1,0 +1,217 @@
+import { isAdmin } from '@/access/admin'
+import { assignTenant } from '@/utilities/tenantScope'
+import type { CollectionConfig } from 'payload'
+
+export const LoanTypes: CollectionConfig = {
+  slug: 'loan-types',
+  labels: { singular: 'Loan Type', plural: 'Loan Types' },
+  admin: {
+    useAsTitle: 'label',
+    group: 'Payroll',
+    defaultColumns: [
+      'label',
+      'type',
+      'interestType',
+      'repaymentMethod',
+      'active',
+      'updatedAt',
+    ],
+  },
+  access: {
+    create: isAdmin,
+    read: () => true,
+    update: isAdmin,
+    delete: isAdmin,
+  },
+  hooks: {
+    beforeValidate: [assignTenant],
+  },
+  fields: [
+    {
+      name: 'label',
+      type: 'text',
+      required: true,
+      admin: { description: 'Loan type label, e.g. Vehicle Loan, Housing Loan, Personal Loan' },
+    },
+    {
+      name: 'type',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Staff Loan', value: 'Staff Loan' },
+        { label: 'Car Loan', value: 'Car Loan' },
+        { label: 'Housing Loan', value: 'Housing Loan' },
+        { label: 'Personal Loan', value: 'Personal Loan' },
+        { label: 'Education Loan', value: 'Education Loan' },
+        { label: 'Other Loan', value: 'Other Loan' },
+      ],
+      admin: { description: 'Frappe HR Loan Type' },
+    },
+    {
+      name: 'interestType',
+      type: 'select',
+      defaultValue: 'Reducing Balance',
+      options: [
+        { label: 'Flat Rate', value: 'Flat Rate' },
+        { label: 'Declining Balance', value: 'Declining Balance' },
+        { label: 'Reducing Balance', value: 'Reducing Balance' },
+      ],
+      admin: { description: 'Interest calculation type' },
+    },
+    {
+      name: 'repaymentMethod',
+      type: 'select',
+      defaultValue: 'Installment',
+      options: [
+        { label: 'Installment', value: 'Installment' },
+        { label: 'Bullet', value: 'Bullet' },
+        { label: 'Flexible', value: 'Flexible' },
+        { label: 'Staff Recovery', value: 'Staff Recovery' },
+      ],
+      admin: { description: 'Repayment method' },
+    },
+    {
+      name: 'repaymentMethodDetail',
+      type: 'text',
+      admin: { description: 'Repayment method detail (reserved for parity)' },
+    },
+    {
+      name: 'minPrincipalAmount',
+      type: 'number',
+      defaultValue: 0,
+      admin: { description: 'Minimum principal amount' },
+    },
+    {
+      name: 'maxPrincipalAmount',
+      type: 'number',
+      defaultValue: 0,
+      admin: { description: 'Maximum principal amount' },
+    },
+    {
+      name: 'minRateOfInterest',
+      type: 'number',
+      defaultValue: 0,
+      admin: { description: 'Minimum rate of interest' },
+    },
+    {
+      name: 'maxRateOfInterest',
+      type: 'number',
+      defaultValue: 0,
+      admin: { description: 'Maximum rate of interest' },
+    },
+    {
+      name: 'minTenure',
+      type: 'number',
+      defaultValue: 0,
+      admin: { description: 'Minimum tenure in months' },
+    },
+    {
+      name: 'maxTenure',
+      type: 'number',
+      defaultValue: 0,
+      admin: { description: 'Maximum tenure in months' },
+    },
+    {
+      name: 'maxLoanAmount',
+      type: 'number',
+      defaultValue: 0,
+      admin: { description: 'Maximum loan amount' },
+    },
+    {
+      name: 'minLoanAmount',
+      type: 'number',
+      defaultValue: 0,
+      admin: { description: 'Minimum loan amount' },
+    },
+    {
+      name: 'active',
+      type: 'checkbox',
+      defaultValue: true,
+      admin: { description: 'Active loan type' },
+    },
+    {
+      name: 'docFieldForStatus',
+      type: 'select',
+      defaultValue: 'Active',
+      options: [
+        { label: 'Active', value: 'Active' },
+        { label: 'Inactive', value: 'Inactive' },
+        { label: 'Paid', value: 'Paid' },
+        { label: 'Overdue', value: 'Overdue' },
+        { label: 'Closed', value: 'Closed' },
+      ],
+      admin: { description: 'Status field value for this loan type' },
+    },
+    {
+      name: 'docFieldForStatusInList',
+      type: 'select',
+      defaultValue: 'Active',
+      options: [
+        { label: 'Active', value: 'Active' },
+        { label: 'Inactive', value: 'Inactive' },
+        { label: 'Paid', value: 'Paid' },
+        { label: 'Overdue', value: 'Overdue' },
+        { label: 'Closed', value: 'Closed' },
+      ],
+      admin: { description: 'Status in list for this loan type' },
+    },
+    {
+      name: 'maxCount',
+      type: 'number',
+      defaultValue: 0,
+      admin: { description: 'Maximum number of loans of this type per employee' },
+    },
+    {
+      name: 'allowOverpayment',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { description: 'Allow overpayment' },
+    },
+    {
+      name: 'recall',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { description: 'Allow recall' },
+    },
+    {
+      name: 'recallMsg',
+      type: 'text',
+      admin: { description: 'Recall message (reserved for parity)' },
+    },
+    {
+      name: 'loanSchedule_basedOn',
+      type: 'select',
+      defaultValue: 'Repayment',
+      options: [
+        { label: 'Repayment', value: 'Repayment' },
+        { label: 'Disbursement', value: 'Disbursement' },
+      ],
+      admin: { description: 'Loan schedule based on' },
+    },
+    {
+      name: 'isSlabBased',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { description: 'Is slab based' },
+    },
+    {
+      name: 'notes',
+      type: 'text',
+      admin: { description: 'Notes for this loan type' },
+    },
+    {
+      name: 'fiscalYear',
+      type: 'relationship',
+      relationTo: 'fiscal-years',
+      required: true,
+      admin: { description: 'Fiscal year this document belongs to (Frappe HR-style annual payroll period)' },
+    },
+    {
+      name: 'tenant',
+      type: 'relationship',
+      relationTo: 'tenants',
+      required: true,
+      admin: { position: 'sidebar' },
+    },
+  ],
+}

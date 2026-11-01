@@ -41,6 +41,7 @@ export const ne = {
     members: 'सदस्यहरू',
     recurringBilling: 'दोहोर्यो बिलिंग',
     expenseClaims: 'खर्च दावी',
+    payroll: 'तलब',
     inventory: 'इन्भेन्टरी',
     bankReconciliation: 'ब्याङ्क व्यवस्थापन',
     fixedAssets: 'स्थायी सम्पदा',
@@ -59,9 +60,22 @@ export const ne = {
     approvals: 'अनुमतिहरू',
     logs: 'अभिलेखहरू',
     recentActivity: 'हालको गतिविधि',
-    settings: 'सेटिङहरू',
+settings: 'सेटिङहरू',
     help: 'सहायता',
     guide: 'मार्गदर्शन',
+    // तलब प्रणाली (india-payroll)
+    payrollSystem: 'तलब प्रणाली',
+    payrollRuns: 'तलब रनहरू',
+    employees: 'कर्मचारीहरू',
+    statutoryRegisters: 'वैधानिक रजिस्टरहरू',
+    payrollSettings: 'तलब सेटिङहरू',
+    switchToAccounting: 'लेखा प्रणालीमा स्विच गर्नुहोस्',
+  },
+
+  // ── लेखा ⇄ तलब प्रणाली स्विचर ──
+  switcher: {
+    accounting: 'लेखा',
+    payroll: 'तलब',
   },
 
   // ── Header / chrome ──

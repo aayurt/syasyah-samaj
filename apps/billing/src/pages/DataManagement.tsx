@@ -15,7 +15,11 @@ import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import type { BillingSettings } from '../lib/types'
-import { fetchAllDocs, buildExportJson, buildExportExcel, downloadBlob, parseImportFile, EXPORT_COLUMNS } from '../lib/importExport'
+import { fetchAllDocs, buildExportJson, downloadBlob, parseImportFile } from '../lib/importExport'
+import { buildEntityExcel, buildTemplate } from '../lib/excel/entityIo'
+import { buildMasterWorkbook } from '../lib/excel/masterWorkbook'
+import { parseMasterWorkbook, importMasterWorkbook } from '../lib/excel/masterWorkbook.import'
+import { ENTITY_REGISTRY } from '../lib/excel/entities'
 import ImportPreviewModal from '../components/ImportPreviewModal'
 
 /**
@@ -315,10 +319,37 @@ export default function DataManagement() {
                   <div className="rounded-lg border border-slate-200 p-5">
                     <h3 className="text-sm font-semibold text-slate-700">{t('dataManagement.exportData', 'Export Data')}</h3>
                     <p className="mt-1 text-xs text-slate-500">{t('dataManagement.exportDesc', 'Download all records for a collection as JSON or Excel.')}</p>
+                    <div className="mt-3 rounded-lg border border-crimson-200 bg-crimson-50 p-3">
+                      <button
+                        onClick={async () => {
+                          try {
+                            pushToast('info', 'Building master workbook…', 'Fetching every entity')
+                            const docsBySlug: Record<string, Record<string, unknown>[]> = {}
+                            for (const { slug } of ENTITY_REGISTRY) {
+                              docsBySlug[slug] = await fetchAllDocs<Record<string, unknown>>(slug, tenantQuery, 500, 1)
+                            }
+                            const blob = await buildMasterWorkbook(docsBySlug, { tenantName: tenantId || undefined })
+                            downloadBlob(
+                              `master-export_${tenantId || 'tenant'}_${new Date().toISOString().slice(0, 10)}.xlsx`,
+                              blob,
+                            )
+                            pushToast('success', 'Master workbook ready', 'All sheets, linked formulas, re-importable')
+                          } catch (err) {
+                            pushToast('error', 'Export failed', err instanceof Error ? err.message : String(err))
+                          }
+                        }}
+                        className="w-full rounded bg-crimson-600 px-3 py-2 text-xs font-medium text-white hover:bg-crimson-700"
+                      >
+                        🗂️ Export ALL data — master workbook (.xlsx)
+                      </button>
+                      <p className="mt-1.5 text-[11px] text-crimson-700">
+                        One file · every sheet in dependency order · linked formulas · re-importable
+                      </p>
+                    </div>
                     <div className="mt-3 space-y-2">
-                      {['members', 'parties', 'items', 'accounts', 'documents'].map((slug) => (
+                      {ENTITY_REGISTRY.map(({ slug, label }) => (
                         <div key={slug} className="flex flex-wrap gap-2 items-center">
-                          <span className="text-xs font-medium text-slate-600 w-24">{slug}</span>
+                          <span className="text-xs font-medium text-slate-600 w-40" title={slug}>{label}</span>
                           <button
                             onClick={async () => {
                               try {
@@ -339,9 +370,8 @@ export default function DataManagement() {
                             onClick={async () => {
                               try {
                                 pushToast('info', 'Exporting…', `Fetching ${slug} (Excel)`)
-                                const docs = await fetchAllDocs<Record<string, unknown>>(slug, tenantQuery)
-                                const columns = EXPORT_COLUMNS[slug]
-                                const blob = await buildExportExcel(slug, docs, { columns })
+                                const docs = await fetchAllDocs<Record<string, unknown>>(slug, tenantQuery, 500, 1)
+                                const blob = await buildEntityExcel(slug, docs)
                                 downloadBlob(`${slug}-export.xlsx`, blob)
                                 pushToast('success', 'Exported', `${docs.length} ${slug} records (Excel)`)
                               } catch (err) {
@@ -351,6 +381,20 @@ export default function DataManagement() {
                             className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
                           >
                             📊 Excel (.xlsx)
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const blob = await buildTemplate(slug)
+                                downloadBlob(`${slug}-template.xlsx`, blob)
+                                pushToast('success', 'Template ready', `${slug} — blank template with example row`)
+                              } catch (err) {
+                                pushToast('error', 'Template failed', err instanceof Error ? err.message : String(err))
+                              }
+                            }}
+                            className="rounded border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100"
+                          >
+                            📝 Template
                           </button>
                         </div>
                       ))}
@@ -381,6 +425,64 @@ export default function DataManagement() {
                           }}
                       />
                       </label>
+                    </div>
+                    <div className="mt-3 rounded-lg border border-crimson-200 bg-crimson-50 p-3">
+                      <label className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded bg-crimson-600 px-3 py-2 text-xs font-medium text-white hover:bg-crimson-700">
+                        <Database size={12} /> Import ALL data (master workbook)
+                        <input
+                          type="file"
+                          accept=".xlsx"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0]
+                            e.target.value = ''
+                            if (!file) return
+                            try {
+                              pushToast('info', 'Reading master workbook…', file.name)
+                              const parsed = await parseMasterWorkbook(file)
+                              if (parsed.missingSheets.length > 0) {
+                                pushToast(
+                                  'warning',
+                                  `Missing sheets: ${parsed.missingSheets.join(', ')}`,
+                                  'Those entities were skipped.',
+                                )
+                              }
+                              if (parsed.orphans.length > 0) {
+                                const first = parsed.orphans[0]
+                                pushToast(
+                                  'warning',
+                                  `${parsed.orphans.length} linked rows may fail`,
+                                  `e.g. ${first.sheet} row ${first.row}: ${first.field} “${first.value}” is not in ${first.refSheet}`,
+                                )
+                              }
+                              pushToast(
+                                'info',
+                                'Importing in dependency order…',
+                                `${parsed.manifest.entities.length} sheets`,
+                              )
+                              const summary = await importMasterWorkbook(parsed)
+                              if (summary.totals.errors.length === 0) {
+                                pushToast(
+                                  'success',
+                                  'Master import complete',
+                                  `${summary.totals.created} created · ${summary.totals.skipped} duplicates skipped`,
+                                )
+                              } else {
+                                pushToast(
+                                  'error',
+                                  'Master import finished with errors',
+                                  `${summary.totals.errors.length} errors — e.g. ${summary.totals.errors[0]}`,
+                                )
+                              }
+                            } catch (err) {
+                              pushToast('error', 'Master import failed', err instanceof Error ? err.message : String(err))
+                            }
+                          }}
+                        />
+                      </label>
+                      <p className="mt-1.5 text-[11px] text-crimson-700">
+                        One .xlsx with every sheet · imports masters before transactions · duplicates skipped
+                      </p>
                     </div>
                   </div>
                 </div>

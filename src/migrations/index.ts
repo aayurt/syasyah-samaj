@@ -11,11 +11,14 @@ import * as migration_20260818_p4_orders from './20260818_p4_orders';
 import * as migration_20260818_p5_bank_recon from './20260818_p5_bank_recon';
 import * as migration_20260818_p6_fixed_assets from './20260818_p6_fixed_assets';
 import * as migration_20260819_p1_transfers_audit from './20260819_p1_transfers_audit';
-import * as migration_20260824_void_items from './20260824_void_items';
 import * as migration_20260819_p2_tally_vouchers_tax from './20260819_p2_tally_vouchers_tax';
-import * as migration_20260826_sales_quotes from './20260826_sales_quotes';
-import * as migration_20260826_recurring_billing from './20260826_recurring_billing';
+import * as migration_20260824_void_items from './20260824_void_items';
 import * as migration_20260826_expense_claims from './20260826_expense_claims';
+import * as migration_20260826_recurring_billing from './20260826_recurring_billing';
+import * as migration_20260826_sales_quotes from './20260826_sales_quotes';
+import * as migration_20260903_fiscal_years from './20260903_fiscal_years';
+import * as migration_20260906_fy_date_fix from './20260906_fy_date_fix';
+import * as migration_20261011_045410___name from './20261011_045410___name';
 
 export const migrations = [
   {
@@ -46,61 +49,81 @@ export const migrations = [
   {
     up: migration_20260812_161710.up,
     down: migration_20260812_161710.down,
-    name: '20260812_161710'
+    name: '20260812_161710',
   },
   {
     up: migration_20260818_p1_illaka.up,
     down: migration_20260818_p1_illaka.down,
-    name: '20260818_p1_illaka'
+    name: '20260818_p1_illaka',
   },
   {
     up: migration_20260818_p2_membership.up,
     down: migration_20260818_p2_membership.down,
-    name: '20260818_p2_membership'
+    name: '20260818_p2_membership',
   },
   {
     up: migration_20260818_p3_donations.up,
     down: migration_20260818_p3_donations.down,
-    name: '20260818_p3_donations'
+    name: '20260818_p3_donations',
   },
   {
     up: migration_20260818_p4_orders.up,
     down: migration_20260818_p4_orders.down,
-    name: '20260818_p4_orders'
+    name: '20260818_p4_orders',
   },
   {
     up: migration_20260818_p5_bank_recon.up,
     down: migration_20260818_p5_bank_recon.down,
-    name: '20260818_p5_bank_recon'
+    name: '20260818_p5_bank_recon',
   },
   {
     up: migration_20260818_p6_fixed_assets.up,
     down: migration_20260818_p6_fixed_assets.down,
-    name: '20260818_p6_fixed_assets'
+    name: '20260818_p6_fixed_assets',
   },
   {
     up: migration_20260819_p1_transfers_audit.up,
     down: migration_20260819_p1_transfers_audit.down,
-    name: '20260819_p1_transfers_audit'
+    name: '20260819_p1_transfers_audit',
+  },
+  {
+    up: migration_20260819_p2_tally_vouchers_tax.up,
+    down: migration_20260819_p2_tally_vouchers_tax.down,
+    name: '20260819_p2_tally_vouchers_tax',
   },
   {
     up: migration_20260824_void_items.up,
     down: migration_20260824_void_items.down,
-    name: '20260824_void_items'
-  },
-  {
-    up: migration_20260826_sales_quotes.up,
-    down: migration_20260826_sales_quotes.down,
-    name: '20260826_sales_quotes'
-  },
-  {
-    up: migration_20260826_recurring_billing.up,
-    down: migration_20260826_recurring_billing.down,
-    name: '20260826_recurring_billing'
+    name: '20260824_void_items',
   },
   {
     up: migration_20260826_expense_claims.up,
     down: migration_20260826_expense_claims.down,
-    name: '20260826_expense_claims'
+    name: '20260826_expense_claims',
+  },
+  {
+    up: migration_20260826_recurring_billing.up,
+    down: migration_20260826_recurring_billing.down,
+    name: '20260826_recurring_billing',
+  },
+  {
+    up: migration_20260826_sales_quotes.up,
+    down: migration_20260826_sales_quotes.down,
+    name: '20260826_sales_quotes',
+  },
+  {
+    up: migration_20260903_fiscal_years.up,
+    down: migration_20260903_fiscal_years.down,
+    name: '20260903_fiscal_years',
+  },
+  {
+    up: migration_20260906_fy_date_fix.up,
+    down: migration_20260906_fy_date_fix.down,
+    name: '20260906_fy_date_fix',
+  },
+  {
+    up: migration_20261011_045410___name.up,
+    down: migration_20261011_045410___name.down,
+    name: '20261011_045410___name'
   },
 ];

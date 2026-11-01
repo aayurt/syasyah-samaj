@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Download, FileSpreadsheet, FileText, Loader2, X } from 'lucide-react'
+import { Download, FilePlus, FileSpreadsheet, FileText, Loader2, X } from 'lucide-react'
 import {
   buildExportCsv,
   buildExportJson,
   downloadBlob,
   fetchAllDocs,
 } from '../lib/importExport'
+import { buildEntityExcel, buildTemplate } from '../lib/excel/entityIo'
+import { ENTITY_REGISTRY } from '../lib/excel/entities'
 import { useT } from '../lib/i18n'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
@@ -17,33 +19,11 @@ interface ExportOption {
   countHint?: string
 }
 
-const EXPORT_COLLECTIONS: ExportOption[] = [
-  {
-    slug: 'members',
-    label: 'सदस्य नामावली (Members Directory)',
-    desc: 'नाम, ठेगाना, सम्पर्क, रक्त समूह, पारिवारिक विवरण',
-  },
-  {
-    slug: 'gl-accounts',
-    label: 'लेखा खाताहरू (Chart of Accounts)',
-    desc: 'खाता नाम, कोड, समूह, खाता प्रकार',
-  },
-  {
-    slug: 'parties',
-    label: 'पार्टी तथा आपूर्तिकर्ता (Parties / Vendors)',
-    desc: 'ग्राहक, आपूर्तिकर्ता, प्यान नं., सम्पर्क विवरण',
-  },
-  {
-    slug: 'items',
-    label: 'वस्तु तथा सेवा (Items / Inventory)',
-    desc: 'वस्तु नाम, कोड, एकाइ, बिक्री/खरिद दर',
-  },
-  {
-    slug: 'journal-entries',
-    label: 'भौचर तथा जर्नल (Journal Entries)',
-    desc: 'चालू आ.व. का सम्पूर्ण डेबिट/क्रेडिट पंक्तिहरू',
-  },
-]
+const EXPORT_COLLECTIONS: ExportOption[] = ENTITY_REGISTRY.map((e) => ({
+  slug: e.slug,
+  label: `${e.label} (${e.slug})`,
+  desc: e.kind === 'master' ? 'Master data — मुख्य डाटा' : 'Transactions — लेनदेन',
+}))
 
 export default function ExportModal({
   onClose,
@@ -56,27 +36,42 @@ export default function ExportModal({
   const tenantQuery = useTenantQuery()
   const { tenantId } = useTenant()
   const [selectedSlug, setSelectedSlug] = useState(defaultCollection || 'members')
-  const [format, setFormat] = useState<'csv' | 'json'>('csv')
+  const [format, setFormat] = useState<'csv' | 'json' | 'excel' | 'template'>('csv')
   const [exporting, setExporting] = useState(false)
 
   const handleExport = async () => {
     setExporting(true)
     try {
-      const docs = await fetchAllDocs<Record<string, unknown>>(selectedSlug, tenantQuery)
+      const dateStr = new Date().toISOString().slice(0, 10)
+
+      // Templates need no data — download straight away.
+      if (format === 'template') {
+        const blob = await buildTemplate(selectedSlug)
+        downloadBlob(`${selectedSlug}_template_${dateStr}.xlsx`, blob)
+        pushToast(
+          'success',
+          'टेम्प्लेट डाउनलोड भयो (Template ready)',
+          `${selectedSlug} — headers + example row, delete the example before importing.`,
+        )
+        onClose()
+        return
+      }
+
+      // depth:1 so relation columns export display names, not raw ids.
+      const docs = await fetchAllDocs<Record<string, unknown>>(selectedSlug, tenantQuery, 500, 1)
       if (docs.length === 0) {
         pushToast('info', 'कुनै डाटा भेटिएन', 'छानिएको सूचीमा कुनै रेकर्ड फेला परेन।')
         return
       }
 
-      const dateStr = new Date().toISOString().slice(0, 10)
-      const filename = `${selectedSlug}_${tenantId || 'export'}_${dateStr}.${format}`
-
-      if (format === 'csv') {
-        const blob = buildExportCsv(docs)
-        downloadBlob(filename, blob)
+      const base = `${selectedSlug}_${tenantId || 'export'}_${dateStr}`
+      if (format === 'excel') {
+        const blob = await buildEntityExcel(selectedSlug, docs, { tenantName: tenantId || undefined })
+        downloadBlob(`${base}.xlsx`, blob)
+      } else if (format === 'csv') {
+        downloadBlob(`${base}.csv`, buildExportCsv(docs))
       } else {
-        const blob = buildExportJson(selectedSlug, docs, tenantId || undefined)
-        downloadBlob(filename, blob)
+        downloadBlob(`${base}.json`, buildExportJson(selectedSlug, docs, tenantId || undefined))
       }
 
       pushToast(
@@ -115,7 +110,7 @@ export default function ExportModal({
                 डाटा निर्यात केन्द्र (Data Export)
               </h2>
               <p className="text-xs text-slate-500">
-                एक्सेल (CSV) वा JSON ढाँचामा डाटा डाउनलोड गर्नुहोस्
+                Excel (.xlsx) / CSV / JSON ढाँचा वा खाली टेम्प्लेट डाउनलोड गर्नुहोस्
               </p>
             </div>
           </div>
@@ -169,6 +164,18 @@ export default function ExportModal({
             <div className="mt-2 grid grid-cols-2 gap-3">
               <button
                 type="button"
+                onClick={() => setFormat('excel')}
+                className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-xs font-medium transition-colors ${
+                  format === 'excel'
+                    ? 'border-crimson-500 bg-crimson-50 text-crimson-800'
+                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <FileSpreadsheet size={16} />
+                <span>Excel (.xlsx)</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setFormat('csv')}
                 className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-xs font-medium transition-colors ${
                   format === 'csv'
@@ -176,8 +183,8 @@ export default function ExportModal({
                     : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <FileSpreadsheet size={16} />
-                <span>Excel / CSV (.csv)</span>
+                <FileText size={16} />
+                <span>CSV (.csv)</span>
               </button>
               <button
                 type="button"
@@ -190,6 +197,18 @@ export default function ExportModal({
               >
                 <FileText size={16} />
                 <span>JSON Backup (.json)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormat('template')}
+                className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-xs font-medium transition-colors ${
+                  format === 'template'
+                    ? 'border-crimson-500 bg-crimson-50 text-crimson-800'
+                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <FilePlus size={16} />
+                <span>Blank template (.xlsx)</span>
               </button>
             </div>
           </div>

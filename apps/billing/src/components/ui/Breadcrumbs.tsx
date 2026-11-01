@@ -20,6 +20,9 @@ const ROUTE_LABELS: Record<string, string> = {
   settings: 'सेटिंग्स (Settings)',
   transfers: 'आन्तरिक रकमान्तर (Transfers)',
   daybooks: 'दैनिक खाता (Daybooks)',
+  payroll: 'तलब (Payroll)',
+  employees: 'कर्मचारीहरू (Employees)',
+  registers: 'वैधानिक रजिस्टरहरू (Statutory Registers)',
 }
 
 export function Breadcrumbs() {
