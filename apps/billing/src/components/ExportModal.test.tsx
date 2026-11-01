@@ -68,7 +68,7 @@ describe('ExportModal', () => {
     const user = userEvent.setup()
     render(<ExportModal onClose={onClose} />)
     await user.click(screen.getByText('Excel (.xlsx)'))
-    await user.click(screen.getByText(/Download/))
+    await user.click(screen.getByRole('button', { name: /Download now|Download/i }))
 
     expect(mockFetchAllDocs).toHaveBeenCalledWith('members', { tenant: 't1' }, 500, 1)
     expect(mockBuildEntityExcel).toHaveBeenCalledWith(
@@ -87,7 +87,7 @@ describe('ExportModal', () => {
     const user = userEvent.setup()
     render(<ExportModal onClose={onClose} />)
     await user.click(screen.getByText('Blank template (.xlsx)'))
-    await user.click(screen.getByText(/Download/))
+    await user.click(screen.getByRole('button', { name: /Download now|Download/i }))
 
     expect(mockBuildTemplate).toHaveBeenCalledWith('members')
     expect(mockFetchAllDocs).not.toHaveBeenCalled()
@@ -102,7 +102,7 @@ describe('ExportModal', () => {
     const user = userEvent.setup()
     render(<ExportModal onClose={onClose} />)
     await user.click(screen.getByText('CSV (.csv)'))
-    await user.click(screen.getByText(/Download/))
+    await user.click(screen.getByRole('button', { name: /Download now|Download/i }))
 
     expect(mockBuildCsv).toHaveBeenCalledWith([{ id: 1, name: 'Kiran' }])
     expect(mockDownload).toHaveBeenCalledWith(
@@ -116,7 +116,7 @@ describe('ExportModal', () => {
     mockFetchAllDocs.mockResolvedValue([])
     render(<ExportModal onClose={onClose} />)
     await user.click(screen.getByText('Excel (.xlsx)'))
-    await user.click(screen.getByText(/Download/))
+    await user.click(screen.getByRole('button', { name: /Download now|Download/i }))
 
     expect(mockDownload).not.toHaveBeenCalled()
     expect(mockToast).toHaveBeenCalledWith('info', expect.any(String), expect.any(String))

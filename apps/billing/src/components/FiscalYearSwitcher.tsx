@@ -4,7 +4,8 @@ import { useSyncState } from '../lib/offline'
 import { pushToast } from '../lib/toast'
 import { useNavigate } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
-import { useT } from '../lib/i18n'
+import { useT, useLang } from '../lib/i18n'
+import { toNepaliDigits } from '../lib/nepaliNumbers'
 
 /**
  * Fiscal year switcher with a floating "Add Year" button.
@@ -17,6 +18,7 @@ export default function FiscalYearSwitcher() {
   const { cacheVersion } = useSyncState()
   const navigate = useNavigate()
   const t = useT()
+  const { lang } = useLang()
   const [showAddYear, setShowAddYear] = useState(false)
   const addBtnRef = useRef<HTMLButtonElement>(null)
 
@@ -96,12 +98,16 @@ export default function FiscalYearSwitcher() {
           className="min-w-[5rem] max-w-full appearance-none truncate rounded border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 hover:border-slate-300 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500"
           title={t('fy.switchScope', 'Switch fiscal year — filters the data shown to this period')}
         >
-          {years.map((y) => (
-            <option key={y.id} value={y.id}>
-              {y.label || `FY ${String(y.startDate || '').slice(0, 10)}`}
-              {y.status === 'closed' ? ' · Closed' : ''}
-            </option>
-          ))}
+          {years.map((y) => {
+            const raw = (y.label || `FY ${String(y.startDate || '').slice(0, 10)}`).replace(/^(Fiscal\s+Year|FY|आ\.व\.)\s*/i, '').trim()
+            const yearText = lang === 'ne' ? `आ.व. ${toNepaliDigits(raw)}` : `FY ${raw}`
+            return (
+              <option key={y.id} value={y.id}>
+                {yearText}
+                {y.status === 'closed' ? ` · ${t('status.closed', 'Closed')}` : ''}
+              </option>
+            )
+          })}
         </select>
         <ChevronDown
           size={14}

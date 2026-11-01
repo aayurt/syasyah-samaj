@@ -1,38 +1,44 @@
 import * as React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
+import { useT } from '../../lib/i18n'
 
-const ROUTE_LABELS: Record<string, string> = {
-  '': 'ड्यासबोर्ड (Dashboard)',
-  accounts: 'खाता सूची (Chart of Accounts)',
-  'opening-balances': 'प्रारम्भिक मौज्दात (Opening Balances)',
-  vouchers: 'भौचरहरू (Vouchers)',
-  parties: 'पक्षहरू (Parties)',
-  journal: 'जर्नल भौचर (Journal)',
-  'trial-balance': 'सन्तुलन परीक्षण (Trial Balance)',
-  aging: 'उधारो विश्लेषण (Aging)',
-  inventory: 'जिन्सी मौज्दात (Inventory)',
-  reports: 'प्रतिवेदनहरू (Reports Hub)',
-  members: 'सदस्यता (Members)',
-  'membership-types': 'सदस्यता प्रकार (Membership Types)',
-  posting: 'प्रमाणीकरण (Posting Queue)',
-  'audit-log': 'अडिट लग (Audit Log)',
-  settings: 'सेटिंग्स (Settings)',
-  transfers: 'आन्तरिक रकमान्तर (Transfers)',
-  daybooks: 'दैनिक खाता (Daybooks)',
-  payroll: 'तलब (Payroll)',
-  employees: 'कर्मचारीहरू (Employees)',
-  registers: 'वैधानिक रजिस्टरहरू (Statutory Registers)',
+/**
+ * Route segment → i18n key. Labels come from the `nav` namespace so the
+ * breadcrumb always matches the active language (no bilingual strings).
+ * Unknown segments fall back to the raw URL segment.
+ */
+const ROUTE_KEYS: Record<string, string> = {
+  accounts: 'nav.accounts',
+  'opening-balances': 'nav.openingBalances',
+  vouchers: 'nav.vouchers',
+  parties: 'nav.parties',
+  journal: 'nav.journal',
+  'trial-balance': 'nav.trialBalance',
+  aging: 'nav.aging',
+  inventory: 'nav.inventory',
+  reports: 'nav.reportsHub',
+  members: 'nav.members',
+  'membership-types': 'nav.membershipTypes',
+  posting: 'nav.posting',
+  audit: 'nav.auditLog',
+  settings: 'nav.settings',
+  transfers: 'nav.transfers',
+  daybooks: 'nav.daybook',
+  payroll: 'nav.payroll',
+  employees: 'nav.employees',
+  registers: 'nav.statutoryRegisters',
 }
 
 export function Breadcrumbs() {
   const location = useLocation()
+  const t = useT()
   const segments = location.pathname.split('/').filter(Boolean)
 
   if (segments.length === 0) {
     return (
       <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium">
-        <span className="text-slate-900 font-semibold">ड्यासबोर्ड (Dashboard)</span>
+        <span className="text-slate-900 font-semibold">{t('nav.dashboard', 'Dashboard')}</span>
       </div>
     )
   }
@@ -45,12 +51,13 @@ export function Breadcrumbs() {
         to="/"
         className="text-slate-400 hover:text-slate-700 transition-colors"
       >
-        गृह (Home)
+        {t('nav.home', 'Home')}
       </Link>
       {segments.map((seg: string, idx: number) => {
         currentPath += `/${seg}`
         const isLast = idx === segments.length - 1
-        const label = ROUTE_LABELS[seg] || seg
+        const key = ROUTE_KEYS[seg]
+        const label = key ? t(key, seg) : seg
 
         return (
           <React.Fragment key={currentPath}>

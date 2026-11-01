@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">92.85% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/28</span>
+                <span class='fraction'>26/28</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -188,24 +188,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -239,7 +232,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">15x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -254,7 +254,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -288,24 +288,24 @@ import type { Document } from '../lib/types'
  * Modal that shows a source voucher (document) — used by list pages
  * (Daybooks, Journal) to drill back to the originating voucher.
  */
-export default function <span class="fstat-no" title="function not covered" >VoucherViewModal({</span>
+export default function VoucherViewModal({
   voucher,
   onClose,
 }: {
   voucher: Document | null
   onClose: () =&gt; void
 }) {
-  const <span class="cstat-no" title="statement not covered" >t = useT()</span>
-  const { formatDate <span class="cstat-no" title="statement not covered" >} = useCalendar()</span>
-<span class="cstat-no" title="statement not covered" >  if (!voucher) <span class="cstat-no" title="statement not covered" >return null</span></span>
-<span class="cstat-no" title="statement not covered" >  return (</span>
+  const t = useT()
+  const { formatDate } = useCalendar()
+  if (!voucher) return null
+  return (
     &lt;div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={onClose}
     &gt;
       &lt;div
         className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-5 shadow-xl"
-        onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; <span class="cstat-no" title="statement not covered" >e.stopPropagation()}</span>
+        onClick={(e) =&gt; e.stopPropagation()}
       &gt;
         &lt;div className="flex items-start justify-between"&gt;
           &lt;div&gt;
@@ -345,8 +345,8 @@ export default function <span class="fstat-no" title="function not covered" >Vou
               &lt;/tr&gt;
             &lt;/thead&gt;
             &lt;tbody&gt;
-              {(voucher.journalLines || []).map(<span class="fstat-no" title="function not covered" >(l</span>, i) =&gt; (
-<span class="cstat-no" title="statement not covered" >                &lt;tr key={i} className="border-t border-slate-50"&gt;</span>
+              {(voucher.journalLines || <span class="branch-1 cbranch-no" title="branch not covered" >[]).m</span>ap((l, i) =&gt; (
+                &lt;tr key={i} className="border-t border-slate-50"&gt;
                   &lt;td className="py-1 pr-2 text-slate-700"&gt;
                     {typeof l.account === 'object' &amp;&amp; l.account
                       ? (l.account as { name?: string }).name
@@ -360,13 +360,13 @@ export default function <span class="fstat-no" title="function not covered" >Vou
                   &lt;/td&gt;
                 &lt;/tr&gt;
               ))}
-              {(voucher.lines || []).map(<span class="fstat-no" title="function not covered" >(l</span>, i) =&gt; (
-<span class="cstat-no" title="statement not covered" >                &lt;tr key={`l-${i}`} className="border-t border-slate-50"&gt;</span>
+              {(voucher.lines || []).map((l, i) =&gt; (
+                &lt;tr key={`l-${i}`} className="border-t border-slate-50"&gt;
                   &lt;td className="py-1 pr-2 text-slate-700"&gt;
                     {l.description || t('voucherView.itemLine')}
                   &lt;/td&gt;
                   &lt;td className="py-1 pr-2 text-right font-mono text-slate-700"&gt;
-                    {l.amount ? fmt(l.amount) : ''}
+                    {l.amount ? fmt(l.amount) : <span class="branch-1 cbranch-no" title="branch not covered" >''}</span>
                   &lt;/td&gt;
                   &lt;td className="py-1 pr-2 text-right font-mono text-slate-700"&gt;&lt;/td&gt;
                 &lt;/tr&gt;
@@ -391,7 +391,7 @@ export default function <span class="fstat-no" title="function not covered" >Vou
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-08T04:11:48.394Z
+                at 2026-11-01T16:04:07.774Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

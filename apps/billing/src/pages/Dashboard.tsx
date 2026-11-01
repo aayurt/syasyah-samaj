@@ -20,7 +20,8 @@ import {
   Wallet,
 } from 'lucide-react'
 import { api, fmt, useSyncState } from '../lib/api'
-import { useT } from '../lib/i18n'
+import { useT, useLang } from '../lib/i18n'
+import { toNepaliDigits } from '../lib/nepaliNumbers'
 import DataStatus from '../components/DataStatus'
 import SetupChecklist from '../components/SetupChecklist'
 import { useCalendar } from '../lib/calendar'
@@ -141,6 +142,7 @@ export function StatusPill({ status }: { status: string }) {
 
 export default function Dashboard() {
   const t = useT()
+  const { lang } = useLang()
   const navigate = useNavigate()
   const { cacheVersion, online } = useSyncState()
   const { tenantId } = useTenant()
@@ -311,7 +313,7 @@ export default function Dashboard() {
       const parsed = await parseImportFile<Record<string, unknown>>(file)
       setImportData(parsed)
     } catch (err) {
-      pushToast('error', 'आयात त्रुटि (Import Error)', err instanceof Error ? err.message : String(err))
+      pushToast('error', t('dashboard.importError', 'Import error'), err instanceof Error ? err.message : String(err))
     }
     e.target.value = ''
   }
@@ -322,10 +324,16 @@ export default function Dashboard() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            {t('dashboard.title', 'लेखा तथा बिलिङ्ग ड्यासबोर्ड (Dashboard)')}
+            {t('dashboard.title', 'Dashboard')}
           </h1>
           <p className="text-xs text-slate-500">
-            {selectedYear ? `आ.व. ${selectedYear.label || selectedYear.startDate?.slice(0, 4)}` : ''} • दैनिक हिसाब, काउन्टर मौज्दात तथा द्रुत प्रविष्टि
+            {selectedYear ? (() => {
+              const rawLabel = (selectedYear.label || selectedYear.startDate?.slice(0, 4) || '').replace(/^(Fiscal\s+Year|FY|आ\.व\.)\s*/i, '').trim()
+              const displayLabel = lang === 'ne' ? toNepaliDigits(rawLabel) : rawLabel
+              return `${t('dashboard.fyPrefix', 'FY')} ${displayLabel}`
+            })() : ''}
+            {' • '}
+            {t('dashboard.subtitle', 'Daily books, counter balance and quick entry')}
           </p>
         </div>
         <DataStatus />
@@ -341,7 +349,7 @@ export default function Dashboard() {
             className="font-semibold shadow-xs"
           >
             <Receipt size={14} className="text-slate-500" />
-            <span>+ {t('vouchers.receipt', 'रसिद (Receipt)')}</span>
+            <span>+ {t('vouchers.receipt', 'Receipt')}</span>
             <span className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-mono text-slate-600">F1</span>
           </LiquidLink>
           <LiquidLink
@@ -351,7 +359,7 @@ export default function Dashboard() {
             className="font-semibold"
           >
             <FilePlus size={14} className="text-slate-500" />
-            <span>+ {t('vouchers.payment', 'भुक्तानी (Payment)')}</span>
+            <span>+ {t('vouchers.payment', 'Payment')}</span>
             <span className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-mono text-slate-600">F2</span>
           </LiquidLink>
           <LiquidLink
@@ -361,7 +369,7 @@ export default function Dashboard() {
             className="font-semibold"
           >
             <FileText size={14} className="text-slate-500" />
-            <span>+ {t('vouchers.journal', 'जर्नल (Journal)')}</span>
+            <span>+ {t('vouchers.journal', 'Journal')}</span>
             <span className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-mono text-slate-600">F3</span>
           </LiquidLink>
           <LiquidLink
@@ -370,7 +378,7 @@ export default function Dashboard() {
             size="xs"
           >
             <UserPlus size={14} className="text-slate-500" />
-            <span>सदस्य दर्ता (+Member)</span>
+            <span>+ {t('dashboard.addMember', 'Add member')}</span>
           </LiquidLink>
         </div>
 
@@ -382,7 +390,7 @@ export default function Dashboard() {
             size="xs"
           >
             <Download size={14} className="text-slate-500" />
-            <span>थोक निर्यात (Export)</span>
+            <span>{t('dashboard.exportData', 'Export')}</span>
           </LiquidButton>
 
           {/* Import button */}
@@ -392,7 +400,7 @@ export default function Dashboard() {
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload size={14} className="text-white" />
-            <span>आयात (Import CSV)</span>
+            <span>{t('dashboard.importData', 'Import')}</span>
           </LiquidButton>
         </div>
       </div>
@@ -408,7 +416,7 @@ export default function Dashboard() {
           </div>
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              {t('dashboard.accounts', 'खाता संख्या')}
+              {t('dashboard.accounts', 'Accounts')}
             </div>
             <div className="font-mono text-lg font-bold text-slate-800">
               {accounts.length}
@@ -422,7 +430,7 @@ export default function Dashboard() {
           </div>
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              {t('dashboard.journalEntries', 'कुल भौचरहरू')}
+              {t('dashboard.journalEntries', 'Journal entries')}
             </div>
             <div className="font-mono text-lg font-bold text-slate-800">
               {recentEntries.length}
@@ -436,7 +444,7 @@ export default function Dashboard() {
           </div>
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              {t('dashboard.posted', 'प्रमाणित (Posted)')}
+              {t('dashboard.posted', 'Posted')}
             </div>
             <div className="font-mono text-lg font-bold text-slate-800">
               {recentEntries.filter((entry) => entry.status === 'posted').length}
@@ -454,7 +462,7 @@ export default function Dashboard() {
           </div>
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              {t('dashboard.trialBalance', 'ट्रायल ब्यालेन्स')}
+              {t('dashboard.trialBalance', 'Trial balance')}
             </div>
             <div className="font-mono text-lg font-bold text-slate-800">
               {trialBalance ? fmt(trialBalance.totals.debit) : '–'}
@@ -464,7 +472,9 @@ export default function Dashboard() {
                 trialBalance?.balanced ? 'text-emerald-600' : 'text-red-600'
               }`}
             >
-              {trialBalance?.balanced ? '✓ सन्तुलित (Balanced)' : '✗ फरक (Unbalanced)'}
+              {trialBalance?.balanced
+                ? t('dashboard.balanced', '✓ balanced')
+                : t('dashboard.outOfBalance', '✗ out of balance')}
             </div>
           </div>
         </div>
@@ -480,11 +490,11 @@ export default function Dashboard() {
               <div className="flex items-center gap-2">
                 <Wallet size={16} className="text-slate-400" />
                 <h3 className="text-sm font-semibold text-slate-800">
-                  {t('dashboard.cashPosition', 'मौज्दात स्थिति (Liquidity)')}
+                  {t('dashboard.cashPosition', 'Cash position')}
                 </h3>
               </div>
               <Link to="/reports/cash-statement" className="text-xs text-crimson-600 hover:underline">
-                विवरण →
+                {t('dashboard.details', 'Details')} →
               </Link>
             </div>
 
@@ -493,7 +503,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2">
                   <IndianRupee size={14} className="text-emerald-600" />
                   <span className="text-xs font-medium text-slate-700">
-                    {t('dashboard.cashInHand', 'कार्यालय नगद (Cash)')}
+                    {t('dashboard.cashInHand', 'Cash in hand')}
                   </span>
                 </div>
                 <span className="font-mono text-xs font-bold text-emerald-700">
@@ -505,7 +515,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2">
                   <CreditCard size={14} className="text-blue-600" />
                   <span className="text-xs font-medium text-slate-700">
-                    {t('dashboard.bankBalance', 'बैंक मौज्दात (Bank)')}
+                    {t('dashboard.bankBalance', 'Bank balance')}
                   </span>
                 </div>
                 <span className="font-mono text-xs font-bold text-blue-700">
@@ -515,7 +525,7 @@ export default function Dashboard() {
 
               <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
                 <span className="font-medium text-slate-600">
-                  {t('dashboard.totalLiquid', 'कुल तरल सम्पत्ति (Total)')}
+                  {t('dashboard.totalLiquid', 'Total liquid')}
                 </span>
                 <span className="font-mono font-bold text-slate-900">
                   {fmt(totalCash + totalBank)}
@@ -530,17 +540,17 @@ export default function Dashboard() {
               <div className="flex items-center gap-2">
                 <Clock3 size={16} className="text-amber-500" />
                 <h3 className="text-sm font-semibold text-slate-800">
-                  स्वीकृति पर्खिएका मस्यौदा ({pendingDrafts.length})
+                  {t('dashboard.pendingDrafts', 'Drafts awaiting approval')} ({pendingDrafts.length})
                 </h3>
               </div>
               <Link to="/posting" className="text-xs text-crimson-600 hover:underline">
-                सबै पोष्टिङ →
+                {t('dashboard.allPostings', 'All postings')} →
               </Link>
             </div>
 
             {pendingDrafts.length === 0 ? (
               <p className="text-xs text-slate-400 py-3 text-center">
-                कुनै मस्यौदा भौचर बाँकी छैन।
+                {t('dashboard.noPendingDrafts', 'No draft vouchers pending.')}
               </p>
             ) : (
               <div className="space-y-2">
@@ -565,7 +575,7 @@ export default function Dashboard() {
                         to={`/vouchers/edit/${doc.id}`}
                         className="rounded border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-100"
                       >
-                        खोल्नुहोस्
+                        {t('common.open', 'Open')}
                       </Link>
                     </div>
                   </div>
@@ -578,24 +588,24 @@ export default function Dashboard() {
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
               <h3 className="text-sm font-semibold text-slate-800">
-                {t('dashboard.outstandingDues', 'बक्यौता स्थिति')}
+                {t('dashboard.outstandingDues', 'Outstanding dues')}
               </h3>
               <Link to="/aging" className="text-xs text-crimson-600 hover:underline">
-                विस्तृत →
+                {t('dashboard.details', 'Details')} →
               </Link>
             </div>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-1 text-slate-600">
                   <ArrowUpRight size={14} className="text-emerald-600" />
-                  उठ्न बाँकी (Receivables):
+                  {t('dashboard.receiptDues', 'Receivable')}:
                 </span>
                 <span className="font-mono font-bold text-emerald-700">{fmt(arTotal)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-1 text-slate-600">
                   <ArrowDownLeft size={14} className="text-red-600" />
-                  तिर्न बाँकी (Payables):
+                  {t('dashboard.paymentDues', 'Payable')}:
                 </span>
                 <span className="font-mono font-bold text-red-700">{fmt(apTotal)}</span>
               </div>
@@ -610,9 +620,9 @@ export default function Dashboard() {
             <div className="flex flex-col gap-2 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">
-                  {t('dashboard.recentJournalEntries', 'पछिल्ला भौचरहरू (Journal Feed)')}
+                  {t('dashboard.recentJournalEntries', 'Recent journal entries')}
                 </h3>
-                <p className="text-xs text-slate-500">हालसालै प्रविष्टि गरिएका लेखा भौचरहरू</p>
+                <p className="text-xs text-slate-500">{t('dashboard.recentHint', 'Recently entered accounting vouchers')}</p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -625,7 +635,7 @@ export default function Dashboard() {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    सबै ({recentEntries.length})
+                    {t('dashboard.filterAll', 'All')} ({recentEntries.length})
                   </button>
                   <button
                     onClick={() => setTableFilter('posted')}
@@ -635,7 +645,7 @@ export default function Dashboard() {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    प्रमाणित
+                    {t('status.posted', 'Posted')}
                   </button>
                   <button
                     onClick={() => setTableFilter('draft')}
@@ -645,13 +655,13 @@ export default function Dashboard() {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    मस्यौदा
+                    {t('status.draft', 'Draft')}
                   </button>
                 </div>
 
                 <input
                   type="text"
-                  placeholder="भौचर नं. वा विवरण खोज..."
+                  placeholder={t('dashboard.searchPlaceholder', 'Search voucher no. or narration…')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-crimson-500"
@@ -663,19 +673,19 @@ export default function Dashboard() {
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50 font-medium text-slate-500">
-                    <th className="px-4 py-2.5">{t('common.date', 'मिति')}</th>
-                    <th className="px-4 py-2.5">भौचर नं.</th>
-                    <th className="px-4 py-2.5">{t('dashboard.narration', 'विवरण')}</th>
-                    <th className="px-4 py-2.5 text-right">{t('common.debit', 'डेबिट (Dr)')}</th>
-                    <th className="px-4 py-2.5 text-right">{t('common.credit', 'क्रेडिट (Cr)')}</th>
-                    <th className="px-4 py-2.5 text-center">{t('common.status', 'स्थिति')}</th>
+                    <th className="px-4 py-2.5">{t('common.date', 'Date')}</th>
+                    <th className="px-4 py-2.5">{t('dashboard.voucherNo', 'Voucher no.')}</th>
+                    <th className="px-4 py-2.5">{t('dashboard.narration', 'Narration')}</th>
+                    <th className="px-4 py-2.5 text-right">{t('common.debit', 'Debit (Dr)')}</th>
+                    <th className="px-4 py-2.5 text-right">{t('common.credit', 'Credit (Cr)')}</th>
+                    <th className="px-4 py-2.5 text-center">{t('common.status', 'Status')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredEntries.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
-                        कुनै भौचर फेला परेन।
+                        {t('dashboard.noVouchers', 'No vouchers found.')}
                       </td>
                     </tr>
                   ) : (
@@ -716,23 +726,23 @@ export default function Dashboard() {
               <div className="flex items-center gap-2">
                 <TrendingUp size={16} className="text-slate-400" />
                 <h3 className="text-sm font-semibold text-slate-800">
-                  मासिक आय-व्यय तुलना (Revenue vs Expenses - 12 Months)
+                  {t('dashboard.trendTitle', 'Revenue vs expenses — 12 months')}
                 </h3>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <span className="flex items-center gap-1 text-slate-600">
                   <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                  आम्दानी (Income)
+                  {t('dashboard.income', 'Income')}
                 </span>
                 <span className="flex items-center gap-1 text-slate-600">
                   <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
-                  खर्च (Expenses)
+                  {t('dashboard.expenses', 'Expenses')}
                 </span>
               </div>
             </div>
             {trendLoading ? (
               <div className="flex h-32 items-center justify-center text-xs text-slate-400">
-                चार्ट लोड हुँदैछ...
+                {t('dashboard.loadingChart', 'Loading chart…')}
               </div>
             ) : (
               <MiniBarChart months={months} data={trend} />

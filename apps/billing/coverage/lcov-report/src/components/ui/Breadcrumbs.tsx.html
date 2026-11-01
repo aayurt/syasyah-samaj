@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>0/13</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>0/13</span>
             </div>
         
             
@@ -135,7 +135,23 @@
 <a name='L70'></a><a href='#L70'>70</a>
 <a name='L71'></a><a href='#L71'>71</a>
 <a name='L72'></a><a href='#L72'>72</a>
-<a name='L73'></a><a href='#L73'>73</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -160,6 +176,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -182,6 +201,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -210,35 +230,44 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import * as React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
+import { useT } from '../../lib/i18n'
 &nbsp;
-const ROUTE_LABELS: Record&lt;string, string&gt; = <span class="cstat-no" title="statement not covered" >{</span>
-  '': 'ड्यासबोर्ड (Dashboard)',
-  accounts: 'खाता सूची (Chart of Accounts)',
-  'opening-balances': 'प्रारम्भिक मौज्दात (Opening Balances)',
-  vouchers: 'भौचरहरू (Vouchers)',
-  parties: 'पक्षहरू (Parties)',
-  journal: 'जर्नल भौचर (Journal)',
-  'trial-balance': 'सन्तुलन परीक्षण (Trial Balance)',
-  aging: 'उधारो विश्लेषण (Aging)',
-  inventory: 'जिन्सी मौज्दात (Inventory)',
-  reports: 'प्रतिवेदनहरू (Reports Hub)',
-  members: 'सदस्यता (Members)',
-  'membership-types': 'सदस्यता प्रकार (Membership Types)',
-  posting: 'प्रमाणीकरण (Posting Queue)',
-  'audit-log': 'अडिट लग (Audit Log)',
-  settings: 'सेटिंग्स (Settings)',
-  transfers: 'आन्तरिक रकमान्तर (Transfers)',
-  daybooks: 'दैनिक खाता (Daybooks)',
+/**
+ * Route segment → i18n key. Labels come from the `nav` namespace so the
+ * breadcrumb always matches the active language (no bilingual strings).
+ * Unknown segments fall back to the raw URL segment.
+ */
+const ROUTE_KEYS: Record&lt;string, string&gt; = <span class="cstat-no" title="statement not covered" >{</span>
+  accounts: 'nav.accounts',
+  'opening-balances': 'nav.openingBalances',
+  vouchers: 'nav.vouchers',
+  parties: 'nav.parties',
+  journal: 'nav.journal',
+  'trial-balance': 'nav.trialBalance',
+  aging: 'nav.aging',
+  inventory: 'nav.inventory',
+  reports: 'nav.reportsHub',
+  members: 'nav.members',
+  'membership-types': 'nav.membershipTypes',
+  posting: 'nav.posting',
+  audit: 'nav.auditLog',
+  settings: 'nav.settings',
+  transfers: 'nav.transfers',
+  daybooks: 'nav.daybook',
+  payroll: 'nav.payroll',
+  employees: 'nav.employees',
+  registers: 'nav.statutoryRegisters',
 }
 &nbsp;
 export function <span class="fstat-no" title="function not covered" >Breadcrumbs() {</span>
   const <span class="cstat-no" title="statement not covered" >location = useLocation()</span>
+  const <span class="cstat-no" title="statement not covered" >t = useT()</span>
   const segments = <span class="cstat-no" title="statement not covered" >location.pathname.split('/').filter(Boolean)</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  if (segments.length === 0) {</span>
 <span class="cstat-no" title="statement not covered" >    return (</span>
       &lt;div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium"&gt;
-        &lt;span className="text-slate-900 font-semibold"&gt;ड्यासबोर्ड (Dashboard)&lt;/span&gt;
+        &lt;span className="text-slate-900 font-semibold"&gt;{t('nav.dashboard', 'Dashboard')}&lt;/span&gt;
       &lt;/div&gt;
     )
   }
@@ -251,12 +280,13 @@ export function <span class="fstat-no" title="function not covered" >Breadcrumbs
         to="/"
         className="text-slate-400 hover:text-slate-700 transition-colors"
       &gt;
-        गृह (Home)
+        {t('nav.home', 'Home')}
       &lt;/Link&gt;
       {segments.map(<span class="fstat-no" title="function not covered" >(s</span>eg: string, idx: number) =&gt; {
 <span class="cstat-no" title="statement not covered" >        currentPath += `/${seg}`</span>
         const isLast = <span class="cstat-no" title="statement not covered" >idx === segments.length - 1</span>
-        const label = <span class="cstat-no" title="statement not covered" >ROUTE_LABELS[seg] || seg</span>
+        const key = <span class="cstat-no" title="statement not covered" >ROUTE_KEYS[seg]</span>
+        const label = <span class="cstat-no" title="statement not covered" >key ? t(key, seg) : seg</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        return (</span>
           &lt;React.Fragment key={currentPath}&gt;
@@ -286,7 +316,7 @@ export function <span class="fstat-no" title="function not covered" >Breadcrumbs
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-08T04:11:48.394Z
+                at 2026-11-01T16:04:07.774Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

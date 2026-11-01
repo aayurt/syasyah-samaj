@@ -15,14 +15,16 @@ import { pushToast } from '../lib/toast'
 interface ExportOption {
   slug: string
   label: string
-  desc: string
+  kind: 'master' | 'transaction'
   countHint?: string
 }
 
+// Labels stay English (collection names are schema identifiers); the kind is
+// translated at render time so the modal never mixes languages.
 const EXPORT_COLLECTIONS: ExportOption[] = ENTITY_REGISTRY.map((e) => ({
   slug: e.slug,
   label: `${e.label} (${e.slug})`,
-  desc: e.kind === 'master' ? 'Master data — मुख्य डाटा' : 'Transactions — लेनदेन',
+  kind: e.kind,
 }))
 
 export default function ExportModal({
@@ -50,8 +52,11 @@ export default function ExportModal({
         downloadBlob(`${selectedSlug}_template_${dateStr}.xlsx`, blob)
         pushToast(
           'success',
-          'टेम्प्लेट डाउनलोड भयो (Template ready)',
-          `${selectedSlug} — headers + example row, delete the example before importing.`,
+          t('exportModal.templateReady', 'Template downloaded'),
+          `${selectedSlug} — ${t(
+            'exportModal.templateNote',
+            'headers + example row, delete the example before importing.',
+          )}`,
         )
         onClose()
         return
@@ -60,7 +65,11 @@ export default function ExportModal({
       // depth:1 so relation columns export display names, not raw ids.
       const docs = await fetchAllDocs<Record<string, unknown>>(selectedSlug, tenantQuery, 500, 1)
       if (docs.length === 0) {
-        pushToast('info', 'कुनै डाटा भेटिएन', 'छानिएको सूचीमा कुनै रेकर्ड फेला परेन।')
+        pushToast(
+          'info',
+          t('exportModal.noData', 'No data found'),
+          t('exportModal.noDataDesc', 'No records were found in the selected list.'),
+        )
         return
       }
 
@@ -76,15 +85,15 @@ export default function ExportModal({
 
       pushToast(
         'success',
-        'निर्यात सम्पन्न (Export Complete)',
-        `${docs.length} वटा रेकर्ड सफलतापूर्वक डाउनलोड गरियो।`,
+        t('exportModal.exportComplete', 'Export complete'),
+        `${docs.length} ${t('exportModal.recordsDownloaded', 'records downloaded')}`,
       )
       onClose()
     } catch (e) {
       pushToast(
         'error',
-        'निर्यात असफल (Export Failed)',
-        e instanceof Error ? e.message : 'Unknown error',
+        t('exportModal.exportFailed', 'Export failed'),
+        e instanceof Error ? e.message : t('error.unknown', 'Unknown error'),
       )
     } finally {
       setExporting(false)
@@ -107,10 +116,10 @@ export default function ExportModal({
             </div>
             <div>
               <h2 className="text-sm font-semibold text-slate-900">
-                डाटा निर्यात केन्द्र (Data Export)
+                {t('exportModal.title', 'Data export centre')}
               </h2>
               <p className="text-xs text-slate-500">
-                Excel (.xlsx) / CSV / JSON ढाँचा वा खाली टेम्प्लेट डाउनलोड गर्नुहोस्
+                {t('exportModal.subtitle', 'Download Excel (.xlsx) / CSV / JSON, or a blank template')}
               </p>
             </div>
           </div>
@@ -126,7 +135,7 @@ export default function ExportModal({
           {/* Collection selection */}
           <div>
             <label className="block text-xs font-semibold text-slate-700">
-              कुन डाटा डाउनलोड गर्ने? (Select Collection)
+              {t('exportModal.selectCollection', 'Which data to download?')}
             </label>
             <div className="mt-2 space-y-1.5">
               {EXPORT_COLLECTIONS.map((opt) => (
@@ -148,7 +157,11 @@ export default function ExportModal({
                     />
                     <div>
                       <div className="text-xs font-medium text-slate-900">{opt.label}</div>
-                      <div className="text-[11px] text-slate-500">{opt.desc}</div>
+                      <div className="text-[11px] text-slate-500">
+                        {opt.kind === 'master'
+                          ? t('exportModal.masterData', 'Master data')
+                          : t('exportModal.transactions', 'Transactions')}
+                      </div>
                     </div>
                   </div>
                 </label>
@@ -159,7 +172,7 @@ export default function ExportModal({
           {/* Format Selection */}
           <div>
             <label className="block text-xs font-semibold text-slate-700">
-              फाइल ढाँचा (File Format)
+              {t('exportModal.fileFormat', 'File format')}
             </label>
             <div className="mt-2 grid grid-cols-2 gap-3">
               <button
@@ -220,7 +233,7 @@ export default function ExportModal({
             onClick={onClose}
             className="rounded border border-slate-300 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
           >
-            {t('common.cancel', 'रद्द (Cancel)')}
+            {t('common.cancel', 'Cancel')}
           </button>
           <button
             onClick={handleExport}
@@ -230,12 +243,12 @@ export default function ExportModal({
             {exporting ? (
               <>
                 <Loader2 size={14} className="animate-spin" />
-                <span>डाउनलोड हुँदैछ...</span>
+                <span>{t('exportModal.downloading', 'Downloading…')}</span>
               </>
             ) : (
               <>
                 <Download size={14} />
-                <span>अहिले डाउनलोड गर्नुहोस् (Download)</span>
+                <span>{t('exportModal.downloadNow', 'Download now')}</span>
               </>
             )}
           </button>

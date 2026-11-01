@@ -165,7 +165,7 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
           />
         )}
         <h1 className="text-xl font-bold tracking-tight text-slate-900">
-          {orgName || 'स्यस्यः धुकू'}
+          {orgName || t('sidebar.orgName', 'स्यस्यः धुकू')}
         </h1>
         {orgAddress && (
           <p className="mt-0.5 text-xs text-slate-500">{orgAddress}</p>
@@ -185,13 +185,14 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
         {isTemp && !serverNumber && (
           <div className="mb-3 rounded border-2 border-dashed border-amber-400 bg-amber-50 px-3 py-2">
             <div className="text-sm font-bold text-amber-700">
-              [अस्थायी रसिद / Temporary Receipt #LOCAL-{String(doc.id).slice(6)}]
+              [{t('printVoucher.temporaryReceipt', 'Temporary receipt')} #LOCAL-
+              {String(doc.id).slice(6)}]
             </div>
             <div className="mt-0.5 text-[10px] leading-snug text-amber-600">
-              यो रसिद अझै सर्भरमा पठाइएको छैन — अन्तिम रसिद नम्बर इन्टरनेट जडान भएपछि छापिनेछ।
-              This is a provisional receipt issued while offline. The final voucher
-              number will be assigned automatically once the device syncs — reprint
-              the official copy then.
+              {t(
+                'printVoucher.notSyncedNote',
+                'This receipt has not reached the server yet — the final receipt number will print once the connection returns.',
+              )}
             </div>
           </div>
         )}
@@ -372,7 +373,7 @@ export default function PrintVoucher({ doc, accounts, partyName, orgName, orgAdd
 
       {/* Footer */}
       <div className="mt-2 text-center text-[9px] text-slate-400">
-        {t('printVoucher.generatedBy')} {orgName || 'स्यस्यः धुकू'} · {new Date().toLocaleString()}
+        {t('printVoucher.generatedBy')} {orgName || t('sidebar.orgName', 'स्यस्यः धुकू')} · {new Date().toLocaleString()}
       </div>
     </div>
   )

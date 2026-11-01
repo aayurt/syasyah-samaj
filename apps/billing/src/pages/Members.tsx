@@ -442,7 +442,7 @@ function PrintableForm({ data, photoUrl }: { data: FormState; photoUrl: string }
 
       {/* ── Section A: Identity ──────────────────────── */}
       <div className="pf-section">
-        <div className="pf-section-title">Identity (पहिचान)</div>
+        <div className="pf-section-title">पहिचान</div>
         <div className="pf-grid">
           {fld('ना (नाम)', data.fullName)}
           {fld('नागरिकता ल्या: (नं.)', data.citizenshipNo)}
@@ -453,7 +453,7 @@ function PrintableForm({ data, photoUrl }: { data: FormState; photoUrl: string }
 
       {/* ── Section B: Address ──────────────────────── */}
       <div className="pf-section">
-        <div className="pf-section-title">Address &amp; Contact (ठेगाना)</div>
+        <div className="pf-section-title">ठेगाना</div>
         <div className="pf-block">
           {fld('स्थायी ठेगाना', data.addressPermanent)}
         </div>
@@ -469,7 +469,7 @@ function PrintableForm({ data, photoUrl }: { data: FormState; photoUrl: string }
 
       {/* ── Section C: Personal ──────────────────────── */}
       <div className="pf-section">
-        <div className="pf-section-title">Personal (व्यक्तिगत)</div>
+        <div className="pf-section-title">व्यक्तिगत</div>
         <div className="pf-grid">
           {fld('रक्ता', data.bloodGroup)}
           {fld('विशिष्टता', data.specialQualification)}
@@ -480,7 +480,7 @@ function PrintableForm({ data, photoUrl }: { data: FormState; photoUrl: string }
 
       {/* ── Section D: Family ────────────────────────── */}
       <div className="pf-section">
-        <div className="pf-section-title">Family (पारिवारिक)</div>
+        <div className="pf-section-title">पारिवारिक</div>
         <div className="pf-grid">
           {fld('बाजेको नाम', data.grandfatherName)}
           {fld('बाबुको नाम', data.fatherName)}
@@ -493,7 +493,7 @@ function PrintableForm({ data, photoUrl }: { data: FormState; photoUrl: string }
 
       {/* ── Section E: Membership ────────────────────── */}
       <div className="pf-section">
-        <div className="pf-section-title">Membership &amp; Fee (दुज़ तथा शुल्क)</div>
+        <div className="pf-section-title">दुज़ तथा शुल्क</div>
         <div className="pf-grid">
           {fld('दुज़', data.membershipTypeId)}
           {fld('आवेदन मिति (बि.सं.)', data.appliedDateBs)}
@@ -537,6 +537,7 @@ function ApplicationForm({
   membershipTypes: { id: number; name: string; fee: number }[]
   onSaved: () => void
 }) {
+  const t = useT()
   const [editingMemberId, setEditingMemberId] = useState<number | null>(null)
   const [form, setForm] = useState<FormState>({ ...blankForm })
   const [error, setError] = useState('')
@@ -740,14 +741,14 @@ function ApplicationForm({
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* ── Section A: Identity ──────────────────────── */}
-          <Section title="Identity (पहिचान)">
+          <Section title="पहिचान">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <FieldLabel label="Full Name (नाम)" />
+                <FieldLabel label="नाम" />
                 <TextInput value={form.fullName} onChange={(v) => set('fullName', v)} placeholder="e.g. Ram Bahadur Shrestha" />
               </div>
               <div>
-                <FieldLabel label="Citizenship No. (नागरिकता ल्या:)" />
+                <FieldLabel label="नागरिकता ल्या:" />
                 <TextInput value={form.citizenshipNo} onChange={(v) => set('citizenshipNo', v)} placeholder="e.g. 12-34-56-78901" />
               </div>
               <div>
@@ -755,7 +756,7 @@ function ApplicationForm({
                 <TextInput value={form.citizenshipIssuedDateBs} onChange={(v) => set('citizenshipIssuedDateBs', v)} placeholder="2080-01-15" />
               </div>
               <div>
-                <FieldLabel label="Citizenship District (जिल्ला)" />
+                <FieldLabel label="जिल्ला" />
                 <Select
                   value={form.citizenshipDistrict}
                   onChange={(v) => set('citizenshipDistrict', v)}
@@ -767,36 +768,36 @@ function ApplicationForm({
           </Section>
 
           {/* ── Section B: Address & Contact ─────────────── */}
-          <Section title="Address & Contact (ठेगाना)">
+          <Section title="ठेगाना">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <FieldLabel label="Permanent Address (स्थायी ठेगाना)" />
+                <FieldLabel label="स्थायी ठेगाना" />
                 <TextArea value={form.addressPermanent} onChange={(v) => set('addressPermanent', v)} placeholder="Ward, VDC/Municipality, District" />
               </div>
               <div className="sm:col-span-2">
-                <FieldLabel label="Temporary Address (अस्थाई ठेगाना)" />
+                <FieldLabel label="अस्थाई ठेगाना" />
                 <TextArea value={form.addressTemporary} onChange={(v) => set('addressTemporary', v)} placeholder="Current residence address" />
               </div>
               <div>
-                <FieldLabel label="Email (इमेल)" />
+                <FieldLabel label="इमेल" />
                 <TextInput value={form.email} onChange={(v) => set('email', v)} placeholder="e.g. ram@example.com" />
               </div>
               <div>
-                <FieldLabel label="Phone (फोन)" />
+                <FieldLabel label="फोन" />
                 <TextInput value={form.phoneNumber} onChange={(v) => set('phoneNumber', v)} placeholder="e.g. 01-XXXXXXX" />
               </div>
               <div>
-                <FieldLabel label="Mobile (मोबाइल)" />
+                <FieldLabel label="मोबाइल" />
                 <TextInput value={form.mobile} onChange={(v) => set('mobile', v)} placeholder="e.g. 98XXXXXXXX" />
               </div>
             </div>
           </Section>
 
           {/* ── Section C: Personal ──────────────────────── */}
-          <Section title="Personal (व्यक्तिगत)">
+          <Section title="व्यक्तिगत">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <FieldLabel label="Blood Group (रक्ता)" />
+                <FieldLabel label="रक्ता" />
                 <Select
                   value={form.bloodGroup}
                   onChange={(v) => set('bloodGroup', v)}
@@ -805,55 +806,55 @@ function ApplicationForm({
                 />
               </div>
               <div>
-                <FieldLabel label="Special Qualification (विशिष्टता)" />
+                <FieldLabel label="विशिष्टता" />
                 <TextInput value={form.specialQualification} onChange={(v) => set('specialQualification', v)} placeholder="e.g. MBA, PhD" />
               </div>
               <div>
-                <FieldLabel label="Occupation (पेशा)" />
+                <FieldLabel label="पेशा" />
                 <TextInput value={form.occupation} onChange={(v) => set('occupation', v)} placeholder="e.g. Engineer" />
               </div>
               <div>
-                <FieldLabel label="Office Name (कार्यालयको नाम)" />
+                <FieldLabel label="कार्यालयको नाम" />
                 <TextInput value={form.officeName} onChange={(v) => set('officeName', v)} placeholder="e.g. Nepal Telecom" />
               </div>
             </div>
           </Section>
 
           {/* ── Section D: Family ────────────────────────── */}
-          <Section title="Family (पारिवारिक)">
+          <Section title="पारिवारिक">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <FieldLabel label="Grandfather's Name (बाजेको नाम)" />
+                <FieldLabel label="बाजेको नाम" />
                 <TextInput value={form.grandfatherName} onChange={(v) => set('grandfatherName', v)} />
               </div>
               <div>
-                <FieldLabel label="Father's Name (बाबुको नाम)" />
+                <FieldLabel label="बाबुको नाम" />
                 <TextInput value={form.fatherName} onChange={(v) => set('fatherName', v)} />
               </div>
               <div>
-                <FieldLabel label="Father-in-law's Name (ससुराको नाम)" />
+                <FieldLabel label="ससुराको नाम" />
                 <TextInput value={form.fatherInLawName} onChange={(v) => set('fatherInLawName', v)} />
               </div>
               <div>
-                <FieldLabel label="Spouse's Name (पति/पत्नीको नाम)" />
+                <FieldLabel label="पति/पत्नीको नाम" />
                 <TextInput value={form.spouseName} onChange={(v) => set('spouseName', v)} />
               </div>
               <div>
-                <FieldLabel label="Son's Name (छोराको नाम)" />
+                <FieldLabel label="छोराको नाम" />
                 <TextInput value={form.sonName} onChange={(v) => set('sonName', v)} />
               </div>
               <div>
-                <FieldLabel label="Daughter's Name (छोरीको नाम)" />
+                <FieldLabel label="छोरीको नाम" />
                 <TextInput value={form.daughterName} onChange={(v) => set('daughterName', v)} />
               </div>
             </div>
           </Section>
 
           {/* ── Section E: Membership & Fee ──────────────── */}
-          <Section title="Membership & Fee (दुज़ तथा शुल्क)">
+          <Section title="दुज़ तथा शुल्क">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <FieldLabel label="Membership Type (दुज़)" />
+                <FieldLabel label="दुज़" />
                 <SearchSelect
                   value={form.membershipTypeId}
                   onChange={(v) => set('membershipTypeId', v)}
@@ -885,7 +886,11 @@ function ApplicationForm({
               variant="accent"
               size="md"
             >
-              {saving ? 'Saving…' : editingMemberId ? 'Update Member' : 'Save Application'}
+              {saving
+                ? t('common.saving', 'Saving…')
+                : editingMemberId
+                  ? t('members.updateMember', 'Update member')
+                  : t('members.saveApplication', 'Save application')}
             </LiquidButton>
             {editingMemberId && (
               <LiquidButton
@@ -894,7 +899,7 @@ function ApplicationForm({
                 size="md"
                 onClick={() => handlePrint('data')}
               >
-                <Printer size={14} /> प्रिन्ट
+                <Printer size={14} /> {t('members.printForm', 'Print form')}
               </LiquidButton>
             )}
             <LiquidButton
@@ -903,7 +908,7 @@ function ApplicationForm({
               size="md"
               onClick={() => handlePrint('blank')}
             >
-              <Printer size={14} /> खाली फाराम प्रिन्ट
+              <Printer size={14} /> {t('members.blankForm', 'Print blank form')}
             </LiquidButton>
             {editingMemberId && (
               <button
@@ -911,7 +916,7 @@ function ApplicationForm({
                 onClick={startNew}
                 className="text-sm text-slate-500 hover:text-slate-700"
               >
-                Start New
+                {t('members.startNew', 'Start new')}
               </button>
             )}
           </div>

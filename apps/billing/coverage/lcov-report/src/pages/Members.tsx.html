@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/311</span>
+                <span class='fraction'>0/312</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/281</span>
+                <span class='fraction'>0/282</span>
             </div>
         
             
@@ -1589,7 +1589,12 @@
 <a name='L1524'></a><a href='#L1524'>1524</a>
 <a name='L1525'></a><a href='#L1525'>1525</a>
 <a name='L1526'></a><a href='#L1526'>1526</a>
-<a name='L1527'></a><a href='#L1527'>1527</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L1527'></a><a href='#L1527'>1527</a>
+<a name='L1528'></a><a href='#L1528'>1528</a>
+<a name='L1529'></a><a href='#L1529'>1529</a>
+<a name='L1530'></a><a href='#L1530'>1530</a>
+<a name='L1531'></a><a href='#L1531'>1531</a>
+<a name='L1532'></a><a href='#L1532'>1532</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2134,6 +2139,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2459,6 +2465,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3559,7 +3569,7 @@ function <span class="fstat-no" title="function not covered" >PrintableForm({</s
 &nbsp;
       {/* ── Section A: Identity ──────────────────────── */}
       &lt;div className="pf-section"&gt;
-        &lt;div className="pf-section-title"&gt;Identity (पहिचान)&lt;/div&gt;
+        &lt;div className="pf-section-title"&gt;पहिचान&lt;/div&gt;
         &lt;div className="pf-grid"&gt;
           {fld('ना (नाम)', data.fullName)}
           {fld('नागरिकता ल्या: (नं.)', data.citizenshipNo)}
@@ -3570,7 +3580,7 @@ function <span class="fstat-no" title="function not covered" >PrintableForm({</s
 &nbsp;
       {/* ── Section B: Address ──────────────────────── */}
       &lt;div className="pf-section"&gt;
-        &lt;div className="pf-section-title"&gt;Address &amp;amp; Contact (ठेगाना)&lt;/div&gt;
+        &lt;div className="pf-section-title"&gt;ठेगाना&lt;/div&gt;
         &lt;div className="pf-block"&gt;
           {fld('स्थायी ठेगाना', data.addressPermanent)}
         &lt;/div&gt;
@@ -3586,7 +3596,7 @@ function <span class="fstat-no" title="function not covered" >PrintableForm({</s
 &nbsp;
       {/* ── Section C: Personal ──────────────────────── */}
       &lt;div className="pf-section"&gt;
-        &lt;div className="pf-section-title"&gt;Personal (व्यक्तिगत)&lt;/div&gt;
+        &lt;div className="pf-section-title"&gt;व्यक्तिगत&lt;/div&gt;
         &lt;div className="pf-grid"&gt;
           {fld('रक्ता', data.bloodGroup)}
           {fld('विशिष्टता', data.specialQualification)}
@@ -3597,7 +3607,7 @@ function <span class="fstat-no" title="function not covered" >PrintableForm({</s
 &nbsp;
       {/* ── Section D: Family ────────────────────────── */}
       &lt;div className="pf-section"&gt;
-        &lt;div className="pf-section-title"&gt;Family (पारिवारिक)&lt;/div&gt;
+        &lt;div className="pf-section-title"&gt;पारिवारिक&lt;/div&gt;
         &lt;div className="pf-grid"&gt;
           {fld('बाजेको नाम', data.grandfatherName)}
           {fld('बाबुको नाम', data.fatherName)}
@@ -3610,7 +3620,7 @@ function <span class="fstat-no" title="function not covered" >PrintableForm({</s
 &nbsp;
       {/* ── Section E: Membership ────────────────────── */}
       &lt;div className="pf-section"&gt;
-        &lt;div className="pf-section-title"&gt;Membership &amp;amp; Fee (दुज़ तथा शुल्क)&lt;/div&gt;
+        &lt;div className="pf-section-title"&gt;दुज़ तथा शुल्क&lt;/div&gt;
         &lt;div className="pf-grid"&gt;
           {fld('दुज़', data.membershipTypeId)}
           {fld('आवेदन मिति (बि.सं.)', data.appliedDateBs)}
@@ -3654,6 +3664,7 @@ function <span class="fstat-no" title="function not covered" >ApplicationForm({<
   membershipTypes: { id: number; name: string; fee: number }[]
   onSaved: () =&gt; void
 }) {
+  const <span class="cstat-no" title="statement not covered" >t = useT()</span>
   const [editingMemberId, setEditingMemberId<span class="cstat-no" title="statement not covered" >] = useState&lt;number | null&gt;(null)</span>
   const [form, setForm<span class="cstat-no" title="statement not covered" >] = useState&lt;FormState&gt;({ ...blankForm })</span>
   const [error, setError<span class="cstat-no" title="statement not covered" >] = useState('')</span>
@@ -3857,14 +3868,14 @@ function <span class="fstat-no" title="function not covered" >ApplicationForm({<
 &nbsp;
         &lt;form onSubmit={handleSave} className="space-y-6"&gt;
           {/* ── Section A: Identity ──────────────────────── */}
-          &lt;Section title="Identity (पहिचान)"&gt;
+          &lt;Section title="पहिचान"&gt;
             &lt;div className="grid grid-cols-1 gap-3 sm:grid-cols-2"&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Full Name (नाम)" /&gt;
+                &lt;FieldLabel label="नाम" /&gt;
                 &lt;TextInput value={form.fullName} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('fullName', v)} p</span>laceholder="e.g. Ram Bahadur Shrestha" /&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Citizenship No. (नागरिकता ल्या:)" /&gt;
+                &lt;FieldLabel label="नागरिकता ल्या:" /&gt;
                 &lt;TextInput value={form.citizenshipNo} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('citizenshipNo', v)} p</span>laceholder="e.g. 12-34-56-78901" /&gt;
               &lt;/div&gt;
               &lt;div&gt;
@@ -3872,7 +3883,7 @@ function <span class="fstat-no" title="function not covered" >ApplicationForm({<
                 &lt;TextInput value={form.citizenshipIssuedDateBs} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('citizenshipIssuedDateBs', v)} p</span>laceholder="2080-01-15" /&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Citizenship District (जिल्ला)" /&gt;
+                &lt;FieldLabel label="जिल्ला" /&gt;
                 &lt;Select
                   value={form.citizenshipDistrict}
                   onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('citizenshipDistrict', v)}</span>
@@ -3884,36 +3895,36 @@ function <span class="fstat-no" title="function not covered" >ApplicationForm({<
           &lt;/Section&gt;
 &nbsp;
           {/* ── Section B: Address &amp; Contact ─────────────── */}
-          &lt;Section title="Address &amp; Contact (ठेगाना)"&gt;
+          &lt;Section title="ठेगाना"&gt;
             &lt;div className="grid grid-cols-1 gap-3 sm:grid-cols-2"&gt;
               &lt;div className="sm:col-span-2"&gt;
-                &lt;FieldLabel label="Permanent Address (स्थायी ठेगाना)" /&gt;
+                &lt;FieldLabel label="स्थायी ठेगाना" /&gt;
                 &lt;TextArea value={form.addressPermanent} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('addressPermanent', v)} p</span>laceholder="Ward, VDC/Municipality, District" /&gt;
               &lt;/div&gt;
               &lt;div className="sm:col-span-2"&gt;
-                &lt;FieldLabel label="Temporary Address (अस्थाई ठेगाना)" /&gt;
+                &lt;FieldLabel label="अस्थाई ठेगाना" /&gt;
                 &lt;TextArea value={form.addressTemporary} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('addressTemporary', v)} p</span>laceholder="Current residence address" /&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Email (इमेल)" /&gt;
+                &lt;FieldLabel label="इमेल" /&gt;
                 &lt;TextInput value={form.email} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('email', v)} p</span>laceholder="e.g. ram@example.com" /&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Phone (फोन)" /&gt;
+                &lt;FieldLabel label="फोन" /&gt;
                 &lt;TextInput value={form.phoneNumber} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('phoneNumber', v)} p</span>laceholder="e.g. 01-XXXXXXX" /&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Mobile (मोबाइल)" /&gt;
+                &lt;FieldLabel label="मोबाइल" /&gt;
                 &lt;TextInput value={form.mobile} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('mobile', v)} p</span>laceholder="e.g. 98XXXXXXXX" /&gt;
               &lt;/div&gt;
             &lt;/div&gt;
           &lt;/Section&gt;
 &nbsp;
           {/* ── Section C: Personal ──────────────────────── */}
-          &lt;Section title="Personal (व्यक्तिगत)"&gt;
+          &lt;Section title="व्यक्तिगत"&gt;
             &lt;div className="grid grid-cols-1 gap-3 sm:grid-cols-2"&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Blood Group (रक्ता)" /&gt;
+                &lt;FieldLabel label="रक्ता" /&gt;
                 &lt;Select
                   value={form.bloodGroup}
                   onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('bloodGroup', v)}</span>
@@ -3922,55 +3933,55 @@ function <span class="fstat-no" title="function not covered" >ApplicationForm({<
                 /&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Special Qualification (विशिष्टता)" /&gt;
+                &lt;FieldLabel label="विशिष्टता" /&gt;
                 &lt;TextInput value={form.specialQualification} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('specialQualification', v)} p</span>laceholder="e.g. MBA, PhD" /&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Occupation (पेशा)" /&gt;
+                &lt;FieldLabel label="पेशा" /&gt;
                 &lt;TextInput value={form.occupation} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('occupation', v)} p</span>laceholder="e.g. Engineer" /&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Office Name (कार्यालयको नाम)" /&gt;
+                &lt;FieldLabel label="कार्यालयको नाम" /&gt;
                 &lt;TextInput value={form.officeName} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('officeName', v)} p</span>laceholder="e.g. Nepal Telecom" /&gt;
               &lt;/div&gt;
             &lt;/div&gt;
           &lt;/Section&gt;
 &nbsp;
           {/* ── Section D: Family ────────────────────────── */}
-          &lt;Section title="Family (पारिवारिक)"&gt;
+          &lt;Section title="पारिवारिक"&gt;
             &lt;div className="grid grid-cols-1 gap-3 sm:grid-cols-2"&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Grandfather's Name (बाजेको नाम)" /&gt;
+                &lt;FieldLabel label="बाजेको नाम" /&gt;
                 &lt;TextInput value={form.grandfatherName} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('grandfatherName', v)} /</span>&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Father's Name (बाबुको नाम)" /&gt;
+                &lt;FieldLabel label="बाबुको नाम" /&gt;
                 &lt;TextInput value={form.fatherName} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('fatherName', v)} /</span>&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Father-in-law's Name (ससुराको नाम)" /&gt;
+                &lt;FieldLabel label="ससुराको नाम" /&gt;
                 &lt;TextInput value={form.fatherInLawName} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('fatherInLawName', v)} /</span>&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Spouse's Name (पति/पत्नीको नाम)" /&gt;
+                &lt;FieldLabel label="पति/पत्नीको नाम" /&gt;
                 &lt;TextInput value={form.spouseName} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('spouseName', v)} /</span>&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Son's Name (छोराको नाम)" /&gt;
+                &lt;FieldLabel label="छोराको नाम" /&gt;
                 &lt;TextInput value={form.sonName} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('sonName', v)} /</span>&gt;
               &lt;/div&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Daughter's Name (छोरीको नाम)" /&gt;
+                &lt;FieldLabel label="छोरीको नाम" /&gt;
                 &lt;TextInput value={form.daughterName} onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('daughterName', v)} /</span>&gt;
               &lt;/div&gt;
             &lt;/div&gt;
           &lt;/Section&gt;
 &nbsp;
           {/* ── Section E: Membership &amp; Fee ──────────────── */}
-          &lt;Section title="Membership &amp; Fee (दुज़ तथा शुल्क)"&gt;
+          &lt;Section title="दुज़ तथा शुल्क"&gt;
             &lt;div className="grid grid-cols-1 gap-3 sm:grid-cols-2"&gt;
               &lt;div&gt;
-                &lt;FieldLabel label="Membership Type (दुज़)" /&gt;
+                &lt;FieldLabel label="दुज़" /&gt;
                 &lt;SearchSelect
                   value={form.membershipTypeId}
                   onChange={<span class="fstat-no" title="function not covered" >(v</span>) =&gt; <span class="cstat-no" title="statement not covered" >set('membershipTypeId', v)}</span>
@@ -4002,7 +4013,11 @@ function <span class="fstat-no" title="function not covered" >ApplicationForm({<
               variant="accent"
               size="md"
             &gt;
-              {saving ? 'Saving…' : editingMemberId ? 'Update Member' : 'Save Application'}
+              {saving
+                ? t('common.saving', 'Saving…')
+                : editingMemberId
+                  ? t('members.updateMember', 'Update member')
+                  : t('members.saveApplication', 'Save application')}
             &lt;/LiquidButton&gt;
             {editingMemberId &amp;&amp; (
               &lt;LiquidButton
@@ -4011,7 +4026,7 @@ function <span class="fstat-no" title="function not covered" >ApplicationForm({<
                 size="md"
                 onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >h</span>andlePrint('data')}</span>
               &gt;
-                &lt;Printer size={14} /&gt; प्रिन्ट
+                &lt;Printer size={14} /&gt; {t('members.printForm', 'Print form')}
               &lt;/LiquidButton&gt;
             )}
             &lt;LiquidButton
@@ -4020,7 +4035,7 @@ function <span class="fstat-no" title="function not covered" >ApplicationForm({<
               size="md"
               onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >h</span>andlePrint('blank')}</span>
             &gt;
-              &lt;Printer size={14} /&gt; खाली फाराम प्रिन्ट
+              &lt;Printer size={14} /&gt; {t('members.blankForm', 'Print blank form')}
             &lt;/LiquidButton&gt;
             {editingMemberId &amp;&amp; (
               &lt;button
@@ -4028,7 +4043,7 @@ function <span class="fstat-no" title="function not covered" >ApplicationForm({<
                 onClick={startNew}
                 className="text-sm text-slate-500 hover:text-slate-700"
               &gt;
-                Start New
+                {t('members.startNew', 'Start new')}
               &lt;/button&gt;
             )}
           &lt;/div&gt;
@@ -4648,7 +4663,7 @@ export default function <span class="fstat-no" title="function not covered" >Mem
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-08T04:11:48.394Z
+                at 2026-11-01T16:04:07.774Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

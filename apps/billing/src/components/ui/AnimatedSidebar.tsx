@@ -137,12 +137,12 @@ export function AnimatedSidebar({
             {!collapsed && (
               <div className="grid flex-1 text-left leading-tight truncate">
                 <span className="truncate text-xs font-bold text-slate-900">
-                  {activeTenant?.name || 'स्यस्यः धुकू'}
+                  {activeTenant?.name || t('sidebar.orgName', 'स्यस्यः धुकू')}
                 </span>
                 <span className="truncate text-[10px] text-slate-500">
                   {activeTenant?.type === 'central'
-                    ? 'केन्द्रीय कार्यालय (HQ)'
-                    : activeTenant?.code || 'इलाका शाखा'}
+                    ? t('sidebar.hq', 'Head office (HQ)')
+                    : activeTenant?.code || t('sidebar.branch', 'Branch office')}
                 </span>
               </div>
             )}
@@ -177,7 +177,7 @@ export function AnimatedSidebar({
               className="absolute left-2 right-2 top-full mt-1.5 z-50 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg space-y-1"
             >
               <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                इलाका / संगठन चयन
+                {t('sidebar.scopeSelect', 'Illaka / organisation')}
               </div>
               <div className="max-h-48 overflow-y-auto space-y-0.5">
                 {tenants.map((tn) => {
@@ -392,14 +392,14 @@ export function AnimatedSidebar({
                 className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 <Settings size={14} className="text-slate-400" />
-                <span>सेटिंग्स (Settings)</span>
+                <span>{t('sidebar.settings', 'Settings')}</span>
               </NavLink>
               <button
                 onClick={handleSignOut}
                 className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors text-left"
               >
                 <LogOut size={14} className="text-red-500" />
-                <span>लगआउट (Log out)</span>
+                <span>{t('sidebar.logout', 'Log out')}</span>
               </button>
             </motion.div>
           )}

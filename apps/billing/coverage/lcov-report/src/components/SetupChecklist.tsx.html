@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>12/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -140,13 +140,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -160,8 +158,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -202,12 +202,12 @@ type SetupStepKey = 'company' | 'fiscalYear' | 'chart' | 'defaults'
  * them off as each is completed. Hidden entirely once setup is complete.
  * Voucher posting is disabled until `complete` (see the voucher forms).
  */
-export default function <span class="fstat-no" title="function not covered" >SetupChecklist() {</span>
-  const <span class="cstat-no" title="statement not covered" >t = useT()</span>
-  const <span class="cstat-no" title="statement not covered" >setup = useSetupStatus()</span>
-<span class="cstat-no" title="statement not covered" >  if (setup.loading || setup.complete) <span class="cstat-no" title="statement not covered" >return null</span></span>
+export default function SetupChecklist() {
+  const t = useT()
+  const setup = useSetupStatus()
+  if (setup.loading || setup.complete) return null
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return (</span>
+  return (
     &lt;div className="mt-4 overflow-hidden rounded-lg border border-crimson-200 bg-gradient-to-br from-crimson-50/60 to-white"&gt;
       &lt;div className="border-b border-crimson-100 px-4 py-3"&gt;
         &lt;div className="flex items-center gap-2"&gt;
@@ -222,9 +222,9 @@ export default function <span class="fstat-no" title="function not covered" >Set
         &lt;/p&gt;
       &lt;/div&gt;
       &lt;ol className="divide-y divide-slate-100"&gt;
-        {SETUP_STEPS.map(<span class="fstat-no" title="function not covered" >(s</span>tep) =&gt; {
-          const done = <span class="cstat-no" title="statement not covered" >setup[step.key as SetupStepKey]</span>
-<span class="cstat-no" title="statement not covered" >          return (</span>
+        {SETUP_STEPS.map((step) =&gt; {
+          const done = setup[step.key as SetupStepKey]
+          return (
             &lt;li key={step.key}&gt;
               &lt;Link
                 to={step.to}
@@ -259,7 +259,7 @@ export type { SetupStatus }</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-08T04:11:48.394Z
+                at 2026-11-01T16:04:07.774Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

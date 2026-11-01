@@ -2251,7 +2251,15 @@
 <a name='L2186'></a><a href='#L2186'>2186</a>
 <a name='L2187'></a><a href='#L2187'>2187</a>
 <a name='L2188'></a><a href='#L2188'>2188</a>
-<a name='L2189'></a><a href='#L2189'>2189</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L2189'></a><a href='#L2189'>2189</a>
+<a name='L2190'></a><a href='#L2190'>2190</a>
+<a name='L2191'></a><a href='#L2191'>2191</a>
+<a name='L2192'></a><a href='#L2192'>2192</a>
+<a name='L2193'></a><a href='#L2193'>2193</a>
+<a name='L2194'></a><a href='#L2194'>2194</a>
+<a name='L2195'></a><a href='#L2195'>2195</a>
+<a name='L2196'></a><a href='#L2196'>2196</a>
+<a name='L2197'></a><a href='#L2197'>2197</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2357,6 +2365,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3848,6 +3858,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3869,7 +3881,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -4504,10 +4520,12 @@ function <span class="fstat-no" title="function not covered" >LanguageToggle() {
             &lt;/div&gt;
             &lt;div&gt;
               &lt;div className="text-sm font-medium text-slate-900"&gt;
-                {l === 'en' ? 'English' : 'नेपाली'}
+                {l === 'en' ? t('lang.english', 'English') : t('lang.nepali', 'नेपाली')}
               &lt;/div&gt;
               &lt;div className="text-xs text-slate-400"&gt;
-                {l === 'en' ? 'English' : 'नेपाली (Devanagari)'}
+                {l === 'en'
+                  ? t('lang.english', 'English')
+                  : `${t('lang.nepali', 'नेपाली')} (${t('lang.nepaliScript', 'Devanagari')})`}
               &lt;/div&gt;
             &lt;/div&gt;
           &lt;/button&gt;
@@ -6045,7 +6063,10 @@ export default function <span class="fstat-no" title="function not covered" >Set
               &lt;div className="text-sm text-slate-700"&gt;{t('settings.nepaliDigits', 'Nepali digits (०१२३)')}&lt;/div&gt;
               &lt;div className="text-xs text-slate-400"&gt;
                 {nepaliDigitsEnabled
-                  ? t('settings.nepaliDigitsHintOn', 'Enabled — amounts show Devanagari digits with Indian-style grouping (११,५५,५३८)')
+                  ? t(
+                    'settings.nepaliDigitsHintOn',
+                    'Enabled — amounts show Devanagari digits with Indian-style grouping (११,५५,५३८)',
+                  )
                   : t('settings.nepaliDigitsHint', 'Show amounts with Devanagari digits and Indian-style grouping')}
               &lt;/div&gt;
             &lt;/div&gt;
@@ -6067,7 +6088,10 @@ export default function <span class="fstat-no" title="function not covered" >Set
               &lt;div className="text-sm text-slate-700"&gt;{t('settings.nepaliWords', 'Amount in words in Nepali (on print)')}&lt;/div&gt;
               &lt;div className="text-xs text-slate-400"&gt;
                 {nepaliWordsOnPrintEnabled
-                  ? t('settings.nepaliWordsHintOn', 'Enabled — voucher previews and prints show शब्दमा रकम in Nepali words')
+                  ? t(
+                    'settings.nepaliWordsHintOn',
+                    'Enabled — voucher previews and prints show the amount in Nepali words',
+                  )
                   : t('settings.nepaliWordsHint', 'Amount in words on voucher previews and prints stays in English')}
               &lt;/div&gt;
             &lt;/div&gt;
@@ -6330,8 +6354,8 @@ export default function <span class="fstat-no" title="function not covered" >Set
 &nbsp;
       {/* ── 6. Language / भाषा ─────────────────────────────────── */}
       &lt;Section
-        title="Language / भाषा"
-        subtitle="Choose the interface language"
+        title={t('lang.title', 'Language')}
+        subtitle={t('lang.subtitle', 'Choose the interface language')}
         icon={Type}
         open={!!openSections.language}
         onToggle={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >t</span>oggle('language')}</span>
@@ -6341,7 +6365,7 @@ export default function <span class="fstat-no" title="function not covered" >Set
 &nbsp;
       {/* ── 7. Number Series / क्रमांक शृंखला ─────────────────────── */}
       &lt;Section
-        title={t('settings.numberSeries', 'Number Series / क्रमांक शृंखला')}
+        title={t('settings.numberSeries', 'Number series')}
         subtitle={sequences.length ? `${sequences.length} series` : t('settings.noSeriesYet', 'No series yet — add one below')}
         icon={Hash}
         open={!!openSections.sequences}
@@ -6634,7 +6658,7 @@ export default function <span class="fstat-no" title="function not covered" >Set
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-08T04:11:48.394Z
+                at 2026-11-01T16:04:07.774Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

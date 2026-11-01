@@ -309,7 +309,22 @@
 <a name='L244'></a><a href='#L244'>244</a>
 <a name='L245'></a><a href='#L245'>245</a>
 <a name='L246'></a><a href='#L246'>246</a>
-<a name='L247'></a><a href='#L247'>247</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L247'></a><a href='#L247'>247</a>
+<a name='L248'></a><a href='#L248'>248</a>
+<a name='L249'></a><a href='#L249'>249</a>
+<a name='L250'></a><a href='#L250'>250</a>
+<a name='L251'></a><a href='#L251'>251</a>
+<a name='L252'></a><a href='#L252'>252</a>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -364,6 +379,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -372,6 +390,10 @@
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -455,6 +477,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -572,14 +598,16 @@ import { pushToast } from '../lib/toast'
 interface ExportOption {
   slug: string
   label: string
-  desc: string
+  kind: 'master' | 'transaction'
   countHint?: string
 }
 &nbsp;
+// Labels stay English (collection names are schema identifiers); the kind is
+// translated at render time so the modal never mixes languages.
 const EXPORT_COLLECTIONS: ExportOption[] = ENTITY_REGISTRY.map((e) =&gt; ({
   slug: e.slug,
   label: `${e.label} (${e.slug})`,
-  desc: e.kind === 'master' ? 'Master data — मुख्य डाटा' : 'Transactions — लेनदेन',
+  kind: e.kind,
 }))
 &nbsp;
 export default function ExportModal({
@@ -607,8 +635,11 @@ export default function ExportModal({
         downloadBlob(`${selectedSlug}_template_${dateStr}.xlsx`, blob)
         pushToast(
           'success',
-          'टेम्प्लेट डाउनलोड भयो (Template ready)',
-          `${selectedSlug} — headers + example row, delete the example before importing.`,
+          t('exportModal.templateReady', 'Template downloaded'),
+          `${selectedSlug} — ${t(
+            'exportModal.templateNote',
+            'headers + example row, delete the example before importing.',
+          )}`,
         )
         onClose()
         return
@@ -617,7 +648,11 @@ export default function ExportModal({
       // depth:1 so relation columns export display names, not raw ids.
       const docs = await fetchAllDocs&lt;Record&lt;string, unknown&gt;&gt;(selectedSlug, tenantQuery, 500, 1)
       if (docs.length === 0) {
-        pushToast('info', 'कुनै डाटा भेटिएन', 'छानिएको सूचीमा कुनै रेकर्ड फेला परेन।')
+        pushToast(
+          'info',
+          t('exportModal.noData', 'No data found'),
+          t('exportModal.noDataDesc', 'No records were found in the selected list.'),
+        )
         return
       }
 &nbsp;
@@ -633,15 +668,15 @@ export default function ExportModal({
 &nbsp;
       pushToast(
         'success',
-        'निर्यात सम्पन्न (Export Complete)',
-        `${docs.length} वटा रेकर्ड सफलतापूर्वक डाउनलोड गरियो।`,
+        t('exportModal.exportComplete', 'Export complete'),
+        `${docs.length} ${t('exportModal.recordsDownloaded', 'records downloaded')}`,
       )
       onClose()
     } catch (e) {
 <span class="cstat-no" title="statement not covered" >      pushToast(</span>
         'error',
-        'निर्यात असफल (Export Failed)',
-        e instanceof Error ? e.message : 'Unknown error',
+        t('exportModal.exportFailed', 'Export failed'),
+        e instanceof Error ? e.message : t('error.unknown', 'Unknown error'),
       )
     } finally {
       setExporting(false)
@@ -664,10 +699,10 @@ export default function ExportModal({
             &lt;/div&gt;
             &lt;div&gt;
               &lt;h2 className="text-sm font-semibold text-slate-900"&gt;
-                डाटा निर्यात केन्द्र (Data Export)
+                {t('exportModal.title', 'Data export centre')}
               &lt;/h2&gt;
               &lt;p className="text-xs text-slate-500"&gt;
-                Excel (.xlsx) / CSV / JSON ढाँचा वा खाली टेम्प्लेट डाउनलोड गर्नुहोस्
+                {t('exportModal.subtitle', 'Download Excel (.xlsx) / CSV / JSON, or a blank template')}
               &lt;/p&gt;
             &lt;/div&gt;
           &lt;/div&gt;
@@ -683,7 +718,7 @@ export default function ExportModal({
           {/* Collection selection */}
           &lt;div&gt;
             &lt;label className="block text-xs font-semibold text-slate-700"&gt;
-              कुन डाटा डाउनलोड गर्ने? (Select Collection)
+              {t('exportModal.selectCollection', 'Which data to download?')}
             &lt;/label&gt;
             &lt;div className="mt-2 space-y-1.5"&gt;
               {EXPORT_COLLECTIONS.map((opt) =&gt; (
@@ -705,7 +740,11 @@ export default function ExportModal({
                     /&gt;
                     &lt;div&gt;
                       &lt;div className="text-xs font-medium text-slate-900"&gt;{opt.label}&lt;/div&gt;
-                      &lt;div className="text-[11px] text-slate-500"&gt;{opt.desc}&lt;/div&gt;
+                      &lt;div className="text-[11px] text-slate-500"&gt;
+                        {opt.kind === 'master'
+                          ? t('exportModal.masterData', 'Master data')
+                          : t('exportModal.transactions', 'Transactions')}
+                      &lt;/div&gt;
                     &lt;/div&gt;
                   &lt;/div&gt;
                 &lt;/label&gt;
@@ -716,7 +755,7 @@ export default function ExportModal({
           {/* Format Selection */}
           &lt;div&gt;
             &lt;label className="block text-xs font-semibold text-slate-700"&gt;
-              फाइल ढाँचा (File Format)
+              {t('exportModal.fileFormat', 'File format')}
             &lt;/label&gt;
             &lt;div className="mt-2 grid grid-cols-2 gap-3"&gt;
               &lt;button
@@ -777,7 +816,7 @@ export default function ExportModal({
             onClick={onClose}
             className="rounded border border-slate-300 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
           &gt;
-            {t('common.cancel', 'रद्द (Cancel)')}
+            {t('common.cancel', 'Cancel')}
           &lt;/button&gt;
           &lt;button
             onClick={handleExport}
@@ -787,12 +826,12 @@ export default function ExportModal({
             {exporting ? (
               &lt;&gt;
                 &lt;Loader2 size={14} className="animate-spin" /&gt;
-                &lt;span&gt;डाउनलोड हुँदैछ...&lt;/span&gt;
+                &lt;span&gt;{t('exportModal.downloading', 'Downloading…')}&lt;/span&gt;
               &lt;/&gt;
             ) : (
               &lt;&gt;
                 &lt;Download size={14} /&gt;
-                &lt;span&gt;अहिले डाउनलोड गर्नुहोस् (Download)&lt;/span&gt;
+                &lt;span&gt;{t('exportModal.downloadNow', 'Download now')}&lt;/span&gt;
               &lt;/&gt;
             )}
           &lt;/button&gt;
@@ -808,7 +847,7 @@ export default function ExportModal({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-08T04:11:48.394Z
+                at 2026-11-01T16:04:07.774Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

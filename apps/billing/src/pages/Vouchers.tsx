@@ -1984,7 +1984,7 @@ export default function Vouchers() {
                         title="Saved on this device — posted officially as soon as the device syncs"
                         className="inline-flex items-center gap-0.5 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-700"
                       >
-                        {t('status.queuedForPosting', '⏳ Queued for Posting (सिङ्क पर्खिएको)')}
+                        {t('status.queuedForPosting', '⏳ Queued for posting')}
                       </span>
                     )}
                     <StatusPill status={d.status} />
@@ -2187,7 +2187,7 @@ export default function Vouchers() {
                 const isSimplified = simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold
                 return (
                   <div className="border-b border-slate-200 bg-slate-50 px-8 py-5 text-center rounded-t-xl print:bg-white print:rounded-none">
-                    <h1 className="text-xl font-bold tracking-tight text-slate-900">स्यस्यः धुकू</h1>
+                    <h1 className="text-xl font-bold tracking-tight text-slate-900">{t('sidebar.orgName', 'स्यस्यः धुकू')}</h1>
                     <p className="mt-0.5 text-xs text-slate-400">
                       {isSimplified ? t('vouchers.taxInvoiceSimplified', 'Tax Invoice (VAT Inclusive)') : t('vouchers.taxInvoice', 'Tax Invoice / Transaction')}
                     </p>

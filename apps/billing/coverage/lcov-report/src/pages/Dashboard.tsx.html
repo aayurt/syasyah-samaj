@@ -25,28 +25,28 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/148</span>
+                <span class='fraction'>0/152</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/109</span>
+                <span class='fraction'>0/112</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/50</span>
+                <span class='fraction'>0/51</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/132</span>
+                <span class='fraction'>0/136</span>
             </div>
         
             
@@ -822,7 +822,17 @@
 <a name='L757'></a><a href='#L757'>757</a>
 <a name='L758'></a><a href='#L758'>758</a>
 <a name='L759'></a><a href='#L759'>759</a>
-<a name='L760'></a><a href='#L760'>760</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L760'></a><a href='#L760'>760</a>
+<a name='L761'></a><a href='#L761'>761</a>
+<a name='L762'></a><a href='#L762'>762</a>
+<a name='L763'></a><a href='#L763'>763</a>
+<a name='L764'></a><a href='#L764'>764</a>
+<a name='L765'></a><a href='#L765'>765</a>
+<a name='L766'></a><a href='#L766'>766</a>
+<a name='L767'></a><a href='#L767'>767</a>
+<a name='L768'></a><a href='#L768'>768</a>
+<a name='L769'></a><a href='#L769'>769</a>
+<a name='L770'></a><a href='#L770'>770</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -877,6 +887,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -964,6 +975,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1141,12 +1153,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1264,6 +1282,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1603,7 +1623,8 @@ import {
   Wallet,
 } from 'lucide-react'
 import { api, fmt, useSyncState } from '../lib/api'
-import { useT } from '../lib/i18n'
+import { useT, useLang } from '../lib/i18n'
+import { toNepaliDigits } from '../lib/nepaliNumbers'
 import DataStatus from '../components/DataStatus'
 import SetupChecklist from '../components/SetupChecklist'
 import { useCalendar } from '../lib/calendar'
@@ -1724,6 +1745,7 @@ export function <span class="fstat-no" title="function not covered" >StatusPill(
 &nbsp;
 export default function <span class="fstat-no" title="function not covered" >Dashboard() {</span>
   const <span class="cstat-no" title="statement not covered" >t = useT()</span>
+  const { lang <span class="cstat-no" title="statement not covered" >} = useLang()</span>
   const <span class="cstat-no" title="statement not covered" >navigate = useNavigate()</span>
   const { cacheVersion, online <span class="cstat-no" title="statement not covered" >} = useSyncState()</span>
   const { tenantId <span class="cstat-no" title="statement not covered" >} = useTenant()</span>
@@ -1894,7 +1916,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
       const parsed = <span class="cstat-no" title="statement not covered" >await parseImportFile&lt;Record&lt;string, unknown&gt;&gt;(file)</span>
 <span class="cstat-no" title="statement not covered" >      setImportData(parsed)</span>
     } catch (err) {
-<span class="cstat-no" title="statement not covered" >      pushToast('error', 'आयात त्रुटि (Import Error)', err instanceof Error ? err.message : String(err))</span>
+<span class="cstat-no" title="statement not covered" >      pushToast('error', t('dashboard.importError', 'Import error'), err instanceof Error ? err.message : String(err))</span>
     }
 <span class="cstat-no" title="statement not covered" >    e.target.value = ''</span>
   }
@@ -1905,10 +1927,16 @@ export default function <span class="fstat-no" title="function not covered" >Das
       &lt;div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"&gt;
         &lt;div&gt;
           &lt;h1 className="text-xl font-bold tracking-tight text-slate-900"&gt;
-            {t('dashboard.title', 'लेखा तथा बिलिङ्ग ड्यासबोर्ड (Dashboard)')}
+            {t('dashboard.title', 'Dashboard')}
           &lt;/h1&gt;
           &lt;p className="text-xs text-slate-500"&gt;
-            {selectedYear ? `आ.व. ${selectedYear.label || selectedYear.startDate?.slice(0, 4)}` : ''} • दैनिक हिसाब, काउन्टर मौज्दात तथा द्रुत प्रविष्टि
+            {selectedYear ? (<span class="fstat-no" title="function not covered" >() =&gt; {</span>
+              const <span class="cstat-no" title="statement not covered" >rawLabel = (selectedYear.label || selectedYear.startDate?.slice(0, 4) || '').replace(/^(Fiscal\s+Year|FY|आ\.व\.)\s*/i, '').trim()</span>
+              const displayLabel = <span class="cstat-no" title="statement not covered" >lang === 'ne' ? toNepaliDigits(rawLabel) : rawLabel</span>
+<span class="cstat-no" title="statement not covered" >              return `${t('dashboard.fyPrefix', 'FY')} ${displayLabel}`</span>
+            })() : ''}
+            {' • '}
+            {t('dashboard.subtitle', 'Daily books, counter balance and quick entry')}
           &lt;/p&gt;
         &lt;/div&gt;
         &lt;DataStatus /&gt;
@@ -1924,7 +1952,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
             className="font-semibold shadow-xs"
           &gt;
             &lt;Receipt size={14} className="text-slate-500" /&gt;
-            &lt;span&gt;+ {t('vouchers.receipt', 'रसिद (Receipt)')}&lt;/span&gt;
+            &lt;span&gt;+ {t('vouchers.receipt', 'Receipt')}&lt;/span&gt;
             &lt;span className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-mono text-slate-600"&gt;F1&lt;/span&gt;
           &lt;/LiquidLink&gt;
           &lt;LiquidLink
@@ -1934,7 +1962,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
             className="font-semibold"
           &gt;
             &lt;FilePlus size={14} className="text-slate-500" /&gt;
-            &lt;span&gt;+ {t('vouchers.payment', 'भुक्तानी (Payment)')}&lt;/span&gt;
+            &lt;span&gt;+ {t('vouchers.payment', 'Payment')}&lt;/span&gt;
             &lt;span className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-mono text-slate-600"&gt;F2&lt;/span&gt;
           &lt;/LiquidLink&gt;
           &lt;LiquidLink
@@ -1944,7 +1972,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
             className="font-semibold"
           &gt;
             &lt;FileText size={14} className="text-slate-500" /&gt;
-            &lt;span&gt;+ {t('vouchers.journal', 'जर्नल (Journal)')}&lt;/span&gt;
+            &lt;span&gt;+ {t('vouchers.journal', 'Journal')}&lt;/span&gt;
             &lt;span className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-mono text-slate-600"&gt;F3&lt;/span&gt;
           &lt;/LiquidLink&gt;
           &lt;LiquidLink
@@ -1953,7 +1981,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
             size="xs"
           &gt;
             &lt;UserPlus size={14} className="text-slate-500" /&gt;
-            &lt;span&gt;सदस्य दर्ता (+Member)&lt;/span&gt;
+            &lt;span&gt;+ {t('dashboard.addMember', 'Add member')}&lt;/span&gt;
           &lt;/LiquidLink&gt;
         &lt;/div&gt;
 &nbsp;
@@ -1965,7 +1993,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
             size="xs"
           &gt;
             &lt;Download size={14} className="text-slate-500" /&gt;
-            &lt;span&gt;थोक निर्यात (Export)&lt;/span&gt;
+            &lt;span&gt;{t('dashboard.exportData', 'Export')}&lt;/span&gt;
           &lt;/LiquidButton&gt;
 &nbsp;
           {/* Import button */}
@@ -1975,7 +2003,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
             onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >f</span>ileInputRef.current?.click()}</span>
           &gt;
             &lt;Upload size={14} className="text-white" /&gt;
-            &lt;span&gt;आयात (Import CSV)&lt;/span&gt;
+            &lt;span&gt;{t('dashboard.importData', 'Import')}&lt;/span&gt;
           &lt;/LiquidButton&gt;
         &lt;/div&gt;
       &lt;/div&gt;
@@ -1991,7 +2019,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
           &lt;/div&gt;
           &lt;div&gt;
             &lt;div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500"&gt;
-              {t('dashboard.accounts', 'खाता संख्या')}
+              {t('dashboard.accounts', 'Accounts')}
             &lt;/div&gt;
             &lt;div className="font-mono text-lg font-bold text-slate-800"&gt;
               {accounts.length}
@@ -2005,7 +2033,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
           &lt;/div&gt;
           &lt;div&gt;
             &lt;div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500"&gt;
-              {t('dashboard.journalEntries', 'कुल भौचरहरू')}
+              {t('dashboard.journalEntries', 'Journal entries')}
             &lt;/div&gt;
             &lt;div className="font-mono text-lg font-bold text-slate-800"&gt;
               {recentEntries.length}
@@ -2019,7 +2047,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
           &lt;/div&gt;
           &lt;div&gt;
             &lt;div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500"&gt;
-              {t('dashboard.posted', 'प्रमाणित (Posted)')}
+              {t('dashboard.posted', 'Posted')}
             &lt;/div&gt;
             &lt;div className="font-mono text-lg font-bold text-slate-800"&gt;
               {recentEntries.filter(<span class="fstat-no" title="function not covered" >(e</span>ntry) =&gt; <span class="cstat-no" title="statement not covered" >entry.status === 'posted')</span>.length}
@@ -2037,7 +2065,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
           &lt;/div&gt;
           &lt;div&gt;
             &lt;div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500"&gt;
-              {t('dashboard.trialBalance', 'ट्रायल ब्यालेन्स')}
+              {t('dashboard.trialBalance', 'Trial balance')}
             &lt;/div&gt;
             &lt;div className="font-mono text-lg font-bold text-slate-800"&gt;
               {trialBalance ? fmt(trialBalance.totals.debit) : '–'}
@@ -2047,7 +2075,9 @@ export default function <span class="fstat-no" title="function not covered" >Das
                 trialBalance?.balanced ? 'text-emerald-600' : 'text-red-600'
               }`}
             &gt;
-              {trialBalance?.balanced ? '✓ सन्तुलित (Balanced)' : '✗ फरक (Unbalanced)'}
+              {trialBalance?.balanced
+                ? t('dashboard.balanced', '✓ balanced')
+                : t('dashboard.outOfBalance', '✗ out of balance')}
             &lt;/div&gt;
           &lt;/div&gt;
         &lt;/div&gt;
@@ -2063,11 +2093,11 @@ export default function <span class="fstat-no" title="function not covered" >Das
               &lt;div className="flex items-center gap-2"&gt;
                 &lt;Wallet size={16} className="text-slate-400" /&gt;
                 &lt;h3 className="text-sm font-semibold text-slate-800"&gt;
-                  {t('dashboard.cashPosition', 'मौज्दात स्थिति (Liquidity)')}
+                  {t('dashboard.cashPosition', 'Cash position')}
                 &lt;/h3&gt;
               &lt;/div&gt;
               &lt;Link to="/reports/cash-statement" className="text-xs text-crimson-600 hover:underline"&gt;
-                विवरण →
+                {t('dashboard.details', 'Details')} →
               &lt;/Link&gt;
             &lt;/div&gt;
 &nbsp;
@@ -2076,7 +2106,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
                 &lt;div className="flex items-center gap-2"&gt;
                   &lt;IndianRupee size={14} className="text-emerald-600" /&gt;
                   &lt;span className="text-xs font-medium text-slate-700"&gt;
-                    {t('dashboard.cashInHand', 'कार्यालय नगद (Cash)')}
+                    {t('dashboard.cashInHand', 'Cash in hand')}
                   &lt;/span&gt;
                 &lt;/div&gt;
                 &lt;span className="font-mono text-xs font-bold text-emerald-700"&gt;
@@ -2088,7 +2118,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
                 &lt;div className="flex items-center gap-2"&gt;
                   &lt;CreditCard size={14} className="text-blue-600" /&gt;
                   &lt;span className="text-xs font-medium text-slate-700"&gt;
-                    {t('dashboard.bankBalance', 'बैंक मौज्दात (Bank)')}
+                    {t('dashboard.bankBalance', 'Bank balance')}
                   &lt;/span&gt;
                 &lt;/div&gt;
                 &lt;span className="font-mono text-xs font-bold text-blue-700"&gt;
@@ -2098,7 +2128,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
 &nbsp;
               &lt;div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs"&gt;
                 &lt;span className="font-medium text-slate-600"&gt;
-                  {t('dashboard.totalLiquid', 'कुल तरल सम्पत्ति (Total)')}
+                  {t('dashboard.totalLiquid', 'Total liquid')}
                 &lt;/span&gt;
                 &lt;span className="font-mono font-bold text-slate-900"&gt;
                   {fmt(totalCash + totalBank)}
@@ -2113,17 +2143,17 @@ export default function <span class="fstat-no" title="function not covered" >Das
               &lt;div className="flex items-center gap-2"&gt;
                 &lt;Clock3 size={16} className="text-amber-500" /&gt;
                 &lt;h3 className="text-sm font-semibold text-slate-800"&gt;
-                  स्वीकृति पर्खिएका मस्यौदा ({pendingDrafts.length})
+                  {t('dashboard.pendingDrafts', 'Drafts awaiting approval')} ({pendingDrafts.length})
                 &lt;/h3&gt;
               &lt;/div&gt;
               &lt;Link to="/posting" className="text-xs text-crimson-600 hover:underline"&gt;
-                सबै पोष्टिङ →
+                {t('dashboard.allPostings', 'All postings')} →
               &lt;/Link&gt;
             &lt;/div&gt;
 &nbsp;
             {pendingDrafts.length === 0 ? (
               &lt;p className="text-xs text-slate-400 py-3 text-center"&gt;
-                कुनै मस्यौदा भौचर बाँकी छैन।
+                {t('dashboard.noPendingDrafts', 'No draft vouchers pending.')}
               &lt;/p&gt;
             ) : (
               &lt;div className="space-y-2"&gt;
@@ -2148,7 +2178,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
                         to={`/vouchers/edit/${doc.id}`}
                         className="rounded border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-100"
                       &gt;
-                        खोल्नुहोस्
+                        {t('common.open', 'Open')}
                       &lt;/Link&gt;
                     &lt;/div&gt;
                   &lt;/div&gt;
@@ -2161,24 +2191,24 @@ export default function <span class="fstat-no" title="function not covered" >Das
           &lt;div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs"&gt;
             &lt;div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2"&gt;
               &lt;h3 className="text-sm font-semibold text-slate-800"&gt;
-                {t('dashboard.outstandingDues', 'बक्यौता स्थिति')}
+                {t('dashboard.outstandingDues', 'Outstanding dues')}
               &lt;/h3&gt;
               &lt;Link to="/aging" className="text-xs text-crimson-600 hover:underline"&gt;
-                विस्तृत →
+                {t('dashboard.details', 'Details')} →
               &lt;/Link&gt;
             &lt;/div&gt;
             &lt;div className="space-y-2 text-xs"&gt;
               &lt;div className="flex justify-between items-center"&gt;
                 &lt;span className="flex items-center gap-1 text-slate-600"&gt;
                   &lt;ArrowUpRight size={14} className="text-emerald-600" /&gt;
-                  उठ्न बाँकी (Receivables):
+                  {t('dashboard.receiptDues', 'Receivable')}:
                 &lt;/span&gt;
                 &lt;span className="font-mono font-bold text-emerald-700"&gt;{fmt(arTotal)}&lt;/span&gt;
               &lt;/div&gt;
               &lt;div className="flex justify-between items-center"&gt;
                 &lt;span className="flex items-center gap-1 text-slate-600"&gt;
                   &lt;ArrowDownLeft size={14} className="text-red-600" /&gt;
-                  तिर्न बाँकी (Payables):
+                  {t('dashboard.paymentDues', 'Payable')}:
                 &lt;/span&gt;
                 &lt;span className="font-mono font-bold text-red-700"&gt;{fmt(apTotal)}&lt;/span&gt;
               &lt;/div&gt;
@@ -2193,9 +2223,9 @@ export default function <span class="fstat-no" title="function not covered" >Das
             &lt;div className="flex flex-col gap-2 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between"&gt;
               &lt;div&gt;
                 &lt;h3 className="text-sm font-semibold text-slate-900"&gt;
-                  {t('dashboard.recentJournalEntries', 'पछिल्ला भौचरहरू (Journal Feed)')}
+                  {t('dashboard.recentJournalEntries', 'Recent journal entries')}
                 &lt;/h3&gt;
-                &lt;p className="text-xs text-slate-500"&gt;हालसालै प्रविष्टि गरिएका लेखा भौचरहरू&lt;/p&gt;
+                &lt;p className="text-xs text-slate-500"&gt;{t('dashboard.recentHint', 'Recently entered accounting vouchers')}&lt;/p&gt;
               &lt;/div&gt;
 &nbsp;
               &lt;div className="flex flex-wrap items-center gap-2"&gt;
@@ -2208,7 +2238,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   &gt;
-                    सबै ({recentEntries.length})
+                    {t('dashboard.filterAll', 'All')} ({recentEntries.length})
                   &lt;/button&gt;
                   &lt;button
                     onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etTableFilter('posted')}</span>
@@ -2218,7 +2248,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   &gt;
-                    प्रमाणित
+                    {t('status.posted', 'Posted')}
                   &lt;/button&gt;
                   &lt;button
                     onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etTableFilter('draft')}</span>
@@ -2228,13 +2258,13 @@ export default function <span class="fstat-no" title="function not covered" >Das
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   &gt;
-                    मस्यौदा
+                    {t('status.draft', 'Draft')}
                   &lt;/button&gt;
                 &lt;/div&gt;
 &nbsp;
                 &lt;input
                   type="text"
-                  placeholder="भौचर नं. वा विवरण खोज..."
+                  placeholder={t('dashboard.searchPlaceholder', 'Search voucher no. or narration…')}
                   value={searchQuery}
                   onChange={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; <span class="cstat-no" title="statement not covered" >setSearchQuery(e.target.value)}</span>
                   className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-crimson-500"
@@ -2246,19 +2276,19 @@ export default function <span class="fstat-no" title="function not covered" >Das
               &lt;table className="w-full text-left text-xs"&gt;
                 &lt;thead&gt;
                   &lt;tr className="border-b border-slate-100 bg-slate-50 font-medium text-slate-500"&gt;
-                    &lt;th className="px-4 py-2.5"&gt;{t('common.date', 'मिति')}&lt;/th&gt;
-                    &lt;th className="px-4 py-2.5"&gt;भौचर नं.&lt;/th&gt;
-                    &lt;th className="px-4 py-2.5"&gt;{t('dashboard.narration', 'विवरण')}&lt;/th&gt;
-                    &lt;th className="px-4 py-2.5 text-right"&gt;{t('common.debit', 'डेबिट (Dr)')}&lt;/th&gt;
-                    &lt;th className="px-4 py-2.5 text-right"&gt;{t('common.credit', 'क्रेडिट (Cr)')}&lt;/th&gt;
-                    &lt;th className="px-4 py-2.5 text-center"&gt;{t('common.status', 'स्थिति')}&lt;/th&gt;
+                    &lt;th className="px-4 py-2.5"&gt;{t('common.date', 'Date')}&lt;/th&gt;
+                    &lt;th className="px-4 py-2.5"&gt;{t('dashboard.voucherNo', 'Voucher no.')}&lt;/th&gt;
+                    &lt;th className="px-4 py-2.5"&gt;{t('dashboard.narration', 'Narration')}&lt;/th&gt;
+                    &lt;th className="px-4 py-2.5 text-right"&gt;{t('common.debit', 'Debit (Dr)')}&lt;/th&gt;
+                    &lt;th className="px-4 py-2.5 text-right"&gt;{t('common.credit', 'Credit (Cr)')}&lt;/th&gt;
+                    &lt;th className="px-4 py-2.5 text-center"&gt;{t('common.status', 'Status')}&lt;/th&gt;
                   &lt;/tr&gt;
                 &lt;/thead&gt;
                 &lt;tbody className="divide-y divide-slate-100"&gt;
                   {filteredEntries.length === 0 ? (
                     &lt;tr&gt;
                       &lt;td colSpan={6} className="px-4 py-8 text-center text-slate-400"&gt;
-                        कुनै भौचर फेला परेन।
+                        {t('dashboard.noVouchers', 'No vouchers found.')}
                       &lt;/td&gt;
                     &lt;/tr&gt;
                   ) : (
@@ -2299,23 +2329,23 @@ export default function <span class="fstat-no" title="function not covered" >Das
               &lt;div className="flex items-center gap-2"&gt;
                 &lt;TrendingUp size={16} className="text-slate-400" /&gt;
                 &lt;h3 className="text-sm font-semibold text-slate-800"&gt;
-                  मासिक आय-व्यय तुलना (Revenue vs Expenses - 12 Months)
+                  {t('dashboard.trendTitle', 'Revenue vs expenses — 12 months')}
                 &lt;/h3&gt;
               &lt;/div&gt;
               &lt;div className="flex items-center gap-3 text-xs"&gt;
                 &lt;span className="flex items-center gap-1 text-slate-600"&gt;
                   &lt;span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /&gt;
-                  आम्दानी (Income)
+                  {t('dashboard.income', 'Income')}
                 &lt;/span&gt;
                 &lt;span className="flex items-center gap-1 text-slate-600"&gt;
                   &lt;span className="inline-block h-2 w-2 rounded-full bg-red-500" /&gt;
-                  खर्च (Expenses)
+                  {t('dashboard.expenses', 'Expenses')}
                 &lt;/span&gt;
               &lt;/div&gt;
             &lt;/div&gt;
             {trendLoading ? (
               &lt;div className="flex h-32 items-center justify-center text-xs text-slate-400"&gt;
-                चार्ट लोड हुँदैछ...
+                {t('dashboard.loadingChart', 'Loading chart…')}
               &lt;/div&gt;
             ) : (
               &lt;MiniBarChart months={months} data={trend} /&gt;
@@ -2347,7 +2377,7 @@ export default function <span class="fstat-no" title="function not covered" >Das
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-08T04:11:48.394Z
+                at 2026-11-01T16:04:07.774Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

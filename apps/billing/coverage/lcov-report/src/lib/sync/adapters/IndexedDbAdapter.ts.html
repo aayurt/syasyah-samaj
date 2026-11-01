@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">1.35% </span>
+                <span class="strong">7.43% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>2/148</span>
+                <span class='fraction'>11/148</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">4.54% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/44</span>
+                <span class='fraction'>2/44</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">6.25% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/48</span>
+                <span class='fraction'>3/48</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">1.52% </span>
+                <span class="strong">8.39% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/131</span>
+                <span class='fraction'>11/131</span>
             </div>
         
             
@@ -351,17 +351,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -371,6 +368,16 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -382,13 +389,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -396,11 +396,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -629,10 +629,10 @@
 const DB_NAME = 'afno-billing-offline'
 const DB_VERSION = 2 // bumped to add idmap store
 &nbsp;
-function <span class="fstat-no" title="function not covered" >openDb(): Promise&lt;IDBDatabase&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  return new Promise(<span class="fstat-no" title="function not covered" >(r</span>esolve, reject) =&gt; {</span>
-    const req = <span class="cstat-no" title="statement not covered" >indexedDB.open(DB_NAME, DB_VERSION)</span>
-<span class="cstat-no" title="statement not covered" >    req.onupgradeneeded = <span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
+function openDb(): Promise&lt;IDBDatabase&gt; {
+  return new Promise((resolve, reject) =&gt; {
+    const req = indexedDB.open(DB_NAME, DB_VERSION)
+    req.onupgradeneeded = <span class="fstat-no" title="function not covered" >() =&gt; {</span>
       const db = <span class="cstat-no" title="statement not covered" >req.result</span>
 <span class="cstat-no" title="statement not covered" >      if (!db.objectStoreNames.contains('kv')) {</span>
 <span class="cstat-no" title="statement not covered" >        db.createObjectStore('kv', { keyPath: 'key' })</span>
@@ -647,9 +647,9 @@ function <span class="fstat-no" title="function not covered" >openDb(): Promise&
 <span class="cstat-no" title="statement not covered" >        db.createObjectStore('idmap', { keyPath: 'localId' })</span>
       }
     }
-<span class="cstat-no" title="statement not covered" >    req.onsuccess = <span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >r</span>esolve(req.result)</span></span>
-<span class="cstat-no" title="statement not covered" >    req.onerror = <span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >r</span>eject(req.error)</span></span>
-<span class="cstat-no" title="statement not covered" >    req.onblocked = <span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >r</span>eject(new Error('indexedDB open blocked'))</span></span>
+    req.onsuccess = <span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >r</span>esolve(req.result)</span>
+    req.onerror = <span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >r</span>eject(req.error)</span>
+    req.onblocked = <span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >r</span>eject(new Error('indexedDB open blocked'))</span>
   })
 }
 &nbsp;
@@ -671,11 +671,11 @@ function <span class="fstat-no" title="function not covered" >txDone(t</span>x: 
 type StoreName = 'kv' | 'outbox' | 'cache' | 'idmap'
 &nbsp;
 export class IndexedDbAdapter implements StorageAdapter {
-  private db: Promise&lt;IDBDatabase&gt; | null = <span class="cstat-no" title="statement not covered" >null</span>
+  private db: Promise&lt;IDBDatabase&gt; | null = null
 &nbsp;
-  async <span class="fstat-no" title="function not covered" >ready(): Promise&lt;void&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    this.db = this.db ?? openDb()</span>
-<span class="cstat-no" title="statement not covered" >    await this.db</span>
+  async ready(): Promise&lt;void&gt; {
+    this.db = this.db ?? openDb()
+    await this.db
   }
 &nbsp;
   private async <span class="fstat-no" title="function not covered" >store(</span>
@@ -895,7 +895,7 @@ export class IndexedDbAdapter implements StorageAdapter {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-08T04:11:48.394Z
+                at 2026-11-01T16:04:07.774Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

@@ -151,17 +151,17 @@ export default function MemberViewModal({
 
             <div className="space-y-5">
               {/* Identity */}
-              <Section title="Identity (पहिचान)">
+              <Section title="पहिचान">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <Field label="नाम (Name)" value={member.fullName} />
+                  <Field label="नाम" value={member.fullName} />
                   <Field label="नागरिकता ल्या:" value={a.citizenshipNo} />
                   <Field label="नागरिकता मिति" value={a.citizenshipIssuedDateBs} />
-                  <Field label="जिल्ला (District)" value={a.citizenshipDistrict} />
+                  <Field label="जिल्ला" value={a.citizenshipDistrict} />
                 </div>
               </Section>
 
               {/* Address & Contact */}
-              <Section title="Address & Contact (ठेगाना)">
+              <Section title="ठेगाना">
                 <Field label="स्थायी ठेगाना" value={a.addressPermanent} />
                 <Field label="अस्थाई ठेगाना" value={a.addressTemporary} />
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -172,17 +172,17 @@ export default function MemberViewModal({
               </Section>
 
               {/* Personal */}
-              <Section title="Personal (व्यक्तिगत)">
+              <Section title="व्यक्तिगत">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <Field label="रक्ता (Blood)" value={member.idCardDetails?.bloodGroup} />
+                  <Field label="रक्ता" value={member.idCardDetails?.bloodGroup} />
                   <Field label="विशिष्टता" value={a.specialQualification} />
-                  <Field label="पेशा (Occupation)" value={a.occupation} />
+                  <Field label="पेशा" value={a.occupation} />
                   <Field label="कार्यालय" value={a.officeName} />
                 </div>
               </Section>
 
               {/* Family */}
-              <Section title="Family (पारिवारिक)">
+              <Section title="पारिवारिक">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <Field label="बाजेको नाम" value={a.grandfatherName} />
                   <Field label="बाबुको नाम" value={a.fatherName} />
@@ -194,10 +194,10 @@ export default function MemberViewModal({
               </Section>
 
               {/* Membership */}
-              <Section title="Membership & Fee (दुज़ तथा शुल्क)">
+              <Section title="दुज़ तथा शुल्क">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <Field label="दुज़ (Type)" value={member.membershipType?.name} />
-                  <Field label="आवेदन मिति (BS)" value={a.appliedDateBs} />
+                  <Field label="दुज़" value={member.membershipType?.name} />
+                  <Field label="आवेदन मिति" value={a.appliedDateBs} />
                   <Field label="Payment Status" value={member.paymentStatus} />
                   <Field label="Renewal Date" value={member.renewalDate || undefined} />
                 </div>

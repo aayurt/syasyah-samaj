@@ -63,10 +63,12 @@ function LanguageToggle() {
             </div>
             <div>
               <div className="text-sm font-medium text-slate-900">
-                {l === 'en' ? 'English' : 'नेपाली'}
+                {l === 'en' ? t('lang.english', 'English') : t('lang.nepali', 'नेपाली')}
               </div>
               <div className="text-xs text-slate-400">
-                {l === 'en' ? 'English' : 'नेपाली (Devanagari)'}
+                {l === 'en'
+                  ? t('lang.english', 'English')
+                  : `${t('lang.nepali', 'नेपाली')} (${t('lang.nepaliScript', 'Devanagari')})`}
               </div>
             </div>
           </button>
@@ -1604,7 +1606,10 @@ export default function Settings() {
               <div className="text-sm text-slate-700">{t('settings.nepaliDigits', 'Nepali digits (०१२३)')}</div>
               <div className="text-xs text-slate-400">
                 {nepaliDigitsEnabled
-                  ? t('settings.nepaliDigitsHintOn', 'Enabled — amounts show Devanagari digits with Indian-style grouping (११,५५,५३८)')
+                  ? t(
+                    'settings.nepaliDigitsHintOn',
+                    'Enabled — amounts show Devanagari digits with Indian-style grouping (११,५५,५३८)',
+                  )
                   : t('settings.nepaliDigitsHint', 'Show amounts with Devanagari digits and Indian-style grouping')}
               </div>
             </div>
@@ -1626,7 +1631,10 @@ export default function Settings() {
               <div className="text-sm text-slate-700">{t('settings.nepaliWords', 'Amount in words in Nepali (on print)')}</div>
               <div className="text-xs text-slate-400">
                 {nepaliWordsOnPrintEnabled
-                  ? t('settings.nepaliWordsHintOn', 'Enabled — voucher previews and prints show शब्दमा रकम in Nepali words')
+                  ? t(
+                    'settings.nepaliWordsHintOn',
+                    'Enabled — voucher previews and prints show the amount in Nepali words',
+                  )
                   : t('settings.nepaliWordsHint', 'Amount in words on voucher previews and prints stays in English')}
               </div>
             </div>
@@ -1889,8 +1897,8 @@ export default function Settings() {
 
       {/* ── 6. Language / भाषा ─────────────────────────────────── */}
       <Section
-        title="Language / भाषा"
-        subtitle="Choose the interface language"
+        title={t('lang.title', 'Language')}
+        subtitle={t('lang.subtitle', 'Choose the interface language')}
         icon={Type}
         open={!!openSections.language}
         onToggle={() => toggle('language')}
@@ -1900,7 +1908,7 @@ export default function Settings() {
 
       {/* ── 7. Number Series / क्रमांक शृंखला ─────────────────────── */}
       <Section
-        title={t('settings.numberSeries', 'Number Series / क्रमांक शृंखला')}
+        title={t('settings.numberSeries', 'Number series')}
         subtitle={sequences.length ? `${sequences.length} series` : t('settings.noSeriesYet', 'No series yet — add one below')}
         icon={Hash}
         open={!!openSections.sequences}

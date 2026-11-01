@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/15</span>
+                <span class='fraction'>15/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">55.55% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>10/18</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>5/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>12/12</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -137,45 +137,45 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -198,18 +198,18 @@ import { useT } from '../lib/i18n'
  * Illaka roles: a static locked chip showing their illaka code + name.
  * Viewer: same dropdown but disabled.
  */
-export default function <span class="fstat-no" title="function not covered" >IllakaSwitcher() {</span>
-  const { tenantId, setTenantId, tenants, isCentral, isIllaka, illakaCode <span class="cstat-no" title="statement not covered" >} =</span>
+export default function IllakaSwitcher() {
+  const { tenantId, setTenantId, tenants, isCentral, isIllaka, illakaCode } =
     useTenant()
-  const <span class="cstat-no" title="statement not covered" >t = useT()</span>
+  const t = useT()
 &nbsp;
   // Illaka-scoped user: show a locked chip
-<span class="cstat-no" title="statement not covered" >  if (isIllaka) {</span>
-    const locked = <span class="cstat-no" title="statement not covered" >tenants.find(<span class="fstat-no" title="function not covered" >(t</span>) =&gt; <span class="cstat-no" title="statement not covered" >t.id === tenantId)</span></span>
-    const label = <span class="cstat-no" title="statement not covered" >illakaCode</span>
-      ? `${locked?.name || illakaCode}`
-      : locked?.name || t('illaka.label', 'Illaka')
-<span class="cstat-no" title="statement not covered" >    return (</span>
+  if (isIllaka) {
+    const locked = tenants.find((t) =&gt; t.id === tenantId)
+    const label = illakaCode
+      ? `${locked?.name || <span class="branch-1 cbranch-no" title="branch not covered" >illakaCode}</span>`
+      : <span class="branch-1 cbranch-no" title="branch not covered" >locked?.name || t('illaka.label', 'Illaka')</span>
+    return (
       &lt;div className="flex items-center gap-1.5 rounded bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-200"&gt;
         &lt;Lock size={12} /&gt;
         &lt;span&gt;{label}&lt;/span&gt;
@@ -218,27 +218,27 @@ export default function <span class="fstat-no" title="function not covered" >Ill
   }
 &nbsp;
   // Central role: dropdown
-<span class="cstat-no" title="statement not covered" >  if (!isCentral) <span class="cstat-no" title="statement not covered" >return null</span></span>
+  if (!isCentral) return null
 &nbsp;
-  const current = <span class="cstat-no" title="statement not covered" >tenants.find(<span class="fstat-no" title="function not covered" >(t</span>) =&gt; <span class="cstat-no" title="statement not covered" >t.id === tenantId)</span></span>
-  const displayLabel = <span class="cstat-no" title="statement not covered" >tenantId</span>
+  const current = tenants.find((t) =&gt; t.id === tenantId)
+  const displayLabel = tenantId
     ? current
-      ? `${current.code ? current.code + ' · ' : ''}${current.name}`
+      ? <span class="branch-0 cbranch-no" title="branch not covered" >`${current.code ? current.code + ' · ' : ''}${current.name}`</span>
       : 'Unknown'
     : t('illaka.all', 'All Illakas')
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return (</span>
+  return (
     &lt;div className="relative"&gt;
       &lt;select
         value={tenantId}
-        onChange={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; <span class="cstat-no" title="statement not covered" >setTenantId(e.target.value)}</span>
+        onChange={(e) =&gt; setTenantId(e.target.value)}
         className="appearance-none rounded border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 hover:border-slate-300 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500"
         title={t('illaka.switchScope', 'Switch illaka scope')}
       &gt;
         &lt;option value=""&gt;{t('illaka.all', 'All Illakas')}&lt;/option&gt;
-        {tenants.map(<span class="fstat-no" title="function not covered" >(t</span>en) =&gt; (
-<span class="cstat-no" title="statement not covered" >          &lt;option key={ten.id} value={ten.id}&gt;</span>
-            {ten.code ? `${ten.code} · ` : ''}{ten.name}
+        {tenants.map((ten) =&gt; (
+          &lt;option key={ten.id} value={ten.id}&gt;
+            {ten.code ? `${ten.code} · ` : <span class="branch-1 cbranch-no" title="branch not covered" >''}{t</span>en.name}
           &lt;/option&gt;
         ))}
       &lt;/select&gt;
@@ -256,7 +256,7 @@ export default function <span class="fstat-no" title="function not covered" >Ill
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-08T04:11:48.394Z
+                at 2026-11-01T16:04:07.774Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
