@@ -298,14 +298,16 @@ export default function Settings() {
 
 
   // ── Feature toggles ──
+  const [payrollEnabled, setPayrollEnabled] = useState(true)
   const [bankRecEnabled, setBankRecEnabled] = useState(false)
   const [simplifiedInvEnabled, setSimplifiedInvEnabled] = useState(true)
   const [simplifiedInvThreshold, setSimplifiedInvThreshold] = useState('5000')
   const [demoSeedEnabled, setDemoSeedEnabled] = useState(true)
   const [nepaliDigitsEnabled, setNepaliDigitsEnabled] = useState(false)
   const [nepaliWordsOnPrintEnabled, setNepaliWordsOnPrintEnabled] = useState(false)
-  const savedFeatures = useRef({ bankRec: false, simplifiedInv: true, threshold: '5000', demoSeed: true, nepaliDigits: false, nepaliWords: false })
+  const savedFeatures = useRef({ payroll: true, bankRec: false, simplifiedInv: true, threshold: '5000', demoSeed: true, nepaliDigits: false, nepaliWords: false })
   const featuresDirty =
+    payrollEnabled !== savedFeatures.current.payroll ||
     bankRecEnabled !== savedFeatures.current.bankRec ||
     simplifiedInvEnabled !== savedFeatures.current.simplifiedInv ||
     simplifiedInvThreshold !== savedFeatures.current.threshold ||
@@ -480,19 +482,21 @@ export default function Settings() {
       setCompanyLogo(cl)
       savedCompany.current = { name: cn, pan: cp, contact: cc, email: ce, address: ca, logo: cl }
 
+      const py = res.payrollEnabled !== false
       const br = res.bankReconciliationEnabled || false
       const si = res.simplifiedInvoiceEnabled !== false
       const st = String(res.simplifiedInvoiceThreshold || 5000)
       const ds = res.demoSeedEnabled !== false
       const nd = !!res.nepaliDigitsEnabled
       const nw = !!res.nepaliWordsOnPrintEnabled
+      setPayrollEnabled(py)
       setBankRecEnabled(br)
       setSimplifiedInvEnabled(si)
       setSimplifiedInvThreshold(st)
       setDemoSeedEnabled(ds)
       setNepaliDigitsEnabled(nd)
       setNepaliWordsOnPrintEnabled(nw)
-      savedFeatures.current = { bankRec: br, simplifiedInv: si, threshold: st, demoSeed: ds, nepaliDigits: nd, nepaliWords: nw }
+      savedFeatures.current = { payroll: py, bankRec: br, simplifiedInv: si, threshold: st, demoSeed: ds, nepaliDigits: nd, nepaliWords: nw }
 
       // Default account assignments
       const da: Record<string, string> = {}
@@ -839,6 +843,7 @@ export default function Settings() {
 
   const persistFeatures = () => {
     const body = {
+      payrollEnabled,
       bankReconciliationEnabled: bankRecEnabled,
       simplifiedInvoiceEnabled: simplifiedInvEnabled,
       simplifiedInvoiceThreshold: parseFloat(simplifiedInvThreshold) || 5000,
@@ -855,7 +860,7 @@ export default function Settings() {
       window.dispatchEvent(new Event('billing-settings-changed'))
       protectGlobalsFields(Object.keys(body))
     } catch { /* ignore */ }
-    savedFeatures.current = { bankRec: bankRecEnabled, simplifiedInv: simplifiedInvEnabled, threshold: simplifiedInvThreshold, demoSeed: demoSeedEnabled, nepaliDigits: nepaliDigitsEnabled, nepaliWords: nepaliWordsOnPrintEnabled }
+    savedFeatures.current = { payroll: payrollEnabled, bankRec: bankRecEnabled, simplifiedInv: simplifiedInvEnabled, threshold: simplifiedInvThreshold, demoSeed: demoSeedEnabled, nepaliDigits: nepaliDigitsEnabled, nepaliWords: nepaliWordsOnPrintEnabled }
     setFeaturesSaved(true)
     setTimeout(() => setFeaturesSaved(false), 2000)
     // Fire-and-forget: sync to server in background
@@ -864,6 +869,7 @@ export default function Settings() {
 
   const cancelFeatures = () => {
     const s = savedFeatures.current
+    setPayrollEnabled(s.payroll)
     setBankRecEnabled(s.bankRec)
     setSimplifiedInvEnabled(s.simplifiedInv)
     setSimplifiedInvThreshold(s.threshold)
@@ -1500,9 +1506,7 @@ export default function Settings() {
       <Section
         title={t('settings.featureToggles', 'Feature Toggles')}
         subtitle={
-          bankRecEnabled
-            ? 'Bank Rec ON'
-            : 'Bank Rec OFF'
+          `${payrollEnabled ? 'Payroll ON' : 'Payroll OFF'} · ${bankRecEnabled ? 'Bank Rec ON' : 'Bank Rec OFF'}`
         }
         icon={ToggleLeft}
         open={!!openSections.features}
@@ -1513,6 +1517,28 @@ export default function Settings() {
         onCancel={cancelFeatures}
       >
         <div className="space-y-4">
+          {/* Payroll System Toggle */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={payrollEnabled}
+                onChange={(e) => setPayrollEnabled(e.target.checked)}
+                className="peer sr-only"
+              />
+              <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+              <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-slate-800">{t('settings.payrollSystem', 'Payroll System')}</div>
+              <div className="text-xs text-slate-500">
+                {payrollEnabled
+                  ? t('settings.payrollEnabledHint', 'Enabled — visible in header switcher and sidebar')
+                  : t('settings.payrollDisabledHint', 'Disabled — hidden from header switcher and sidebar')}
+              </div>
+            </div>
+          </label>
+
           {/* Bank Reconciliation */}
           <label className="flex items-center gap-3 cursor-pointer">
             <div className="relative">

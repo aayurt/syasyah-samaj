@@ -6205,6 +6205,7 @@ export interface BillingSetting {
   /**
    * Enable the bank reconciliation feature. When disabled, the Bank Reconciliation page is hidden from the sidebar.
    */
+  payrollEnabled?: boolean | null;
   bankReconciliationEnabled?: boolean | null;
   /**
    * Show a simplified VAT-inclusive invoice for totals below the threshold. When off, always show the full tax breakdown.

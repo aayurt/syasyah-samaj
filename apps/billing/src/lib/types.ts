@@ -358,6 +358,7 @@ export interface BillingSettings {
   accruedPayableAccount?: number | Account | null
   depreciationAccount?: number | Account | null
   accumulatedDepreciationAccount?: number | Account | null
+  payrollEnabled?: boolean
   bankReconciliationEnabled?: boolean
   simplifiedInvoiceEnabled?: boolean
   simplifiedInvoiceThreshold?: number

@@ -91,6 +91,15 @@ export const BillingSettings: GlobalConfig = {
       label: 'Features',
       fields: [
         {
+          name: 'payrollEnabled',
+          type: 'checkbox',
+          defaultValue: true,
+          admin: {
+            description:
+              'Enable the Payroll system (India Payroll). When disabled, payroll is hidden from the header system switcher and sidebar navigation.',
+          },
+        },
+        {
           name: 'bankReconciliationEnabled',
           type: 'checkbox',
           defaultValue: false,
