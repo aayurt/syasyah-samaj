@@ -49,10 +49,10 @@ export default defineConfig({
         'src/lib/importExport.ts': { lines: 40, functions: 40, branches: 40, statements: 40 },
       },
     },
-    pool: 'forks',
+    pool: 'vmThreads',
     poolOptions: {
-      forks: {
-        maxThreads: 1,
+      vmThreads: {
+        maxThreads: 2,
       },
     },
     testTimeout: 10000,
