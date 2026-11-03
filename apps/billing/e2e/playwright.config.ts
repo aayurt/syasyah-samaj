@@ -40,34 +40,7 @@ export default defineConfig({
   globalSetup: join(here, 'global-setup.ts'),
   globalTeardown: join(here, 'global-teardown.ts'),
 
-  // Start both API (Next.js) and Web (Vite) servers
-  webServer: [
-    {
-      command: `pnpm --dir ../../ dev`,
-      cwd: '.',
-      env: {
-        ...(process.env.E2E_DATABASE_URI
-          ? { DATABASE_URI: process.env.E2E_DATABASE_URI }
-          : {}),
-        ...(process.env.REDIS_URL ? { REDIS_URL: process.env.REDIS_URL } : {}),
-        PORT: String(API_PORT),
-        NODE_OPTIONS: '--no-deprecation',
-        BETTER_AUTH_URL: WEB_URL,
-        NEXT_PUBLIC_SERVER_URL: WEB_URL,
-      },
-      url: `${API_URL}/api/users`,
-      timeout: 180_000,
-      reuseExistingServer: !isCI && !isJules,
-    },
-    {
-      command: `pnpm dev --port ${WEB_PORT} --strictPort`,
-      cwd: '..',
-      env: { E2E_API_TARGET: API_URL, VITE_API_URL: API_URL },
-      url: WEB_URL,
-      timeout: 60_000,
-      reuseExistingServer: !isCI && !isJules,
-    },
-  ],
+  // Servers started as background CI steps (not via Playwright webServer)
 
   use: {
     baseURL: WEB_URL,
