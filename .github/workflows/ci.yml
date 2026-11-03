@@ -61,6 +61,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run unit tests with coverage
+        env:
+          NODE_OPTIONS: --max-old-space-size=2048
         run: pnpm --filter @afno/billing test
 
       - name: Upload coverage to Codecov
@@ -131,6 +133,7 @@ jobs:
         run: pnpm --filter @afno/billing test
         env:
           DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_test
+          NODE_OPTIONS: --max-old-space-size=2048
 
   # ──────────────────────────────────────────────────────────────
   # E2E Tests (Playwright) — Runs in Google Jules via workflow_dispatch
