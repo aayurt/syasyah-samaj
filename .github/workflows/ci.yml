@@ -205,6 +205,8 @@ jobs:
           E2E_WEB_PORT: 5174
           CI: true
           PLAYWRIGHT_HTML_REPORT: 1
+          RESEND_API_KEY: re_test
+          PAYLOAD_SECRET: test-secret-key-for-ci
 
       - name: Upload Playwright HTML report
         if: always()
