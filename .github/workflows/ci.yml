@@ -250,7 +250,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [unit-tests, integration-tests]
-    if: github.ref == 'refs/heads/main' && secrets.JULES_API_KEY != ''
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
