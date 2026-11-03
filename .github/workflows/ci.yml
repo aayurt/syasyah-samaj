@@ -204,7 +204,61 @@ jobs:
           RESEND_API_KEY: re_test
           PAYLOAD_SECRET: test-secret-key-for-ci
 
-      - name: Run E2E tests via Playwright webServer
+      - name: Start API server
+        run: |
+          cd $GITHUB_WORKSPACE
+          DATABASE_URI=postgresql://postgres:postgres@localhost:5432/billing_e2e \
+            REDIS_URL=redis://localhost:6379 \
+            RESEND_API_KEY=re_test \
+            PAYLOAD_SECRET=test-secret-key-for-ci \
+            PORT=3100 \
+            BETTER_AUTH_URL=http://localhost:5174 \
+            NEXT_PUBLIC_SERVER_URL=http://localhost:5174 \
+            NODE_OPTIONS=--no-deprecation \
+            pnpm dev > /tmp/api-server.log 2>&1 &
+          echo $! > /tmp/api-server.pid
+
+      - name: Start SPA server
+        run: |
+          cd $GITHUB_WORKSPACE/apps/billing/dist
+          node -e "
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const server = http.createServer((req, res) => {
+  let filePath = path.join(__dirname, req.url === '/' ? 'index.html' : req.url);
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.writeHead(200, {'Content-Type': 'text/html'});
+      res.end(fs.readFileSync(path.join(__dirname, 'index.html')));
+    } else {
+      res.writeHead(200);
+      res.end(data);
+    }
+  });
+});
+server.listen(5174, '0.0.0.0', () => console.log('SPA server on 5174'));
+" > /tmp/spa-server.log 2>&1 &
+          echo $! > /tmp/spa-server.pid
+
+      - name: Wait for servers to be ready
+        run: |
+          for i in {1..60}; do
+            API_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/api/users 2>/dev/null || echo "000")
+            WEB_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5174 2>/dev/null || echo "000")
+            if [ "$API_CODE" != "000" ] && [ "$WEB_CODE" != "000" ]; then
+              echo "Servers ready (API: $API_CODE, Web: $WEB_CODE)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API server log:"
+          cat /tmp/api-server.log | tail -20
+          echo "SPA server log:"
+          cat /tmp/spa-server.log | tail -20
+          exit 1
+
+      - name: Run E2E tests
         run: |
           cd $GITHUB_WORKSPACE/apps/billing
           pnpm run test:e2e -- --project=shell --project=settings --project=accounts --project=coa-table --project=tenant-selector --project=tooltips --project=language --project=import-export
@@ -215,6 +269,12 @@ jobs:
           PAYLOAD_SECRET: test-secret-key-for-ci
           API_URL: http://localhost:3100
           WEB_URL: http://localhost:5174
+
+      - name: Kill servers
+        if: always()
+        run: |
+          kill $(cat /tmp/api-server.pid) 2>/dev/null || true
+          kill $(cat /tmp/spa-server.pid) 2>/dev/null || true
 
       - name: Upload Playwright HTML report
         if: always()
