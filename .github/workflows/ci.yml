@@ -220,6 +220,7 @@ jobs:
 
       - name: Start Vite dev server
         run: |
+          set -x
           cd $GITHUB_WORKSPACE/apps/billing
           E2E_API_TARGET=http://localhost:3100 \
             VITE_API_URL=http://localhost:3100 \
