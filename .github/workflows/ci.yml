@@ -224,7 +224,7 @@ jobs:
           E2E_API_TARGET=http://localhost:3100 \
             VITE_API_URL=http://localhost:3100 \
             NODE_OPTIONS=--no-deprecation \
-            pnpm preview --port 5174 --strictPort > /tmp/vite-server.log 2>&1 &
+            pnpm preview --port 5174 > /tmp/vite-server.log 2>&1 &
           VITE_PID=$!
           echo $VITE_PID > /tmp/vite-server.pid
           sleep 5
