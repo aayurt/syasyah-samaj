@@ -36,7 +36,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Type-check
-        run: cd apps/billing && pnpm exec tsc --noEmit
+        run: pnpm exec tsc --noEmit --dir apps/billing
 
   # ──────────────────────────────────────────────────────────────
   # Unit Tests (Vitest) with Coverage
