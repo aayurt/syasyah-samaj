@@ -49,7 +49,12 @@ export default defineConfig({
         'src/lib/importExport.ts': { lines: 40, functions: 40, branches: 40, statements: 40 },
       },
     },
-    // Test timeout
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        maxThreads: 1,
+      },
+    },
     testTimeout: 10000,
     hookTimeout: 10000,
   },
