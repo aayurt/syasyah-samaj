@@ -230,8 +230,10 @@ jobs:
       - name: Wait for servers to be ready
         run: |
           for i in {1..60}; do
-            if curl -s http://localhost:3100/api/users > /dev/null 2>&1 && curl -s http://localhost:5174 > /dev/null 2>&1; then
-              echo "Servers ready"
+            API_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/api/users 2>/dev/null || echo "000")
+            VITE_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5174 2>/dev/null || echo "000")
+            if [ "$API_CODE" != "000" ] && [ "$VITE_CODE" != "000" ]; then
+              echo "Servers ready (API: $API_CODE, Vite: $VITE_CODE)"
               exit 0
             fi
             sleep 2
