@@ -124,6 +124,7 @@ jobs:
         run: pnpm payload generate:db-schema
         env:
           DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_test
+          RESEND_API_KEY: re_test
 
       - name: Run integration tests
         run: pnpm --filter @afno/billing test
@@ -188,6 +189,7 @@ jobs:
           pnpm payload generate:db-schema
         env:
           DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_e2e
+          RESEND_API_KEY: re_test
 
       - name: Run E2E tests
         run: |
