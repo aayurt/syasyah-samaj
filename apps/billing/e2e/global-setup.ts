@@ -55,7 +55,10 @@ export default async function globalSetup(config: FullConfig) {
   if (!webReady) throw new Error('❌ Web server not ready after 120s')
 
   // Create auth state for tests
-  const browser = await chromium.launch()
+  const browser = await chromium.launch({
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
+    channel: process.env.PLAYWRIGHT_CHROMIUM_CHANNEL || undefined,
+  } as any)
   const context = await browser.newContext()
   const page = await context.newPage()
 
