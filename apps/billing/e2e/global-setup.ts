@@ -28,8 +28,10 @@ export default async function globalSetup(config: FullConfig) {
 
   // Verify Web server is reachable (API is handled by webServer)
   const webUrl = `http://localhost:${process.env.E2E_WEB_PORT || 5174}`
+  const apiUrl = `http://localhost:${process.env.E2E_API_PORT || 3100}/api/users`
 
   console.log('🌐 Web URL:', webUrl)
+  console.log('🌐 API URL:', apiUrl)
 
   // Wait for web server to be ready (accept any HTTP response as "server is up")
   let webReady = false
@@ -37,10 +39,10 @@ export default async function globalSetup(config: FullConfig) {
   for (let i = 0; i < 60; i++) {
     if (!webReady) {
       try {
-        const res = await fetch(webUrl, { method: 'GET' })
-        // Accept any HTTP response as "server is running" (including 404, 403, etc.)
+        const res = await fetch(apiUrl, { method: 'GET' })
+        // Any HTTP response means the server is running
         webReady = true
-        console.log('✅ Web server ready (status:', res.status, ')')
+        console.log('✅ Web server ready (API status:', res.status, ')')
       } catch {
         // Not ready yet
       }
