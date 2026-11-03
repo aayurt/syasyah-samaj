@@ -158,6 +158,14 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -207,6 +215,7 @@ jobs:
           PLAYWRIGHT_HTML_REPORT: 1
           RESEND_API_KEY: re_test
           PAYLOAD_SECRET: test-secret-key-for-ci
+          REDIS_URL: redis://localhost:6379
 
       - name: Upload Playwright HTML report
         if: always()

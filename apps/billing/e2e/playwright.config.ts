@@ -49,6 +49,7 @@ export default defineConfig({
         ...(process.env.E2E_DATABASE_URI
           ? { DATABASE_URI: process.env.E2E_DATABASE_URI }
           : {}),
+        ...(process.env.REDIS_URL ? { REDIS_URL: process.env.REDIS_URL } : {}),
         PORT: String(API_PORT),
         NODE_OPTIONS: '--no-deprecation',
         BETTER_AUTH_URL: WEB_URL,
