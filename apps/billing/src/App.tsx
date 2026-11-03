@@ -64,6 +64,7 @@ import ConnectingBanner from './components/ConnectingBanner'
 import SyncStatus from './components/SyncStatus'
 import CommandPalette from './components/CommandPalette'
 import FiscalYearSwitcher from './components/FiscalYearSwitcher'
+import IllakaSwitcher from './components/IllakaSwitcher'
 import LanguageSwitcher from './components/LanguageSwitcher'
 import Toaster from './components/Toaster'
 import Tour from './components/Tour'
@@ -403,6 +404,7 @@ function Shell({ email }: { email: string }) {
             )}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3">
+            <IllakaSwitcher />
             <FiscalYearSwitcher />
             <LanguageSwitcher />
             <span data-tour="sync">

@@ -6203,9 +6203,12 @@ export interface BillingSetting {
    */
   freezeDate?: string | null;
   /**
-   * Enable the bank reconciliation feature. When disabled, the Bank Reconciliation page is hidden from the sidebar.
+   * Enable the Payroll system (India Payroll). When disabled, payroll is hidden from the header system switcher and sidebar navigation.
    */
   payrollEnabled?: boolean | null;
+  /**
+   * Enable the bank reconciliation feature. When disabled, the Bank Reconciliation page is hidden from the sidebar.
+   */
   bankReconciliationEnabled?: boolean | null;
   /**
    * Show a simplified VAT-inclusive invoice for totals below the threshold. When off, always show the full tax breakdown.
@@ -6495,6 +6498,7 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   activeFiscalYear?: T;
   fiscalYearStart?: T;
   freezeDate?: T;
+  payrollEnabled?: T;
   bankReconciliationEnabled?: T;
   simplifiedInvoiceEnabled?: T;
   simplifiedInvoiceThreshold?: T;

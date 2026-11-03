@@ -32,6 +32,7 @@ import { useTenant } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
 import type { Account, AccountGroup, AccountType, BillingSettings, FiscalYear } from '../lib/types'
 import { useLang, useT } from '../lib/i18n'
+import { useTooltips } from '../hooks/useTooltips'
 import NepaliDateInput from '../components/NepaliDateInput'
 import AccountSelect from '../components/AccountSelect'
 import SearchSelect from '../components/SearchSelect'
@@ -305,7 +306,11 @@ export default function Settings() {
   const [demoSeedEnabled, setDemoSeedEnabled] = useState(true)
   const [nepaliDigitsEnabled, setNepaliDigitsEnabled] = useState(false)
   const [nepaliWordsOnPrintEnabled, setNepaliWordsOnPrintEnabled] = useState(false)
-  const savedFeatures = useRef({ payroll: true, bankRec: false, simplifiedInv: true, threshold: '5000', demoSeed: true, nepaliDigits: false, nepaliWords: false })
+  const [tooltipEnabled, setTooltipEnabled] = useState(() => {
+    const stored = localStorage.getItem('ui-tooltips-enabled')
+    return stored !== 'false' // default ON
+  })
+  const savedFeatures = useRef({ payroll: true, bankRec: false, simplifiedInv: true, threshold: '5000', demoSeed: true, nepaliDigits: false, nepaliWords: false, tooltipEnabled: true })
   const featuresDirty =
     payrollEnabled !== savedFeatures.current.payroll ||
     bankRecEnabled !== savedFeatures.current.bankRec ||
@@ -313,7 +318,8 @@ export default function Settings() {
     simplifiedInvThreshold !== savedFeatures.current.threshold ||
     demoSeedEnabled !== savedFeatures.current.demoSeed ||
     nepaliDigitsEnabled !== savedFeatures.current.nepaliDigits ||
-    nepaliWordsOnPrintEnabled !== savedFeatures.current.nepaliWords
+    nepaliWordsOnPrintEnabled !== savedFeatures.current.nepaliWords ||
+    tooltipEnabled !== savedFeatures.current.tooltipEnabled
   const [featuresSaved, setFeaturesSaved] = useState(false)
 
 
@@ -489,6 +495,7 @@ export default function Settings() {
       const ds = res.demoSeedEnabled !== false
       const nd = !!res.nepaliDigitsEnabled
       const nw = !!res.nepaliWordsOnPrintEnabled
+      const tt = res.tooltipEnabled !== false
       setPayrollEnabled(py)
       setBankRecEnabled(br)
       setSimplifiedInvEnabled(si)
@@ -496,7 +503,8 @@ export default function Settings() {
       setDemoSeedEnabled(ds)
       setNepaliDigitsEnabled(nd)
       setNepaliWordsOnPrintEnabled(nw)
-      savedFeatures.current = { payroll: py, bankRec: br, simplifiedInv: si, threshold: st, demoSeed: ds, nepaliDigits: nd, nepaliWords: nw }
+      setTooltipEnabled(tt)
+      savedFeatures.current = { payroll: py, bankRec: br, simplifiedInv: si, threshold: st, demoSeed: ds, nepaliDigits: nd, nepaliWords: nw, tooltipEnabled: tt }
 
       // Default account assignments
       const da: Record<string, string> = {}
@@ -850,6 +858,7 @@ export default function Settings() {
       demoSeedEnabled,
       nepaliDigitsEnabled,
       nepaliWordsOnPrintEnabled,
+      tooltipEnabled,
     }
     try {
       const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
@@ -860,7 +869,7 @@ export default function Settings() {
       window.dispatchEvent(new Event('billing-settings-changed'))
       protectGlobalsFields(Object.keys(body))
     } catch { /* ignore */ }
-    savedFeatures.current = { payroll: payrollEnabled, bankRec: bankRecEnabled, simplifiedInv: simplifiedInvEnabled, threshold: simplifiedInvThreshold, demoSeed: demoSeedEnabled, nepaliDigits: nepaliDigitsEnabled, nepaliWords: nepaliWordsOnPrintEnabled }
+    savedFeatures.current = { payroll: payrollEnabled, bankRec: bankRecEnabled, simplifiedInv: simplifiedInvEnabled, threshold: simplifiedInvThreshold, demoSeed: demoSeedEnabled, nepaliDigits: nepaliDigitsEnabled, nepaliWords: nepaliWordsOnPrintEnabled, tooltipEnabled }
     setFeaturesSaved(true)
     setTimeout(() => setFeaturesSaved(false), 2000)
     // Fire-and-forget: sync to server in background
@@ -876,6 +885,7 @@ export default function Settings() {
     setDemoSeedEnabled(s.demoSeed)
     setNepaliDigitsEnabled(s.nepaliDigits)
     setNepaliWordsOnPrintEnabled(s.nepaliWords)
+    setTooltipEnabled(s.tooltipEnabled)
   }
 
   // ── Default account assignments ──
@@ -1662,6 +1672,33 @@ export default function Settings() {
                     'Enabled — voucher previews and prints show the amount in Nepali words',
                   )
                   : t('settings.nepaliWordsHint', 'Amount in words on voucher previews and prints stays in English')}
+              </div>
+            </div>
+          </label>
+
+          {/* Tooltip toggle */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={tooltipEnabled}
+                onChange={(e) => {
+                  setTooltipEnabled(e.target.checked)
+                  localStorage.setItem('ui-tooltips-enabled', String(e.target.checked))
+                  // Notify any TooltipsProvider listeners
+                  window.dispatchEvent(new StorageEvent('storage', { key: 'ui-tooltips-enabled' }))
+                }}
+                className="peer sr-only"
+              />
+              <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+              <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+            </div>
+            <div>
+              <div className="text-sm text-slate-700">{t('settings.showTooltips', 'Show tooltips')}</div>
+              <div className="text-xs text-slate-400">
+                {tooltipEnabled
+                  ? t('settings.showTooltipsHintOn', 'Enabled — hover or focus elements to see help text')
+                  : t('settings.showTooltipsHint', 'Show contextual help on hover/focus')}
               </div>
             </div>
           </label>

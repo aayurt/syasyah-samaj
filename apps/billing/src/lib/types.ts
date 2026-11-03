@@ -365,6 +365,7 @@ export interface BillingSettings {
   demoSeedEnabled?: boolean
   nepaliDigitsEnabled?: boolean
   nepaliWordsOnPrintEnabled?: boolean
+  tooltipEnabled?: boolean
   dataEpoch?: number
   membershipFeeAccount?: number | Account | null
   donationAccount?: number | Account | null

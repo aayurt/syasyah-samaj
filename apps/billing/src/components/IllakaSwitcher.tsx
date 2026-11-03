@@ -28,30 +28,39 @@ export default function IllakaSwitcher() {
     )
   }
 
-  // Central role: dropdown
+  // Central role: dropdown with Parent and Children grouping
   if (!isCentral) return null
 
-  const current = tenants.find((t) => t.id === tenantId)
-  const displayLabel = tenantId
-    ? current
-      ? `${current.code ? current.code + ' · ' : ''}${current.name}`
-      : 'Unknown'
-    : t('illaka.all', 'All Illakas')
+  const parentTenant = tenants.find((tn) => tn.type === 'central' || tn.code === 'C00')
+  const childTenants = tenants.filter((tn) => tn.id !== parentTenant?.id && (tn.type !== 'central' && tn.code !== 'C00'))
 
   return (
     <div className="relative">
       <select
         value={tenantId}
         onChange={(e) => setTenantId(e.target.value)}
-        className="appearance-none rounded border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 hover:border-slate-300 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500"
+        className="appearance-none rounded border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 hover:border-slate-300 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500 shadow-2xs"
         title={t('illaka.switchScope', 'Switch illaka scope')}
       >
-        <option value="">{t('illaka.all', 'All Illakas')}</option>
-        {tenants.map((ten) => (
-          <option key={ten.id} value={ten.id}>
-            {ten.code ? `${ten.code} · ` : ''}{ten.name}
-          </option>
-        ))}
+        <option value="">{t('illaka.all', 'All Illakas (Consolidated)')}</option>
+
+        {parentTenant && (
+          <optgroup label="Parent Organization">
+            <option value={parentTenant.id}>
+              {parentTenant.name || 'Syasyah Samaj Central'} [Parent]
+            </option>
+          </optgroup>
+        )}
+
+        {childTenants.length > 0 && (
+          <optgroup label="Illakas (Children)">
+            {childTenants.map((ten) => (
+              <option key={ten.id} value={ten.id}>
+                {ten.code ? `${ten.code} · ` : ''}{ten.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
       </select>
       <ChevronDown
         size={14}

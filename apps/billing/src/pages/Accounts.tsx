@@ -6,12 +6,9 @@ import { downloadCsv } from '../lib/csv'
 import { parseImportFile } from '../lib/importExport'
 import ImportPreviewModal from '../components/ImportPreviewModal'
 import { pushToast } from '../lib/toast'
-import { type SortState, useSortSearch } from '../lib/useSortSearch'
-import ActionMenu from '../components/ActionMenu'
-import SearchBox from '../components/SearchBox'
-import SortableTh from '../components/SortableTh'
-import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
+import AccountsTable from '../components/AccountsTable'
+import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import { useSearchParams } from 'react-router-dom'
 import { useT } from '../lib/i18n'
 import { useTenant, useTenantQuery } from '../lib/tenant'
@@ -357,93 +354,16 @@ export default function Accounts() {
         <DataStatus />
       </div>
 
-      {loading && accounts.length === 0 ? (
-        <TableSkeleton rows={7} />
+      {loading ? (
+        <div className="h-64 flex items-center justify-center text-slate-400 text-sm">Loading accounts…</div>
       ) : (
-      <>
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <span className="text-xs text-slate-400">
-          {visible.length} of {accounts.length}
-        </span>
-        <SearchBox
-          value={query}
-          onChange={setQuery}
-          placeholder="Search name, code, group…"
+        <AccountsTable
+          accounts={accounts}
+          groups={groups}
+          openings={openings}
+          onEdit={startEdit}
+          onDelete={remove}
         />
-      </div>
-
-      {TYPES.map((type) => {
-        const rows = visible.filter((a) => a.type === type)
-        if (rows.length === 0) return null
-        return (
-          <div
-            key={type}
-            className="mt-4 rounded-lg border border-slate-200 bg-white"
-          >
-            <div className="border-b border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700">
-              {TYPE_LABELS[type]}
-              <span className="ml-2 text-xs font-normal text-slate-400">
-                {rows.length}
-              </span>
-            </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <SortableTh label="Code" sortKey="code" sort={sort} onSort={toggleSort} />
-                  <SortableTh label="Name" sortKey="name" sort={sort} onSort={toggleSort} />
-                  <SortableTh label="Group" sortKey="group" sort={sort} onSort={toggleSort} />
-                  <SortableTh label="Class" sortKey="class" sort={sort} onSort={toggleSort} />
-                  <SortableTh label="Opening (FY)" sortKey="opening" sort={sort} onSort={toggleSort} align="right" />
-                  <th className="px-4 py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((a) => (
-                  <tr key={a.id} className="border-b border-slate-50">
-                    <td className="px-4 py-2 font-mono text-slate-500">
-                      {a.code || '—'}
-                    </td>
-                    <td className="px-4 py-2 text-slate-800">{a.name}</td>
-                    <td className="px-4 py-2 text-slate-500">
-                      {groupName(a)}
-                    </td>
-                    <td className="px-4 py-2 text-slate-500">{a.class || 'other'}</td>
-                    <td className="px-4 py-2 text-right font-mono text-slate-700">
-{Number(openings[a.id] ?? a.openingBalance ?? 0).toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                        })}
-                    </td>
-                    <td className="px-4 py-2 text-right">
-                      <ActionMenu
-                        items={[
-                          {
-                            label: 'Edit',
-                            icon: <Pencil size={13} />,
-                            onClick: () => startEdit(a),
-                          },
-                          {
-                            label: 'Delete',
-                            icon: <Trash2 size={13} />,
-                            danger: true,
-                            onClick: () => remove(a.id),
-                          },
-                        ]}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      })}
-
-      {accounts.length === 0 && !error && (
-        <p className="mt-6 text-center text-sm text-slate-400">
-          No accounts yet. Add your first account to build the chart of accounts.
-        </p>
-      )}
-      </> 
       )}
 
       {importData && (

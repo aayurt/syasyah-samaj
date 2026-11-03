@@ -1,0 +1,102 @@
+{
+  "version": "1",
+  "description": "Syasyah Samaj billing - parallel test subsets for Jules fleet",
+  "tasks": [
+    {
+      "id": "test-accounts",
+      "name": "Accounts & CoA",
+      "files": [
+        "apps/billing/src/lib/__tests__/accounts.test.ts",
+        "apps/billing/src/lib/__tests__/accountGroups.test.ts",
+        "apps/billing/src/components/__tests__/AccountsTable.test.tsx"
+      ],
+      "workspace": "test-accounts",
+      "command": "pnpm --filter @afno/billing test --run"
+    },
+    {
+      "id": "test-members",
+      "name": "Members & Parties",
+      "files": [
+        "apps/billing/src/lib/__tests__/members.test.ts",
+        "apps/billing/src/lib/__tests__/parties.test.ts"
+      ],
+      "workspace": "test-members",
+      "command": "pnpm --filter @afno/billing test --run"
+    },
+    {
+      "id": "test-vouchers",
+      "name": "Vouchers & Journal",
+      "files": [
+        "apps/billing/src/lib/__tests__/vouchers.test.ts",
+        "apps/billing/src/lib/__tests__/journal.test.ts"
+      ],
+      "workspace": "test-vouchers",
+      "command": "pnpm --filter @afno/billing test --run"
+    },
+    {
+      "id": "test-reports",
+      "name": "Reports & Opening Balances",
+      "files": [
+        "apps/billing/src/lib/__tests__/openingBalances.test.ts",
+        "apps/billing/src/lib/__tests__/fiscalYear.test.ts"
+      ],
+      "workspace": "test-reports",
+      "command": "pnpm --filter @afno/billing test --run"
+    },
+    {
+      "id": "test-import-export",
+      "name": "Excel Import/Export",
+      "files": [
+        "apps/billing/src/lib/excel/entities.test.ts",
+        "apps/billing/src/lib/excel/entityIo.test.ts",
+        "apps/billing/src/lib/excel/masterWorkbook.test.ts",
+        "apps/billing/src/lib/excel/masterWorkbook.import.test.ts",
+        "apps/billing/src/lib/__tests__/i18n.test.tsx"
+      ],
+      "workspace": "test-io",
+      "command": "pnpm --filter @afno/billing test --run"
+    },
+    {
+      "id": "test-e2e-auth",
+      "name": "E2E - Auth",
+      "files": ["apps/billing/e2e/specs/01-settings.spec.ts", "apps/billing/e2e/specs/tenant-selector.spec.ts"],
+      "workspace": "e2e-auth",
+      "command": "pnpm --filter @afno/billing test:e2e"
+    },
+    {
+      "id": "test-e2e-crud",
+      "name": "E2E - CRUD",
+      "files": [
+        "apps/billing/e2e/specs/02-accounts.spec.ts",
+        "apps/billing/e2e/specs/03-masters.spec.ts",
+        "apps/billing/e2e/specs/coa-table.spec.ts"
+      ],
+      "workspace": "e2e-crud",
+      "command": "pnpm --filter @afno/billing test:e2e"
+    },
+    {
+      "id": "test-e2e-transactions",
+      "name": "E2E - Transactions",
+      "files": [
+        "apps/billing/e2e/specs/04-vouchers.spec.ts",
+        "apps/billing/e2e/specs/05-journal.spec.ts",
+        "apps/billing/e2e/specs/import-export.spec.ts"
+      ],
+      "workspace": "e2e-transactions",
+      "command": "pnpm --filter @afno/billing test:e2e"
+    },
+    {
+      "id": "test-e2e-offline",
+      "name": "E2E - Offline & Reports",
+      "files": [
+        "apps/billing/e2e/specs/06-reports.spec.ts",
+        "apps/billing/e2e/specs/07-offline.spec.ts",
+        "apps/billing/e2e/specs/language.spec.ts",
+        "apps/billing/e2e/specs/tooltips.spec.ts",
+        "apps/billing/e2e/specs/90-defects.spec.ts"
+      ],
+      "workspace": "e2e-offline",
+      "command": "pnpm --filter @afno/billing test:e2e"
+    }
+  ]
+}

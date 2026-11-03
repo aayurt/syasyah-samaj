@@ -138,6 +138,8 @@ settings: 'सेटिङहरू',
     debit: 'डेबिट',
     credit: 'क्रेडिट',
     description: 'विवरण',
+    showTooltips: 'दिखाउन टिपहरू',
+    showTooltipsHint: 'होवर/फोकस गर्दा सहायता पाठ हेर्नुहोस्',
   },
 
   // ── Status chips ──

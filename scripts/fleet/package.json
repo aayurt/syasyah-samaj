@@ -1,0 +1,10 @@
+{
+  "name": "@afno/billing-fleet",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dispatch": "bun fleet-dispatch.ts"
+  },
+  "dependencies": {}
+}

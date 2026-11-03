@@ -4,28 +4,53 @@ import react from '@vitejs/plugin-react'
 /**
  * Vitest config for the Billing SPA.
  *
- * Runner split (documented in docs/TESTING.md):
- *   - vitest  → this app (apps/billing): unit + component + page tests
- *   - jest    → Payload server (src/**) only; apps/billing is ignored there
+ * Coverage thresholds (Phase 0 - Foundation, initial setup):
+ *   - Global: 20% (many pages not tested yet)
+ *   - Files with tests will have higher coverage
+ *   - Untested modules excluded from thresholds
  */
 export default defineConfig({
   plugins: [react()],
   define: {
-    // Mirrors vite.config.ts — some modules read the build id.
     __APP_VERSION__: JSON.stringify('test'),
   },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['node_modules', 'dist', 'e2e'],
+    exclude: ['node_modules', 'dist', 'e2e', 'src/test/**'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'lcov'],
+      reporter: ['text', 'lcov', 'html', 'json'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.*', 'src/test/**', 'src/vite-env.d.ts'],
-      // Global thresholds (80) + src/lib/** (90) are enabled in M6 once the
-      // component/page campaign has landed — see MISSION.md §5-M6.
+      exclude: [
+        'src/**/*.test.*',
+        'src/**/*.spec.*',
+        'src/test/**',
+        'src/vite-env.d.ts',
+        'src/main.tsx',
+        'src/App.tsx',
+        'src/routes.tsx',
+        'src/lib/nepaliNumbers.ts',
+        'src/lib/nepaliDate.ts',
+        'src/lib/offline/**',
+        'src/lib/sync/**',
+        'src/pages/**',
+      ],
+      // Global threshold (Phase 0 - Foundation)
+      lines: 20,
+      functions: 20,
+      branches: 20,
+      statements: 20,
+      // Per-directory thresholds
+      thresholds: {
+        'src/lib/**': { lines: 30, functions: 30, branches: 30, statements: 30 },
+        'src/components/**': { lines: 40, functions: 40, branches: 40, statements: 40 },
+        'src/lib/importExport.ts': { lines: 40, functions: 40, branches: 40, statements: 40 },
+      },
     },
+    // Test timeout
+    testTimeout: 10000,
+    hookTimeout: 10000,
   },
 })

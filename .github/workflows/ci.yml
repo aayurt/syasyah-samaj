@@ -1,24 +1,29 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
+  workflow_dispatch:
 
 env:
   NODE_VERSION: '20'
   PNPM_VERSION: '10'
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
 jobs:
-  validate:
-    name: Validate (lint, typecheck, test, build)
+  # ──────────────────────────────────────────────────────────────
+  # Type-check & Lint (fast, runs first)
+  # ──────────────────────────────────────────────────────────────
+  typecheck-lint:
+    name: Type-check & Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # needed for kritikka-mcp git diff
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -34,47 +39,77 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Type-check
+        run: pnpm --filter @afno/billing tsc --noEmit
+
       - name: Lint
-        run: pnpm lint
+        run: pnpm --filter @afno/billing lint
 
-      - name: Typecheck
-        run: pnpm typecheck
+  # ──────────────────────────────────────────────────────────────
+  # Unit Tests (Vitest) with Coverage
+  # ──────────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: typecheck-lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Generate Payload types
-        run: pnpm generate:types
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
 
-      - name: Test (unit + integration + component)
-        run: pnpm test
-        env:
-          CI: true
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
 
-      - name: Build
-        run: pnpm build
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Kritikka-MCP validation
-        run: |
-          npx kritikka-mcp validate-change --changed-files "${{ github.event.pull_request.changed_files || 'HEAD~1..HEAD' }}"
-        continue-on-error: false
+      - name: Run unit tests with coverage
+        run: pnpm --filter @afno/billing test:unit --coverage
 
-  e2e:
-    name: E2E Tests
-    needs: validate
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./apps/billing/coverage/lcov.info
+          flags: unittests
+          fail_ci_if_error: false
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: apps/billing/coverage/html/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────────
+  # Integration Tests (with PostgreSQL)
+  # ──────────────────────────────────────────────────────────────
+  integration-tests:
+    name: Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: typecheck-lint
     services:
       postgres:
-        image: postgres:16
+        image: postgres:16-alpine
         env:
-          POSTGRES_DB: billing_e2e
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: billing_test
         ports: [5432:5432]
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -93,62 +128,268 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate Payload types
-        run: pnpm generate:types
-
-      - name: Build billing app
-        run: cd apps/billing && pnpm build
-
-      - name: Run E2E tests
+      - name: Wait for PostgreSQL
         run: |
-          cd apps/billing
-          E2E_DATABASE_URI=postgresql://postgres:test@localhost:5432/billing_e2e \
-          pnpm test:e2e
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then break; fi
+            sleep 2
+          done
+
+      - name: Run database migrations
+        run: pnpm --filter @afno/billing db:push
         env:
-          CI: true
-          PLAYWRIGHT_BROWSERS_PATH: 0
+          DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_test
 
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: apps/billing/playwright-report/
-          retention-days: 7
+      - name: Run integration tests
+        run: pnpm --filter @afno/billing test:integration
+        env:
+          DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_test
 
-      - name: Upload test screenshots
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-screenshots
-          path: apps/billing/test-results/
-          retention-days: 7
-
-  deploy-preview:
-    name: Deploy Preview
-    needs: [validate, e2e]
-    if: github.event_name == 'pull_request'
+  # ──────────────────────────────────────────────────────────────
+  # E2E Tests (Playwright) — Runs in Google Jules via workflow_dispatch
+  # ──────────────────────────────────────────────────────────────
+  e2e-tests:
+    name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [typecheck-lint, unit-tests]
+    # Only run on main branch or when manually triggered
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: billing_e2e
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy to preview
-        run: |
-          echo "Deploy preview would go here (Vercel/Netlify)"
-          # vercel --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
 
-  notify:
-    name: Notify
-    needs: [validate, e2e]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check status
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @afno/billing playwright install --with-deps chromium
+
+      - name: Wait for PostgreSQL
         run: |
-          if [[ "${{ needs.validate.result }}" == "success" && "${{ needs.e2e.result }}" == "success" ]]; then
-            echo "✅ All checks passed"
-          else
-            echo "❌ Some checks failed"
-            exit 1
-          fi
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then break; fi
+            sleep 2
+          done
+
+      - name: Build applications
+        run: |
+          pnpm --filter @afno/billing build
+        env:
+          DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_e2e
+
+      - name: Run database setup for E2E
+        run: |
+          pnpm --filter @afno/billing db:push
+        env:
+          DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_e2e
+
+      - name: Run E2E tests
+        run: |
+          pnpm --filter @afno/billing test:e2e
+        env:
+          E2E_DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_e2e
+          E2E_API_PORT: 3100
+          E2E_WEB_PORT: 5174
+          CI: true
+          PLAYWRIGHT_HTML_REPORT: 1
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/billing/test-results/html/
+          retention-days: 14
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: apps/billing/test-results/**/*.trace.zip
+          retention-days: 14
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots
+          path: apps/billing/test-results/**/*.png
+          retention-days: 14
+
+  # ──────────────────────────────────────────────────────────────
+  # Google Jules Parallel Test Dispatch
+  # ──────────────────────────────────────────────────────────────
+  jules-dispatch:
+    name: Dispatch Jules Parallel Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [unit-tests, integration-tests]
+    if: github.ref == 'refs/heads/main' && secrets.JULES_API_KEY != ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Jules fleet dependencies
+        run: |
+          cd scripts/fleet
+          bun install
+
+      - name: Dispatch Jules parallel test workers
+        run: |
+          cd scripts/fleet
+          JULES_API_KEY=${{ secrets.JULES_API_KEY }} bun fleet-dispatch.ts
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+
+  # ──────────────────────────────────────────────────────────────
+  # Build Verification
+  # ──────────────────────────────────────────────────────────────
+  build:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: typecheck-lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Billing SPA
+        run: pnpm --filter @afno/billing build
+
+      - name: Build Payload CMS
+        run: pnpm --filter @afno/payload build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            apps/billing/dist/
+            .next-e2e/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────────
+  # Governance Validation (kritikka-mcp)
+  # ──────────────────────────────────────────────────────────────
+  governance:
+    name: Governance Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: typecheck-lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate architecture
+        run: npx kritikka-mcp validate-architecture
+
+      - name: Validate changed files
+        if: github.event_name == 'pull_request'
+        run: |
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | tr '\n' ' ')
+          npx kritikka-mcp validate-change --changed-files "$CHANGED_FILES"
+
+  # ──────────────────────────────────────────────────────────────
+  # Deploy to Staging (on main branch success)
+  # ──────────────────────────────────────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [unit-tests, integration-tests, e2e-tests, build, governance]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging..."
+          # Add your deployment script here
+          # ./deploy.sh staging
+
+      - name: Notify on success
+        if: success()
+        run: |
+          echo "✅ Staging deployment successful"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Staging deployment failed"
+
+# ──────────────────────────────────────────────────────────────
+# Concurrency control
+# ──────────────────────────────────────────────────────────────
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true

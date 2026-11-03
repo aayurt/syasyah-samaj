@@ -6,29 +6,17 @@ const here = dirname(fileURLToPath(import.meta.url))
 const AUTH_STATE = join(here, '.auth', 'user.json')
 
 /**
- * Sequential E2E suite for the billing SPA.
- *
- * Run order is enforced with Playwright project *dependencies* — each suite
- * only starts after the previous one fully passed, so the journey is a strict
- * chain: 00-auth → 00-shell → 01-settings → 02-accounts → 03-masters →
- * 04-vouchers → 05-journal → 06-reports → 07-offline.
- *
- * Fully self-contained: this config STARTS the whole stack from scratch on
- * dedicated ports and tears it down after the run — it never reuses a running
- * dev server, and never touches whatever is on :3000/:5173.
- *
- *   - Payload (Next dev) on :3100  (override with E2E_API_PORT)
- *   - Billing SPA (Vite)  on :5174  (override with E2E_WEB_PORT)
- *
- * The API instance uses its own build dir (.next-e2e) so it can run at the
- * same time as the normal `pnpm dev` server. The SPA reaches the API through
- * its Vite proxy, pointed at the API port via E2E_API_TARGET.
- *
- * DB: defaults to the DATABASE_URI in the repo .env (shared with local dev —
- * seed it masters-only first, see the run guide in docs/E2E_TEST_CASES.md).
- * CI can isolate with E2E_DATABASE_URI; the seed command in the guide also
- * accepts BILLING_API to target this instance.
+ * Playwright config for E2E tests.
+ * 
+ * CI runs: Fully parallel, multiple workers
+ * Jules runs: Distributed across parallel workers
+ * Local runs: Sequential for debugging
  */
+const isCI = !!process.env.CI
+const isJules = !!process.env.JULES_RUN_ID
+const workers = isCI ? 4 : (isJules ? 1 : 1)
+const fullyParallel = isCI || isJules
+
 const API_PORT = Number(process.env.E2E_API_PORT || 3100)
 const WEB_PORT = Number(process.env.E2E_WEB_PORT || 5174)
 const API_URL = `http://localhost:${API_PORT}`
@@ -36,141 +24,180 @@ const WEB_URL = `http://localhost:${WEB_PORT}`
 
 export default defineConfig({
   testDir: './specs',
-  // Strict sequential journey — a single worker, no parallel files.
-  workers: 1,
-  fullyParallel: false,
-  retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  workers,
+  fullyParallel,
+  retries: isCI ? 2 : 0,
+  reporter: [
+    ['html', { outputFolder: join(here, '..', 'test-results', 'html'), open: 'never' }],
+    ['json', { outputFile: join(here, '..', 'test-results', 'results.json') }],
+    ['junit', { outputFile: join(here, '..', 'test-results', 'results.xml') }],
+  ],
   timeout: 90_000,
   expect: { timeout: 15_000 },
-  // Boot everything fresh — no reuseExistingServer anywhere.
+  outputDir: join(here, '..', 'test-results', 'artifacts'),
+  
+  // Global setup/teardown
+  globalSetup: join(here, 'global-setup.ts'),
+  globalTeardown: join(here, 'global-teardown.ts'),
+
+  // Start both API (Next.js) and Web (Vite) servers
   webServer: [
     {
-      // Payload (Next dev) on :3100, own build dir, dev-mode schema push.
-      command: `npx next dev -p ${API_PORT}`,
-      cwd: '../../..', // repo root — the Next app that hosts Payload
+      command: `pnpm dev`,
+      cwd: '../../..',
       env: {
         ...(process.env.E2E_DATABASE_URI
           ? { DATABASE_URI: process.env.E2E_DATABASE_URI }
           : {}),
-        NEXT_DIST_DIR: '.next-e2e',
+        PORT: String(API_PORT),
         NODE_OPTIONS: '--no-deprecation',
-        // better-auth validates the Origin header against this — it must be the
-        // SPA origin the browser actually posts from (via the Vite proxy).
-        BETTER_AUTH_URL: `${WEB_URL}/`,
-        NEXT_PUBLIC_SERVER_URL: `${WEB_URL}/`,
+        BETTER_AUTH_URL: WEB_URL,
+        NEXT_PUBLIC_SERVER_URL: WEB_URL,
       },
-      // A real API path: `/api` (exact) hits the 404/next-international path.
       url: `${API_URL}/api/users`,
       timeout: 180_000,
+      reuseExistingServer: !isCI && !isJules,
     },
     {
-      // Billing SPA on :5174, proxying /api to the API instance above.
-      command: `npx vite --port ${WEB_PORT} --strictPort`,
-      cwd: '..', // apps/billing — the Vite app
-      env: { E2E_API_TARGET: API_URL },
+      command: `pnpm dev --port ${WEB_PORT} --strictPort`,
+      cwd: '..',
+      env: { E2E_API_TARGET: API_URL, VITE_API_URL: API_URL },
       url: WEB_URL,
       timeout: 60_000,
+      reuseExistingServer: !isCI && !isJules,
     },
   ],
+
   use: {
     baseURL: WEB_URL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
   },
+
   projects: [
-    // 00 — bootstrap + masters-only seed (fresh-DB aware, idempotent).
-    { name: '00-seed', testMatch: /seed\.setup\.ts/, use: { ...devices['Desktop Chrome'] } },
-    // 00a — login once, persist session for every suite.
+    // Setup projects (run once)
+    { name: 'setup-seed', testMatch: /seed\.setup\.ts/, use: { ...devices['Desktop Chrome'] } },
     {
-      name: '00-auth',
+      name: 'setup-auth',
       testMatch: /auth\.setup\.ts/,
-      dependencies: ['00-seed'],
+      dependencies: ['setup-seed'],
       use: { ...devices['Desktop Chrome'] },
     },
-    // 00b — S0 shell: FY baseline, sidebar accordions, ⌘K palette.
+
+    // Test projects (parallel in CI/Jules)
     {
-      name: '00-shell',
+      name: 'shell',
       testMatch: /00-shell\.spec\.ts/,
-      dependencies: ['00-auth'],
-      use: { storageState: AUTH_STATE },
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
     },
-    // 01 — Settings: calendar, company profile, fiscal years, defaults, COA quick-add.
     {
-      name: '01-settings',
+      name: 'settings',
       testMatch: /01-settings\.spec\.ts/,
-      dependencies: ['00-shell'],
-      use: { storageState: AUTH_STATE },
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
     },
-    // 02 — Account setup: seeded chart + type→group filter + create/CSV/delete.
     {
-      name: '02-accounts',
+      name: 'accounts',
       testMatch: /02-accounts\.spec\.ts/,
-      dependencies: ['01-settings'],
-      use: { storageState: AUTH_STATE },
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
     },
-    // 03 — Masters: parties + items.
     {
-      name: '03-masters',
+      name: 'masters',
       testMatch: /03-masters\.spec\.ts/,
-      dependencies: ['02-accounts'],
-      use: { storageState: AUTH_STATE },
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
     },
-    // 04 — The 13-voucher sequential month (core). UI reps + API bulk.
     {
-      name: '04-vouchers',
+      name: 'vouchers',
       testMatch: /04-vouchers\.spec\.ts/,
-      dependencies: ['03-masters'],
-      use: { storageState: AUTH_STATE },
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
     },
-    // 05 — Journal list numbers + drill-down modal.
     {
-      name: '05-journal',
+      name: 'journal',
       testMatch: /05-journal\.spec\.ts/,
-      dependencies: ['04-vouchers'],
-      use: { storageState: AUTH_STATE },
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
     },
-    // 06 — Reports acceptance (expected outputs table).
     {
-      name: '06-reports',
+      name: 'reports',
       testMatch: /06-reports\.spec\.ts/,
-      dependencies: ['05-journal'],
-      use: { storageState: AUTH_STATE },
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
     },
-    // 07 — Offline draft → reconnect → single row (no dupes).
     {
-      name: '07-offline',
+      name: 'offline',
       testMatch: /07-offline\.spec\.ts/,
-      dependencies: ['06-reports'],
-      use: { storageState: AUTH_STATE },
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
     },
-    // 08 — Desktop storage backend: the real SqliteAdapter + SyncEngine run in
-    // Node against a file-backed SQLite (node:sqlite) and the live e2e API —
-    // queue while offline, restart the engine, flush on init. No browser: the
-    // adapter's SQL is the code under test.
     {
-      name: '08-desktop-storage',
+      name: 'desktop-storage',
       testMatch: /08-desktop-storage\.spec\.ts/,
-      dependencies: ['07-offline'],
+      dependencies: ['setup-auth'],
     },
-    // 09 — The browser SPA forced onto the SQLite backend: an init script sets
-    // window.__SYNC_STORAGE__='sqlite' plus the sql.js UMD URL, so the engine
-    // runs SqliteAdapter on the wasm sql.js database instead of IndexedDB.
-    // Runs the offline-queue → reconnect-flush flow (no full reloads — the
-    // sql.js database is in-memory for this project).
     {
-      name: '09-spa-sqlite',
+      name: 'spa-sqlite',
       testMatch: /09-spa-sqlite\.spec\.ts/,
-      dependencies: ['03-masters'],
-      use: { storageState: AUTH_STATE },
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
     },
-    // 10 — Membership application form journey (fill → save → table → edit)
-    // and Nepali mode smoke (toggle language, assert labels).
     {
-      name: '10-membership',
+      name: 'membership',
       testMatch: /10-membership\.spec\.ts/,
-      dependencies: ['00-auth'],
-      use: { storageState: AUTH_STATE },
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'defects',
+      testMatch: /90-defects\.spec\.ts/,
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+    },
+
+    // New test projects for Phase 4 requirements
+    {
+      name: 'tenant-selector',
+      testMatch: /tenant-selector\.spec\.ts/,
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'coa-table',
+      testMatch: /coa-table\.spec\.ts/,
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'import-export',
+      testMatch: /import-export\.spec\.ts/,
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'language',
+      testMatch: /language\.spec\.ts/,
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'tooltips',
+      testMatch: /tooltips\.spec\.ts/,
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+    },
+
+    // Mobile viewport
+    {
+      name: 'mobile',
+      testMatch: /.*\.spec\.ts/,
+      dependencies: ['setup-auth'],
+      use: { storageState: AUTH_STATE, ...devices['Pixel 5'] },
     },
   ],
 })

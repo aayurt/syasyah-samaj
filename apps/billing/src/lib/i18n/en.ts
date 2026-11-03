@@ -136,6 +136,8 @@ settings: 'Settings',
     debit: 'Debit',
     credit: 'Credit',
     description: 'Description',
+    showTooltips: 'Show tooltips',
+    showTooltipsHint: 'Show contextual help on hover/focus',
   },
 
   // ── Status chips ──

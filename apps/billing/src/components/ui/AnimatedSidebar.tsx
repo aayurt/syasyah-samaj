@@ -3,8 +3,11 @@ import { motion, AnimatePresence } from 'motion/react'
 import { NavLink } from 'react-router-dom'
 import {
   Building2,
+  Check,
   ChevronRight,
   ChevronsUpDown,
+  CornerDownRight,
+  GitFork,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -89,6 +92,14 @@ export function AnimatedSidebar({
     return tenants.find((tn) => String(tn.id) === String(tenantId)) || tenants[0]
   }, [tenants, tenantId])
 
+  const parentTenant = React.useMemo(() => {
+    return tenants.find((tn) => tn.type === 'central' || tn.code === 'C00') || tenants[0]
+  }, [tenants])
+
+  const childTenants = React.useMemo(() => {
+    return tenants.filter((tn) => tn.id !== parentTenant?.id && (tn.type !== 'central' && tn.code !== 'C00'))
+  }, [tenants, parentTenant])
+
   const userInitial = React.useMemo(() => {
     const email = userEmail || 'Admin'
     return email.charAt(0).toUpperCase()
@@ -136,13 +147,24 @@ export function AnimatedSidebar({
             {/* Title & Subtitle */}
             {!collapsed && (
               <div className="grid flex-1 text-left leading-tight truncate">
-                <span className="truncate text-xs font-bold text-slate-900">
-                  {activeTenant?.name || t('sidebar.orgName', 'स्यस्यः धुकू')}
-                </span>
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="truncate text-xs font-bold text-slate-900">
+                    {activeTenant?.name || t('sidebar.orgName', 'Syasyah Samaj Central')}
+                  </span>
+                  {activeTenant?.type === 'central' || activeTenant?.code === 'C00' ? (
+                    <span className="shrink-0 rounded bg-crimson-100 px-1 py-0.2 text-[9px] font-bold text-crimson-700">
+                      Parent
+                    </span>
+                  ) : (
+                    <span className="shrink-0 rounded bg-slate-100 px-1 py-0.2 text-[9px] font-medium text-slate-600">
+                      Child
+                    </span>
+                  )}
+                </div>
                 <span className="truncate text-[10px] text-slate-500">
-                  {activeTenant?.type === 'central'
-                    ? t('sidebar.hq', 'Head office (HQ)')
-                    : activeTenant?.code || t('sidebar.branch', 'Branch office')}
+                  {activeTenant?.type === 'central' || activeTenant?.code === 'C00'
+                    ? t('sidebar.hq', 'Syasyah Samaj Central [Parent]')
+                    : activeTenant?.code ? `${activeTenant.code} · ${t('sidebar.branch', 'Illaka Branch')}` : t('sidebar.branch', 'Illaka Branch')}
                 </span>
               </div>
             )}
@@ -174,36 +196,89 @@ export function AnimatedSidebar({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 5 }}
               transition={{ duration: 0.15 }}
-              className="absolute left-2 right-2 top-full mt-1.5 z-50 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg space-y-1"
+              className="absolute left-2 right-2 top-full mt-1.5 z-50 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl space-y-1"
             >
               <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                {t('sidebar.scopeSelect', 'Illaka / organisation')}
+                {t('sidebar.scopeSelect', 'Select Tenant / Illaka')}
               </div>
-              <div className="max-h-48 overflow-y-auto space-y-0.5">
-                {tenants.map((tn) => {
-                  const active = String(tn.id) === String(tenantId)
-                  return (
-                    <button
-                      key={tn.id}
-                      onClick={() => {
-                        setTenantId(String(tn.id))
-                        setTenantDropdownOpen(false)
-                      }}
-                      className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-left transition-colors ${
-                        active
-                          ? 'bg-crimson-50 text-crimson-800 font-semibold'
-                          : 'text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="truncate">{tn.name}</span>
-                      {tn.code && (
-                        <span className="ml-2 font-mono text-[10px] text-slate-400">
-                          {tn.code}
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
+              <div className="max-h-60 overflow-y-auto space-y-1.5 p-0.5">
+                {/* ── 1. Parent Organization ── */}
+                {parentTenant && (
+                  <div>
+                    <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-crimson-600">
+                      Parent
+                    </div>
+                    {(() => {
+                      const active = String(parentTenant.id) === String(tenantId)
+                      return (
+                        <button
+                          key={parentTenant.id}
+                          onClick={() => {
+                            setTenantId(String(parentTenant.id))
+                            setTenantDropdownOpen(false)
+                          }}
+                          className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-xs text-left transition-colors ${
+                            active
+                              ? 'bg-crimson-600 text-white font-bold shadow-xs'
+                              : 'bg-crimson-50/70 text-slate-900 hover:bg-crimson-100/70 font-semibold border border-crimson-200/60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <Building2 size={14} className={active ? 'text-white' : 'text-crimson-600'} />
+                            <span className="truncate">{parentTenant.name || 'Syasyah Samaj Central'}</span>
+                            <span className={`rounded px-1.5 py-0.2 text-[9px] font-bold ${active ? 'bg-white/20 text-white' : 'bg-crimson-200/70 text-crimson-800'}`}>
+                              Parent
+                            </span>
+                          </div>
+                          {parentTenant.code && (
+                            <span className={`font-mono text-[10px] ${active ? 'text-white/80' : 'text-crimson-700'}`}>
+                              {parentTenant.code}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })()}
+                  </div>
+                )}
+
+                {/* ── 2. Child Branches (Illakas) ── */}
+                {childTenants.length > 0 && (
+                  <div className="pt-1">
+                    <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                      <span>Illakas (Children)</span>
+                      <span className="text-[9px] text-slate-400 font-mono">{childTenants.length}</span>
+                    </div>
+                    <div className="space-y-0.5 pl-1.5 border-l-2 border-slate-100 ml-2">
+                      {childTenants.map((tn) => {
+                        const active = String(tn.id) === String(tenantId)
+                        return (
+                          <button
+                            key={tn.id}
+                            onClick={() => {
+                              setTenantId(String(tn.id))
+                              setTenantDropdownOpen(false)
+                            }}
+                            className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-left transition-colors ${
+                              active
+                                ? 'bg-crimson-50 text-crimson-800 font-bold'
+                                : 'text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 truncate">
+                              <CornerDownRight size={11} className={active ? 'text-crimson-500' : 'text-slate-300'} />
+                              <span className="truncate">{tn.name}</span>
+                            </div>
+                            {tn.code && (
+                              <span className="ml-2 font-mono text-[10px] text-slate-400">
+                                {tn.code}
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

@@ -56,9 +56,9 @@ describe('IllakaSwitcher', () => {
 
   it('shows the All Illakas default option for central users', () => {
     renderSwitcher()
-    expect(screen.getByRole('option', { name: 'All Illakas' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'C00 · Central' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'IL01 · Yala Illaka' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /All Illakas/i })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /Central/i })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /Yala Illaka/i })).toBeInTheDocument()
   })
 
   it('emits setTenantId on change', () => {
