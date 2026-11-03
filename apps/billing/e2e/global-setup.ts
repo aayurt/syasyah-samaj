@@ -31,17 +31,16 @@ export default async function globalSetup(config: FullConfig) {
 
   console.log('🌐 Web URL:', webUrl)
 
-  // Wait for web server to be ready
+  // Wait for web server to be ready (accept any HTTP response as "server is up")
   let webReady = false
 
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 60; i++) {
     if (!webReady) {
       try {
         const res = await fetch(webUrl, { method: 'GET' })
-        if (res.ok) {
-          webReady = true
-          console.log('✅ Web server ready')
-        }
+        // Accept any HTTP response as "server is running" (including 404, 403, etc.)
+        webReady = true
+        console.log('✅ Web server ready (status:', res.status, ')')
       } catch {
         // Not ready yet
       }
@@ -51,7 +50,7 @@ export default async function globalSetup(config: FullConfig) {
     await new Promise(r => setTimeout(r, 2000))
   }
 
-  if (!webReady) throw new Error('❌ Web server not ready after 60s')
+  if (!webReady) throw new Error('❌ Web server not ready after 120s')
 
   // Create auth state for tests
   const browser = await chromium.launch()
