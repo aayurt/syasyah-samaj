@@ -2,18 +2,17 @@ import { faker } from '@faker-js/faker'
 import type {
   Account,
   AccountGroup,
+  Member,
   Party,
   Item,
+  Voucher,
   JournalEntry,
   FiscalYear,
+  Tenant,
   BillingSettings,
   OpeningBalance,
+  MembershipType,
 } from '../lib/types'
-
-type Member = any
-type Voucher = any
-type Tenant = any
-type MembershipType = any
 
 // Seed faker for reproducible tests
 faker.seed(12345)
@@ -33,7 +32,7 @@ export function createMockAccount(overrides: Partial<Account> = {}): Account {
     class: faker.helpers.arrayElement(classes),
     group: null,
     openingBalance: faker.number.float({ min: -100000, max: 100000, fractionDigits: 2 }),
-    tenant: 1,
+    tenant: 'C00',
     createdAt: faker.date.recent({ days: 365 }).toISOString(),
     updatedAt: faker.date.recent({ days: 30 }).toISOString(),
     ...overrides,
@@ -51,7 +50,7 @@ export function createMockAccountGroup(overrides: Partial<AccountGroup> = {}): A
     code: faker.string.numeric(3),
     name: faker.finance.accountName(),
     type: faker.helpers.arrayElement(types),
-    tenant: 1,
+    tenant: 'C00',
     createdAt: faker.date.recent({ days: 365 }).toISOString(),
     updatedAt: faker.date.recent({ days: 30 }).toISOString(),
     ...overrides,
@@ -80,7 +79,7 @@ export function createMockMember(overrides: Partial<Member> = {}): Member {
     photo: null,
     familyDetails: [],
     openingBalance: faker.number.float({ min: -50000, max: 50000, fractionDigits: 2 }),
-    tenant: 1,
+    tenant: 'C00',
     status: 'active',
     createdAt: faker.date.recent({ days: 365 }).toISOString(),
     updatedAt: faker.date.recent({ days: 30 }).toISOString(),
@@ -105,7 +104,7 @@ export function createMockParty(overrides: Partial<Party> = {}): Party {
     panNumber: faker.string.alphanumeric(10).toUpperCase(),
     contactPerson: faker.person.fullName(),
     openingBalance: faker.number.float({ min: -100000, max: 100000, fractionDigits: 2 }),
-    tenant: 1,
+    tenant: 'C00',
     createdAt: faker.date.recent({ days: 365 }).toISOString(),
     updatedAt: faker.date.recent({ days: 30 }).toISOString(),
     ...overrides,
@@ -129,7 +128,7 @@ export function createMockItem(overrides: Partial<Item> = {}): Item {
     taxType: faker.helpers.arrayElement(taxTypes),
     taxRate: 13,
     hsnCode: faker.string.numeric(8),
-    tenant: 1,
+    tenant: 'C00',
     createdAt: faker.date.recent({ days: 365 }).toISOString(),
     updatedAt: faker.date.recent({ days: 30 }).toISOString(),
     ...overrides,
@@ -157,7 +156,7 @@ export function createMockVoucher(overrides: Partial<Voucher> = {}): Voucher {
     totalAmount: faker.number.float({ min: 100, max: 100000, fractionDigits: 2 }),
     status: faker.helpers.arrayElement(statuses),
     lines: [],
-    tenant: 1,
+    tenant: 'C00',
     fiscalYear: '2081-82',
     createdAt: faker.date.recent({ days: 30 }).toISOString(),
     updatedAt: faker.date.recent({ days: 7 }).toISOString(),
@@ -176,19 +175,19 @@ export function createMockJournalEntry(overrides: Partial<JournalEntry> = {}): J
     narration: faker.lorem.sentence(),
     lines: [
       {
-        account: faker.number.int({ min: 1000, max: 9999 }).toString(),
+        accountId: faker.number.int({ min: 1000, max: 9999 }),
         debit: faker.number.float({ min: 100, max: 100000, fractionDigits: 2 }),
         credit: 0,
-        memo: faker.lorem.words(3),
+        description: faker.lorem.words(3),
       },
       {
-        account: faker.number.int({ min: 1000, max: 9999 }).toString(),
+        accountId: faker.number.int({ min: 1000, max: 9999 }),
         debit: 0,
         credit: faker.number.float({ min: 100, max: 100000, fractionDigits: 2 }),
-        memo: faker.lorem.words(3),
+        description: faker.lorem.words(3),
       },
     ],
-    tenant: 1,
+    tenant: 'C00',
     fiscalYear: '2081-82',
     createdAt: faker.date.recent({ days: 30 }).toISOString(),
     updatedAt: faker.date.recent({ days: 7 }).toISOString(),
@@ -205,12 +204,14 @@ export function createMockFiscalYear(overrides: Partial<FiscalYear> = {}): Fisca
 
   return {
     id: faker.number.int({ min: 1, max: 20 }),
-    label: `${startYear}-${endYear}`,
-    startDate: `${startYear}-04-01`,
-    endDate: `${endYear}-03-31`,
-    status: 'active',
+    name: `${startYear}-${endYear}`,
+    startDateBs: `${startYear}-04-01`,
+    endDateBs: `${endYear}-03-31`,
+    startDateAd: `${startYear + 56}-04-14`,
+    endDateAd: `${startYear + 57}-04-13`,
     isActive: true,
-    tenant: 1,
+    isClosed: false,
+    tenant: 'C00',
     createdAt: faker.date.recent({ days: 365 }).toISOString(),
     updatedAt: faker.date.recent({ days: 30 }).toISOString(),
     ...overrides,
@@ -262,7 +263,8 @@ export function createMockCentralTenant(overrides: Partial<Tenant> = {}): Tenant
  */
 export function createMockBillingSettings(overrides: Partial<BillingSettings> = {}): BillingSettings {
   return {
-    tenant: 1,
+    id: 1,
+    tenant: 'C00',
     companyName: 'Syasha Samaj',
     companyAddress: 'Kathmandu, Nepal',
     companyPhone: '9851000000',
@@ -286,7 +288,7 @@ export function createMockOpeningBalance(overrides: Partial<OpeningBalance> = {}
     account: faker.number.int({ min: 1000, max: 9999 }),
     fiscalYear: '2081-82',
     amount: faker.number.float({ min: -1000000, max: 1000000, fractionDigits: 2 }),
-    tenant: 1,
+    tenant: 'C00',
     createdAt: faker.date.recent({ days: 365 }).toISOString(),
     updatedAt: faker.date.recent({ days: 30 }).toISOString(),
     ...overrides,
@@ -303,7 +305,7 @@ export function createMockMembershipType(overrides: Partial<MembershipType> = {}
     fee: faker.number.float({ min: 1000, max: 50000, fractionDigits: 0 }),
     durationMonths: faker.helpers.arrayElement([12, 24, 60, 120, 0]), // 0 = lifetime
     description: faker.lorem.sentence(),
-    tenant: 1,
+    tenant: 'C00',
     createdAt: faker.date.recent({ days: 365 }).toISOString(),
     updatedAt: faker.date.recent({ days: 30 }).toISOString(),
     ...overrides,
@@ -336,10 +338,10 @@ export function createMockDataSet(count: number = 10) {
 export function createMockCoAHierarchy() {
   const groups: AccountGroup[] = [
     createMockAccountGroup({ id: 1, code: '1', name: 'Assets', type: 'asset' }),
-    createMockAccountGroup({ id: 2, code: '11', name: 'Current Assets', type: 'asset', parent: 1 }),
-    createMockAccountGroup({ id: 3, code: '12', name: 'Fixed Assets', type: 'asset', parent: 1 }),
+    createMockAccountGroup({ id: 2, code: '11', name: 'Current Assets', type: 'asset', parentId: 1 }),
+    createMockAccountGroup({ id: 3, code: '12', name: 'Fixed Assets', type: 'asset', parentId: 1 }),
     createMockAccountGroup({ id: 4, code: '2', name: 'Liabilities', type: 'liability' }),
-    createMockAccountGroup({ id: 5, code: '21', name: 'Current Liabilities', type: 'liability', parent: 4 }),
+    createMockAccountGroup({ id: 5, code: '21', name: 'Current Liabilities', type: 'liability', parentId: 4 }),
     createMockAccountGroup({ id: 6, code: '3', name: 'Equity', type: 'equity' }),
     createMockAccountGroup({ id: 7, code: '4', name: 'Income', type: 'income' }),
     createMockAccountGroup({ id: 8, code: '5', name: 'Expenses', type: 'expense' }),
@@ -349,12 +351,12 @@ export function createMockCoAHierarchy() {
     // Current Assets
     createMockAccount({ id: 101, code: '1110', name: 'Cash', type: 'asset', class: 'cash', group: 2, openingBalance: 50000 }),
     createMockAccount({ id: 102, code: '1120', name: 'Bank - Nabil', type: 'asset', class: 'bank', group: 2, openingBalance: 250000 }),
-    createMockAccount({ id: 103, code: '1130', name: 'Accounts Receivable', type: 'asset', class: 'other', group: 2, openingBalance: 150000 }),
+    createMockAccount({ id: 103, code: '1130', name: 'Accounts Receivable', type: 'asset', class: 'receivable', group: 2, openingBalance: 150000 }),
     // Fixed Assets
     createMockAccount({ id: 104, code: '1210', name: 'Office Equipment', type: 'asset', class: 'other', group: 3, openingBalance: 100000 }),
     createMockAccount({ id: 105, code: '1220', name: 'Furniture & Fixtures', type: 'asset', class: 'other', group: 3, openingBalance: 75000 }),
     // Current Liabilities
-    createMockAccount({ id: 201, code: '2110', name: 'Accounts Payable', type: 'liability', class: 'other', group: 5, openingBalance: -80000 }),
+    createMockAccount({ id: 201, code: '2110', name: 'Accounts Payable', type: 'liability', class: 'payable', group: 5, openingBalance: -80000 }),
     createMockAccount({ id: 202, code: '2120', name: 'VAT Payable', type: 'liability', class: 'other', group: 5, openingBalance: -25000 }),
     // Equity
     createMockAccount({ id: 301, code: '3100', name: 'Capital Fund', type: 'equity', class: 'other', group: 6, openingBalance: -400000 }),
