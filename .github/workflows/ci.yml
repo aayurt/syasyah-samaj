@@ -207,7 +207,6 @@ jobs:
       - name: Run E2E tests via Playwright webServer
         run: |
           cd $GITHUB_WORKSPACE/apps/billing
-          which playwright || ./node_modules/.bin/playwright --version || echo "playwright not found"
           pnpm run test:e2e -- --project=shell --project=settings --project=accounts --project=coa-table --project=tenant-selector --project=tooltips --project=language --project=import-export
         env:
           E2E_DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_e2e
