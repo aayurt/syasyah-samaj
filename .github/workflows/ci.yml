@@ -204,72 +204,17 @@ jobs:
           RESEND_API_KEY: re_test
           PAYLOAD_SECRET: test-secret-key-for-ci
 
-      - name: Start API server
+      - name: Run E2E tests via Playwright webServer
         run: |
-          cd $GITHUB_WORKSPACE
-          DATABASE_URI=postgresql://postgres:postgres@localhost:5432/billing_e2e \
-            REDIS_URL=redis://localhost:6379 \
-            RESEND_API_KEY=re_test \
-            PAYLOAD_SECRET=test-secret-key-for-ci \
-            PORT=3100 \
-            BETTER_AUTH_URL=http://localhost:5174 \
-            NEXT_PUBLIC_SERVER_URL=http://localhost:5174 \
-            NODE_OPTIONS=--no-deprecation \
-            pnpm dev > /tmp/api-server.log 2>&1 &
-          echo $! > /tmp/api-server.pid
-
-      - name: Start Vite dev server
-        run: |
-          set -x
-          cd $GITHUB_WORKSPACE/apps/billing
-          E2E_API_TARGET=http://localhost:3100 \
-            VITE_API_URL=http://localhost:3100 \
-            NODE_OPTIONS=--no-deprecation \
-            pnpm preview --port 5174 > /tmp/vite-server.log 2>&1 &
-          VITE_PID=$!
-          echo $VITE_PID > /tmp/vite-server.pid
-          sleep 5
-          if ! kill -0 $VITE_PID 2>/dev/null; then
-            echo "Vite server crashed on startup:"
-            cat /tmp/vite-server.log
-            exit 1
-          fi
-          echo "Vite server started (PID: $VITE_PID)"
-
-      - name: Wait for servers to be ready
-        run: |
-          for i in {1..60}; do
-            API_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/api/users 2>/dev/null || echo "000")
-            VITE_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5174 2>/dev/null || echo "000")
-            if [ "$API_CODE" != "000" ] && [ "$VITE_CODE" != "000" ]; then
-              echo "Servers ready (API: $API_CODE, Vite: $VITE_CODE)"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "API server log:"
-          cat /tmp/api-server.log | tail -20
-          echo "Vite server log:"
-          cat /tmp/vite-server.log | tail -30
-          exit 1
-
-      - name: Run E2E tests
-        run: |
-          pnpm --filter @afno/billing test:e2e
+          cd $GITHUB_WORKSPACE/apps/billing/e2e
+          pnpm exec playwright test --project=shell --project=settings --project=accounts --project=coa-table --project=tenant-selector --project=tooltips --project=language --project=import-export
         env:
           E2E_DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_e2e
-          E2E_API_PORT: 3100
-          E2E_WEB_PORT: 5174
-          CI: true
-          PLAYWRIGHT_HTML_REPORT: 1
+          REDIS_URL: redis://localhost:6379
           RESEND_API_KEY: re_test
           PAYLOAD_SECRET: test-secret-key-for-ci
-
-      - name: Kill servers
-        if: always()
-        run: |
-          kill $(cat /tmp/api-server.pid) 2>/dev/null || true
-          kill $(cat /tmp/vite-server.pid) 2>/dev/null || true
+          API_URL: http://localhost:3100
+          WEB_URL: http://localhost:5174
 
       - name: Upload Playwright HTML report
         if: always()

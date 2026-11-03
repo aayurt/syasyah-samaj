@@ -40,7 +40,38 @@ export default defineConfig({
   globalSetup: join(here, 'global-setup.ts'),
   globalTeardown: join(here, 'global-teardown.ts'),
 
-  // Servers started as background CI steps (not via Playwright webServer)
+  // Servers started via Playwright webServer (handles lifecycle correctly)
+  webServer: [
+    {
+      command: `pnpm dev`,
+      cwd: '$GITHUB_WORKSPACE',
+      env: {
+        ...(process.env.E2E_DATABASE_URI
+          ? { DATABASE_URI: process.env.E2E_DATABASE_URI }
+          : {}),
+        ...(process.env.REDIS_URL ? { REDIS_URL: process.env.REDIS_URL } : {}),
+        PORT: String(API_PORT),
+        NODE_OPTIONS: '--no-deprecation',
+        BETTER_AUTH_URL: WEB_URL,
+        NEXT_PUBLIC_SERVER_URL: WEB_URL,
+      },
+      url: `${API_URL}/api/users`,
+      timeout: 180_000,
+      reuseExistingServer: !isCI && !isJules,
+    },
+    {
+      command: `pnpm --filter @afno/billing preview --port ${WEB_PORT}`,
+      cwd: '$GITHUB_WORKSPACE',
+      env: {
+        E2E_API_TARGET: API_URL,
+        VITE_API_URL: API_URL,
+        NODE_OPTIONS: '--no-deprecation',
+      },
+      url: WEB_URL,
+      timeout: 120_000,
+      reuseExistingServer: !isCI && !isJules,
+    },
+  ],
 
   use: {
     baseURL: WEB_URL,
