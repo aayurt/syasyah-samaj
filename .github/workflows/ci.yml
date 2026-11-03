@@ -181,7 +181,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: pnpm --filter @afno/billing playwright install chromium
+        run: pnpm --filter @afno/billing playwright install
 
       - name: Wait for PostgreSQL
         run: |
