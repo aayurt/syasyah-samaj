@@ -121,7 +121,7 @@ jobs:
           done
 
       - name: Run database setup
-        run: pnpm generate:db-schema
+        run: pnpm payload generate:db-schema
         env:
           DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_test
 
@@ -185,7 +185,7 @@ jobs:
 
       - name: Run database setup for E2E
         run: |
-          pnpm generate:db-schema
+          pnpm payload generate:db-schema
         env:
           DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_e2e
 
