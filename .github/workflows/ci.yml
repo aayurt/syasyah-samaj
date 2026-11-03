@@ -125,6 +125,7 @@ jobs:
         env:
           DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_test
           RESEND_API_KEY: re_test
+          PAYLOAD_SECRET: test-secret-key-for-ci
 
       - name: Run integration tests
         run: pnpm --filter @afno/billing test
@@ -190,6 +191,7 @@ jobs:
         env:
           DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_e2e
           RESEND_API_KEY: re_test
+          PAYLOAD_SECRET: test-secret-key-for-ci
 
       - name: Run E2E tests
         run: |
