@@ -55,7 +55,7 @@ export default async function globalSetup(config: FullConfig) {
   if (!webReady) throw new Error('❌ Web server not ready after 120s')
 
   // Create auth state for tests
-  const browser = await chromium.launch({ channel: 'chromium-headless-shell' })
+  const browser = await chromium.launch()
   const context = await browser.newContext()
   const page = await context.newPage()
 
