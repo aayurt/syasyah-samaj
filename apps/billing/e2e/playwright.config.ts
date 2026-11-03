@@ -44,7 +44,7 @@ export default defineConfig({
   webServer: [
     {
       command: `pnpm dev`,
-      cwd: '$GITHUB_WORKSPACE',
+      cwd: process.env.GITHUB_WORKSPACE!,
       env: {
         ...(process.env.E2E_DATABASE_URI
           ? { DATABASE_URI: process.env.E2E_DATABASE_URI }
@@ -60,8 +60,8 @@ export default defineConfig({
       reuseExistingServer: !isCI && !isJules,
     },
     {
-      command: `pnpm --filter @afno/billing preview --port ${WEB_PORT}`,
-      cwd: '$GITHUB_WORKSPACE',
+      command: `pnpm --filter @afno/billing preview -- --port ${WEB_PORT}`,
+      cwd: process.env.GITHUB_WORKSPACE!,
       env: {
         E2E_API_TARGET: API_URL,
         VITE_API_URL: API_URL,
