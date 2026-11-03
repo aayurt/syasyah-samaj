@@ -43,8 +43,8 @@ export default defineConfig({
   // Start both API (Next.js) and Web (Vite) servers
   webServer: [
     {
-      command: `pnpm dev`,
-      cwd: '../../..',
+      command: `pnpm --dir ../../ dev`,
+      cwd: '.',
       env: {
         ...(process.env.E2E_DATABASE_URI
           ? { DATABASE_URI: process.env.E2E_DATABASE_URI }
