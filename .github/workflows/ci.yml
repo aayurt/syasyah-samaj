@@ -36,7 +36,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Type-check
-        run: pnpm --dir apps/billing exec tsc --noEmit
+        run: npx tsc --noEmit -p apps/billing/tsconfig.json
 
   # ──────────────────────────────────────────────────────────────
   # Unit Tests (Vitest) with Coverage
