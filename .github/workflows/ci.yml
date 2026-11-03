@@ -225,7 +225,15 @@ jobs:
             VITE_API_URL=http://localhost:3100 \
             NODE_OPTIONS=--no-deprecation \
             pnpm preview --port 5174 --strictPort > /tmp/vite-server.log 2>&1 &
-          echo $! > /tmp/vite-server.pid
+          VITE_PID=$!
+          echo $VITE_PID > /tmp/vite-server.pid
+          sleep 5
+          if ! kill -0 $VITE_PID 2>/dev/null; then
+            echo "Vite server crashed on startup:"
+            cat /tmp/vite-server.log
+            exit 1
+          fi
+          echo "Vite server started (PID: $VITE_PID)"
 
       - name: Wait for servers to be ready
         run: |
@@ -241,7 +249,7 @@ jobs:
           echo "API server log:"
           cat /tmp/api-server.log | tail -20
           echo "Vite server log:"
-          cat /tmp/vite-server.log | tail -20
+          cat /tmp/vite-server.log | tail -30
           exit 1
 
       - name: Run E2E tests
