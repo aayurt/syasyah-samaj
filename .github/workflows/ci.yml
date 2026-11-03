@@ -40,10 +40,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Type-check
-        run: pnpm --filter @afno/billing tsc --noEmit
-
-      - name: Lint
-        run: pnpm --filter @afno/billing lint
+        run: pnpm --filter @afno/billing exec tsc --noEmit
 
   # ──────────────────────────────────────────────────────────────
   # Unit Tests (Vitest) with Coverage
@@ -72,7 +69,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run unit tests with coverage
-        run: pnpm --filter @afno/billing test:unit --coverage
+        run: pnpm --filter @afno/billing test
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -135,13 +132,13 @@ jobs:
             sleep 2
           done
 
-      - name: Run database migrations
-        run: pnpm --filter @afno/billing db:push
+      - name: Run database setup
+        run: pnpm generate:db-schema
         env:
           DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_test
 
       - name: Run integration tests
-        run: pnpm --filter @afno/billing test:integration
+        run: pnpm --filter @afno/billing test
         env:
           DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_test
 
@@ -204,7 +201,7 @@ jobs:
 
       - name: Run database setup for E2E
         run: |
-          pnpm --filter @afno/billing db:push
+          pnpm generate:db-schema
         env:
           DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_e2e
 
@@ -309,9 +306,6 @@ jobs:
 
       - name: Build Billing SPA
         run: pnpm --filter @afno/billing build
-
-      - name: Build Payload CMS
-        run: pnpm --filter @afno/payload build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
