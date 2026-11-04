@@ -13,8 +13,8 @@ const PASSWORD = process.env.E2E_PASSWORD || 'SyashaAdmin2026!'
 setup('authenticate as admin', async ({ page }) => {
   await page.goto('/login')
   await page.waitForLoadState('networkidle')
-  await page.getByLabel('Email').fill(EMAIL)
-  await page.getByLabel('Password').fill(PASSWORD)
+  await page.locator('input[type="email"]').fill(EMAIL)
+  await page.locator('input[type="password"]').fill(PASSWORD)
   await page.getByRole('button', { name: /साइन इन|Sign in/ }).click()
   // Landing on Dashboard means the session is live.
   await page.waitForURL('**/')
