@@ -228,8 +228,8 @@ jobs:
         run: |
           echo "Waiting 20 seconds for servers to start..."
           sleep 20
-          API_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/api/users 2>/dev/null || echo "000")
-          WEB_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5174 2>/dev/null || echo "000")
+          API_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/api/users 2>/dev/null) || API_CODE="000"
+          WEB_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5174 2>/dev/null) || WEB_CODE="000"
           echo "API: $API_CODE, Web: $WEB_CODE"
           if [ "$API_CODE" = "000" ]; then
             echo "API server log:"
