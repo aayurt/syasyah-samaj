@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '../base'
 
 /**
  * S0 — Shell & navigation (runs right after auth, before Settings).

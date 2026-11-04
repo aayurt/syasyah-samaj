@@ -8,7 +8,7 @@
  * - Master template download
  * - Conflict resolution
  */
-import { test, expect } from '@playwright/test'
+import { test, expect } from '../base'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
