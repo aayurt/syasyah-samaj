@@ -1,4 +1,4 @@
-import { expect, test } from '/test'
+import { expect, test } from '@playwright/test'
 
 /**
  * S10 — Membership application form journey + Nepali mode smoke.

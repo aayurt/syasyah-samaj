@@ -1,4 +1,4 @@
-import { expect, test } from '/test'
+import { expect, test } from '@playwright/test'
 import { money } from '../helpers/money'
 
 /**

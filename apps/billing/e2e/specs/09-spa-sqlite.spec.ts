@@ -1,4 +1,4 @@
-import { expect, test } from '/test'
+import { expect, test } from '@playwright/test'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Api } from '../helpers/api'

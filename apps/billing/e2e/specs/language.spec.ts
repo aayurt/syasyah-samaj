@@ -8,7 +8,7 @@
  * - Date formats change
  * - Number formats change
  */
-import { test, expect } from '/test'
+import { test, expect } from '@playwright/test'
 
 test.describe('Language & Localization', () => {
   test.beforeEach(async ({ page }) => {
