@@ -23,22 +23,17 @@ setup('authenticate as admin', async ({ page, request }) => {
     )
   }
 
-  // Extract session cookie(s) from Set-Cookie header and set them in the
-  // browser context. Playwright requires each cookie to have url or path.
+  // Extract the session cookie name=value from Set-Cookie header.
+  // Minimal cookie object with url — Playwright requires url or path.
   const setCookieHeader = signIn.headers()['set-cookie']
   if (setCookieHeader) {
     const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader]
     const parsed = cookies
-      .flatMap((c) => c.split(/,\s*(?=[^=]+=)/)) // handle comma-joined cookies
+      .flatMap((c) => c.split(/,\s*(?=[^=]+=)/))
       .map((c) => {
         const [nameValue] = c.split(';')
         const [name, value] = nameValue.split('=')
-        return {
-          name: name.trim(),
-          value: value.trim(),
-          url: `http://localhost:${WEB_PORT}`,
-          path: '/',
-        }
+        return { name: name.trim(), value: value.trim(), url: `http://localhost:${WEB_PORT}` }
       })
       .filter((c) => c.name && c.value)
     if (parsed.length > 0) {
