@@ -14,16 +14,29 @@ test.describe.serial('S0 — Shell & navigation', () => {
   const NAV_GROUPS = ['Bookkeeping', 'Operations', 'Masters', 'Reports', 'Admin', 'Logs']
 
   test.beforeEach(async ({ page }: { page: Page }) => {
-    await page.route((route) => route.request().url().includes('/api/auth/session'), (route) =>
-      route.fulfill({
+    await page.route((route) => {
+      const url = route.request().url()
+      return url.includes('/api/')
+    }, async (route) => {
+      const url = route.request().url()
+      if (url.includes('/api/auth/session')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ user: { email: 'aayurtshrestha@gmail.com', role: 'admin' } }),
+        })
+        return
+      }
+      if (url.includes('/api/auth/get-session')) {
+        await route.fulfill({ status: 200, body: '' })
+        return
+      }
+      await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ user: { email: 'aayurtshrestha@gmail.com', role: 'admin' } }),
+        body: JSON.stringify({ data: [], items: [], total: 0 }),
       })
-    )
-    await page.route((route) => route.request().url().includes('/api/auth/get-session'), (route) =>
-      route.fulfill({ status: 200, body: '' })
-    )
+    })
   })
 
   /** Dismiss the first-run tour overlay and force the expanded sidebar. */
