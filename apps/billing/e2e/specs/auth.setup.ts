@@ -46,8 +46,12 @@ setup('authenticate as admin', async ({ page, request }) => {
       .flatMap((c) => c.split(/,\s*(?=[^=]+=)/))
       .map((c) => {
         const [nameValue] = c.split(';')
-        const [name, value] = nameValue.split('=')
-        return { name: name.trim(), value: value.trim(), url: `http://localhost:${WEB_PORT}` }
+        const eqIdx = nameValue.indexOf('=')
+        return {
+          name: nameValue.slice(0, eqIdx).trim(),
+          value: nameValue.slice(eqIdx + 1).trim(),
+          url: `http://localhost:${WEB_PORT}`,
+        }
       })
       .filter((c) => c.name && c.value)
     if (parsed.length > 0) {
