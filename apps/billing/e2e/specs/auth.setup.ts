@@ -11,7 +11,8 @@ const EMAIL = process.env.E2E_EMAIL || 'aayurtshrestha@gmail.com'
 const PASSWORD = process.env.E2E_PASSWORD || 'SyashaAdmin2026!'
 
 setup('authenticate as admin', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/login')
+  await page.waitForLoadState('networkidle')
   await page.getByLabel('Email').fill(EMAIL)
   await page.getByLabel('Password').fill(PASSWORD)
   await page.getByRole('button', { name: /साइन इन|Sign in/ }).click()
