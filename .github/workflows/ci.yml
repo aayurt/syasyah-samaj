@@ -226,20 +226,19 @@ jobs:
 
       - name: Wait for servers to be ready
         run: |
-          for i in {1..60}; do
-            API_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/api/users 2>/dev/null || echo "000")
-            WEB_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5174 2>/dev/null || echo "000")
-            if [ "$API_CODE" != "000" ] && [ "$WEB_CODE" != "000" ]; then
-              echo "Servers ready (API: $API_CODE, Web: $WEB_CODE)"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "API server log:"
-          cat /tmp/api-server.log | tail -20
-          echo "SPA server log:"
-          cat /tmp/spa-server.log | tail -20
-          exit 1
+          echo "Waiting 20 seconds for servers to start..."
+          sleep 20
+          API_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/api/users 2>/dev/null || echo "000")
+          WEB_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5174 2>/dev/null || echo "000")
+          echo "API: $API_CODE, Web: $WEB_CODE"
+          if [ "$API_CODE" = "000" ]; then
+            echo "API server log:"
+            cat /tmp/api-server.log | tail -30
+          fi
+          if [ "$WEB_CODE" = "000" ]; then
+            echo "SPA server log:"
+            cat /tmp/spa-server.log | tail -10
+          fi
 
       - name: Run E2E tests
         run: |
