@@ -195,7 +195,7 @@ jobs:
           pnpm --filter @afno/billing build
         env:
           DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_e2e
-          VITE_API_URL: http://localhost:5174
+          VITE_API_URL: http://localhost:3100
 
       - name: Run database setup for E2E
         run: |
@@ -250,7 +250,7 @@ jobs:
           REDIS_URL: redis://localhost:6379
           RESEND_API_KEY: re_test
           PAYLOAD_SECRET: test-secret-key-for-ci
-          API_URL: http://localhost:5174
+          API_URL: http://localhost:3100
           WEB_URL: http://localhost:5174
 
       - name: Kill servers

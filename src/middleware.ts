@@ -21,6 +21,27 @@ function extractSubdomain(host: string): string | null {
 }
 
 export async function middleware(request: NextRequest) {
+  // CORS headers for cross-origin API requests from billing SPA (port 5174)
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    const response = NextResponse.next()
+    const origin = request.headers.get('origin') || 'http://localhost:5174'
+    response.headers.set('Access-Control-Allow-Origin', origin)
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    response.headers.set(
+      'Access-Control-Allow-Methods',
+      'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+    )
+    response.headers.set(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, Cookie, Accept, Origin, Referer, User-Agent'
+    )
+    // Handle preflight
+    if (request.method === 'OPTIONS') {
+      return new NextResponse(null, { status: 204, headers: response.headers })
+    }
+    return response
+  }
+
   const host = request.headers.get('host') || ''
   const subdomain = extractSubdomain(host)
 
