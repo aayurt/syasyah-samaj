@@ -221,7 +221,7 @@ jobs:
       - name: Start SPA server
         run: |
           cd $GITHUB_WORKSPACE/apps/billing/dist
-          node $GITHUB_WORKSPACE/apps/billing/e2e/spa-server.js > /tmp/spa-server.log 2>&1 &
+          node $GITHUB_WORKSPACE/apps/billing/e2e/spa-server.cjs > /tmp/spa-server.log 2>&1 &
           echo $! > /tmp/spa-server.pid
 
       - name: Wait for servers to be ready
