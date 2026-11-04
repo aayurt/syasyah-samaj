@@ -3,24 +3,30 @@ import { test as base } from '@playwright/test'
 const EMAIL = process.env.E2E_EMAIL || 'aayurtshrestha@gmail.com'
 
 /**
- * Base test fixture that intercepts better-auth session endpoints so the app
- * shell renders with a valid admin session regardless of cookie/SameSite
- * behaviour across the SPA→API port boundary in CI. All other API calls
- * continue to the real server.
+ * Base test fixture that mocks fetch at the page level to return a valid
+ * admin session for /api/auth/session, so the shell renders regardless of
+ * cookie/SameSite behaviour. Runs before any page script executes.
  */
 export const test = base.extend<{}>({
-  context: async ({ context }, use) => {
-    await context.route((route) => route.request().url().includes('/api/auth/session'), (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ user: { email: EMAIL, role: 'admin' } }),
-      })
-    )
-    await context.route((route) => route.request().url().includes('/api/auth/get-session'), (route) =>
-      route.fulfill({ status: 200, body: '' })
-    )
-    await use(context)
+  page: async ({ page }, use) => {
+    await page.addInitScript((email) => {
+      ;(window as any).__sessionEmail = email
+      const origFetch = window.fetch
+      window.fetch = async (input: any, init?: any) => {
+        const url = typeof input === 'string' ? input : String(input.url || input)
+        if (url.includes('/api/auth/session')) {
+          return new Response(
+            JSON.stringify({ user: { email: window.__sessionEmail, role: 'admin' } }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          )
+        }
+        if (url.includes('/api/auth/get-session')) {
+          return new Response('', { status: 200 })
+        }
+        return origFetch(input, init)
+      }
+    }, EMAIL)
+    await use(page)
   },
 })
 
