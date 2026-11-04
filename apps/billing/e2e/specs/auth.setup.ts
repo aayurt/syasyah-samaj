@@ -19,7 +19,7 @@ setup('authenticate as admin', async ({ page, request }) => {
     })
   }
 
-  // Sign in via better-auth API to get the session cookie (best-effort).
+  // Sign in via better-auth API to get the session cookie.
   let signIn = await attemptSignIn()
   if (!signIn.ok()) {
     const signUp = await request.post(`${API_BASE}/api/auth/sign-up/email`, {
@@ -36,7 +36,9 @@ setup('authenticate as admin', async ({ page, request }) => {
     }
   }
 
-  // Best-effort: set the real session cookie for dependent suites.
+  // Set the real session cookie for the SPA origin (port 5174) so
+  // dependent suites can make same-origin API calls through the SPA
+  // server proxy to the backend API (port 3100).
   const setCookieHeader = signIn.headers()['set-cookie']
   if (setCookieHeader) {
     const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader]
@@ -45,7 +47,7 @@ setup('authenticate as admin', async ({ page, request }) => {
       .map((c) => {
         const [nameValue] = c.split(';')
         const [name, value] = nameValue.split('=')
-        return { name: name.trim(), value: value.trim(), url: API_BASE }
+        return { name: name.trim(), value: value.trim(), url: `http://localhost:${WEB_PORT}` }
       })
       .filter((c) => c.name && c.value)
     if (parsed.length > 0) {
@@ -53,35 +55,13 @@ setup('authenticate as admin', async ({ page, request }) => {
     }
   }
 
-  // Intercept ALL /api/* requests. Auth endpoints return a valid admin
-  // session so the shell renders regardless of cookie/SameSite behaviour.
-  // Other endpoints continue to the real API (they'll fail gracefully
-  // without a valid session, but the shell only needs /api/auth/session).
-  await page.route('**/api/**', (route) => {
-    const url = route.request().url()
-    if (url.includes('/api/auth/session')) {
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ user: { email: EMAIL, role: 'admin' } }),
-      })
-    }
-    if (url.includes('/api/auth/get-session')) {
-      return route.fulfill({ status: 200, body: '' })
-    }
-    return route.continue()
-  })
-
+  // Navigate to the app so authClient.useSession() can establish the
+  // session via same-origin proxy (cookies are sent with same-origin
+  // requests, bypassing SameSite=Lax cross-origin restrictions).
   await page.goto('/')
   await page.waitForLoadState('networkidle')
-  await page.getByText(/डैशबोर्ड|Dashboard/).first().waitFor({ timeout: 15_000 })
 
-  // Dismiss the first-run tour and persist both the session and that flag.
-  await page.evaluate(() => localStorage.setItem('tour-seen', '1'))
-  // Drop stale settingsCache so suites read live data from the server.
-  await page.evaluate(() => localStorage.removeItem('billing.settingsCache'))
-
-  // Persist cookies for all dependent suites.
+  // Persist cookies + localStorage for all dependent suites.
   mkdirSync(join(root, '.auth'), { recursive: true })
   await page.context().storageState({ path: join(root, '.auth', 'user.json') })
 })
