@@ -3,11 +3,10 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const AUTH_STATE = join(here, '.auth', 'user.json')
 
 /**
  * Playwright config for E2E tests.
- * 
+ *
  * CI runs: Fully parallel, multiple workers
  * Jules runs: Distributed across parallel workers
  * Local runs: Sequential for debugging
@@ -35,7 +34,7 @@ export default defineConfig({
   timeout: 90_000,
   expect: { timeout: 15_000 },
   outputDir: join(here, '..', 'test-results', 'artifacts'),
-  
+
   // Global setup/teardown
   globalSetup: join(here, 'global-setup.ts'),
   globalTeardown: join(here, 'global-teardown.ts'),
@@ -67,49 +66,49 @@ export default defineConfig({
       name: 'shell',
       testMatch: /00-shell\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'settings',
       testMatch: /01-settings\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'accounts',
       testMatch: /02-accounts\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'masters',
       testMatch: /03-masters\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'vouchers',
       testMatch: /04-vouchers\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'journal',
       testMatch: /05-journal\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'reports',
       testMatch: /06-reports\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'offline',
       testMatch: /07-offline\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'desktop-storage',
@@ -120,19 +119,16 @@ export default defineConfig({
       name: 'spa-sqlite',
       testMatch: /09-spa-sqlite\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
     },
     {
       name: 'membership',
       testMatch: /10-membership\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
     },
     {
       name: 'defects',
       testMatch: /90-defects\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
     },
 
     // New test projects for Phase 4 requirements
@@ -140,31 +136,31 @@ export default defineConfig({
       name: 'tenant-selector',
       testMatch: /tenant-selector\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'coa-table',
       testMatch: /coa-table\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'import-export',
       testMatch: /import-export\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'language',
       testMatch: /language\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'tooltips',
       testMatch: /tooltips\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'] },
     },
 
     // Mobile viewport
@@ -172,7 +168,7 @@ export default defineConfig({
       name: 'mobile',
       testMatch: /.*\.spec\.ts/,
       dependencies: ['setup-auth'],
-      use: { storageState: AUTH_STATE, ...devices['Pixel 5'] },
+      use: { ...devices['Pixel 5'] },
     },
   ],
 })
