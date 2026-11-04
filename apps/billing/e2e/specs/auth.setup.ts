@@ -81,8 +81,8 @@ setup('authenticate as admin', async ({ page, context, request }) => {
           value: c.value,
           domain: c.domain || 'localhost',
           path: c.path || '/',
-          secure: false, // Force secure=false for HTTP CI
-          sameSite: c.sameSite || 'lax',
+          secure: false,
+          sameSite: ((c.sameSite?.charAt(0).toUpperCase() + c.sameSite.slice(1)) as 'Strict' | 'Lax' | 'None') || 'Lax',
           httpOnly: c.httpOnly || false,
         })),
       )
