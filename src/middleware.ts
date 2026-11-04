@@ -67,6 +67,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // `app` (the billing SPA) is excluded: its routes are client-side and must
-  // not be locale-redirected.
-  matcher: ['/((?!api|static|.*\\..*|_next|admin|app).*)'],
+  // not be locale-redirected. `/api` routes are included so CORS headers are
+  // applied for cross-origin billing SPA → API requests.
+  matcher: ['/((?!api|static|.*\\..*|_next|admin|app).*)', '/api/:path*'],
 }
