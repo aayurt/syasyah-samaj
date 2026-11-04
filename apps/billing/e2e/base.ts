@@ -8,8 +8,8 @@ const EMAIL = process.env.E2E_EMAIL || 'aayurtshrestha@gmail.com'
  * behaviour across the SPA→API port boundary in CI.
  */
 export const test = base.extend<{}>({
-  page: async ({ page }, use) => {
-    await page.route('**/*', async (route) => {
+  context: async ({ context }, use) => {
+    await context.route('**/*', async (route) => {
       const url = route.request().url()
       if (url.includes('/api/auth/session')) {
         await route.fulfill({
@@ -33,7 +33,7 @@ export const test = base.extend<{}>({
       }
       await route.continue()
     })
-    await use(page)
+    await use(context)
   },
 })
 
