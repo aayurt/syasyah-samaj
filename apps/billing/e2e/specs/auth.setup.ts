@@ -44,7 +44,7 @@ setup('authenticate as admin', async ({ page, request }) => {
           else if (k === 'samesite') cookie.sameSite = val as any
         }
         // Playwright requires url or domain/path on each cookie
-        if (!cookie.domain && !cookie.path) {
+        if (!cookie.domain) {
           cookie.url = `http://localhost:${process.env.E2E_WEB_PORT || 5174}`
         }
         return cookie
