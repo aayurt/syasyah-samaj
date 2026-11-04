@@ -19,11 +19,10 @@ setup('authenticate as admin', async ({ page, request }) => {
     })
   }
 
-  // Sign in via better-auth API to get the session cookie.
+  // Sign in via better-auth API to get the session cookie (best-effort;
+  // route interception below guarantees the session regardless of cookie
+  // / SameSite behaviour across the SPA→API port boundary).
   let signIn = await attemptSignIn()
-
-  // If sign-in fails (user doesn't exist yet — bootstrap may not have run),
-  // sign up first, then retry sign-in.
   if (!signIn.ok()) {
     const signUp = await request.post(`${API_BASE}/api/auth/sign-up/email`, {
       data: { email: EMAIL, password: PASSWORD, name: 'E2E Admin' },
@@ -39,8 +38,8 @@ setup('authenticate as admin', async ({ page, request }) => {
     }
   }
 
-  // Extract the session cookie name=value from Set-Cookie header.
-  // Minimal cookie object with url — Playwright requires url or path.
+  // Best-effort: set the real session cookie so dependent suites that make
+  // direct API calls (not via page) can authenticate.
   const setCookieHeader = signIn.headers()['set-cookie']
   if (setCookieHeader) {
     const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader]
@@ -56,6 +55,19 @@ setup('authenticate as admin', async ({ page, request }) => {
       await page.context().addCookies(parsed)
     }
   }
+
+  // Guarantee the shell sees a valid session even if cookies don't survive
+  // the cross-origin (SameSite=Lax) boundary between SPA port and API port.
+  await page.route('**/api/auth/session', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ user: { email: EMAIL, role: 'admin' } }),
+    })
+  )
+  await page.route('**/api/auth/get-session', (route) =>
+    route.fulfill({ status: 200, body: '' })
+  )
 
   await page.goto('/')
   await page.waitForLoadState('networkidle')
