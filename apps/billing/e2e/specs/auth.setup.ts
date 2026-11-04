@@ -15,6 +15,7 @@ setup('authenticate as admin', async ({ page, request }) => {
   // hydration timing issues with the login form.
   const signIn = await request.post(`${API_BASE}/api/auth/sign-in/email`, {
     data: { email: EMAIL, password: PASSWORD },
+    headers: { Origin: `http://localhost:${process.env.E2E_WEB_PORT || 5174}` },
   })
   if (!signIn.ok()) {
     throw new Error(

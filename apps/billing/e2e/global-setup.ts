@@ -26,66 +26,80 @@ export default async function globalSetup(config: FullConfig) {
     console.log('⚠️  No E2E_DATABASE_URI set - using default from .env')
   }
 
-  // Verify Web server is reachable (API is handled by webServer)
-  const webUrl = `http://localhost:${process.env.E2E_WEB_PORT || 5174}`
+  // Verify API server is reachable
   const apiUrl = `http://localhost:${process.env.E2E_API_PORT || 3100}/api/users`
 
-  console.log('🌐 Web URL:', webUrl)
-  console.log('🌐 API URL:', apiUrl)
-
-  // Wait for web server to be ready (accept any HTTP response as "server is up")
-  let webReady = false
-
+  let apiReady = false
   for (let i = 0; i < 60; i++) {
-    if (!webReady) {
-      try {
-        const res = await fetch(apiUrl, { method: 'GET' })
-        // Any HTTP response means the server is running
-        webReady = true
-        console.log('✅ Web server ready (API status:', res.status, ')')
-      } catch {
-        // Not ready yet
-      }
+    try {
+      const res = await fetch(apiUrl, { method: 'GET' })
+      // Any HTTP response means the server is running
+      apiReady = true
+      console.log('✅ API server ready (status:', res.status, ')')
+      break
+    } catch {
+      // Not ready yet
     }
-
-    if (webReady) break
     await new Promise(r => setTimeout(r, 2000))
   }
 
-  if (!webReady) throw new Error('❌ Web server not ready after 120s')
+  if (!apiReady) throw new Error('❌ API server not ready after 120s')
 
-  // Create auth state for tests
+  // Create auth state via API (bypasses React hydration issues with UI login)
+  const EMAIL = process.env.E2E_TEST_EMAIL || 'admin@syasyahsamaj.org'
+  const PASSWORD = process.env.E2E_TEST_PASSWORD || 'testpassword123'
+  const API_BASE = `http://localhost:${process.env.E2E_API_PORT || 3100}`
+
   const browser = await chromium.launch({
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
     channel: process.env.PLAYWRIGHT_CHROMIUM_CHANNEL || undefined,
   } as any)
-  const context = await browser.newContext()
-  const page = await context.newPage()
 
   try {
-    // Navigate to login
-    await page.goto(`${webUrl}/login`)
-    await page.waitForLoadState('networkidle')
+    const context = await browser.newContext()
 
-    // Check if already logged in (session might persist)
-    const isLoggedIn = await page.locator('text=Dashboard, text=Accounts, text=Vouchers').first().isVisible({ timeout: 5000 }).catch(() => false)
+    // Sign in via API to get session cookie
+    const signIn = await context.request.post(`${API_BASE}/api/auth/sign-in/email`, {
+      data: { email: EMAIL, password: PASSWORD },
+      headers: { Origin: `http://localhost:${process.env.E2E_WEB_PORT || 5174}` },
+    })
 
-    if (!isLoggedIn) {
-      // Login with test credentials
-      await page.fill('input[name="email"], input[type="email"]', process.env.E2E_TEST_EMAIL || 'admin@syasyahsamaj.org')
-      await page.fill('input[name="password"], input[type="password"]', process.env.E2E_TEST_PASSWORD || 'testpassword123')
-      await page.click('button[type="submit"]')
-      await page.waitForURL('**/dashboard', { timeout: 15000 })
+    if (signIn.ok()) {
+      const setCookieHeader = signIn.headers()['set-cookie']
+      if (setCookieHeader) {
+        const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader]
+        const parsed = cookies
+          .map((c) => {
+            const [nameValue, ...attrs] = c.split(';')
+            const [name, value] = nameValue.split('=')
+            const cookie: { name: string; value: string; domain?: string; path?: string; httpOnly?: boolean; secure?: boolean; sameSite?: 'Lax' | 'Strict' | 'None' } = { name: name.trim(), value: value.trim() }
+            for (const attr of attrs) {
+              const [key, ...valParts] = attr.split('=')
+              const val = valParts.join('=').trim()
+              const k = key.trim().toLowerCase()
+              if (k === 'domain') cookie.domain = val
+              else if (k === 'path') cookie.path = val
+              else if (k === 'httponly') cookie.httpOnly = true
+              else if (k === 'secure') cookie.secure = true
+              else if (k === 'samesite') cookie.sameSite = val as any
+            }
+            return cookie
+          })
+          .filter((c) => c.name && c.value)
+        if (parsed.length > 0) {
+          await context.addCookies(parsed)
+          console.log('✅ Session cookie set via API sign-in')
+        }
+      }
+    } else {
+      console.error(`⚠️  API sign-in failed: ${signIn.status()} ${await signIn.text()}`)
     }
 
     // Save storage state
     await context.storageState({ path: join(authDir, 'user.json') })
     console.log('✅ Auth state saved')
 
-  } catch (error) {
-    console.error('❌ Auth setup failed:', error)
-    // Create empty auth state as fallback
-    await context.storageState({ path: join(authDir, 'user.json') })
+    await context.close()
   } finally {
     await browser.close()
   }
