@@ -243,7 +243,7 @@ jobs:
       - name: Run E2E tests
         run: |
           cd $GITHUB_WORKSPACE/apps/billing
-          pnpm run test:e2e -- --project=shell --project=settings --project=accounts --project=coa-table --project=tenant-selector --project=tooltips --project=language --project=import-export
+          npx playwright test --config e2e/playwright.config.ts --project=shell --project=settings --project=accounts --project=coa-table --project=tenant-selector --project=tooltips --project=language --project=import-export
         env:
           E2E_DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_e2e
           REDIS_URL: redis://localhost:6379
