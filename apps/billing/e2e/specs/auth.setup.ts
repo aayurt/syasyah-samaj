@@ -11,9 +11,8 @@ const PASSWORD = process.env.E2E_PASSWORD || 'SyashaAdmin2026!'
 const AUTH_STATE = join(root, '.auth', 'user.json')
 
 setup('authenticate as admin', async ({ page }) => {
-  // UI-based login: browser handles Set-Cookie naturally, avoiding
-  // SameSite/Secure cookie issues across the SPA→API port boundary.
   await page.goto('/login')
+  await page.waitForLoadState('networkidle')
   await page.fill('input[type="email"]', EMAIL)
   await page.fill('input[type="password"]', PASSWORD)
   await page.click('button[type="submit"]')
