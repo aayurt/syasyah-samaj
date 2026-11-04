@@ -12,15 +12,31 @@ const API_BASE = process.env.API_URL || 'http://localhost:3100'
 const WEB_PORT = process.env.E2E_WEB_PORT || 5174
 
 setup('authenticate as admin', async ({ page, request }) => {
+  async function attemptSignIn() {
+    return await request.post(`${API_BASE}/api/auth/sign-in/email`, {
+      data: { email: EMAIL, password: PASSWORD },
+      headers: { Origin: `http://localhost:${WEB_PORT}` },
+    })
+  }
+
   // Sign in via better-auth API to get the session cookie.
-  const signIn = await request.post(`${API_BASE}/api/auth/sign-in/email`, {
-    data: { email: EMAIL, password: PASSWORD },
-    headers: { Origin: `http://localhost:${WEB_PORT}` },
-  })
+  let signIn = await attemptSignIn()
+
+  // If sign-in fails (user doesn't exist yet — bootstrap may not have run),
+  // sign up first, then retry sign-in.
   if (!signIn.ok()) {
-    throw new Error(
-      `API sign-in failed: ${signIn.status()} ${await signIn.text()}`,
-    )
+    const signUp = await request.post(`${API_BASE}/api/auth/sign-up/email`, {
+      data: { email: EMAIL, password: PASSWORD, name: 'E2E Admin' },
+      headers: { Origin: `http://localhost:${WEB_PORT}` },
+    })
+    if (signUp.ok() || signUp.status() === 409) {
+      signIn = await attemptSignIn()
+    }
+    if (!signIn.ok()) {
+      throw new Error(
+        `API sign-in failed: ${signIn.status()} ${await signIn.text()}`,
+      )
+    }
   }
 
   // Extract the session cookie name=value from Set-Cookie header.
