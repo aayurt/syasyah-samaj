@@ -23,14 +23,6 @@ export const test = base.extend<{}>({
         await route.fulfill({ status: 200, body: '' })
         return
       }
-      if (url.includes('/api/')) {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ data: [], items: [], total: 0 }),
-        })
-        return
-      }
       await route.continue()
     })
     await use(context)
