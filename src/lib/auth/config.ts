@@ -13,6 +13,10 @@ export const betterAuthOptions: Partial<BetterAuthOptions> = {
   },
   session: {
     expiresIn: 60 * 60 * 24 * 30, // 30 days
+    cookie: {
+      secure: false, // E2E CI runs over HTTP — Secure cookies are not sent
+      sameSite: 'lax',
+    },
   },
   // emailAndPassword: {
   //   enabled: true,
