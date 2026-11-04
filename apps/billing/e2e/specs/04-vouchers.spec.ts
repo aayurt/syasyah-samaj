@@ -1,4 +1,4 @@
-import { expect, test } from '../base'
+import { expect, test } from '/test'
 import { Api } from '../helpers/api'
 import { dataset } from '../helpers/dataset'
 import type { VoucherSpec } from '../helpers/dataset'

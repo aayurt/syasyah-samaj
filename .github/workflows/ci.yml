@@ -241,6 +241,14 @@ jobs:
             cat /tmp/spa-server.log | tail -10
           fi
 
+      - name: Generate E2E auth state (Lightpanda fetch + secure=false cookies)
+        run: |
+          cd $GITHUB_WORKSPACE/apps/billing
+          node e2e/lightpanda-auth.mjs
+        env:
+          API_URL: http://localhost:5174
+          E2E_WEB_PORT: 5174
+
       - name: Run E2E tests
         run: |
           cd $GITHUB_WORKSPACE/apps/billing

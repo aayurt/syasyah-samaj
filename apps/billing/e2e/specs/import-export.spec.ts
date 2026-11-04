@@ -8,7 +8,7 @@
  * - Master template download
  * - Conflict resolution
  */
-import { test, expect } from '../base'
+import { test, expect } from '/test'
 import path from 'path'
 import { fileURLToPath } from 'url'
 

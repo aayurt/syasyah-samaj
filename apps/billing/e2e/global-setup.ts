@@ -1,9 +1,10 @@
 /**
  * Global Playwright setup - runs once before all tests.
- * Sets up database, seeds data, creates auth state.
+ * Verifies database and API server are ready.
+ * Auth state is created externally by e2e/lightpanda-auth.mjs.
  */
-import { chromium, FullConfig } from '@playwright/test'
-import { mkdirSync, existsSync } from 'fs'
+import { FullConfig } from '@playwright/test'
+import { existsSync, mkdirSync } from 'fs'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -45,64 +46,10 @@ export default async function globalSetup(config: FullConfig) {
 
   if (!apiReady) throw new Error('❌ API server not ready after 120s')
 
-  // Create auth state via API (bypasses React hydration issues with UI login)
-  const EMAIL = process.env.E2E_TEST_EMAIL || 'admin@syasyahsamaj.org'
-  const PASSWORD = process.env.E2E_TEST_PASSWORD || 'testpassword123'
-  const API_BASE = `http://localhost:${process.env.E2E_API_PORT || 3100}`
-
-  const browser = await chromium.launch({
-    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
-    channel: process.env.PLAYWRIGHT_CHROMIUM_CHANNEL || undefined,
-  } as any)
-
-  try {
-    const context = await browser.newContext()
-
-    // Sign in via API to get session cookie
-    const signIn = await context.request.post(`${API_BASE}/api/auth/sign-in/email`, {
-      data: { email: EMAIL, password: PASSWORD },
-      headers: { Origin: `http://localhost:${process.env.E2E_WEB_PORT || 5174}` },
-    })
-
-    if (signIn.ok()) {
-      const setCookieHeader = signIn.headers()['set-cookie']
-      if (setCookieHeader) {
-        const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader]
-        const parsed = cookies
-          .map((c) => {
-            const [nameValue, ...attrs] = c.split(';')
-            const [name, value] = nameValue.split('=')
-            const cookie: { name: string; value: string; domain?: string; path?: string; httpOnly?: boolean; secure?: boolean; sameSite?: 'Lax' | 'Strict' | 'None' } = { name: name.trim(), value: value.trim() }
-            for (const attr of attrs) {
-              const [key, ...valParts] = attr.split('=')
-              const val = valParts.join('=').trim()
-              const k = key.trim().toLowerCase()
-              if (k === 'domain') cookie.domain = val
-              else if (k === 'path') cookie.path = val
-              else if (k === 'httponly') cookie.httpOnly = true
-              else if (k === 'secure') cookie.secure = true
-              else if (k === 'samesite') cookie.sameSite = val as any
-            }
-            return cookie
-          })
-          .filter((c) => c.name && c.value)
-        if (parsed.length > 0) {
-          await context.addCookies(parsed)
-          console.log('✅ Session cookie set via API sign-in')
-        }
-      }
-    } else {
-      console.error(`⚠️  API sign-in failed: ${signIn.status()} ${await signIn.text()}`)
-    }
-
-    // Save storage state
-    await context.storageState({ path: join(authDir, 'user.json') })
-    console.log('✅ Auth state saved')
-
-    await context.close()
-  } finally {
-    await browser.close()
-  }
+  // Auth state is created externally by e2e/lightpanda-auth.mjs (CI step
+  // before Playwright starts). It uses secure=false cookies so Chromium
+  // sends them over HTTP through the SPA proxy. Do NOT overwrite here.
+  console.log('✅ Auth state handled by lightpanda-auth.mjs (secure=false cookies over HTTP)')
 
   console.log('✅ Global setup complete')
 }

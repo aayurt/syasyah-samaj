@@ -8,7 +8,7 @@
  * - Content is correct
  * - Can be disabled
  */
-import { test, expect } from '../base'
+import { test, expect } from '/test'
 
 test.describe('Tooltip System', () => {
   test.beforeEach(async ({ page }) => {

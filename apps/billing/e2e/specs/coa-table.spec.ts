@@ -8,7 +8,7 @@
  * - Expand/collapse rows
  * - CRUD operations work
  */
-import { test, expect } from '../base'
+import { test, expect } from '/test'
 
 test.describe('Chart of Accounts - Table Format', () => {
   test.beforeEach(async ({ page }) => {

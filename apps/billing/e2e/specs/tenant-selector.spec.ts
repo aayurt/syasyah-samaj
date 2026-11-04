@@ -7,7 +7,7 @@
  * - Data scoping works correctly per tenant
  * - Reports respect tenant filter
  */
-import { test, expect } from '../base'
+import { test, expect } from '/test'
 
 test.describe('Tenant Selector', () => {
   test.beforeEach(async ({ page }) => {
