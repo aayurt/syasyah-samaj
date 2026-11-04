@@ -5,27 +5,29 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
+
+const EMAIL = process.env.E2E_EMAIL || 'aayurtshrestha@gmail.com'
+const PASSWORD = process.env.E2E_PASSWORD || 'SyashaAdmin2026!'
 const AUTH_STATE = join(root, '.auth', 'user.json')
 
 setup('authenticate as admin', async ({ page }) => {
-  // Route-intercept better-auth session endpoints so the shell renders with
-  // a valid admin session regardless of cookie/SameSite behaviour.
-  await page.route('**/api/auth/session', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ user: { email: 'aayurtshrestha@gmail.com', role: 'admin' } }),
-    })
-  )
-  await page.route('**/api/auth/get-session', (route) =>
-    route.fulfill({ status: 200, body: '' })
-  )
-
-  await page.goto('/')
+  // UI-based login: browser handles Set-Cookie naturally, avoiding
+  // SameSite/Secure cookie issues across the SPA→API port boundary.
+  await page.goto('/login')
   await page.waitForLoadState('networkidle')
 
-  // Persist (empty) storage state for dependent suites.
-  // Auth is handled by route interception in base.ts fixture.
+  // Wait for the email input to be visible
+  await page.waitForSelector('input[type="email"]', { state: 'visible', timeout: 10_000 })
+  await page.fill('input[type="email"]', EMAIL)
+  await page.fill('input[type="password"]', PASSWORD)
+  await page.click('button[type="submit"]')
+
+  // After sign-in, better-auth redirects to '/'. Wait for the shell to
+  // render (session cookie is now set by the browser).
+  await page.waitForURL('/', { timeout: 15_000 })
+  await page.waitForLoadState('networkidle')
+
+  // Persist cookies + localStorage for all dependent suites.
   mkdirSync(dirname(AUTH_STATE), { recursive: true })
   await page.context().storageState({ path: AUTH_STATE })
 })
