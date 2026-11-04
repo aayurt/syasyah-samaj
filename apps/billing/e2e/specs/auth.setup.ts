@@ -32,7 +32,7 @@ setup('authenticate as admin', async ({ page, request }) => {
       .map((c) => {
         const [nameValue, ...attrs] = c.split(';')
         const [name, value] = nameValue.split('=')
-        const cookie: { name: string; value: string; domain?: string; path?: string; httpOnly?: boolean; secure?: boolean; sameSite?: 'Lax' | 'Strict' | 'None' } = { name: name.trim(), value: value.trim() }
+        const cookie: { name: string; value: string; domain?: string; path?: string; url?: string; httpOnly?: boolean; secure?: boolean; sameSite?: 'Lax' | 'Strict' | 'None' } = { name: name.trim(), value: value.trim() }
         for (const attr of attrs) {
           const [key, ...valParts] = attr.split('=')
           const val = valParts.join('=').trim()
@@ -42,6 +42,10 @@ setup('authenticate as admin', async ({ page, request }) => {
           else if (k === 'httponly') cookie.httpOnly = true
           else if (k === 'secure') cookie.secure = true
           else if (k === 'samesite') cookie.sameSite = val as any
+        }
+        // Playwright requires url or domain/path on each cookie
+        if (!cookie.domain && !cookie.path) {
+          cookie.url = `http://localhost:${process.env.E2E_WEB_PORT || 5174}`
         }
         return cookie
       })
