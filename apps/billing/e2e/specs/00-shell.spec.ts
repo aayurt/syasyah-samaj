@@ -14,14 +14,14 @@ test.describe.serial('S0 — Shell & navigation', () => {
   const NAV_GROUPS = ['Bookkeeping', 'Operations', 'Masters', 'Reports', 'Admin', 'Logs']
 
   test.beforeEach(async ({ page }: { page: Page }) => {
-    await page.route('**/api/auth/session', (route) =>
+    await page.route((route) => route.request().url().includes('/api/auth/session'), (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ user: { email: 'aayurtshrestha@gmail.com', role: 'admin' } }),
       })
     )
-    await page.route('**/api/auth/get-session', (route) =>
+    await page.route((route) => route.request().url().includes('/api/auth/get-session'), (route) =>
       route.fulfill({ status: 200, body: '' })
     )
   })
