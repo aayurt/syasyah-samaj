@@ -19,9 +19,7 @@ setup('authenticate as admin', async ({ page, request }) => {
     })
   }
 
-  // Sign in via better-auth API to get the session cookie (best-effort;
-  // route interception below guarantees the session regardless of cookie
-  // / SameSite behaviour across the SPA→API port boundary).
+  // Sign in via better-auth API to get the session cookie (best-effort).
   let signIn = await attemptSignIn()
   if (!signIn.ok()) {
     const signUp = await request.post(`${API_BASE}/api/auth/sign-up/email`, {
@@ -38,8 +36,7 @@ setup('authenticate as admin', async ({ page, request }) => {
     }
   }
 
-  // Best-effort: set the real session cookie so dependent suites that make
-  // direct API calls (not via page) can authenticate.
+  // Best-effort: set the real session cookie for dependent suites.
   const setCookieHeader = signIn.headers()['set-cookie']
   if (setCookieHeader) {
     const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader]
@@ -56,18 +53,24 @@ setup('authenticate as admin', async ({ page, request }) => {
     }
   }
 
-  // Guarantee the shell sees a valid session even if cookies don't survive
-  // the cross-origin (SameSite=Lax) boundary between SPA port and API port.
-  await page.route('**/api/auth/session', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ user: { email: EMAIL, role: 'admin' } }),
-    })
-  )
-  await page.route('**/api/auth/get-session', (route) =>
-    route.fulfill({ status: 200, body: '' })
-  )
+  // Intercept ALL /api/* requests. Auth endpoints return a valid admin
+  // session so the shell renders regardless of cookie/SameSite behaviour.
+  // Other endpoints continue to the real API (they'll fail gracefully
+  // without a valid session, but the shell only needs /api/auth/session).
+  await page.route('**/api/**', (route) => {
+    const url = route.request().url()
+    if (url.includes('/api/auth/session')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ user: { email: EMAIL, role: 'admin' } }),
+      })
+    }
+    if (url.includes('/api/auth/get-session')) {
+      return route.fulfill({ status: 200, body: '' })
+    }
+    return route.continue()
+  })
 
   await page.goto('/')
   await page.waitForLoadState('networkidle')
