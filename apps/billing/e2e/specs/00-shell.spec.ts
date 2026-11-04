@@ -1,4 +1,5 @@
 import { expect, test } from '../base'
+import type { Page } from '@playwright/test'
 
 /**
  * S0 — Shell & navigation (runs right after auth, before Settings).
@@ -11,6 +12,21 @@ import { expect, test } from '../base'
  */
 test.describe.serial('S0 — Shell & navigation', () => {
   const NAV_GROUPS = ['Bookkeeping', 'Operations', 'Masters', 'Reports', 'Admin', 'Logs']
+
+  test.beforeEach(async ({ page }: { page: Page }) => {
+    await page.route('**/api/auth/session', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ user: { email: 'aayurtshrestha@gmail.com', role: 'admin' } }),
+      })
+    )
+    await page.route('**/api/auth/get-session', (route) =>
+      route.fulfill({ status: 200, body: '' })
+    )
+  })
+
+  /** Dismiss the first-run tour overlay and force the expanded sidebar. */
 
   /** Dismiss the first-run tour overlay and force the expanded sidebar. */
   async function resetShell(page: import('@playwright/test').Page) {
