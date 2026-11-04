@@ -33,7 +33,7 @@ setup('authenticate as admin', async ({ page, request }) => {
       .map((c) => {
         const [nameValue] = c.split(';')
         const [name, value] = nameValue.split('=')
-        return { name: name.trim(), value: value.trim(), url: `http://localhost:${WEB_PORT}` }
+        return { name: name.trim(), value: value.trim(), url: API_BASE }
       })
       .filter((c) => c.name && c.value)
     if (parsed.length > 0) {
