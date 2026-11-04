@@ -43,10 +43,8 @@ setup('authenticate as admin', async ({ page, request }) => {
           else if (k === 'secure') cookie.secure = true
           else if (k === 'samesite') cookie.sameSite = val as any
         }
-        // Playwright requires url or domain/path on each cookie
-        if (!cookie.domain) {
-          cookie.url = `http://localhost:${process.env.E2E_WEB_PORT || 5174}`
-        }
+        // Playwright requires url or path on each cookie — always set url
+        cookie.url = `http://localhost:${process.env.E2E_WEB_PORT || 5174}`
         return cookie
       })
       .filter((c) => c.name && c.value)
