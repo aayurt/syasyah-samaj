@@ -196,7 +196,6 @@ jobs:
         env:
           DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_e2e
           VITE_API_URL: http://localhost:5174
-          VITE_BYPASS_AUTH: true
 
       - name: Run database setup for E2E
         run: |

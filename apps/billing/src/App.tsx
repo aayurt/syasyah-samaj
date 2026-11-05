@@ -178,16 +178,10 @@ export default function App() {
 }
 
 function AppShell() {
-  const { session: apiSession, checking } = useOfflineSession()
+  const { session, checking } = useOfflineSession()
   const t = useT()
 
-  // E2E test bypass: pre-authenticated admin session (VITE_BYPASS_AUTH=true)
-  const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === 'true'
-  const session = bypassAuth
-    ? ({ user: { email: 'e2e@test.com', role: 'admin' } } as ReturnType<typeof useOfflineSession>['session'])
-    : apiSession
-
-  if (!bypassAuth && checking) {
+  if (checking) {
     return (
       <div className="grid h-screen place-items-center text-sm text-slate-500">
         {t('login.loading', 'Loading…')}
