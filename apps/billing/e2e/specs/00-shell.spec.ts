@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '../base'
 
 /**
  * S0 — Shell & navigation (runs right after auth, before Settings).
@@ -24,7 +24,7 @@ test.describe.serial('S0 — Shell & navigation', () => {
 
   test('S0.3 — header shows the working fiscal year 2083-84', async ({ page }) => {
     await resetShell(page)
-    const fy = page.locator('select[title*="Switch fiscal year"]')
+    const fy = page.locator('[data-testid="fiscal-year-select"]')
     await expect(fy).toBeVisible({ timeout: 15_000 })
     // The seed created 2083-84 (2026-07-16 → 2027-07-15) as the working year.
     await expect(fy.locator('option:checked')).toContainText('2083-84')

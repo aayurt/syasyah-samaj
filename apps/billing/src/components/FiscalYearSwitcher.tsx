@@ -97,6 +97,7 @@ export default function FiscalYearSwitcher() {
           }}
           className="min-w-[5rem] max-w-full appearance-none truncate rounded border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 hover:border-slate-300 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500"
           title={t('fy.switchScope', 'Switch fiscal year — filters the data shown to this period')}
+          data-testid="fiscal-year-select"
         >
           {years.map((y) => {
             const raw = (y.label || `FY ${String(y.startDate || '').slice(0, 10)}`).replace(/^(Fiscal\s+Year|FY|आ\.व\.)\s*/i, '').trim()
