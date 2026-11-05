@@ -11,6 +11,7 @@ export const test = base.extend<{}>({
       ;(window as any).__E2E_BYPASS_AUTH__ = true
     })
     await page.goto('/')
+    // Wait for Shell to render — fiscal year switcher is in the header.
     await page.locator('[data-testid="fiscal-year-select"]').waitFor({
       state: 'visible',
       timeout: 15_000,

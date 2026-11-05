@@ -26,6 +26,11 @@ export function useOfflineSession(): {
   session: CachedSession | null
   checking: boolean
 } {
+  // E2E test bypass: return a mock admin session immediately, no network round-trips.
+  if (typeof window !== 'undefined' && (window as any).__E2E_BYPASS_AUTH__) {
+    return { session: { user: { email: 'e2e@test.com', role: 'admin' } } as CachedSession, checking: false }
+  }
+
   const { data: live, isPending } = authClient.useSession()
   const [cached, setCached] = useState<CachedSession | null>(null)
   const [checking, setChecking] = useState(false)
