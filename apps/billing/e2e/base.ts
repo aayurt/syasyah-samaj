@@ -10,30 +10,24 @@ const PASSWORD = process.env.E2E_PASSWORD || 'SyashaAdmin2026!'
  */
 export const test = base.extend<{}>({
   page: async ({ page }, use) => {
-    // Safety net: intercept session endpoint so shell renders even if cookie
-    // isn't accepted.
-    await page.route('**/api/auth/session', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ user: { email: EMAIL, role: 'admin' } }),
-      })
-    )
-    await page.route('**/api/auth/get-session', (route) =>
-      route.fulfill({ status: 200, body: '' })
-    )
-
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    // Wait for the async session check to finish: either Login form or Shell appears.
+    await page
+      .locator('input[type="email"], [data-testid="fiscal-year-select"]')
+      .first()
+      .waitFor({ state: 'visible', timeout: 20_000 })
 
     // If login form is visible, do UI login
     const emailInput = page.locator('input[type="email"]')
-    if (await emailInput.isVisible({ timeout: 5000 })) {
+    if (await emailInput.isVisible()) {
       await emailInput.fill(EMAIL)
       await page.fill('input[type="password"]', PASSWORD)
       await page.click('button[type="submit"]')
-      await page.waitForURL('/', { timeout: 15_000 })
-      await page.waitForLoadState('networkidle')
+      // After sign-in, Shell renders — wait for fiscal year switcher.
+      await page.locator('[data-testid="fiscal-year-select"]').waitFor({
+        state: 'visible',
+        timeout: 15_000,
+      })
     }
 
     await use(page)
