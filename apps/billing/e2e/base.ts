@@ -1,7 +1,7 @@
 import { test as base } from '@playwright/test'
 
-const EMAIL = process.env.E2E_EMAIL || 'demo@syasyahsamaj.com'
-const PASSWORD = process.env.E2E_PASSWORD || 'SyashaDemo2026!'
+const EMAIL = process.env.E2E_EMAIL || 'aayurtshrestha@gmail.com'
+const PASSWORD = process.env.E2E_PASSWORD || 'SyashaAdmin2026!'
 
 /**
  * Base test fixture. Ensures an authenticated admin session before each test.
