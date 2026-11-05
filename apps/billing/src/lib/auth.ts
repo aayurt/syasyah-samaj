@@ -31,7 +31,10 @@ export function useOfflineSession(): {
     typeof window !== 'undefined' &&
     window.localStorage.getItem('__e2e_bypass__') === '1'
   ) {
-    return { session: { user: { email: 'e2e@test.com', role: 'admin' } } as CachedSession, checking: false }
+    return {
+      session: { user: { email: 'e2e@test.com', role: 'admin' } } as CachedSession,
+      checking: false,
+    }
   }
 
   const { data: live, isPending } = authClient.useSession()
