@@ -8,7 +8,7 @@ import { test as base } from '@playwright/test'
 export const test = base.extend<{}>({
   page: async ({ page }, use) => {
     await page.addInitScript(() => {
-      ;(window as any).__E2E_BYPASS_AUTH__ = true
+      window.localStorage.setItem('__e2e_bypass__', '1')
     })
     await page.goto('/')
     await page.locator('[data-testid="fiscal-year-select"]').waitFor({

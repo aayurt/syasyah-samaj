@@ -27,7 +27,10 @@ export function useOfflineSession(): {
   checking: boolean
 } {
   // E2E test bypass: return a mock admin session immediately, no network round-trips.
-  if (typeof window !== 'undefined' && (window as any).__E2E_BYPASS_AUTH__) {
+  if (
+    typeof window !== 'undefined' &&
+    window.localStorage.getItem('__e2e_bypass__') === '1'
+  ) {
     return { session: { user: { email: 'e2e@test.com', role: 'admin' } } as CachedSession, checking: false }
   }
 
