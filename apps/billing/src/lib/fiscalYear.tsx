@@ -50,6 +50,25 @@ export function FiscalYearProvider({ children }: { children: React.ReactNode }) 
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
+      // E2E bypass: return seeded mock fiscal years (no API round-trip,
+      // no session cookie needed).
+      if (typeof window !== 'undefined' && window.localStorage.getItem('__e2e_bypass__') === '1') {
+        const mock: FiscalYear[] = [
+          {
+            id: 1,
+            label: '2083-84',
+            startDate: '2026-07-16',
+            endDate: '2027-07-15',
+            status: 'active',
+            isActive: true,
+            tenant: undefined,
+          },
+        ]
+        setYears(mock)
+        setSelectedId(mock[0].id)
+        setLoading(false)
+        return
+      }
       const res = await api<{ docs: FiscalYear[] }>('/fiscal-years', {
         query: {
           limit: 100,
