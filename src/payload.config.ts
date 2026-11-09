@@ -35,6 +35,7 @@ import { Documents } from './collections/Documents'
 import { DocSequences } from './collections/DocSequences'
 import { BillingSettings } from './globals/BillingSettings'
 import { PayrollSettings } from './globals/PayrollSettings'
+import { PayGroups } from './collections/PayGroups'
 import { SalaryComponents } from './collections/SalaryComponents'
 import { SalaryStructures } from './collections/SalaryStructures'
 import { SalaryStructureAssignments } from './collections/SalaryStructureAssignments'
@@ -156,6 +157,7 @@ export default buildConfig({
     FiscalYears,
     OpeningBalances,
     DataOps,
+    PayGroups,
     PayrollRuns,
   PayrollSlips,
   SalaryComponents,

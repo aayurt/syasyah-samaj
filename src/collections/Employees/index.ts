@@ -71,6 +71,33 @@ export const Employees: CollectionConfig = {
       admin: { description: 'Tax PAN (for TDS withholding)' },
     },
     {
+      name: 'bankName',
+      type: 'text',
+      admin: { description: 'Bank name for salary transfer' },
+    },
+    {
+      name: 'bankAccountNumber',
+      type: 'text',
+      admin: { description: 'Bank account number (masked as needed)' },
+    },
+    {
+      name: 'annualSalary',
+      type: 'number',
+      defaultValue: 0,
+      min: 0,
+      admin: { description: 'Annual salary — per-period basic is derived from annual ÷ frequency divisor' },
+    },
+    {
+      name: 'joiningDate',
+      type: 'date',
+      admin: { description: 'Date of joining — used for proration and completed-months calculations' },
+    },
+    {
+      name: 'terminationDate',
+      type: 'date',
+      admin: { description: 'Date of leaving — employees with a termination date are excluded from runs after it' },
+    },
+    {
       name: 'employmentState',
       type: 'select',
       options: EMPLOYMENT_STATES,

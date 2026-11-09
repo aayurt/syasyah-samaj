@@ -103,6 +103,7 @@ export interface Config {
     'fiscal-years': FiscalYear;
     'opening-balances': OpeningBalance;
     'data-ops': DataOp;
+    'pay-groups': PayGroup;
     'payroll-runs': PayrollRun;
     'payroll-slips': PayrollSlip;
     'salary-components': SalaryComponent;
@@ -169,6 +170,7 @@ export interface Config {
     'fiscal-years': FiscalYearsSelect<false> | FiscalYearsSelect<true>;
     'opening-balances': OpeningBalancesSelect<false> | OpeningBalancesSelect<true>;
     'data-ops': DataOpsSelect<false> | DataOpsSelect<true>;
+    'pay-groups': PayGroupsSelect<false> | PayGroupsSelect<true>;
     'payroll-runs': PayrollRunsSelect<false> | PayrollRunsSelect<true>;
     'payroll-slips': PayrollSlipsSelect<false> | PayrollSlipsSelect<true>;
     'salary-components': SalaryComponentsSelect<false> | SalaryComponentsSelect<true>;
@@ -2165,6 +2167,26 @@ export interface Employee {
    */
   pan?: string | null;
   /**
+   * Bank name for salary transfer
+   */
+  bankName?: string | null;
+  /**
+   * Bank account number (masked as needed)
+   */
+  bankAccountNumber?: string | null;
+  /**
+   * Annual salary — per-period basic is derived from annual ÷ frequency divisor
+   */
+  annualSalary?: number | null;
+  /**
+   * Date of joining — used for proration and completed-months calculations
+   */
+  joiningDate?: string | null;
+  /**
+   * Date of leaving — employees with a termination date are excluded from runs after it
+   */
+  terminationDate?: string | null;
+  /**
    * Work state — drives Professional Tax slabs and LWF frequency (india-payroll). Falls back to the payroll setting default.
    */
   employmentState?:
@@ -2285,10 +2307,52 @@ export interface DataOp {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pay-groups".
+ */
+export interface PayGroup {
+  id: number;
+  /**
+   * Pay group name, e.g. "Monthly Salary", "Weekly Wages"
+   */
+  name: string;
+  /**
+   * Pay frequency determines how many periods per fiscal year.
+   */
+  frequency: 'MONTHLY' | 'WEEKLY' | 'FORTNIGHTLY' | 'FOUR_WEEKLY';
+  /**
+   * Auto-derived from frequency; overrides allowed.
+   */
+  periodsPerYear?: number | null;
+  /**
+   * Fiscal year this pay group generates periods for.
+   */
+  fiscalYear: number | FiscalYear;
+  /**
+   * Inactive groups are excluded from period generation.
+   */
+  active?: boolean | null;
+  tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payroll-runs".
  */
 export interface PayrollRun {
   id: number;
+  /**
+   * Payroll batch number, e.g. BATCH-2026-09-001
+   */
+  batchNumber: string;
+  /**
+   * Batch approval workflow: Draft → Submitted → Approved → Posted
+   */
+  approvalStatus?: ('Draft' | 'Submitted' | 'Approved' | 'Rejected') | null;
+  /**
+   * Flag for variance review before posting (gross/net deviation from prior period)
+   */
+  varianceReview?: boolean | null;
   /**
    * Human-readable run name, e.g. September 2083 Payroll
    */
@@ -4094,6 +4158,10 @@ export interface PayloadLockedDocument {
         value: number | DataOp;
       } | null)
     | ({
+        relationTo: 'pay-groups';
+        value: number | PayGroup;
+      } | null)
+    | ({
         relationTo: 'payroll-runs';
         value: number | PayrollRun;
       } | null)
@@ -5132,6 +5200,11 @@ export interface EmployeesSelect<T extends boolean = true> {
   position?: T;
   phone?: T;
   pan?: T;
+  bankName?: T;
+  bankAccountNumber?: T;
+  annualSalary?: T;
+  joiningDate?: T;
+  terminationDate?: T;
   employmentState?: T;
   uan?: T;
   esicNumber?: T;
@@ -5198,9 +5271,26 @@ export interface DataOpsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pay-groups_select".
+ */
+export interface PayGroupsSelect<T extends boolean = true> {
+  name?: T;
+  frequency?: T;
+  periodsPerYear?: T;
+  fiscalYear?: T;
+  active?: T;
+  tenant?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payroll-runs_select".
  */
 export interface PayrollRunsSelect<T extends boolean = true> {
+  batchNumber?: T;
+  approvalStatus?: T;
+  varianceReview?: T;
   name?: T;
   fiscalYear?: T;
   period?: T;
@@ -6338,13 +6428,53 @@ export interface BillingSetting {
   createdAt?: string | null;
 }
 /**
- * Indian statutory payroll (EPF, ESIC, Professional Tax, LWF, TDS). Enable a scheme to apply it when generating payroll runs.
+ * Statutory payroll configuration. Choose the country scheme — India (EPF/ESIC/PT/LWF/TDS) or Nepal (SSF/PF/CIT) — then enable the statutes that apply.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payroll-settings".
  */
 export interface PayrollSetting {
   id: number;
+  /**
+   * Statutory scheme. Nepal → SSF (11% employee + 11% employer), PF (10% employee), CIT slabs. India → EPF/ESIC/PT/LWF/TDS.
+   */
+  country?: ('Nepal' | 'India') | null;
+  /**
+   * Social Security Fund — 11 % employee + 11 % employer on basic salary (Nepal Labour Act). Applies when basic ≥ NPR 7,000 (subject to govt cap).
+   */
+  ssfEnabled?: boolean | null;
+  /**
+   * Provident Fund — 10 % employee + 10 % employer on basic salary (Nepal). Falls back to SSF if both are enabled — SSF takes precedence.
+   */
+  pfEnabled?: boolean | null;
+  /**
+   * Corporate/Individual Tax on salary — monthly instalment of projected annual tax (Nepal slabs: 1%/15%/25% with standard deduction and rebates).
+   */
+  citEnabled?: boolean | null;
+  /**
+   * SSF rate % (employee + employer each). Default 11%.
+   */
+  ssfRate?: number | null;
+  /**
+   * PF rate % (employee + employer each). Default 10%.
+   */
+  pfRate?: number | null;
+  /**
+   * Minimum basic salary for SSF applicability (NPR).
+   */
+  ssfMinBasic?: number | null;
+  /**
+   * SSF registration number (prints on the SSF register).
+   */
+  ssfNumber?: string | null;
+  /**
+   * PF/PF account number (prints on the PF register).
+   */
+  pfNumber?: string | null;
+  /**
+   * Company PAN for CIT withholding certificates.
+   */
+  panNumber?: string | null;
   /**
    * Employees’ Provident Fund — 12 % of PF wage (Basic + DA), capped at the statutory ceiling (₹15,000 → ₹25,000 from 17 Sep 2026). Employer EPF/EPS/EDLI/admin are accrued as employer contributions.
    */
@@ -6365,10 +6495,6 @@ export interface PayrollSetting {
    * TDS on salary — monthly instalment of the projected annual tax (new or old regime, standard deduction, 87A rebate, surcharge + marginal relief, 4 % cess).
    */
   tdsEnabled?: boolean | null;
-  /**
-   * EPF establishment account number (prints on the PF register / ECR).
-   */
-  pfNumber?: string | null;
   /**
    * ESIC registration number (prints on the ESIC register).
    */
@@ -6407,6 +6533,18 @@ export interface PayrollSetting {
       )
     | null;
   /**
+   * Cr SSF employee + employer shares (falls back to Accrued Payables).
+   */
+  ssfPayableAccount?: (number | null) | GlAccount;
+  /**
+   * Cr PF employee + employer shares (falls back to Accrued Payables).
+   */
+  pfPayableAccount?: (number | null) | GlAccount;
+  /**
+   * Cr CIT withheld (falls back to Accrued Payables).
+   */
+  citPayableAccount?: (number | null) | GlAccount;
+  /**
    * Cr employee + employer EPF share (falls back to Accrued Payables).
    */
   epfPayableAccount?: (number | null) | GlAccount;
@@ -6435,7 +6573,7 @@ export interface PayrollSetting {
    */
   tdsPayableAccount?: (number | null) | GlAccount;
   /**
-   * Dr employer statutory contributions (EPF/EPS/EDLI/admin, ESI employer, LWF employer). Falls back to the salary expense account.
+   * Dr employer statutory contributions (SSF/PF, EPF/EPS/EDLI/admin, ESI employer, LWF employer). Falls back to the salary expense account.
    */
   statutoryExpenseAccount?: (number | null) | GlAccount;
   updatedAt?: string | null;
@@ -6538,15 +6676,27 @@ export interface BillingSettingsSelect<T extends boolean = true> {
  * via the `definition` "payroll-settings_select".
  */
 export interface PayrollSettingsSelect<T extends boolean = true> {
+  country?: T;
+  ssfEnabled?: T;
+  pfEnabled?: T;
+  citEnabled?: T;
+  ssfRate?: T;
+  pfRate?: T;
+  ssfMinBasic?: T;
+  ssfNumber?: T;
+  pfNumber?: T;
+  panNumber?: T;
   epfEnabled?: T;
   esicEnabled?: T;
   professionalTaxEnabled?: T;
   lwfEnabled?: T;
   tdsEnabled?: T;
-  pfNumber?: T;
   esiNumber?: T;
   lwfNumber?: T;
   defaultEmploymentState?: T;
+  ssfPayableAccount?: T;
+  pfPayableAccount?: T;
+  citPayableAccount?: T;
   epfPayableAccount?: T;
   epsPayableAccount?: T;
   edliPayableAccount?: T;

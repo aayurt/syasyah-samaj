@@ -44,6 +44,30 @@ export const PayrollRuns: CollectionConfig = {
   },
   fields: [
     {
+      name: 'batchNumber',
+      type: 'text',
+      required: true,
+      admin: { description: 'Payroll batch number, e.g. BATCH-2026-09-001' },
+    },
+    {
+      name: 'approvalStatus',
+      type: 'select',
+      defaultValue: 'Draft',
+      options: [
+        { label: 'Draft', value: 'Draft' },
+        { label: 'Submitted', value: 'Submitted' },
+        { label: 'Approved', value: 'Approved' },
+        { label: 'Rejected', value: 'Rejected' },
+      ],
+      admin: { description: 'Batch approval workflow: Draft → Submitted → Approved → Posted' },
+    },
+    {
+      name: 'varianceReview',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { description: 'Flag for variance review before posting (gross/net deviation from prior period)' },
+    },
+    {
       name: 'name',
       type: 'text',
       required: true,
