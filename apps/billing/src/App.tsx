@@ -181,21 +181,6 @@ function AppShell() {
   const { session, checking } = useOfflineSession()
   const t = useT()
 
-  // E2E test bypass: when window.__E2E_BYPASS_AUTH__ is set, render Shell
-  // with a mock admin session without any auth round-trips.
-  if (typeof window !== 'undefined' && (window as any).__E2E_BYPASS_AUTH__) {
-    const mockSession = { user: { email: 'e2e@test.com', role: 'admin' } }
-    return (
-      <TenantProvider>
-        <CalendarProvider>
-          <FiscalYearProvider>
-            <Shell email={mockSession.user.email} />
-          </FiscalYearProvider>
-        </CalendarProvider>
-      </TenantProvider>
-    )
-  }
-
   if (checking) {
     return (
       <div className="grid h-screen place-items-center text-sm text-slate-500">

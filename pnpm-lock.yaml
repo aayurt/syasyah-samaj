@@ -265,6 +265,9 @@ importers:
       '@faker-js/faker':
         specifier: ^10.6.0
         version: 10.6.0
+      '@lightpanda/browser':
+        specifier: 1.6.0
+        version: 1.6.0
       '@playwright/test':
         specifier: ^1.64.1
         version: 1.64.1
@@ -2105,6 +2108,11 @@ packages:
     resolution: {integrity: sha512-3DSP7QpmTGYU9bN/yljP0PIao4tNIQtsR4ycauWNSawxs/GQCZtSmAPcLRnCm6qpqsDDjUtKjO/1Ej8FRp0m0w==}
     peerDependencies:
       yjs: '>=13.5.22'
+
+  '@lightpanda/browser@1.6.0':
+    resolution: {integrity: sha512-o5nbBJqsuaXhoScCChCuQPwzw9nHbZI0U8vYh+SaR7jGmBNEMShtyJHqK3UBNl2b9x5XJa+3/zASZY0/DHhAJQ==}
+    engines: {node: '22', yarn: '4'}
+    hasBin: true
 
   '@modelcontextprotocol/sdk@1.29.0':
     resolution: {integrity: sha512-zo37mZA9hJWpULgkRpowewez1y6ML5GsXJPY8FI0tBBCd77HEvza4jDqRKOXgHNn867PVGCyTdzqpz0izu5ZjQ==}
@@ -10886,6 +10894,10 @@ snapshots:
       '@lexical/selection': 0.35.0
       lexical: 0.35.0
       yjs: 13.6.29
+
+  '@lightpanda/browser@1.6.0':
+    dependencies:
+      yargs: 18.2.0
 
   '@modelcontextprotocol/sdk@1.29.0(zod@3.25.76)':
     dependencies:
