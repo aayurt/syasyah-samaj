@@ -1332,6 +1332,27 @@ export async function executeImport<T extends Record<string, unknown>>(
   const ctx = await buildImportContext(cfg)
   const queue = cfg?.groupBy ? groupRecords(records, cfg.groupBy) : records
 
+  // Atomic validation for opening-balances: all entries must reference existing Chart of Accounts headings
+  if (collection === 'opening-balances') {
+    for (const item of queue) {
+      if (item.action === 'skip') continue
+      const raw = item.doc as Record<string, unknown>
+      const accountHeading = raw.accountCode || raw.accountName || raw.account || raw.code || raw.name
+      const { errors } = prepareBody(cfg, ctx, raw)
+      if (errors.length > 0 || !ctx.findId('gl-accounts', 'code', raw.accountCode ?? raw.code)) {
+        const headingName = String(raw.accountName || raw.accountCode || accountHeading || 'Unknown')
+        return {
+          created: 0,
+          updated: 0,
+          skipped: 0,
+          errors: [
+            `Account heading '${headingName}' was not found in Chart of Accounts. Please create the account heading before importing opening balances. The operation has been cancelled.`,
+          ],
+        }
+      }
+    }
+  }
+
   for (let i = 0; i < queue.length; i++) {
     const { doc, action } = queue[i]
     try {

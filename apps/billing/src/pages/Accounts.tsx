@@ -8,6 +8,7 @@ import ImportPreviewModal from '../components/ImportPreviewModal'
 import { pushToast } from '../lib/toast'
 import DataStatus from '../components/DataStatus'
 import AccountsTable from '../components/AccountsTable'
+import CoaSetupModal from '../components/CoaSetupModal'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import { useSearchParams } from 'react-router-dom'
 import { useT } from '../lib/i18n'
@@ -47,6 +48,7 @@ export default function Accounts() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
   const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[] } | null>(null)
+  const [showCoaSetup, setShowCoaSetup] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { selectedYear } = useFiscalYear()
 
@@ -363,8 +365,18 @@ export default function Accounts() {
           openings={openings}
           onEdit={startEdit}
           onDelete={remove}
+          onConfigureCoa={() => setShowCoaSetup(true)}
         />
       )}
+
+      <CoaSetupModal
+        isOpen={showCoaSetup}
+        onClose={() => setShowCoaSetup(false)}
+        onSuccess={() => {
+          load()
+          pushToast('success', 'Chart of Accounts configured successfully')
+        }}
+      />
 
       {importData && (
         <ImportPreviewModal
