@@ -7,6 +7,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Download,
   FolderTree,
   GripVertical,
   Hash,
@@ -19,6 +20,7 @@ import {
   ToggleLeft,
   Trash2,
   Unlock,
+  Upload,
   Wallet,
   X,
   Type,
@@ -29,6 +31,9 @@ import { authClient, clearCachedSession } from '../lib/auth'
 import { adToBsString, formatDate } from '../lib/nepaliDate'
 import { useCalendar } from '../lib/calendar'
 import { useFiscalYear } from '../lib/fiscalYear'
+import ExportModal from '../components/ExportModal'
+import ImportPreviewModal from '../components/ImportPreviewModal'
+import { parseImportFile } from '../lib/importExport'
 import { useTenant } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
 import type { Account, AccountGroup, AccountType, BillingSettings, FiscalYear } from '../lib/types'
@@ -328,6 +333,9 @@ export default function Settings() {
   const [coaSaving, setCoaSaving] = useState(false)
   const [showCoaForm, setShowCoaForm] = useState(false)
   const [coaEditingId, setCoaEditingId] = useState<number | null>(null)
+  const [coaExportOpen, setCoaExportOpen] = useState(false)
+  const [coaImportData, setCoaImportData] = useState<{ collection: string; docs: Record<string, unknown>[] } | null>(null)
+  const coaFileInputRef = useRef<HTMLInputElement>(null)
 
   const openCoaNew = () => {
     setCoaForm({ name: '', code: '', type: 'asset', class: 'other', group: '' })
@@ -1867,14 +1875,48 @@ export default function Settings() {
           <span className="text-xs text-slate-400">
             {coaLoading ? 'Loading…' : `${coaAccounts.length} accounts`}
           </span>
-          <button
-            type="button"
-            onClick={() => openCoaNew()}
-            className="flex items-center gap-1 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
-          >
-            <Plus size={12} /> New Account
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => coaFileInputRef.current?.click()}
+              className="flex items-center gap-1 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <Upload size={12} /> {t('import.button', 'Import')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCoaExportOpen(true)}
+              className="flex items-center gap-1 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <Download size={12} /> {t('export.button', 'Export')}
+            </button>
+            <button
+              type="button"
+              onClick={() => openCoaNew()}
+              className="flex items-center gap-1 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <Plus size={12} /> New Account
+            </button>
+          </div>
         </div>
+
+        <input
+          ref={coaFileInputRef}
+          type="file"
+          accept=".json,.csv,.xlsx,.xls"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0]
+            if (!file) return
+            try {
+              const parsed = await parseImportFile<Record<string, unknown>>(file)
+              setCoaImportData({ collection: parsed.collection, docs: parsed.docs })
+            } catch (err) {
+              pushToast('error', 'Parse failed', err instanceof Error ? err.message : String(err))
+            }
+            e.target.value = ''
+          }}
+        />
 
         {showCoaForm && (
           <form onSubmit={saveCoaAccount} className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -2340,6 +2382,25 @@ export default function Settings() {
           </button>
         </div>
       </Section>
+      )}
+
+      {coaExportOpen && (
+        <ExportModal
+          defaultCollection="gl-accounts"
+          onClose={() => setCoaExportOpen(false)}
+        />
+      )}
+
+      {coaImportData && (
+        <ImportPreviewModal
+          collection={coaImportData.collection}
+          docs={coaImportData.docs}
+          onClose={() => setCoaImportData(null)}
+          onImported={() => {
+            setCoaImportData(null)
+            loadCoa()
+          }}
+        />
       )}
     </div>
   )

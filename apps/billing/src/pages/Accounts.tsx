@@ -5,6 +5,7 @@ import { api, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { parseImportFile } from '../lib/importExport'
 import ImportPreviewModal from '../components/ImportPreviewModal'
+import ExportModal from '../components/ExportModal'
 import { pushToast } from '../lib/toast'
 import DataStatus from '../components/DataStatus'
 import AccountsTable from '../components/AccountsTable'
@@ -48,6 +49,7 @@ export default function Accounts() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
   const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[] } | null>(null)
+  const [showExportModal, setShowExportModal] = useState(false)
   const [showCoaSetup, setShowCoaSetup] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { selectedYear } = useFiscalYear()
@@ -213,14 +215,11 @@ export default function Accounts() {
             <Upload size={14} /> {t('import.button', 'Import')}
           </LiquidButton>
           <LiquidButton
-            onClick={() => downloadCsv('accounts.csv', ['Code', 'Name', 'Type', 'Class', 'Opening Balance'],
-              visible.map((a) => [a.code || '', a.name, a.type, a.class || '', openings[a.id] ?? a.openingBalance ?? 0]))
-            }
-            disabled={visible.length === 0}
+            onClick={() => setShowExportModal(true)}
             variant="outline"
             size="sm"
           >
-            <Download size={14} /> CSV
+            <Download size={14} /> {t('export.button', 'Export')}
           </LiquidButton>
           <LiquidButton
             onClick={openNew}
@@ -236,7 +235,7 @@ export default function Accounts() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".json"
+        accept=".json,.csv,.xlsx,.xls"
         className="hidden"
         onChange={async (e) => {
           const file = e.target.files?.[0]
@@ -378,12 +377,22 @@ export default function Accounts() {
         }}
       />
 
+      {showExportModal && (
+        <ExportModal
+          defaultCollection="gl-accounts"
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
+
       {importData && (
         <ImportPreviewModal
           collection={importData.collection}
           docs={importData.docs}
           onClose={() => setImportData(null)}
-          onImported={() => setImportData(null)}
+          onImported={() => {
+            setImportData(null)
+            load()
+          }}
         />
       )}
     </div>
