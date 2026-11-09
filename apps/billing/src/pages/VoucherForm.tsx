@@ -46,7 +46,8 @@ import {
 
 interface LineDraft {
   key: string; id?: string; item: string; description: string
-  qty: string; rate: string; amount: string; discountPct: string; discountAmt: string
+  unit: string; qty: string; rate: string; taxRate: string; amount: string
+  discountPct: string; discountAmt: string
 }
 interface JLineDraft {
   key: string; id?: string; account: string; debit: string; credit: string; memo: string
@@ -56,8 +57,8 @@ interface TaxLineDraft {
 }
 
 const emptyLine = (): LineDraft => ({
-  key: crypto.randomUUID(), item: '', description: '', qty: '', rate: '',
-  amount: '', discountPct: '', discountAmt: '',
+  key: crypto.randomUUID(), item: '', description: '', unit: '', qty: '', rate: '', taxRate: '', amount: '',
+  discountPct: '', discountAmt: '',
 })
 const emptyJLine = (): JLineDraft => ({
   key: crypto.randomUUID(), account: '', debit: '', credit: '', memo: '',
@@ -369,8 +370,9 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
         if (d.lines?.length) {
           setLines(d.lines.map((l) => ({
             key: crypto.randomUUID(), id: l.id, item: idOf(l.item),
-            description: l.description || '', qty: l.qty != null ? String(l.qty) : '',
-            rate: l.rate != null ? String(l.rate) : '', amount: l.amount != null ? String(l.amount) : '',
+            description: l.description || '', unit: l.unit || '', qty: l.qty != null ? String(l.qty) : '',
+            rate: l.rate != null ? String(l.rate) : '', taxRate: l.taxRate != null ? String(l.taxRate) : '',
+            amount: l.amount != null ? String(l.amount) : '',
             discountPct: '', discountAmt: '',
           })))
         }
@@ -598,11 +600,12 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     }
     if (isItem) {
       base.lines = lines.map((l) => ({
-        ...(l.id ? { id: l.id } : {}),
-        item: l.item ? Number(l.item) : undefined, description: l.description,
-        qty: l.qty !== '' ? Number(l.qty) : undefined,
-        rate: l.rate !== '' ? Number(l.rate) : undefined,
-        amount: l.amount !== '' ? Number(l.amount) : undefined,
+      ...(l.id ? { id: l.id } : {}),
+      item: l.item ? Number(l.item) : undefined, description: l.description, unit: l.unit || undefined,
+      qty: l.qty !== '' ? Number(l.qty) : undefined,
+      rate: l.rate !== '' ? Number(l.rate) : undefined,
+      taxRate: l.taxRate !== '' ? Number(l.taxRate) : undefined,
+      amount: l.amount !== '' ? Number(l.amount) : undefined,
       }))
       base.taxRate = parseFloat(taxRate) || 0
       if (globalDiscountEnabled && globalDiscountAmount > 0) {
@@ -884,8 +887,10 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
               <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
                 <th className="w-12 px-4 py-3">#</th>
                 <th className="px-4 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
+                <th className="w-16 px-4 py-3 text-right">{t('vouchers.unit', 'Unit')}</th>
                 <th className="w-20 px-4 py-3 text-right">{t('vouchers.qty', 'Qty')}</th>
                 <th className="w-28 px-4 py-3 text-right">{t('vouchers.rate', 'Rate')}</th>
+                <th className="w-20 px-4 py-3 text-right">{t('vouchers.taxRate', 'Tax %')}</th>
                 <th className="w-28 px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-1.5">
                     <span>{t('vouchers.discount', 'Discount')}</span>
@@ -943,7 +948,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                               </button>
                               {itemSearchText && items.filter((it) => it.name.toLowerCase().includes(itemSearchText.toLowerCase())).slice(0, 5).map((it) => (
                                 <button key={it.id} type="button" onClick={() => {
-                                  setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || '') })
+                                  const selectedUnit = items.find((it) => String(it.id) === l.item)?.unit
+                                  setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || ''), unit: selectedUnit || '' })
                                   setItemSearchRow(null); setItemSearchText('')
                                 }} className="block w-full px-2 py-1.5 text-left text-sm hover:bg-slate-50">
                                   {it.code ? `${it.code} · ` : ''}{it.name}
@@ -951,7 +957,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                               ))}
                               {!itemSearchText && items.slice(0, 5).map((it) => (
                                 <button key={it.id} type="button" onClick={() => {
-                                  setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || '') })
+                                  const selectedUnit = items.find((it) => String(it.id) === l.item)?.unit
+                                  setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || ''), unit: selectedUnit || '' })
                                   setItemSearchRow(null); setItemSearchText('')
                                 }} className="block w-full px-2 py-1.5 text-left text-sm hover:bg-slate-50">
                                   {it.code ? `${it.code} · ` : ''}{it.name}
@@ -998,11 +1005,18 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                         </div>
                       )}
                     </td>
+                    <td className="px-2 py-2 text-right">
+                      <input type="text" value={l.unit}
+                        onChange={(e) => setLine(l.key, { unit: e.target.value })}
+                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 1, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
+                        data-grid-cell={`${i}:1`}
+                        className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm font-mono outline-none focus:border-slate-500" />
+                    </td>
                     <td className="px-2 py-2">
                       <input type="number" min="0" step="any" value={l.qty}
                         onChange={(e) => setLine(l.key, { qty: e.target.value })}
-                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 1, rows: lines.length, cols: 4, onAppendRow: appendItemRow })}
-                        data-grid-cell={`${i}:1`}
+                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 2, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
+                        data-grid-cell={`${i}:2`}
                         className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                     </td>
                     <td className="px-2 py-2">
@@ -1011,10 +1025,18 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                         <input type="number" min="0" step="0.01" value={l.rate}
                           onChange={(e) => setLine(l.key, { rate: e.target.value })}
                           onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { rate: r }) }}
-                          onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 2, rows: lines.length, cols: 4, onAppendRow: appendItemRow })}
-                          data-grid-cell={`${i}:2`}
+                          onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
+                          data-grid-cell={`${i}:3`}
                           className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                       </div>
+                    </td>
+                    <td className="px-2 py-2 text-right">
+                      <input type="number" min="0" step="0.01" value={l.taxRate}
+                        onChange={(e) => setLine(l.key, { taxRate: e.target.value })}
+                        onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { taxRate: r }) }}
+                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 4, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
+                        data-grid-cell={`${i}:4`}
+                        className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                     </td>
                     <td className="px-2 py-2">
                       <div className="flex items-center">
@@ -1023,7 +1045,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                             <input type="number" min="0" max="100" step="0.01" value={l.discountPct}
                               onChange={(e) => setLine(l.key, { discountPct: e.target.value, discountAmt: '' })}
                               onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountPct: r, discountAmt: '' }) }}
-                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 4, onAppendRow: appendItemRow })}
+                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 5, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
                               data-grid-cell={`${i}:3`}
                               className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                             <span className="ml-1 text-xs text-slate-400">%</span>
@@ -1034,7 +1056,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                             <input type="number" min="0" step="0.01" value={l.discountAmt}
                               onChange={(e) => setLine(l.key, { discountAmt: e.target.value, discountPct: '' })}
                               onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountAmt: r, discountPct: '' }) }}
-                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 4, onAppendRow: appendItemRow })}
+                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 5, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
                               data-grid-cell={`${i}:3`}
                               className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                           </>
@@ -1422,7 +1444,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
             // Auto-fill amount with remaining balance
             if (id && outstanding !== undefined) {
               const amt = String(outstanding)
-              setLines([{ key: crypto.randomUUID(), item: '', description: 'Payment', qty: '1', rate: amt, amount: amt, discountPct: '', discountAmt: '' }])
+              setLines([emptyLine()])
             }
           }}
         />
@@ -1461,7 +1483,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                         const val = e.target.value
                         setLines((prev) => {
                           if (prev.length === 0) {
-                            return [{ key: crypto.randomUUID(), item: '', description: docType === 'receipt-voucher' ? 'Receipt' : 'Payment', qty: '1', rate: val, amount: val, discountPct: '', discountAmt: '' }]
+                            return [{ ...emptyLine(), item: '', description: docType === 'receipt-voucher' ? 'Receipt' : 'Payment', qty: '1', rate: val, amount: val, discountPct: '', discountAmt: '' }]
                           }
                           return [{ ...prev[0], amount: val, rate: val }]
                         })
