@@ -1,4 +1,4 @@
-import { expect, test } from '../base'
+import { expect, test, E2E_BASE_URL } from '../base'
 
 /**
  * S10 — Membership application form journey + Nepali mode smoke.
@@ -17,7 +17,7 @@ test.describe.serial('S10 — Membership application form', () => {
 
   /** Navigate to Members page and dismiss tour. */
   async function goToMembers(page: import('@playwright/test').Page) {
-    await page.goto('/')
+    await page.goto(E2E_BASE_URL)
     await page.evaluate(() => localStorage.setItem('tour-seen', '1'))
     await page.goto('/members')
     await page.waitForLoadState('networkidle')
@@ -202,7 +202,7 @@ test.describe.serial('S10 — Membership application form', () => {
   // ─────────────────────────────────────────────────────────────
   test('M6 — Nepali mode: toggle language and verify labels', async ({ page }) => {
     // Go to Settings and toggle to Nepali
-    await page.goto('/')
+    await page.goto(E2E_BASE_URL)
     await page.evaluate(() => localStorage.setItem('tour-seen', '1'))
     await page.goto('/settings')
     await page.waitForLoadState('networkidle')
@@ -223,7 +223,7 @@ test.describe.serial('S10 — Membership application form', () => {
     await nepaliBtn.click()
 
     // Verify sidebar nav labels are in Nepali
-    await page.goto('/')
+    await page.goto(E2E_BASE_URL)
     await page.waitForLoadState('networkidle')
 
     // Check that key nav items are now in Nepali
@@ -263,7 +263,7 @@ test.describe.serial('S10 — Membership application form', () => {
     await englishBtn.click()
 
     // Verify sidebar nav labels revert to English
-    await page.goto('/')
+    await page.goto(E2E_BASE_URL)
     await page.waitForLoadState('networkidle')
     // Members → Members
     await expect(page.getByRole('link', { name: 'Members' })).toBeVisible({ timeout: 10_000 })

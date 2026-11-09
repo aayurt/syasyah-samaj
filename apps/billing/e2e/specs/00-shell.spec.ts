@@ -1,4 +1,4 @@
-import { expect, test } from '../base'
+import { expect, test, E2E_BASE_URL } from '../base'
 
 /**
  * S0 — Shell & navigation (runs right after auth, before Settings).
@@ -14,7 +14,7 @@ test.describe.serial('S0 — Shell & navigation', () => {
 
   /** Dismiss the first-run tour overlay and force the expanded sidebar. */
   async function resetShell(page: import('@playwright/test').Page) {
-    await page.goto('/')
+    await page.goto(E2E_BASE_URL)
     await page.evaluate(() => {
       localStorage.setItem('tour-seen', '1')
       localStorage.setItem('sidebar-collapsed', '0')

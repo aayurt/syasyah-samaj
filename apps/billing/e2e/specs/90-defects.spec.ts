@@ -1,4 +1,4 @@
-import { expect, test } from '../base'
+import { expect, test, E2E_BASE_URL } from '../base'
 import { money } from '../helpers/money'
 
 /**
@@ -22,7 +22,7 @@ test.describe.serial('S9 — Defect smoke tests', () => {
    */
   test('BUG-1 smoke: data refreshes after fiscal year change', async ({ page }) => {
     // Ensure we start on a clean shell (no tour overlay, expanded sidebar).
-    await page.goto('/')
+    await page.goto(E2E_BASE_URL)
     await page.evaluate(() => {
       localStorage.setItem('tour-seen', '1')
       localStorage.setItem('sidebar-collapsed', '0')
@@ -92,7 +92,7 @@ test.describe.serial('S9 — Defect smoke tests', () => {
    */
   test('BUG-2 smoke: dropdown panel escapes overflow:hidden ancestor', async ({ page }) => {
     // Start on a clean shell.
-    await page.goto('/')
+    await page.goto(E2E_BASE_URL)
     await page.evaluate(() => {
       localStorage.setItem('tour-seen', '1')
       localStorage.setItem('sidebar-collapsed', '0')
