@@ -133,6 +133,8 @@ export default function SearchSelect({
                 <button
                   key={o.value}
                   type="button"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onMouseUp={(e) => e.stopPropagation()}
                   onClick={() => { onChange(String(o.value)); setOpen(false) }}
                   className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
                     String(o.value) === String(value) ? 'bg-crimson-50 text-crimson-700' : 'text-slate-700 hover:bg-slate-50'
