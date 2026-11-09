@@ -1120,8 +1120,6 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                 <th className="w-16 px-2 py-3 text-right">{t('vouchers.unit', 'Unit')}</th>
                 <th className="w-20 px-2 py-3 text-right">{t('vouchers.qty', 'Qty')}</th>
                 <th className="w-24 px-2 py-3 text-right">{t('vouchers.rate', 'Rate')}</th>
-                <th className="w-28 px-2 py-3 text-left">{t('vouchers.taxCode', 'Tax Code')}</th>
-                <th className="w-16 px-2 py-3 text-right">{t('vouchers.taxRate', 'Tax %')}</th>
                 <th className="w-24 px-2 py-3 text-right">
                   <div className="flex items-center justify-end gap-1">
                     <span>{t('vouchers.discount', 'Discount')}</span>
@@ -1133,6 +1131,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                   </div>
                 </th>
                 <th className="w-24 px-2 py-3 text-right">{t('common.amount', 'Amount')}</th>
+                <th className="w-28 px-2 py-3 text-left">{t('vouchers.taxCode', 'Tax Code')}</th>
+                <th className="w-16 px-2 py-3 text-right">{t('vouchers.taxRate', 'Tax %')}</th>
                 <th className="w-20 px-2 py-3 text-right">{t('vouchers.taxAmount', 'Tax Amt')}</th>
                 <th className="w-24 px-2 py-3 text-right">{t('common.total', 'Total')}</th>
                 <th className="w-8 px-2 py-3"></th>
@@ -1264,6 +1264,33 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                         className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
                     </td>
                     <td className="px-1 py-2">
+                      <div className="flex items-center">
+                        {discountMode === 'pct' ? (
+                          <>
+                            <input type="number" min="0" max="100" step="0.01" value={l.discountPct}
+                              onChange={(e) => setLine(l.key, { discountPct: e.target.value, discountAmt: '' })}
+                              onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountPct: r, discountAmt: '' }) }}
+                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 4, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
+                              data-grid-cell={`${i}:4`}
+                              className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                            <span className="ml-0.5 text-xs text-slate-400">%</span>
+                          </>
+                        ) : (
+                          <>
+                            <input type="number" min="0" step="0.01" value={l.discountAmt}
+                              onChange={(e) => setLine(l.key, { discountAmt: e.target.value, discountPct: '' })}
+                              onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountAmt: r, discountPct: '' }) }}
+                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 4, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
+                              data-grid-cell={`${i}:4`}
+                              className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                          </>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-2 py-2 text-right font-mono font-medium text-slate-800">
+                      {fmt(calc.finalAmt)}
+                    </td>
+                    <td className="px-1 py-2">
                       <select
                         value={l.taxType || ''}
                         onChange={(e) => {
@@ -1285,36 +1312,9 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                       <input type="number" min="0" step="0.01" value={l.taxRate}
                         onChange={(e) => setLine(l.key, { taxRate: e.target.value })}
                         onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { taxRate: r }) }}
-                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 4, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                        data-grid-cell={`${i}:4`}
+                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 5, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
+                        data-grid-cell={`${i}:5`}
                         className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                    </td>
-                    <td className="px-1 py-2">
-                      <div className="flex items-center">
-                        {discountMode === 'pct' ? (
-                          <>
-                            <input type="number" min="0" max="100" step="0.01" value={l.discountPct}
-                              onChange={(e) => setLine(l.key, { discountPct: e.target.value, discountAmt: '' })}
-                              onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountPct: r, discountAmt: '' }) }}
-                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 5, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                              data-grid-cell={`${i}:5`}
-                              className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                            <span className="ml-0.5 text-xs text-slate-400">%</span>
-                          </>
-                        ) : (
-                          <>
-                            <input type="number" min="0" step="0.01" value={l.discountAmt}
-                              onChange={(e) => setLine(l.key, { discountAmt: e.target.value, discountPct: '' })}
-                              onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountAmt: r, discountPct: '' }) }}
-                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 5, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                              data-grid-cell={`${i}:5`}
-                              className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                          </>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-2 py-2 text-right font-mono font-medium text-slate-800">
-                      {fmt(calc.finalAmt)}
                     </td>
                     <td className="px-2 py-2 text-right font-mono text-xs text-slate-600">
                       {fmt(calc.lineTaxAmt)}
@@ -1331,8 +1331,9 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
             </tbody>
             <tfoot>
               <tr className="border-t border-slate-200 bg-slate-50">
-                <td colSpan={8} className="px-4 py-3 text-right text-sm font-medium text-slate-600">{t('vouchers.subTotal', 'Sub Total')}</td>
+                <td colSpan={6} className="px-4 py-3 text-right text-sm font-medium text-slate-600">{t('vouchers.subTotal', 'Sub Total')}</td>
                 <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineTotals)}</td>
+                <td colSpan={2}></td>
                 <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineCalculations.totalTax)}</td>
                 <td className="px-2 py-3 text-right font-mono font-bold text-slate-900">{fmt(lineTotals + lineCalculations.totalTax)}</td>
                 <td></td>
