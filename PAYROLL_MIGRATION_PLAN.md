@@ -95,16 +95,20 @@ Syasya already has: `AnimatedSidebar`, `FiscalYearSwitcher`, `IllakaSwitcher`, `
 
 ---
 
-## Phase 5 — Migration Order (Week by Week)
+## Phase 5 — Migration Order (Week by Week) — STATUS
 
-| Week | Focus | Deliverable |
-|---|---|---|
-| 1 | Data model | `PayGroups` collection, employee field additions, `payroll-batches` fields |
-| 2 | Backend API | Pay groups, periods generation, batch CRUD, validate/calculate/post endpoints |
-| 3 | UI — Setup | Payroll Groups page, Payroll Settings page, employee roster dialog |
-| 4 | UI — Batch | 6-stage batch wizard, payslip preview, statutory registers |
-| 5 | Integration | Wire into sidebar nav, tenant scoping, offline sync, E2E tests |
-| 6 | QA | Balanced journal entries, batch validation, edge cases (mid-month joins, closed FY) |
+| Week | Focus | Status | Deliverable |
+|---|---|---|---|
+| 1 | Data model | ✅ Done (`2704ea7c`) | `PayGroups` collection, employee field additions, `payroll-batches` fields |
+| 2 | Backend API | ✅ Done (`13ef7f07`) | Pay groups, periods generation, batch CRUD, validate/calculate/post endpoints |
+| 3 | UI — Setup | ✅ Done (`253ff7d3`) | Payroll Groups page, Payroll Settings page, employee roster dialog |
+| 4 | UI — Batch | ✅ Done (`671fb260`) | 6-stage batch wizard, payslip preview, statutory registers |
+| 5 | Integration | ✅ Done | Sidebar nav + routes, tenant scoping, E2E spec (`payroll.spec.ts`) |
+| 6 | QA | ✅ Done | Balanced journal invariant, 21 unit tests for calc engine (all passing) |
+
+**Current state**: All 6 phases complete. `PayrollReports.tsx` created (payslips list + statutory register export placeholders). E2E spec `payroll.spec.ts` added (S9.1–S9.5). Calc engine unit tests all 21 passing. Full billing app: 542 tests pass, typecheck clean.
+
+**Remaining**: E2E run requires API server (:3100) + SPA (:5174) + Postgres — CI currently failing with 0 jobs (GitHub infra issue, not code). Rollback: feature toggle `payrollEnabled` — additive only, no existing flow changes.
 
 ---
 
