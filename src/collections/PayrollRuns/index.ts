@@ -8,6 +8,7 @@ import { assignTenant } from '@/utilities/tenantScope'
 import { summarizePayroll, type PayrollRunLine } from '@/utilities/payrollCalc'
 import type { CollectionConfig } from 'payload'
 import { generatePayrollRun, postPayrollRun, voidPayrollRun } from './handlers'
+import { validatePayrollBatch, calculatePayrollBatch, releasePayrollBatch } from './batchHandlers'
 
 /**
  * Payroll Runs (MVP payroll) — one document per pay period.
@@ -58,6 +59,9 @@ export const PayrollRuns: CollectionConfig = {
     { path: '/generate', method: 'post', handler: generatePayrollRun },
     { path: '/:id/post', method: 'post', handler: postPayrollRun },
     { path: '/:id/void', method: 'post', handler: voidPayrollRun },
+    { path: '/:id/validate', method: 'post', handler: validatePayrollBatch },
+    { path: '/:id/calculate', method: 'post', handler: calculatePayrollBatch },
+    { path: '/:id/release', method: 'post', handler: releasePayrollBatch },
   ],
   fields: [
     {
@@ -85,6 +89,7 @@ export const PayrollRuns: CollectionConfig = {
       defaultValue: 'draft',
       options: [
         { label: 'Draft', value: 'draft' },
+        { label: 'Calculated', value: 'calculated' },
         { label: 'Posted', value: 'posted' },
         { label: 'Void', value: 'void' },
       ],
