@@ -136,13 +136,70 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=2048
 
   # ──────────────────────────────────────────────────────────────
+  # API Sequential Check — Empty DB, sequential CRUD, balance assertion
+  # ──────────────────────────────────────────────────────────────
+  api-sequential-check:
+    name: API Sequential Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [typecheck-lint, unit-tests]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: billing_api_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then break; fi
+            sleep 2
+          done
+
+      - name: Run database setup
+        run: pnpm payload generate:db-schema
+        env:
+          DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_api_test
+          RESEND_API_KEY: re_test
+          PAYLOAD_SECRET: test-secret-key-for-ci
+
+      - name: Run sequential API check
+        run: node scripts/test/apis/sequential-api-check.mjs
+        env:
+          DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_api_test
+          API_BASE: http://localhost:3100
+          ADMIN_EMAIL: aayurtshrestha@gmail.com
+          ADMIN_PASSWORD: SyashaAdmin2026!
+
+  # ──────────────────────────────────────────────────────────────
   # E2E Tests (Playwright) — Runs in Google Jules via workflow_dispatch
   # ──────────────────────────────────────────────────────────────
   e2e-tests:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    needs: [typecheck-lint, unit-tests]
+    needs: [typecheck-lint, unit-tests, api-sequential-check]
     # Only run on main branch or when manually triggered
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     services:
