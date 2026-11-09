@@ -64,9 +64,23 @@ interface ApiOptions extends Omit<RequestInit, 'body'> {
   immediate?: boolean
 }
 
+/** Collections that are global/org-wide and do not possess a `tenant` field. */
+const NON_TENANT_COLLECTIONS = new Set([
+  'membership-types',
+  'doc-sequences',
+  'categories',
+  'notifications',
+  'favorites',
+  'tickets',
+  'messages',
+  'timeline',
+  'tenants',
+])
+
 async function doFetch<T>(path: string, options: ApiOptions): Promise<T> {
   const { query, body, headers, ...rest } = options
   const url = new URL(`${API_BASE}/api${path}`)
+  const { slug } = parsePath(path)
   if (query) {
     for (const [k, v] of Object.entries(query)) {
       // Nested `where` objects become bracket params — Payload ignores the
@@ -85,9 +99,10 @@ async function doFetch<T>(path: string, options: ApiOptions): Promise<T> {
     }
     // A bare `tenant` param filters custom report endpoints, but Payload's
     // standard list endpoints only filter through `where[tenant][equals]`.
-    // Emit both so selecting an illaka filters plain collection lists too.
+    // Emit both so selecting an illaka filters plain collection lists too,
+    // provided the collection is tenant-scoped.
     const t = query.tenant
-    if (t !== undefined && t !== '') {
+    if (t !== undefined && t !== '' && !NON_TENANT_COLLECTIONS.has(slug)) {
       url.searchParams.set('where[tenant][equals]', String(t))
     }
   }

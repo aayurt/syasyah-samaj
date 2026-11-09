@@ -45,7 +45,7 @@ const MASTER_LISTS: MasterList[] = [
   { slug: 'fiscal-years', query: { limit: 100, depth: 0, sort: '-startDate' }, tenantScoped: true },
   // Remaining dropdown masters on the voucher form so entry works fully
   // offline at an event (membership types feed the Members create form).
-  { slug: 'membership-types', query: { limit: 100, depth: 0, sort: 'name' }, tenantScoped: true },
+  { slug: 'membership-types', query: { limit: 100, depth: 0, sort: 'name' }, tenantScoped: false },
   { slug: 'items', query: { limit: 1000, depth: 1, sort: 'name' }, tenantScoped: true },
   { slug: 'tax-types', query: { limit: 500, depth: 0, sort: 'name' }, tenantScoped: true },
 ]
