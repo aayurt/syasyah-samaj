@@ -59,7 +59,7 @@ import {
 
 interface LineDraft {
   key: string; id?: string; item: string; description: string
-  unit: string; qty: string; rate: string; taxRate: string; amount: string
+  unit: string; qty: string; rate: string; taxType: string; taxRate: string; amount: string
   discountPct: string; discountAmt: string
 }
 interface JLineDraft {
@@ -70,7 +70,7 @@ interface TaxLineDraft {
 }
 
 const emptyLine = (): LineDraft => ({
-  key: crypto.randomUUID(), item: '', description: '', unit: '', qty: '', rate: '', taxRate: '', amount: '',
+  key: crypto.randomUUID(), item: '', description: '', unit: '', qty: '', rate: '', taxType: '', taxRate: '', amount: '',
   discountPct: '', discountAmt: '',
 })
 const emptyJLine = (): JLineDraft => ({
@@ -472,13 +472,18 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
         setToAccount(idOf(d.toAccount))
         setContraAmount(d.grossTotal !== undefined ? String(d.grossTotal) : '')
         if (d.lines?.length) {
-          setLines(d.lines.map((l) => ({
-            key: crypto.randomUUID(), id: l.id, item: idOf(l.item),
-            description: l.description || '', unit: l.unit || '', qty: l.qty != null ? String(l.qty) : '',
-            rate: l.rate != null ? String(l.rate) : '', taxRate: l.taxRate != null ? String(l.taxRate) : '',
-            amount: l.amount != null ? String(l.amount) : '',
-            discountPct: '', discountAmt: '',
-          })))
+          setLines(d.lines.map((l) => {
+            const matchedTax = (d.taxLines || []).find((tl) => Number(tl.rate) === Number(l.taxRate))
+            return {
+              key: crypto.randomUUID(), id: l.id, item: idOf(l.item),
+              description: l.description || '', unit: l.unit || '', qty: l.qty != null ? String(l.qty) : '',
+              rate: l.rate != null ? String(l.rate) : '',
+              taxType: matchedTax ? String(matchedTax.taxType) : '',
+              taxRate: l.taxRate != null ? String(l.taxRate) : '',
+              amount: l.amount != null ? String(l.amount) : '',
+              discountPct: '', discountAmt: '',
+            }
+          }))
         }
         if (CASH_TYPES.includes(d.docType) && ((d.lines?.length || 0) > 1 || (d.taxLines?.length || 0) > 0)) {
           setCashDetailed(true)
@@ -587,18 +592,39 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   const selectedParty = parties.find((p) => String(p.id) === party)
 
   // Line calculations
-  const lineTotals = useMemo(() => {
-    let net = 0
-    for (const l of lines) {
+  const lineCalculations = useMemo(() => {
+    let subTotal = 0
+    let totalTax = 0
+    const calculatedLines = lines.map((l) => {
       const base = l.amount !== '' ? parseFloat(l.amount) || 0 : (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
       const discPct = parseFloat(l.discountPct) || 0
       const discAmt = parseFloat(l.discountAmt) || 0
       const afterPct = discPct > 0 ? base * (1 - discPct / 100) : base
-      const afterDisc = afterPct - discAmt
-      net += Math.max(afterDisc, 0)
+      const finalAmt = Math.max(afterPct - discAmt, 0)
+
+      const lineTaxRate = parseFloat(l.taxRate) || 0
+      const lineTaxAmt = (finalAmt * lineTaxRate) / 100
+      const lineTotal = finalAmt + lineTaxAmt
+
+      subTotal += finalAmt
+      totalTax += lineTaxAmt
+
+      return {
+        base,
+        finalAmt,
+        lineTaxRate,
+        lineTaxAmt,
+        lineTotal,
+      }
+    })
+    return {
+      subTotal,
+      totalTax,
+      lines: calculatedLines,
     }
-    return net
   }, [lines])
+
+  const lineTotals = lineCalculations.subTotal
 
   const contraTotal = parseFloat(contraAmount) || 0
 
@@ -632,8 +658,12 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
         total += (Math.max(taxable, 0) * rate) / 100
       }
     }
+    // If no manual document-level additive tax lines are specified, use line-level tax total
+    if (total === 0 && lineCalculations.totalTax > 0) {
+      return lineCalculations.totalTax
+    }
     return total
-  }, [taxLines, taxTypes, lineTotals, globalDiscountAmount])
+  }, [taxLines, taxTypes, lineTotals, globalDiscountAmount, lineCalculations.totalTax])
 
   const tdsAutoAmount = lineTotals > 0 && tdsRate > 0 ? (lineTotals * tdsRate) / 100 : 0
   const tdsAmount = tdsAmountManual ? parseFloat(tdsAmountManual) || 0 : tdsAutoAmount
@@ -730,6 +760,32 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       }))
     }
     const allTaxLines = [...taxLines]
+    // If no explicit additive tax lines were added at document level, aggregate line-level taxes
+    if (!allTaxLines.some((tl) => tl.nature === 'additive')) {
+      const lineTaxGroup = new Map<string, { rate: number; taxType?: string }>()
+      for (const l of lines) {
+        const r = parseFloat(l.taxRate) || 0
+        if (r > 0) {
+          const key = l.taxType || String(r)
+          if (!lineTaxGroup.has(key)) {
+            lineTaxGroup.set(key, { rate: r, taxType: l.taxType })
+          }
+        }
+      }
+      for (const [, item] of lineTaxGroup.entries()) {
+        const found = item.taxType
+          ? taxTypes.find((tx) => String(tx.id) === item.taxType)
+          : taxTypes.find((tx) => tx.nature === 'additive' && Number(tx.rate) === item.rate)
+        if (found) {
+          allTaxLines.push({
+            key: crypto.randomUUID(),
+            taxType: String(found.id),
+            nature: 'additive' as TaxNature,
+            rate: String(found.rate),
+          })
+        }
+      }
+    }
     if (tdsEnabled && tdsAmount > 0 && tdsTypeId) {
       allTaxLines.push({ key: '__tds__', taxType: tdsTypeId, nature: 'withholding' as TaxNature, rate: String(tdsRate) })
     }
@@ -1059,33 +1115,39 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="w-12 px-4 py-3">#</th>
-                <th className="px-4 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
-                <th className="w-16 px-4 py-3 text-right">{t('vouchers.unit', 'Unit')}</th>
-                <th className="w-20 px-4 py-3 text-right">{t('vouchers.qty', 'Qty')}</th>
-                <th className="w-28 px-4 py-3 text-right">{t('vouchers.rate', 'Rate')}</th>
-                <th className="w-20 px-4 py-3 text-right">{t('vouchers.taxRate', 'Tax %')}</th>
-                <th className="w-28 px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-1.5">
+                <th className="w-10 px-2 py-3 text-center">#</th>
+                <th className="min-w-[180px] px-3 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
+                <th className="w-16 px-2 py-3 text-right">{t('vouchers.unit', 'Unit')}</th>
+                <th className="w-20 px-2 py-3 text-right">{t('vouchers.qty', 'Qty')}</th>
+                <th className="w-24 px-2 py-3 text-right">{t('vouchers.rate', 'Rate')}</th>
+                <th className="w-28 px-2 py-3 text-left">{t('vouchers.taxCode', 'Tax Code')}</th>
+                <th className="w-16 px-2 py-3 text-right">{t('vouchers.taxRate', 'Tax %')}</th>
+                <th className="w-24 px-2 py-3 text-right">
+                  <div className="flex items-center justify-end gap-1">
                     <span>{t('vouchers.discount', 'Discount')}</span>
                     <button type="button" onClick={toggleDiscountMode}
-                      className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100">
+                      className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100">
                       {discountMode === 'pct' ? 'Rs.' : '%'}
                       <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
                     </button>
                   </div>
                 </th>
-                <th className="w-28 px-4 py-3 text-right">{t('common.amount', 'Amount')}</th>
-                <th className="w-10 px-4 py-3"></th>
+                <th className="w-24 px-2 py-3 text-right">{t('common.amount', 'Amount')}</th>
+                <th className="w-20 px-2 py-3 text-right">{t('vouchers.taxAmount', 'Tax Amt')}</th>
+                <th className="w-24 px-2 py-3 text-right">{t('common.total', 'Total')}</th>
+                <th className="w-8 px-2 py-3"></th>
               </tr>
             </thead>
             <tbody>
               {lines.map((l, i) => {
-                const base = l.amount !== '' ? parseFloat(l.amount) || 0 : (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
-                const discPct = parseFloat(l.discountPct) || 0
-                const discAmt = parseFloat(l.discountAmt) || 0
-                const afterPct = discPct > 0 ? base * (1 - discPct / 100) : base
-                const finalAmt = afterPct - discAmt
+                const calc = lineCalculations.lines[i] || {
+                  base: 0,
+                  finalAmt: 0,
+                  lineTaxRate: 0,
+                  lineTaxAmt: 0,
+                  lineTotal: 0,
+                }
+                const finalAmt = calc.finalAmt
                 // Cost / margin hint for inventory lines.
                 const lv = l.item ? levelFor(l.item) : undefined
                 const lineQty = parseFloat(l.qty) || 0
@@ -1097,7 +1159,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                 const marginPct = finalAmt > 0 ? (estProfit / finalAmt) * 100 : 0
                 return (
                   <tr key={l.key} className="anim-enter-row border-b border-slate-50">
-                    <td className="px-4 py-2 text-center text-slate-400">{i + 1}</td>
+                    <td className="px-2 py-2 text-center text-slate-400">{i + 1}</td>
                     <td className="px-2 py-2">
                       {isInventory ? (
                         <div className="relative">
@@ -1109,10 +1171,10 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                               setLine(l.key, { item: '', description: e.target.value })
                             }}
                             onFocus={() => { setItemSearchRow(l.key); setItemSearchText('') }}
-                            onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 4, onAppendRow: appendItemRow })}
+                            onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
                             data-grid-cell={`${i}:0`}
                             placeholder={t('vouchers.enterItemName', 'Enter Item name')}
-                            className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
+                            className="w-full rounded border border-slate-200 px-2 min-h-[38px] py-2 text-sm outline-none focus:border-slate-500"
                           />
                           {itemSearchRow === l.key && (
                             <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
@@ -1145,10 +1207,10 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                         <input
                           type="text" value={l.description}
                           onChange={(e) => setLine(l.key, { description: e.target.value })}
-                          onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 4, onAppendRow: appendItemRow })}
+                          onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
                           data-grid-cell={`${i}:0`}
                           placeholder={t('vouchers.enterItemName', 'Enter Item name')}
-                          className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
+                          className="w-full rounded border border-slate-200 px-2 min-h-[38px] py-2 text-sm outline-none focus:border-slate-500"
                         />
                       )}
                       {lv && (
@@ -1179,40 +1241,55 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                         </div>
                       )}
                     </td>
-                    <td className="px-2 py-2 text-right">
+                    <td className="px-1 py-2 text-right">
                       <input type="text" value={l.unit}
                         onChange={(e) => setLine(l.key, { unit: e.target.value })}
                         onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 1, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
                         data-grid-cell={`${i}:1`}
-                        className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm font-mono outline-none focus:border-slate-500" />
+                        className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-sm font-mono outline-none focus:border-slate-500 text-right" />
                     </td>
-                    <td className="px-2 py-2">
+                    <td className="px-1 py-2">
                       <input type="number" min="0" step="any" value={l.qty}
                         onChange={(e) => setLine(l.key, { qty: e.target.value })}
                         onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 2, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
                         data-grid-cell={`${i}:2`}
-                        className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                        className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
                     </td>
-                    <td className="px-2 py-2">
-                      <div className="flex items-center">
-                        <span className="mr-1 text-xs text-slate-400">Rs.</span>
-                        <input type="number" min="0" step="0.01" value={l.rate}
-                          onChange={(e) => setLine(l.key, { rate: e.target.value })}
-                          onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { rate: r }) }}
-                          onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                          data-grid-cell={`${i}:3`}
-                          className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                      </div>
+                    <td className="px-1 py-2">
+                      <input type="number" min="0" step="0.01" value={l.rate}
+                        onChange={(e) => setLine(l.key, { rate: e.target.value })}
+                        onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { rate: r }) }}
+                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
+                        data-grid-cell={`${i}:3`}
+                        className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
                     </td>
-                    <td className="px-2 py-2 text-right">
+                    <td className="px-1 py-2">
+                      <select
+                        value={l.taxType || ''}
+                        onChange={(e) => {
+                          const selectedTax = taxTypes.find((tx) => String(tx.id) === e.target.value)
+                          setLine(l.key, {
+                            taxType: e.target.value,
+                            taxRate: selectedTax ? String(selectedTax.rate) : l.taxRate,
+                          })
+                        }}
+                        className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-xs outline-none focus:border-slate-500 bg-white"
+                      >
+                        <option value="">{t('vouchers.noTax', 'None')}</option>
+                        {taxTypes.filter((tx) => tx.nature === 'additive' && tx.active !== false).map((tx) => (
+                          <option key={tx.id} value={tx.id}>{tx.code || tx.name} ({tx.rate}%)</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-1 py-2 text-right">
                       <input type="number" min="0" step="0.01" value={l.taxRate}
                         onChange={(e) => setLine(l.key, { taxRate: e.target.value })}
                         onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { taxRate: r }) }}
                         onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 4, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
                         data-grid-cell={`${i}:4`}
-                        className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                        className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
                     </td>
-                    <td className="px-2 py-2">
+                    <td className="px-1 py-2">
                       <div className="flex items-center">
                         {discountMode === 'pct' ? (
                           <>
@@ -1220,27 +1297,32 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                               onChange={(e) => setLine(l.key, { discountPct: e.target.value, discountAmt: '' })}
                               onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountPct: r, discountAmt: '' }) }}
                               onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 5, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                              data-grid-cell={`${i}:3`}
-                              className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                            <span className="ml-1 text-xs text-slate-400">%</span>
+                              data-grid-cell={`${i}:5`}
+                              className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                            <span className="ml-0.5 text-xs text-slate-400">%</span>
                           </>
                         ) : (
                           <>
-                            <span className="mr-1 text-xs text-slate-400">Rs.</span>
                             <input type="number" min="0" step="0.01" value={l.discountAmt}
                               onChange={(e) => setLine(l.key, { discountAmt: e.target.value, discountPct: '' })}
                               onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountAmt: r, discountPct: '' }) }}
                               onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 5, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                              data-grid-cell={`${i}:3`}
-                              className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                              data-grid-cell={`${i}:5`}
+                              className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
                           </>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-2 text-right font-mono font-medium text-slate-800">
-                      {fmt(Math.max(finalAmt, 0))}
+                    <td className="px-2 py-2 text-right font-mono font-medium text-slate-800">
+                      {fmt(calc.finalAmt)}
                     </td>
-                    <td className="px-2 py-2 text-center">
+                    <td className="px-2 py-2 text-right font-mono text-xs text-slate-600">
+                      {fmt(calc.lineTaxAmt)}
+                    </td>
+                    <td className="px-2 py-2 text-right font-mono font-semibold text-slate-900">
+                      {fmt(calc.lineTotal)}
+                    </td>
+                    <td className="px-1 py-2 text-center">
                       <button type="button" onClick={() => removeLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
                     </td>
                   </tr>
@@ -1249,8 +1331,10 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
             </tbody>
             <tfoot>
               <tr className="border-t border-slate-200 bg-slate-50">
-                <td colSpan={5} className="px-4 py-3 text-right text-sm font-medium text-slate-600">{t('vouchers.subTotal', 'Sub Total')}</td>
-                <td className="px-4 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineTotals)}</td>
+                <td colSpan={8} className="px-4 py-3 text-right text-sm font-medium text-slate-600">{t('vouchers.subTotal', 'Sub Total')}</td>
+                <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineTotals)}</td>
+                <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineCalculations.totalTax)}</td>
+                <td className="px-2 py-3 text-right font-mono font-bold text-slate-900">{fmt(lineTotals + lineCalculations.totalTax)}</td>
                 <td></td>
               </tr>
             </tfoot>
