@@ -1117,7 +1117,6 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
               <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
                 <th className="w-10 px-2 py-3 text-center">#</th>
                 <th className="min-w-[180px] px-3 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
-                <th className="w-16 px-2 py-3 text-right">{t('vouchers.unit', 'Unit')}</th>
                 <th className="w-20 px-2 py-3 text-right">{t('vouchers.qty', 'Qty')}</th>
                 <th className="w-24 px-2 py-3 text-right">{t('vouchers.rate', 'Rate')}</th>
                 <th className="w-24 px-2 py-3 text-right">
@@ -1241,26 +1240,19 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                         </div>
                       )}
                     </td>
-                    <td className="px-1 py-2 text-right">
-                      <input type="text" value={l.unit}
-                        onChange={(e) => setLine(l.key, { unit: e.target.value })}
-                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 1, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                        data-grid-cell={`${i}:1`}
-                        className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-sm font-mono outline-none focus:border-slate-500 text-right" />
-                    </td>
                     <td className="px-1 py-2">
                       <input type="number" min="0" step="any" value={l.qty}
                         onChange={(e) => setLine(l.key, { qty: e.target.value })}
-                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 2, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                        data-grid-cell={`${i}:2`}
+                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 1, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
+                        data-grid-cell={`${i}:1`}
                         className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
                     </td>
                     <td className="px-1 py-2">
                       <input type="number" min="0" step="0.01" value={l.rate}
                         onChange={(e) => setLine(l.key, { rate: e.target.value })}
                         onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { rate: r }) }}
-                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                        data-grid-cell={`${i}:3`}
+                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 2, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
+                        data-grid-cell={`${i}:2`}
                         className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
                     </td>
                     <td className="px-1 py-2">
@@ -1270,8 +1262,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                             <input type="number" min="0" max="100" step="0.01" value={l.discountPct}
                               onChange={(e) => setLine(l.key, { discountPct: e.target.value, discountAmt: '' })}
                               onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountPct: r, discountAmt: '' }) }}
-                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 4, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                              data-grid-cell={`${i}:4`}
+                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
+                              data-grid-cell={`${i}:3`}
                               className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
                             <span className="ml-0.5 text-xs text-slate-400">%</span>
                           </>
@@ -1280,8 +1272,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                             <input type="number" min="0" step="0.01" value={l.discountAmt}
                               onChange={(e) => setLine(l.key, { discountAmt: e.target.value, discountPct: '' })}
                               onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountAmt: r, discountPct: '' }) }}
-                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 4, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                              data-grid-cell={`${i}:4`}
+                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
+                              data-grid-cell={`${i}:3`}
                               className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
                           </>
                         )}
@@ -1312,8 +1304,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                       <input type="number" min="0" step="0.01" value={l.taxRate}
                         onChange={(e) => setLine(l.key, { taxRate: e.target.value })}
                         onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { taxRate: r }) }}
-                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 5, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                        data-grid-cell={`${i}:5`}
+                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 4, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
+                        data-grid-cell={`${i}:4`}
                         className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
                     </td>
                     <td className="px-2 py-2 text-right font-mono text-xs text-slate-600">
@@ -1331,7 +1323,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
             </tbody>
             <tfoot>
               <tr className="border-t border-slate-200 bg-slate-50">
-                <td colSpan={6} className="px-4 py-3 text-right text-sm font-medium text-slate-600">{t('vouchers.subTotal', 'Sub Total')}</td>
+                <td colSpan={5} className="px-4 py-3 text-right text-sm font-medium text-slate-600">{t('vouchers.subTotal', 'Sub Total')}</td>
                 <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineTotals)}</td>
                 <td colSpan={2}></td>
                 <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineCalculations.totalTax)}</td>
