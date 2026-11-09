@@ -327,8 +327,10 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
   // Form state
   const [docType, setDocType] = useState<DocType>((urlDocType as DocType) || 'sales-invoice')
+  const [typeChosen, setTypeChosen] = useState<boolean>(() => mode === 'edit' || Boolean(urlDocType))
   const updateDocType = (dt: DocType) => {
     setDocType(dt)
+    setTypeChosen(true)
     setInvoicePrefix(DOC_PREFIXES[dt] || 'INV')
     setManualNumber('')
     setNumberManual(false)
@@ -670,6 +672,18 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
   const grandTotal = isContra ? contraTotal : lineTotals + vatTotal - globalDiscountAmount - tdsAmount
 
+  const effectiveBillingTotal = isItem
+    ? lineCalculations.subTotal + lineCalculations.totalTax
+    : isContra
+    ? contraTotal
+    : isCash
+    ? grandTotal
+    : isJournal
+    ? jTotals.debit
+    : grandTotal
+
+  const hasPositiveTotal = effectiveBillingTotal > 0
+
   // Required field checklist
   const requiredFields = useMemo(() => {
     if (isJournal) return [
@@ -688,7 +702,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     }
     items.push({ label: 'Date', filled: !!date })
     if (isItem) {
-      items.push({ label: 'Items', filled: lines.some((l) => l.item || l.description) })
+      items.push({ label: 'Items', filled: lines.some((l) => (l.item || l.description) && (parseFloat(l.qty) || 0) > 0) })
     }
     if (isCash) {
       items.push({ label: 'Payment Method', filled: !!paymentMethod })
@@ -897,99 +911,117 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"
-              onClick={() => navigate('/vouchers')}
+              onClick={() => {
+                if (typeChosen) {
+                  setTypeChosen(false)
+                } else {
+                  navigate('/vouchers')
+                }
+              }}
               className="flex items-center gap-1.5 rounded px-2.5 py-1 text-slate-600 hover:bg-slate-100 transition-colors"
             >
               <ArrowLeft size={16} />
-              <span className="text-sm font-medium">Back</span>
+              <span className="text-sm font-medium">{typeChosen ? 'Change Type' : 'Back'}</span>
             </button>
             <div className="text-right">
-              <span className="text-xs uppercase tracking-wider font-semibold text-slate-400 block">Step 1 of 3</span>
+              <span className="text-xs uppercase tracking-wider font-semibold text-slate-400 block">
+                {typeChosen ? 'Step 2: Enter Details' : 'Step 1: Select Type'}
+              </span>
               <span className="text-sm font-medium text-slate-800">
-                {t('vouchers.questionLabel', 'What are you recording?')}
+                {typeChosen ? `Recording: ${docTypeLabels[docType] || docType}` : t('vouchers.questionLabel', 'What are you recording?')}
               </span>
             </div>
           </div>
-          <div className="space-y-4">
-            {[
-              {
-                key: 'sales',
-                label: 'Sales & Invoicing',
-                badgeBg: 'bg-indigo-100 text-indigo-700',
-                icon: <ClipboardList size={12} />,
-              },
-              {
-                key: 'purchase',
-                label: 'Purchases & Expenses',
-                badgeBg: 'bg-blue-100 text-blue-700',
-                icon: <Package size={12} />,
-              },
-              {
-                key: 'cash',
-                label: 'Cash & Banking',
-                badgeBg: 'bg-amber-100 text-amber-700',
-                icon: <HandCoins size={12} />,
-              },
-              {
-                key: 'stock',
-                label: 'Inventory & Movement',
-                badgeBg: 'bg-emerald-100 text-emerald-700',
-                icon: <Warehouse size={12} />,
-              },
-              {
-                key: 'journal',
-                label: 'Adjustments & Journal',
-                badgeBg: 'bg-violet-100 text-violet-700',
-                icon: <FilePenLine size={12} />,
-              },
-            ].map((cat) => {
-              const types = Object.entries(DOC_TYPE_META).filter(
-                ([, m]) => m.category === cat.key
-              )
-              if (types.length === 0) return null
-              return (
-                <div key={cat.key}>
-                  <div className="mb-2 flex items-center gap-2">
-                    <span
-                      className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${cat.badgeBg}`}
-                    >
-                      {cat.icon}
-                    </span>
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                      {cat.label}
-                    </span>
+          {(!typeChosen || !urlDocType) && (
+            <div className="space-y-4">
+              {[
+                {
+                  key: 'sales',
+                  label: 'Sales & Invoicing',
+                  badgeBg: 'bg-indigo-100 text-indigo-700',
+                  icon: <ClipboardList size={12} />,
+                },
+                {
+                  key: 'purchase',
+                  label: 'Purchases & Expenses',
+                  badgeBg: 'bg-blue-100 text-blue-700',
+                  icon: <Package size={12} />,
+                },
+                {
+                  key: 'cash',
+                  label: 'Cash & Banking',
+                  badgeBg: 'bg-amber-100 text-amber-700',
+                  icon: <HandCoins size={12} />,
+                },
+                {
+                  key: 'stock',
+                  label: 'Inventory & Movement',
+                  badgeBg: 'bg-emerald-100 text-emerald-700',
+                  icon: <Warehouse size={12} />,
+                },
+                {
+                  key: 'journal',
+                  label: 'Adjustments & Journal',
+                  badgeBg: 'bg-violet-100 text-violet-700',
+                  icon: <FilePenLine size={12} />,
+                },
+              ].map((cat) => {
+                const types = Object.entries(DOC_TYPE_META).filter(
+                  ([, m]) => m.category === cat.key
+                )
+                if (types.length === 0) return null
+                return (
+                  <div key={cat.key}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <span
+                        className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${cat.badgeBg}`}
+                      >
+                        {cat.icon}
+                      </span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        {cat.label}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      {types.map(([dt, m]) => {
+                        const typeId = dt as DocType
+                        const active = docType === typeId
+                        return (
+                          <button
+                            key={dt}
+                            type="button"
+                            onClick={() => updateDocType(typeId)}
+                            className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all ${
+                              active
+                                ? `${m.activeClasses} ring-2 ring-crimson-600/20 shadow-sm ${m.textClasses} font-semibold`
+                                : `${m.inactiveClasses} text-slate-700 font-medium`
+                            }`}
+                          >
+                            <span className={active ? m.textClasses : 'text-slate-500'}>
+                              {m.icon}
+                            </span>
+                            <span className="text-sm truncate">
+                              {m.shortLabel}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                    {types.map(([dt, m]) => {
-                      const typeId = dt as DocType
-                      const active = docType === typeId
-                      return (
-                        <button
-                          key={dt}
-                          type="button"
-                          onClick={() => updateDocType(typeId)}
-                          className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all ${
-                            active
-                              ? `${m.activeClasses} ring-2 ring-crimson-600/20 shadow-sm ${m.textClasses} font-semibold`
-                              : `${m.inactiveClasses} text-slate-700 font-medium`
-                          }`}
-                        >
-                          <span className={active ? m.textClasses : 'text-slate-500'}>
-                            {m.icon}
-                          </span>
-                          <span className="text-sm truncate">
-                            {m.shortLabel}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
+
+      {/* When creating, don't show the billing form until transaction type is selected */}
+      {mode === 'create' && !typeChosen ? (
+        <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500">
+          <p className="text-sm font-medium">Please select a transaction type above to begin recording.</p>
+        </div>
+      ) : (
+        <>
 
       {/* ── Required Field Checklist ────────────────────────── */}
       <div className="mt-3 rounded-lg border border-slate-200 bg-white px-5 py-3">
@@ -2159,8 +2191,14 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                 variant="outline"
                 size="md"
                 onClick={() => submit(false)}
-                disabled={saving || (isJournal && !journalBalanced)}
-                title={isJournal && !journalBalanced ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving') : undefined}
+                disabled={saving || (isJournal && !journalBalanced) || !hasPositiveTotal}
+                title={
+                  !hasPositiveTotal
+                    ? 'Total amount must be greater than 0'
+                    : isJournal && !journalBalanced
+                    ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
+                    : undefined
+                }
               >
                 {saving ? t('common.saving', 'Saving…') : docType === 'sales-quote' ? t('vouchers.saveQuote', 'Save Quote') : t('vouchers.saveDraft', 'Save draft')}
               </LiquidButton>
@@ -2174,9 +2212,11 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                   variant="primary"
                   size="md"
                   onClick={() => submit(true)}
-                  disabled={saving || !allRequiredFilled || setupBlocked || (isJournal && !journalBalanced)}
+                  disabled={saving || !allRequiredFilled || !hasPositiveTotal || setupBlocked || (isJournal && !journalBalanced)}
                   title={
-                    isJournal && !journalBalanced
+                    !hasPositiveTotal
+                      ? 'Total amount must be greater than 0'
+                      : isJournal && !journalBalanced
                       ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
                       : setupBlocked
                       ? `Finish setup first (${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} left) — see the checklist on the Dashboard`
@@ -2197,6 +2237,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
           </div>
         </div>
       </div>
+      </>
+      )}
 
       {/* ── Add Party Popup ──────────────────────────────── */}
       {showPartyPopup && (
