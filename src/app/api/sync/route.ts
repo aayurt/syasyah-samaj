@@ -42,6 +42,7 @@ const ALLOWED_COLLECTIONS = new Set([
   'tenants',
   'audit-logs',
   'opening-balances',
+  'doc-sequences',
 ])
 
 const MAX_BATCH_SIZE = 100
