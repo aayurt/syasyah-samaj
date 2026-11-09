@@ -497,6 +497,11 @@ export interface Employee {
   position?: string
   phone?: string
   pan?: string
+  bankName?: string | null
+  bankAccountNumber?: string | null
+  annualSalary?: number | null
+  joiningDate?: string | null
+  terminationDate?: string | null
   /** Work state — drives PT slabs and LWF frequency (india-payroll). */
   employmentState?: string | null
   /** EPF Universal Account Number. */
@@ -514,6 +519,44 @@ export interface Employee {
   basicSalary: number
   allowances: PayrollEarning[]
   deductions: PayrollDeduction[]
+  tenant?: number | null
+}
+
+export interface PayrollGroup {
+  id: number
+  name: string
+  frequency: 'MONTHLY' | 'WEEKLY' | 'FORTNIGHTLY' | 'FOUR_WEEKLY'
+  periodsPerYear: number
+  fiscalYear: number | null
+  active: boolean
+  tenant?: number | null
+}
+
+export type PayrollRunStatus = 'draft' | 'calculated' | 'posted' | 'void'
+
+export interface PayrollRun {
+  id: number
+  batchNumber: string
+  approvalStatus: 'Draft' | 'Submitted' | 'Approved' | 'Rejected'
+  varianceReview: boolean
+  runNumber: string
+  /** Pay period, YYYY-MM. */
+  period: string
+  /** Pay / journal date, YYYY-MM-DD. */
+  payDate: string
+  status: PayrollRunStatus
+  lines: PayrollRunLine[]
+  grossPay: number
+  totalDeductions: number
+  netPay: number
+  expenseAccount?: number | Account | null
+  paymentAccount?: number | Account | null
+  employerContributions?: PayrollEmployerContribution[]
+  statutoryExpenseAccount?: number | Account | null
+  journalEntry?: number | null
+  postedAt?: string
+  postedBy?: string
+  voidedAt?: string
   tenant?: number | null
 }
 
@@ -542,14 +585,28 @@ export interface PayrollEmployerContribution {
   account?: number | Account | null
 }
 
-/** /globals/payroll-settings — india-payroll compliance configuration. */
+/** /globals/payroll-settings — supports Nepal (SSF/PF/CIT) and India (EPF/ESIC/PT/LWF/TDS). */
 export interface PayrollSettings {
+  country?: 'Nepal' | 'India'
+  // Nepal
+  ssfEnabled?: boolean
+  pfEnabled?: boolean
+  citEnabled?: boolean
+  ssfRate?: number
+  pfRate?: number
+  ssfMinBasic?: number
+  ssfNumber?: string | null
+  pfNumber?: string | null
+  panNumber?: string | null
+  ssfPayableAccount?: number | Account | null
+  pfPayableAccount?: number | Account | null
+  citPayableAccount?: number | Account | null
+  // India (kept for backward compatibility)
   epfEnabled?: boolean
   esicEnabled?: boolean
   professionalTaxEnabled?: boolean
   lwfEnabled?: boolean
   tdsEnabled?: boolean
-  pfNumber?: string | null
   esiNumber?: string | null
   lwfNumber?: string | null
   defaultEmploymentState?: string | null
@@ -574,29 +631,4 @@ export interface PayrollRunLine {
   deductions: PayrollDeduction[]
   net: number
   statutory?: PayrollStatutorySnapshot | null
-}
-
-export type PayrollRunStatus = 'draft' | 'posted' | 'void'
-
-export interface PayrollRun {
-  id: number
-  runNumber: string
-  /** Pay period, YYYY-MM. */
-  period: string
-  /** Pay / journal date, YYYY-MM-DD. */
-  payDate: string
-  status: PayrollRunStatus
-  lines: PayrollRunLine[]
-  grossPay: number
-  totalDeductions: number
-  netPay: number
-  expenseAccount?: number | Account | null
-  paymentAccount?: number | Account | null
-  employerContributions?: PayrollEmployerContribution[]
-  statutoryExpenseAccount?: number | Account | null
-  journalEntry?: number | null
-  postedAt?: string
-  postedBy?: string
-  voidedAt?: string
-  tenant?: number | null
 }

@@ -31,6 +31,7 @@ import {
   Settings as SettingsIcon,
   Users,
   Wallet,
+  RefreshCw,
   type LucideIcon,
 } from 'lucide-react'
 import { authClient, isAdminUser, useOfflineSession } from './lib/auth'
@@ -60,6 +61,10 @@ import ExpenseClaims from './pages/ExpenseClaims'
 import Payroll from './pages/Payroll'
 import PayrollRegisters from './pages/PayrollRegisters'
 import PayrollSettingsPage from './pages/PayrollSettingsPage'
+import PayrollGroups from './pages/PayrollGroups'
+import PayrollSettings from './pages/PayrollSettings'
+import PayrollBatch from './pages/PayrollBatch'
+import PayrollReports from './pages/PayrollReports'
 import ConnectingBanner from './components/ConnectingBanner'
 import SyncStatus from './components/SyncStatus'
 import CommandPalette from './components/CommandPalette'
@@ -161,8 +166,12 @@ const payrollNavGroups: { title?: string; titleKey?: string; items: NavItem[] }[
     title: 'Payroll',
     titleKey: 'nav.payroll',
     items: [
+      { to: '/payroll', label: 'Payroll Runs', labelKey: 'nav.payrollRuns', icon: Banknote, end: true },
+      { to: '/payroll/groups', label: 'Payroll Groups', labelKey: 'nav.payrollGroups', icon: RefreshCw },
+      { to: '/payroll/batch', label: 'Payroll Batch', labelKey: 'nav.payrollBatch', icon: Banknote },
       { to: '/payroll/employees', label: 'Employees', labelKey: 'nav.employees', icon: Users },
       { to: '/payroll/registers', label: 'Statutory Registers', labelKey: 'nav.statutoryRegisters', icon: ClipboardList },
+      { to: '/payroll/reports', label: 'Payroll Reports', labelKey: 'nav.payrollReports', icon: FileText },
       { to: '/payroll/settings', label: 'Payroll Settings', labelKey: 'nav.payrollSettings', icon: SettingsIcon },
     ],
   },
@@ -471,6 +480,10 @@ function Shell({ email }: { email: string }) {
             <Route path="/expense-claims" element={<ExpenseClaims />} />
             <Route path="/payroll" element={<Payroll />} />
             <Route path="/payroll/employees" element={<Payroll initialTab="employees" />} />
+            <Route path="/payroll/groups" element={<PayrollGroups />} />
+            <Route path="/payroll/batch" element={<PayrollBatch />} />
+            <Route path="/payroll/settings" element={<PayrollSettings />} />
+            <Route path="/payroll/reports" element={<PayrollReports />} />
             <Route path="/payroll/registers" element={<PayrollRegisters />} />
             <Route path="/payroll/settings" element={<PayrollSettingsPage />} />
             <Route path="/settings" element={<Settings />} />
