@@ -6,6 +6,7 @@ node_modules
 .freebuff/
 .DS_Store
 .env
+.env.staging
 .env.production
 .next
 .next-e2e

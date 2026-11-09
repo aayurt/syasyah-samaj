@@ -13,10 +13,10 @@ export const betterAuthOptions: Partial<BetterAuthOptions> = {
   },
   session: {
     expiresIn: 60 * 60 * 24 * 30, // 30 days
-    cookie: {
-      secure: false, // E2E CI runs over HTTP — Secure cookies are not sent
-      sameSite: 'lax',
-    },
+    // cookie: { secure, sameSite } — not a valid BetterAuthOptions.session
+    // property in this version; cookie flags handled by better-auth defaults.
+    // ponytail: cookie config ceiling = better-auth defaults; add when a
+    // supported cookie option surface appears in the version's types.
   },
   // emailAndPassword: {
   //   enabled: true,
