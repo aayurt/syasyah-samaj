@@ -202,3 +202,39 @@ describe('executeImport — journal-entries grouping', () => {
     expect(postCalls()[0][1].body.referenceDoc).toBeNull()
   })
 })
+
+describe('executeImport — opening-balances atomic validation', () => {
+  it('imports opening balances when all account headings exist in Chart of Accounts', async () => {
+    const records = [
+      {
+        doc: { accountCode: '1000', accountName: 'Cash in Hand', fiscalYear: '2083-84', amount: 50000 },
+        action: 'create' as const,
+      },
+    ]
+    const result = await executeImport('opening-balances', records)
+    expect(result.created).toBe(1)
+    expect(result.errors).toHaveLength(0)
+    expect(postCalls()).toHaveLength(1)
+  })
+
+  it('cancels the entire operation and posts 0 records if an account heading is missing', async () => {
+    const records = [
+      {
+        doc: { accountCode: '1000', accountName: 'Cash in Hand', fiscalYear: '2083-84', amount: 50000 },
+        action: 'create' as const,
+      },
+      {
+        doc: { accountCode: '9999', accountName: 'Office Equipment', fiscalYear: '2083-84', amount: 20000 },
+        action: 'create' as const,
+      },
+    ]
+    const result = await executeImport('opening-balances', records)
+    expect(result.created).toBe(0)
+    expect(result.updated).toBe(0)
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors[0]).toBe(
+      "Account heading 'Office Equipment' was not found in Chart of Accounts. Please create the account heading before importing opening balances. The operation has been cancelled.",
+    )
+    expect(postCalls()).toHaveLength(0)
+  })
+})

@@ -39,14 +39,15 @@ export default function SearchSelect({
 
   const selected = options.find((o) => String(o.value) === String(value))
 
-  // Close on outside click
+  // Close on outside click. Use mouseup (not mousedown) so a click on a
+  // portaled option runs its onChange before the popover closes.
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('mouseup', handler)
+    return () => document.removeEventListener('mouseup', handler)
   }, [open])
 
   // Focus search on open
@@ -132,6 +133,8 @@ export default function SearchSelect({
                 <button
                   key={o.value}
                   type="button"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onMouseUp={(e) => e.stopPropagation()}
                   onClick={() => { onChange(String(o.value)); setOpen(false) }}
                   className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
                     String(o.value) === String(value) ? 'bg-crimson-50 text-crimson-700' : 'text-slate-700 hover:bg-slate-50'

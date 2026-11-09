@@ -146,8 +146,10 @@ export interface DocumentLine {
   id?: string
   item?: number | Item | null
   description: string
+  unit?: string
   qty?: number
   rate?: number
+  taxRate?: number
   amount?: number
 }
 

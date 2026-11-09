@@ -14,7 +14,7 @@ import {
   Sparkles,
   Wallet,
 } from 'lucide-react'
-import { api, list } from '../lib/api'
+import { api, list, getEngine } from '../lib/api'
 import { useDataEpochWatcher, runSeedDemo, runSeedSelective, SEED_KEYS } from '../lib/dataOps'
 import type { SeedKey } from '../lib/dataOps'
 import { useFiscalYear } from '../lib/fiscalYear'
@@ -73,11 +73,12 @@ export default function SetupWizard() {
   const navigate = useNavigate()
   const t = useT()
   const { tenantId, isIllaka } = useTenant()
-  const { years, refresh: refreshYears } = useFiscalYear()
+  const { years, loading: yearsLoading, refresh: refreshYears } = useFiscalYear()
 
   const [stepIdx, setStepIdx] = useState(0)
   const [settings, setSettings] = useState<BillingSettings | null>(null)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const [syncing, setSyncing] = useState(true)
   const [chartCount, setChartCount] = useState<number | null>(null)
   const [docCount, setDocCount] = useState<number | null>(null)
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -131,8 +132,27 @@ export default function SetupWizard() {
     }
   }, [tenantQuery])
 
-  // Reload facts on mount and when the tenant changes.
-  useEffect(() => { void refreshFacts() }, [refreshFacts])
+  // Reload facts on mount, sync data first, and refresh when tenant changes.
+  useEffect(() => {
+    let alive = true
+    const init = async () => {
+      setSyncing(true)
+      try {
+        const engine = getEngine()
+        await engine.syncAll().catch(() => {})
+      } catch {
+        /* proceed with local facts if offline */
+      }
+      if (alive) {
+        await refreshFacts()
+        setSyncing(false)
+      }
+    }
+    void init()
+    return () => {
+      alive = false
+    }
+  }, [refreshFacts, tenantId])
 
   // Load accounts for the default-account step.
   useEffect(() => {
@@ -311,6 +331,26 @@ export default function SetupWizard() {
             You are in consolidated mode. Use the tenant switcher in the header to pick the tenant
             you want to onboard, then this wizard will set that tenant up.
           </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (syncing || !settingsLoaded || yearsLoading) {
+    return (
+      <div className="mx-auto flex max-w-3xl flex-col items-center justify-center py-20 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-crimson-50 text-crimson-600 shadow-sm animate-pulse">
+          <Database size={26} />
+        </div>
+        <h2 className="mt-4 text-base font-semibold text-slate-800">
+          Syncing & loading setup facts…
+        </h2>
+        <p className="mt-1 max-w-sm text-xs text-slate-400">
+          Fetching the latest organization profile, fiscal periods, and chart of accounts from the server.
+        </p>
+        <div className="mt-5 flex items-center gap-2 text-xs font-medium text-slate-500">
+          <Loader2 size={14} className="animate-spin text-crimson-600" />
+          <span>Please wait a moment…</span>
         </div>
       </div>
     )

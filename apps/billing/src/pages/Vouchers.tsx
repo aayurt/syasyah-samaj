@@ -50,6 +50,7 @@ import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
 import { exportInvoicePdf, isTemporaryReceipt } from '../lib/pdf'
 import PrintVoucher from '../components/PrintVoucher'
+import VoucherForm from './VoucherForm'
 
 interface DocTypeMeta {
   value: DocType
@@ -152,7 +153,7 @@ interface FormState {
 }
 
 const emptyForm = (): FormState => ({
-  docType: '',
+  docType: 'payment-voucher',
   date: todayAD(),
   narration: '',
   party: '',
@@ -184,6 +185,8 @@ export default function Vouchers() {
   const [saving, setSaving] = useState(false)
   const [nextNumber, setNextNumber] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
+  const initialTab = (searchParams.get('tab') as 'new' | 'all') || 'new'
+  const [activeTab, setActiveTab] = useState<'new' | 'all'>(initialTab)
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || '')
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
   const [dateFrom, setDateFrom] = useState(searchParams.get('from') || '')
@@ -193,12 +196,13 @@ export default function Vouchers() {
   // Sync type/status filters to URL search params
   useEffect(() => {
     const params = new URLSearchParams(searchParams)
+    if (activeTab && activeTab !== 'new') params.set('tab', activeTab); else params.delete('tab')
     if (typeFilter) params.set('type', typeFilter); else params.delete('type')
     if (statusFilter) params.set('status', statusFilter); else params.delete('status')
     if (dateFrom) params.set('from', dateFrom); else params.delete('from')
     if (dateTo) params.set('to', dateTo); else params.delete('to')
     setSearchParams(params, { replace: true })
-  }, [typeFilter, statusFilter, dateFrom, dateTo]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab, typeFilter, statusFilter, dateFrom, dateTo]) // eslint-disable-line react-hooks/exhaustive-deps
   const { formatDate, formatDateTime } = useCalendar()
   const [printDoc, setPrintDoc] = useState<Document | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -288,6 +292,7 @@ export default function Vouchers() {
             ? String((v as { id: unknown }).id)
             : String(v ?? '')
         resumedSeqRef.current = seq
+        setActiveTab('new')
         setViewDoc(null)
         setMenuFor(null)
         setError('')
@@ -647,66 +652,7 @@ export default function Vouchers() {
 
   // Load a draft into the entry form for editing.
   const editDraft = (d: Document) => {
-    setViewDoc(null)
-    setMenuFor(null)
-    setError('')
-    setEditingId(d.id)
-    const isJ = d.docType === 'journal-voucher'
-    const idOf = (v: unknown): string =>
-      v && typeof v === 'object' ? String((v as { id: unknown }).id) : String(v ?? '')
-    setForm({
-      docType: d.docType,
-      date: d.date?.slice(0, 10) || todayAD(),
-      narration: d.narration || '',
-      party: idOf(d.party),
-      taxRate: String(d.taxRate ?? 0),
-      paymentMethod: d.paymentMethod || 'bank',
-      bankAccount: idOf(d.bankAccount),
-      fromAccount: idOf(d.fromAccount),
-      toAccount: idOf(d.toAccount),
-      contraAmount: d.grossTotal !== undefined ? String(d.grossTotal) : '',
-      taxLines: (d.taxLines || []).map((tl) => ({
-        key: crypto.randomUUID(),
-        id: tl.id,
-        taxType: idOf(tl.taxType),
-        nature: tl.nature || 'additive',
-        rate: tl.rate !== undefined ? String(tl.rate) : '',
-      })),
-      lines: isJ
-        ? [emptyItemLine()]
-        : (d.lines || []).map((l) => ({
-            key: crypto.randomUUID(),
-            id: l.id,
-            item: idOf(l.item),
-            description: l.description || '',
-            qty: l.qty !== undefined ? String(l.qty) : '',
-            rate: l.rate !== undefined ? String(l.rate) : '',
-            amount: l.amount !== undefined ? String(l.amount) : '',
-          })),
-      journalLines: isJ
-        ? (d.journalLines || []).map((l) => ({
-            key: crypto.randomUUID(),
-            id: l.id,
-            account: idOf(l.account),
-            debit: l.debit !== undefined ? String(l.debit) : '',
-            credit: l.credit !== undefined ? String(l.credit) : '',
-            memo: l.memo || '',
-          }))
-        : [emptyJLine(), emptyJLine()],
-    })
-    // Auto-populate TDS toggle from existing withholding tax lines
-    const withholdingLine = (d.taxLines || []).find((tl) => tl.nature === 'withholding')
-    if (withholdingLine) {
-      setTdsEnabled(true)
-      setTdsTypeId(idOf(withholdingLine.taxType))
-      setTdsAccountId('') // Will be set from the tax type's account mapping
-      setTdsAmountManual('') // Auto-calc from rate
-    } else {
-      setTdsEnabled(false)
-      setTdsTypeId('')
-      setTdsAccountId('')
-      setTdsAmountManual('')
-    }
+    navigate(`/vouchers/edit/${d.id}`)
   }
 
   const voidDoc = async (id: number) => {
@@ -944,18 +890,37 @@ export default function Vouchers() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="flex items-center justify-between">
+      <div>
         <h1 className="text-lg font-semibold text-slate-900">{t('vouchers.title', 'Transactions')}</h1>
-        <button
-          data-tour="new-voucher"
-          onClick={() => navigate(typeFilter ? `/vouchers/new/${typeFilter}` : '/vouchers/new')}
-          disabled={selectedYear?.status === 'closed'}
-          title={selectedYear?.status === 'closed' ? 'This fiscal year is closed — transactions are read-only' : undefined}
-          className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <Plus size={14} />
-          {t('vouchers.newTransaction', 'New transaction')}
-        </button>
+        <div className="mt-3 flex w-fit rounded-lg bg-slate-100 p-1" role="tablist" aria-label="Transaction Entry views">
+          <button
+            data-tour="new-voucher"
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'new'}
+            onClick={() => setActiveTab('new')}
+            className={`rounded-md px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all ${
+              activeTab === 'new'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {t('vouchers.tabNewTransaction', 'New Transaction')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'all'}
+            onClick={() => setActiveTab('all')}
+            className={`rounded-md px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all ${
+              activeTab === 'all'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {t('vouchers.tabAllTransactions', 'All Transactions')}
+          </button>
+        </div>
       </div>
 
       {selectedYear?.status === 'closed' && (
@@ -977,797 +942,26 @@ export default function Vouchers() {
       )}
 
       {/* Entry form */}
-      {form.docType && meta && (
-        <form
-          id="voucher-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            submit(false)
-          }}
-          className="mt-4 rounded-lg border border-slate-200 bg-white p-5"
-        >
-          {editingId !== null && (
-            <div className="mb-3 flex items-center justify-between rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              <span className="flex items-center gap-1.5">
-                <Pencil size={13} />
-                {t('vouchers.editingDraft', 'Editing draft \u2014 changes apply to this transaction')}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingId(null)
-                  setForm(emptyForm())
-                  setTdsEnabled(false); setTdsTypeId(''); setTdsAccountId(''); setTdsAmountManual('')
-                }}
-                className="text-xs font-medium underline"
-              >
-                {t('vouchers.cancelEdit', 'Cancel edit')}
-              </button>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <label className="text-sm text-slate-700">
-              {t('common.type', 'Type')}
-              <select
-                value={form.docType}
-                onChange={(e) => {
-                  setTdsEnabled(false); setTdsTypeId(''); setTdsAccountId(''); setTdsAmountManual('')
-                  setForm((f) => ({
-                    ...emptyForm(),
-                    date: f.date,
-                    docType: e.target.value as DocType,
-                  }))
-                }}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              >
-                {DOC_TYPES.map((dt) => (
-                  <option key={dt.value} value={dt.value}>
-                    {docTypeLabel(dt.value, t, dt.label)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <NepaliDateInput
-              label={t('common.date', 'Date')}
-              required
-              value={form.date}
-              onChange={(v) => setForm({ ...form, date: v })}
-            />
-            {meta.needsParty && (
-              <label className="text-sm text-slate-700">
-                {t('vouchers.party', 'Party')}
-                <select
-                  required
-                  value={form.party}
-                  onChange={(e) => setForm({ ...form, party: e.target.value })}
-                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                >
-                  <option value="">— select —</option>
-                  {parties.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.type})
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <label className="text-sm text-slate-700">
-              Number (on post)
-              <input
-                readOnly
-                value={nextNumber || 'auto'}
-                className="mt-1 w-full rounded border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-500 outline-none"
-              />
-            </label>
-            {isContra && (
-              <>
-                <label className="text-sm text-slate-700">
-                  {t('vouchers.fromAccount', 'From account (credited)')}
-                  <select
-                    required
-                    value={form.fromAccount}
-                    onChange={(e) =>
-                      setForm({ ...form, fromAccount: e.target.value })
-                    }
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                  >
-                    <option value="">— select —</option>
-                    {cashBankAccounts.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="text-sm text-slate-700">
-                  {t('vouchers.toAccount', 'To account (debited)')}
-                  <select
-                    required
-                    value={form.toAccount}
-                    onChange={(e) =>
-                      setForm({ ...form, toAccount: e.target.value })
-                    }
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                  >
-                    <option value="">— select —</option>
-                    {cashBankAccounts.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="text-sm text-slate-700">
-                  Amount
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    step="0.01"
-                    value={form.contraAmount}
-                    onChange={(e) =>
-                      setForm({ ...form, contraAmount: e.target.value })
-                    }
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-500"
-                    placeholder="0.00"
-                  />
-                </label>
-              </>
-            )}
-            {isCash && (
-              <>
-                <label className="text-sm text-slate-700">
-                  {t('vouchers.paymentMethod', 'Payment method')}
-                  <select
-                    value={form.paymentMethod}
-                    onChange={(e) =>
-                      setForm({ ...form, paymentMethod: e.target.value })
-                    }
-                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                  >
-                    <option value="bank">Bank</option>
-                    <option value="cash">Cash</option>
-                  </select>
-                </label>
-                {form.paymentMethod === 'bank' && (
-                  <label className="text-sm text-slate-700">
-                    {t('vouchers.bankAccountLabel', 'Bank account')}
-                    <select
-                      value={form.bankAccount}
-                      onChange={(e) =>
-                        setForm({ ...form, bankAccount: e.target.value })
-                      }
-                      className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                    >
-                      <option value="">— default —</option>
-                      {bankAccounts.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
-              </>
-            )}
-            <label className="col-span-2 text-sm text-slate-700 md:col-span-3">
-              Narration
-              <input
-                value={form.narration}
-                onChange={(e) => setForm({ ...form, narration: e.target.value })}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                placeholder={t('vouchers.narrationPlaceholder', 'Description of the transaction…')}
-              />
-            </label>
-          </div>
-
-          {/* ── TDS Toggle ─────────────────────────────── */}
-          {isTaxable && (
-            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
-              <button
-                type="button"
-                onClick={() => setTdsEnabled((e) => !e)}
-                className="flex items-center gap-3 text-sm font-medium text-slate-700"
-              >
-                {tdsEnabled ? (
-                  <ToggleRight size={28} className="text-emerald-500" />
-                ) : (
-                  <ToggleLeft size={28} className="text-slate-300" />
-                )}
-                {t('vouchers.tdsApplicable', 'TDS is applicable')}
-              </button>
-              {tdsEnabled && (
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <label className="text-sm text-slate-700">
-                    {t('vouchers.tdsAccount', 'TDS Account *')}
-                    <select
-                      required
-                      value={tdsAccountId}
-                      onChange={(e) => setTdsAccountId(e.target.value)}
-                      className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                    >
-                      <option value="">— select account —</option>
-                      {accounts
-                        .filter((a) =>
-                          a.type === 'liability' ||
-                          a.name.toLowerCase().includes('tds') ||
-                          a.name.toLowerCase().includes('withhold'),
-                        )
-                        .map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.code ? `${a.code} · ` : ''}{a.name}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                  <label className="text-sm text-slate-700">
-                    {t('vouchers.tdsType', 'TDS Type *')}
-                    <select
-                      required
-                      value={tdsTypeId}
-                      onChange={(e) => {
-                        setTdsTypeId(e.target.value)
-                        setTdsAmountManual('')
-                      }}
-                      className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                    >
-                      <option value="">— select type —</option>
-                      {taxTypes
-                        .filter((t) => t.nature === 'withholding' && t.active !== false)
-                        .map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name} ({t.code} · {t.rate}%)
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                  <label className="text-sm text-slate-700">
-                    {t('vouchers.tdsAmount', 'TDS Amount *')}
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      step="0.01"
-                      value={tdsAmountManual || (tdsAutoAmount > 0 ? String(tdsAutoAmount.toFixed(2)) : '')}
-                      onChange={(e) => setTdsAmountManual(e.target.value)}
-                      placeholder={tdsAutoAmount > 0 ? fmt(tdsAutoAmount) : '0.00'}
-                      className="mt-1 w-full rounded border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-500"
-                    />
-                    {tdsRate > 0 && (
-                      <span className="mt-1 block text-xs text-slate-400">
-                        {t('vouchers.calculated', 'Calculated:')} {tdsRate}% × {fmt(totals.gross)} = {fmt(tdsAutoAmount)}
-                      </span>
-                    )}
-                  </label>
-                </div>
-              )}
-            </div>
-          )}
-
-          {isItem ? (
-            <div className="mt-4">
-              <div className="flex flex-wrap items-end gap-3">
-                {isTaxable ? (
-                  <div className="w-full">
-                    <div className="flex flex-wrap items-end gap-3">
-                      <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                        {t('vouchers.taxes', 'Taxes')} {isCash ? t('vouchers.tdsWithholding', '(TDS withholding)') : t('vouchers.vatGstTds', '(VAT / GST / TDS)')}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={addTaxLine}
-                        className="text-xs font-medium text-slate-500 hover:text-slate-800"
-                      >
-                        {t('vouchers.addTax', '+ Add tax')}
-                      </button>
-                    </div>
-                    {form.taxLines.length > 0 && (
-                      <table className="mt-2 w-full text-sm">
-                        <thead>
-                          <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
-                            <th className="py-1 pr-2">{t('vouchers.taxType', 'Tax type')}</th>
-                            <th className="py-1 pr-2">{t('vouchers.nature', 'Nature')}</th>
-                            <th className="w-24 py-1 pr-2">{t('vouchers.ratePercent', 'Rate %')}</th>
-                            <th className="w-28 py-1 pr-2 text-right">Amount</th>
-                            <th className="w-8 py-1"></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {form.taxLines.map((tl) => {
-                            const tt = taxTypes.find(
-                              (t) => String(t.id) === tl.taxType,
-                            )
-                            return (
-                              <tr
-                                key={tl.key}
-                                className="border-t border-slate-50"
-                              >
-                                <td className="py-1 pr-2">
-                                  <select
-                                    value={tl.taxType}
-                                    onChange={(e) => {
-                                      const t = taxTypes.find(
-                                        (x) => String(x.id) === e.target.value,
-                                      )
-                                      setForm((f) => ({
-                                        ...f,
-                                        taxLines: f.taxLines.map((x) =>
-                                          x.key === tl.key
-                                            ? {
-                                                ...x,
-                                                taxType: e.target.value,
-                                                nature:
-                                                  t?.nature || x.nature,
-                                                rate:
-                                                  t?.rate !== undefined
-                                                    ? String(t.rate)
-                                                    : x.rate,
-                                              }
-                                            : x,
-                                        ),
-                                      }))
-                                    }}
-                                    className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500"
-                                  >
-                                    <option value="">— select —</option>
-                                    {taxOptions.map((t) => (
-                                      <option
-                                        key={t.id}
-                                        value={t.id}
-                                        disabled={form.taxLines.some(
-                                          (x) =>
-                                            x.key !== tl.key &&
-                                            x.taxType === String(t.id),
-                                        )}
-                                      >
-                                        {t.name} ({t.code} · {t.nature})
-                                      </option>
-                                    ))}
-                                  </select>
-                                </td>
-                                <td className="py-1 pr-2 text-xs capitalize text-slate-500">
-                                  {tt?.nature || tl.nature}
-                                </td>
-                                <td className="py-1 pr-2">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={tl.rate}
-                                    onChange={(e) =>
-                                      setForm((f) => ({
-                                        ...f,
-                                        taxLines: f.taxLines.map((x) =>
-                                          x.key === tl.key
-                                            ? { ...x, rate: e.target.value }
-                                            : x,
-                                        ),
-                                      }))
-                                    }
-                                    className="w-full rounded border border-slate-300 px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-slate-500"
-                                  />
-                                </td>
-                                <td className="py-1 pr-2 text-right font-mono text-slate-700">
-                                  {tl.taxType
-                                    ? fmt(taxLineAmount(tl))
-                                    : '—'}
-                                </td>
-                                <td className="py-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => removeTaxLine(tl.key)}
-                                    className="text-slate-400 hover:text-red-600"
-                                    aria-label="Remove tax"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
-                    )}
-                    {form.taxLines.length > 0 && (
-                      <div className="mt-1 text-xs text-slate-500">
-                        Net <span className="font-mono">{fmt(totals.net)}</span>
-                        {' · '}Tax{' '}
-                        <span className="font-mono">{fmt(totals.tax)}</span>
-                        {' · '}Gross{' '}
-                        <span className="font-mono font-medium text-slate-800">
-                          {fmt(totals.gross)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ) : !isCash ? (
-                  <label className="text-sm text-slate-700">
-                    Tax rate (%)
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={form.taxRate}
-                      onChange={(e) =>
-                        setForm({ ...form, taxRate: e.target.value })
-                      }
-                      className="mt-1 w-24 rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                    />
-                  </label>
-                ) : null}
-              </div>
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
-                      {isInventory && (
-                        <th className="w-40 py-2 pr-2">{t('vouchers.item', 'Item')}</th>
-                      )}
-                      <th className="py-2 pr-2">{t('vouchers.description', 'Description')}</th>
-                      <th className="w-20 py-2 pr-2">Qty</th>
-                      <th className="w-28 py-2 pr-2">Rate</th>
-                      <th className="w-28 py-2 pr-2">Amount</th>
-                      <th className="w-8 py-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {form.lines.map((l) => (
-                      <tr key={l.key}>
-                        {isInventory && (
-                          <td className="py-1.5 pr-2">
-                            <select
-                              value={l.item}
-                              onChange={(e) =>
-                                setLine(l.key, { item: e.target.value })
-                              }
-                              className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500"
-                            >
-                              <option value="">— none (service) —</option>
-                              {items.map((it) => (
-                                <option key={it.id} value={it.id}>
-                                  {it.code ? `${it.code} · ` : ''}
-                                  {it.name}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                        )}
-                        <td className="py-1.5 pr-2">
-                          <input
-                            required
-                            value={l.description}
-                            onChange={(e) =>
-                              setLine(l.key, { description: e.target.value })
-                            }
-                            className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500"
-                            placeholder="Item / service description"
-                          />
-                        </td>
-                        <td className="py-1.5 pr-2">
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={l.qty}
-                            onChange={(e) =>
-                              setLine(l.key, { qty: e.target.value })
-                            }
-                            className="w-full rounded border border-slate-300 px-2 py-1.5 text-right font-mono outline-none focus:border-slate-500"
-                          />
-                        </td>
-                        <td className="py-1.5 pr-2">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={l.rate}
-                            onChange={(e) =>
-                              setLine(l.key, { rate: e.target.value })
-                            }
-                            className="w-full rounded border border-slate-300 px-2 py-1.5 text-right font-mono outline-none focus:border-slate-500"
-                          />
-                        </td>
-                        <td className="py-1.5 pr-2">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={l.amount}
-                            onChange={(e) =>
-                              setLine(l.key, { amount: e.target.value })
-                            }
-                            className="w-full rounded border border-slate-300 px-2 py-1.5 text-right font-mono outline-none focus:border-slate-500"
-                            placeholder="auto (qty × rate)"
-                          />
-                        </td>
-                        <td className="py-1.5">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setForm((f) =>
-                                f.lines.length > 1
-                                  ? {
-                                      ...f,
-                                      lines: f.lines.filter(
-                                        (x) => x.key !== l.key,
-                                      ),
-                                    }
-                                  : f,
-                              )
-                            }
-                            className="text-slate-400 hover:text-red-600"
-                            aria-label="Remove line"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t border-slate-100">
-                      <td
-                        colSpan={isInventory ? 2 : 1}
-                        className="py-2 pr-2 text-xs uppercase tracking-wide text-slate-500"
-                      >
-                        {t('vouchers.totals', 'Totals')}
-                      </td>
-                      <td className="py-2 pr-2"></td>
-                      <td className="py-2 pr-2"></td>
-                      <td className="py-2 pr-2 text-right font-mono text-slate-800">
-                        {fmt(totals.gross)}
-                      </td>
-                      <td></td>
-                    </tr>
-                    {totals.tax > 0 && (
-                      <tr className="text-xs text-slate-500">
-                        <td
-                          colSpan={isInventory ? 3 : 2}
-                          className="py-1 pr-2 text-right"
-                        >
-                          {t('vouchers.net', 'Net')} {fmt(totals.net)} · {t('vouchers.tax', 'Tax')} {fmt(totals.tax)}
-                        </td>
-                        <td className="py-1 pr-2 text-right font-mono">
-                          {fmt(totals.gross)}
-                        </td>
-                        <td></td>
-                      </tr>
-                    )}
-                  </tfoot>
-                </table>
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setForm((f) => ({ ...f, lines: [...f.lines, emptyItemLine()] }))
-                }
-                className="mt-2 text-xs font-medium text-slate-500 hover:text-slate-800"
-              >
-                {t('vouchers.addLine', '+ Add line')}
-              </button>
-            </div>
-          ) : isContra ? (
-            <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/50 p-5">
-              <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                {t('vouchers.contraTransfer', 'Contra transfer')}
-              </div>
-              <div className="mt-2 space-y-1 text-sm text-slate-700">
-                <p>
-                  Transfer{' '}
-                  <span className="font-mono font-medium text-slate-900">
-                    {fmt(totals.gross)}
-                  </span>{' '}
-                  from{' '}
-                  <span className="font-medium">
-                    {cashBankAccounts.find(
-                      (a) => String(a.id) === form.fromAccount,
-                    )?.name || '—'}
-                  </span>{' '}
-                  →{' '}
-                  <span className="font-medium">
-                    {cashBankAccounts.find(
-                      (a) => String(a.id) === form.toAccount,
-                    )?.name || '—'}
-                  </span>
-                </p>
-                <p className="text-xs text-slate-500">
-                  Debit the target account, credit the source account. No tax,
-                  no party, no stock involved.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="py-2 pr-2">{t('common.account', 'Account')}</th>
-                    <th className="w-28 py-2 pr-2">{t('common.debit', 'Debit')}</th>
-                    <th className="w-28 py-2 pr-2">{t('common.credit', 'Credit')}</th>
-                    <th className="py-2 pr-2">{t('common.memo', 'Memo')}</th>
-                    <th className="w-8 py-2"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {form.journalLines.map((l) => (
-                    <tr key={l.key}>
-                      <td className="py-1.5 pr-2">
-                        <select
-                          required
-                          value={l.account}
-                          onChange={(e) =>
-                            setJLine(l.key, { account: e.target.value })
-                          }
-                          className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500"
-                        >
-                          <option value="">— select account —</option>
-                          {accounts.map((a) => (
-                              <option key={a.id} value={a.id}>
-                                {a.code ? `${a.code} · ` : ''}
-                                {a.name}
-                              </option>
-                            ))}
-                        </select>
-                      </td>
-                      <td className="py-1.5 pr-2">
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={l.debit}
-                          onChange={(e) =>
-                            setJLine(l.key, {
-                              debit: e.target.value,
-                              credit: l.credit ? '' : l.credit,
-                            })
-                          }
-                          className="w-full rounded border border-slate-300 px-2 py-1.5 text-right font-mono outline-none focus:border-slate-500"
-                        />
-                      </td>
-                      <td className="py-1.5 pr-2">
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={l.credit}
-                          onChange={(e) =>
-                            setJLine(l.key, {
-                              credit: e.target.value,
-                              debit: l.debit ? '' : l.debit,
-                            })
-                          }
-                          className="w-full rounded border border-slate-300 px-2 py-1.5 text-right font-mono outline-none focus:border-slate-500"
-                        />
-                      </td>
-                      <td className="py-1.5 pr-2">
-                        <input
-                          value={l.memo}
-                          onChange={(e) =>
-                            setJLine(l.key, { memo: e.target.value })
-                          }
-                          className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500"
-                        />
-                      </td>
-                      <td className="py-1.5">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setForm((f) =>
-                              f.journalLines.length > 1
-                                ? {
-                                    ...f,
-                                    journalLines: f.journalLines.filter(
-                                      (x) => x.key !== l.key,
-                                    ),
-                                  }
-                                : f,
-                            )
-                          }
-                          className="text-slate-400 hover:text-red-600"
-                          aria-label="Remove line"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t border-slate-100">
-                    <td className="py-2 pr-2 text-xs uppercase tracking-wide text-slate-500">
-                      {t('vouchers.totals', 'Totals')}
-                    </td>
-                    <td className="py-2 pr-2 text-right font-mono text-slate-800">
-                      {fmt(jTotals.debit)}
-                    </td>
-                    <td className="py-2 pr-2 text-right font-mono text-slate-800">
-                      {fmt(jTotals.credit)}
-                    </td>
-                    <td
-                      className={`py-2 pl-4 text-xs font-medium ${
-                        Math.abs(jTotals.diff) < 0.001
-                          ? 'text-emerald-600'
-                          : 'text-red-600'
-                      }`}
-                    >
-                      {Math.abs(jTotals.diff) < 0.001
-                        ? t('vouchers.balanced', '✓ balanced')
-                        : `${t('vouchers.difference', 'difference')} ${fmt(jTotals.diff)}`}
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-              <button
-                type="button"
-                onClick={() =>
-                  setForm((f) => ({
-                    ...f,
-                    journalLines: [...f.journalLines, emptyJLine()],
-                  }))
-                }
-                className="mt-2 text-xs font-medium text-slate-500 hover:text-slate-800"
-              >
-                {t('vouchers.addLine', '+ Add line')}
-              </button>
-            </div>
-          )}
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            {setupBlocked && (
-              <span className="max-w-[280px] text-xs text-amber-600">
-                Finish setup first ({setup.missingCount} step{setup.missingCount === 1 ? '' : 's'} left) to post
-                — see the checklist on the Dashboard. Drafts still save.
-              </span>
-            )}
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={saving || selectedYear?.status === 'closed'}
-                className="rounded border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-              >
-                {saving
-                  ? t('common.saving', 'Saving…')
-                  : editingId !== null
-                    ? t('vouchers.saveChanges', 'Save changes')
-                    : t('vouchers.saveDraft', 'Save draft')}
-              </button>
-              <button
-                type="button"
-                onClick={() => submit(true)}
-                disabled={saving || !canPost || setupBlocked || selectedYear?.status === 'closed'}
-                className="rounded bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
-                title={
-                  setupBlocked
-                    ? `Finish setup first (${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} left) — see the checklist on the Dashboard`
-                    : isItem
-                      ? 'Create the draft and post it to the ledger'
-                      : 'Entry must be balanced to post'
-                }
-              >
-                {saving ? t('vouchers.posting', 'Posting…') : t('vouchers.savePost', 'Save & post')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setForm(emptyForm())
-                  setEditingId(null)
-                }}
-                className="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-            </div>
-          </div>
-        </form>
+      {activeTab === 'new' && (
+        <div className="mt-4">
+          <VoucherForm
+            mode="create"
+            embedded
+            onSuccess={() => {
+              setActiveTab('all')
+              load()
+            }}
+          />
+        </div>
       )}
 
-      {/* Filters */}
-      {loading && docs.length === 0 ? (
-        <TableSkeleton rows={7} />
-      ) : (
-        <>
-      {/* Filter toolbar — single row: status pills · search · type/date dropdowns */}
+      {/* Filters & Table */}
+      {activeTab === 'all' && (
+        loading && docs.length === 0 ? (
+          <TableSkeleton rows={7} />
+        ) : (
+          <>
+            {/* Filter toolbar — single row: status pills · search · type/date dropdowns */}
       <div data-tour="voucher-filters" className="mt-4 flex flex-wrap items-center gap-2">
         {/* Status pills */}
         <div className="flex items-center rounded-lg border border-slate-300 bg-white p-0.5" role="group" aria-label="Filter by status">
@@ -2126,7 +1320,7 @@ export default function Vouchers() {
         </table>
       </div>
         </>
-      )}
+      ))}
 
       {/* Print modal */}
       {printDoc && (

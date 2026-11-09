@@ -13,6 +13,7 @@ export const SYNC_COLLECTIONS = [
   'parties',
   'items',
   'tax-types',
+  'doc-sequences',
 ]
 
 export const LOCAL_PREFIX = 'local-'

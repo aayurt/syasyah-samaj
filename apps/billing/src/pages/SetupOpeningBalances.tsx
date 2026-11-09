@@ -133,6 +133,18 @@ export default function SetupOpeningBalances() {
     if (!selectedYearId) return
     const bad = Object.keys(errors).length > 0
     if (bad) return
+
+    // Pre-validate all account headings exist in the current Chart of Accounts before saving
+    for (const accountIdStr of Object.keys(balances)) {
+      const accountId = Number(accountIdStr)
+      const exists = accounts.some((a) => a.id === accountId)
+      if (!exists) {
+        const errorMsg = `Account heading (ID: ${accountId}) was not found in Chart of Accounts. Please create the account heading before importing opening balances. The operation has been cancelled.`
+        pushToast('error', errorMsg)
+        return
+      }
+    }
+
     setSaving(true)
     try {
       const tenantBody = tenantId ? { tenant: tenantId } : {}
@@ -173,6 +185,27 @@ export default function SetupOpeningBalances() {
 
   if (yearsLoading || (!accountsLoaded && accounts.length === 0)) {
     return <div className="mx-auto max-w-4xl"><TableSkeleton rows={8} /></div>
+  }
+
+  if (accountsLoaded && accounts.length === 0) {
+    return (
+      <div className="mx-auto max-w-xl text-center py-12">
+        <h1 className="text-xl font-semibold text-slate-900">{t('openingBalances.title', 'Opening Balances')}</h1>
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
+          <p className="font-medium">Chart of Accounts must be configured before proceeding.</p>
+          <p className="mt-2 text-sm text-amber-700">
+            Please configure account headings and subheadings before entering opening balances.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/accounts')}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-crimson-700 transition-colors"
+          >
+            Go to Chart of Accounts
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (!year) {

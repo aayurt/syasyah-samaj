@@ -22,6 +22,7 @@ const NOUNS: Record<string, string> = {
   tenants: 'tenant',
   settings: 'setting',
   globals: 'settings',
+  'doc-sequences': 'series',
 }
 
 function crudToast(method: string, path: string, error?: string): void {
