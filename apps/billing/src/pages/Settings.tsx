@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import {
+  ArrowLeft,
   Building2,
   Calendar,
   Check,
@@ -88,8 +89,6 @@ function Section({
   title,
   subtitle,
   icon: Icon,
-  open,
-  onToggle,
   children,
   hasChanges,
   saved,
@@ -99,8 +98,8 @@ function Section({
   title: string
   subtitle?: string
   icon: React.ElementType
-  open: boolean
-  onToggle: () => void
+  open?: boolean
+  onToggle?: () => void
   children: React.ReactNode
   hasChanges?: boolean
   saved?: boolean
@@ -108,60 +107,60 @@ function Section({
   onCancel?: () => void
 }) {
   const t = useT()
+  const navigate = useNavigate()
   return (
     <div className="rounded-lg border border-slate-200 bg-white">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
-      >
-        <Icon size={16} className="shrink-0 text-slate-400" />
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-slate-700">{title}</div>
-          {subtitle && (
-            <div className="text-xs text-slate-400 truncate">{subtitle}</div>
-          )}
-        </div>
-
-        <ChevronDown
-          size={16}
-          className={`shrink-0 text-slate-400 transition-transform duration-200 ${
-            open ? 'rotate-180' : ''
-          }`}
-        />
-      </button>
-      {open && (
-        <div className="border-t border-slate-100 px-4 pb-4 pt-3">
-          {children}
-          {onSave && (
-            <div className="mt-4 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
-              <div className="mr-auto flex items-center gap-2">
-                {saved && <span className="text-sm text-emerald-600">{t('msg.saved')}</span>}
-                {hasChanges && !saved && (
-                  <span className="text-sm text-amber-500">{t('msg.unsaved')}</span>
-                )}
-              </div>
-              {onCancel && hasChanges && (
-                <button
-                  type="button"
-                  onClick={onCancel}
-                  className="rounded px-4 py-1.5 text-sm text-slate-500 hover:bg-slate-100"
-                >
-                  {t('common.cancel')}
-                </button>
+      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate('/settings')}
+            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+            title="Back to Settings"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div className="flex items-center gap-2">
+            <Icon size={18} className="text-crimson-600" />
+            <div>
+              <div className="text-base font-semibold text-slate-800">{title}</div>
+              {subtitle && (
+                <div className="text-xs text-slate-400">{subtitle}</div>
               )}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="p-4 sm:p-5">
+        {children}
+        {onSave && (
+          <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+            <div className="mr-auto flex items-center gap-2">
+              {saved && <span className="text-sm text-emerald-600">{t('msg.saved')}</span>}
+              {hasChanges && !saved && (
+                <span className="text-sm text-amber-500">{t('msg.unsaved')}</span>
+              )}
+            </div>
+            {onCancel && hasChanges && (
               <button
                 type="button"
-                onClick={onSave}
-                disabled={!hasChanges}
-                className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={onCancel}
+                className="rounded px-4 py-1.5 text-sm text-slate-500 hover:bg-slate-100"
               >
-                {t('common.save')}
+                {t('common.cancel')}
               </button>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={!hasChanges}
+              className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {t('common.save')}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -210,15 +209,11 @@ export default function Settings() {
   const [settings, setSettings] = useState<BillingSettings | null>(null)
   const loaded = useRef(false)
   const navigate = useNavigate()
+  const { section: activeSection } = useParams<{ section?: string }>()
   const { update: updateCalendar } = useCalendar()
   const { tenantId } = useTenant()
 
-  // Accordion open state
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    calendar: true,
-  })
-  const toggle = (s: string) =>
-    setOpenSections((p) => ({ ...p, [s]: !p[s] }))
+  // Selected section from URL (/settings/:section)
 
   // ── Calendar state ──
   const [calendarType, setCalendarType] = useState<'AD' | 'BS'>('BS')
@@ -1038,23 +1033,114 @@ export default function Settings() {
   /* ── Calendar summary ── */
   const calSummary = `${calendarType} • ${dateFormat} • ${timeFormat === '12h' ? '12h' : '24h'}`
 
-  return (
-    <div data-tour="settings" className="mx-auto max-w-4xl space-y-3">
-      <h1 className="text-lg font-semibold text-slate-900">{t('settings.pageTitle')}</h1>
+  const settingsCards = [
+    {
+      id: 'calendar',
+      title: t('settings.calendar'),
+      subtitle: calSummary,
+      icon: Calendar,
+    },
+    {
+      id: 'company',
+      title: t('settings.companyProfile'),
+      subtitle: companyName || t('hint.company'),
+      icon: Building2,
+    },
+    {
+      id: 'fiscal',
+      title: t('settings.fiscalSettings'),
+      subtitle: selectedFiscalYear
+        ? `${t('fy.workingYear')}: ${selectedFiscalYear.label || selectedFiscalYear.startDate}${selectedFiscalYear.status === 'closed' ? ` (${t('hint.fyStatusClosed')})` : ''}`
+        : t('hint.fiscalYears'),
+      icon: Wallet,
+    },
+    {
+      id: 'features',
+      title: t('settings.featureToggles', 'Feature Toggles'),
+      subtitle: `${payrollEnabled ? 'Payroll ON' : 'Payroll OFF'} · ${bankRecEnabled ? 'Bank Rec ON' : 'Bank Rec OFF'}`,
+      icon: ToggleLeft,
+    },
+    {
+      id: 'default-accounts',
+      title: t('settings.defaultAccounts', 'Default Accounts'),
+      subtitle: t('settings.accountsSubtitle', 'Map GL accounts to posting roles'),
+      icon: Wallet,
+    },
+    {
+      id: 'coa',
+      title: t('settings.chartOfAccounts', 'Chart of Accounts'),
+      subtitle: `${coaAccounts.length} accounts · ${coaGroups.length} groups`,
+      icon: FolderTree,
+    },
+    {
+      id: 'language',
+      title: t('settings.language', 'Language'),
+      subtitle: 'English / नेपाली',
+      icon: Type,
+    },
+    {
+      id: 'sequences',
+      title: t('settings.numberSeries', 'Number Series'),
+      subtitle: sequences.length ? `${sequences.length} series` : t('settings.noSeriesYet', 'No series yet'),
+      icon: Hash,
+    },
+    {
+      id: 'account',
+      title: 'Account',
+      subtitle: t('settings.tutorialAndSignOut', 'Tutorial & sign out'),
+      icon: HelpCircle,
+    },
+  ]
 
+  return (
+    <div data-tour="settings" className="mx-auto max-w-4xl space-y-4">
       {error && (
         <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
         </p>
       )}
 
+      {/* ── Settings Grid (Root view) ── */}
+      {!activeSection && (
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900">{t('settings.pageTitle')}</h1>
+          <p className="mt-1 text-sm text-slate-500">Manage organization preferences, ledger defaults, and system configuration.</p>
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+            {settingsCards.map((card) => {
+              const Icon = card.icon
+              return (
+                <Link
+                  key={card.id}
+                  to={`/settings/${card.id}`}
+                  className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-crimson-300 hover:shadow-md"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 text-slate-600 transition-colors group-hover:bg-crimson-50 group-hover:text-crimson-600">
+                        <Icon size={20} />
+                      </div>
+                      <ChevronRight size={16} className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-crimson-600" />
+                    </div>
+                    <h2 className="mt-4 text-base font-semibold text-slate-800 group-hover:text-crimson-600 transition-colors">
+                      {card.title}
+                    </h2>
+                    <p className="mt-1 text-xs text-slate-400 line-clamp-2">
+                      {card.subtitle}
+                    </p>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ── 1. Calendar ──────────────────────────────────────── */}
+      {activeSection === 'calendar' && (
       <Section
         title={t('settings.calendar')}
         subtitle={calSummary}
         icon={Calendar}
-        open={!!openSections.calendar}
-        onToggle={() => toggle('calendar')}
         hasChanges={calDirty}
         saved={calSaved}
         onSave={() => void persistCalendar()}
@@ -1125,14 +1211,14 @@ export default function Settings() {
           </div>
         </div>
       </Section>
+      )}
 
       {/* ── 2. Company Profile ───────────────────────────────── */}
+      {activeSection === 'company' && (
       <Section
         title={t('settings.companyProfile')}
         subtitle={companyName || t('hint.company')}
         icon={Building2}
-        open={!!openSections.company}
-        onToggle={() => toggle('company')}
         hasChanges={companyDirty}
         saved={companySaved}
         onSave={() => void persistCompany()}
@@ -1212,8 +1298,10 @@ export default function Settings() {
           </div>
         )}
       </Section>
+      )}
 
       {/* ── 3. Fiscal Settings ───────────────────────────────── */}
+      {activeSection === 'fiscal' && (
       <Section
         title={t('settings.fiscalSettings')}
         subtitle={
@@ -1222,8 +1310,6 @@ export default function Settings() {
             : t('hint.fiscalYears')
         }
         icon={Wallet}
-        open={!!openSections.fiscal}
-        onToggle={() => toggle('fiscal')}
       >
         <div className="p-5">
           <div className="mb-3 flex items-center justify-between">
@@ -1360,6 +1446,7 @@ export default function Settings() {
           </p>
         </div>
       </Section>
+      )}
 
       {/* ── Add / Edit Fiscal Year Modal ──────────────────── */}
       {fyModalOpen && (
@@ -1513,14 +1600,13 @@ export default function Settings() {
       })()}
 
       {/* ── 4. Feature Toggles ───────────────────────────────── */}
+      {activeSection === 'features' && (
       <Section
         title={t('settings.featureToggles', 'Feature Toggles')}
         subtitle={
           `${payrollEnabled ? 'Payroll ON' : 'Payroll OFF'} · ${bankRecEnabled ? 'Bank Rec ON' : 'Bank Rec OFF'}`
         }
         icon={ToggleLeft}
-        open={!!openSections.features}
-        onToggle={() => toggle('features')}
         hasChanges={featuresDirty}
         saved={featuresSaved}
         onSave={() => void persistFeatures()}
@@ -1704,14 +1790,14 @@ export default function Settings() {
           </label>
         </div>
       </Section>
+      )}
 
       {/* ── 5. Default Account Assignments (editable) ────────── */}
+      {activeSection === 'default-accounts' && (
       <Section
         title={t('settings.defaultAccounts', 'Default Accounts')}
         subtitle={t('settings.accountsSubtitle', 'Map GL accounts to posting roles — drag to reorder')}
         icon={Wallet}
-        open={!!openSections.accounts}
-        onToggle={() => toggle('accounts')}
         hasChanges={defAccountsDirty}
         saved={defAccountsSaved}
         onSave={() => void persistDefAccounts()}
@@ -1767,14 +1853,14 @@ export default function Settings() {
           Drag rows to reorder posting roles.
         </p>
       </Section>
+      )}
 
       {/* ── 5b. Chart of Accounts ─────────────────────────────── */}
+      {activeSection === 'coa' && (
       <Section
         title={t('settings.chartOfAccounts', 'Chart of Accounts')}
         subtitle={t('settings.coaSummary', '{a} accounts · {g} groups').replace('{a}', String(coaAccounts.length)).replace('{g}', String(coaGroups.length))}
         icon={FolderTree}
-        open={!!openSections.coa}
-        onToggle={() => toggle('coa')}
       >
         {/* Create form */}
         <div className="mb-3 flex items-center justify-between">
@@ -1957,25 +2043,25 @@ export default function Settings() {
           </p>
         )}
       </Section>
+      )}
 
       {/* ── 6. Language / भाषा ─────────────────────────────────── */}
+      {activeSection === 'language' && (
       <Section
         title={t('lang.title', 'Language')}
         subtitle={t('lang.subtitle', 'Choose the interface language')}
         icon={Type}
-        open={!!openSections.language}
-        onToggle={() => toggle('language')}
       >
         <LanguageToggle />
       </Section>
+      )}
 
       {/* ── 7. Number Series / क्रमांक शृंखला ─────────────────────── */}
+      {activeSection === 'sequences' && (
       <Section
         title={t('settings.numberSeries', 'Number series')}
         subtitle={sequences.length ? `${sequences.length} series` : t('settings.noSeriesYet', 'No series yet — add one below')}
         icon={Hash}
-        open={!!openSections.sequences}
-        onToggle={() => toggle('sequences')}
       >
         {/* Add button */}
         <div className="mb-3 flex items-center justify-between">
@@ -2125,6 +2211,7 @@ export default function Settings() {
           {t('settings.postedSeriesLock', 'Series with posted documents cannot be deleted.')}
         </p>
       </Section>
+      )}
 
       {/* ── Add / Edit Series Modal ─────────────────────────── */}
       {seriesModalOpen && (
@@ -2220,13 +2307,12 @@ export default function Settings() {
         </div>
       )}
 
-      {/* ── 7. Account ───────────────────────────────────────── */}
+      {/* ── 8. Account ───────────────────────────────────────── */}
+      {activeSection === 'account' && (
       <Section
         title="Account"
         subtitle={t('settings.tutorialAndSignOut', 'Tutorial & sign out')}
         icon={HelpCircle}
-        open={!!openSections.account}
-        onToggle={() => toggle('account')}
       >
         <div className="flex items-center gap-3">
           <button
@@ -2254,6 +2340,7 @@ export default function Settings() {
           </button>
         </div>
       </Section>
+      )}
     </div>
   )
 }

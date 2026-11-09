@@ -474,6 +474,7 @@ function Shell({ email }: { email: string }) {
             <Route path="/payroll/registers" element={<PayrollRegisters />} />
             <Route path="/payroll/settings" element={<PayrollSettingsPage />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/settings/:section" element={<Settings />} />
             <Route path="/setup" element={<SetupWizard />} />
             <Route path="/data-management" element={<DataManagement />} />
             <Route path="*" element={<Navigate to="/" replace />} />

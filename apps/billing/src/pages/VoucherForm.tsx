@@ -85,7 +85,11 @@ const DOC_TYPE_META: Record<string, { icon: string; activeClasses: string; inact
   contra:              { icon: '🔄', activeClasses: 'border-orange-500 bg-orange-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-orange-700', shortLabel: 'Contra Entry' },
 }
 
-type Props = { mode: 'create' | 'edit' }
+type Props = {
+  mode: 'create' | 'edit'
+  embedded?: boolean
+  onSuccess?: () => void
+}
 
 /* ── Collapsible Section ──────────────────────────────────────── */
 
@@ -160,7 +164,7 @@ function RequiredChecklist({ items }: { items: { label: string; filled: boolean 
 
 /* ── Component ─────────────────────────────────────────────────── */
 
-export default function VoucherForm({ mode }: Props) {
+export default function VoucherForm({ mode, embedded = false, onSuccess }: Props) {
   const t = useT()
   const navigate = useNavigate()
   const { id, docType: urlDocType } = useParams()
@@ -224,7 +228,7 @@ export default function VoucherForm({ mode }: Props) {
     setManualNumber('')
     setNumberManual(false)
     // Navigate to the typed URL so refresh preserves the selection
-    if (mode === 'create' && !id) {
+    if (mode === 'create' && !id && !embedded) {
       navigate(`/vouchers/new/${dt}`, { replace: true })
     }
   }
@@ -695,9 +699,13 @@ export default function VoucherForm({ mode }: Props) {
         // navigating, so the success state is actually seen. Purely cosmetic —
         // the save is already committed to the local outbox.
         setPosted(true)
-        setTimeout(() => navigate('/vouchers'), 1000)
+        setTimeout(() => {
+          if (onSuccess) onSuccess()
+          else navigate('/vouchers')
+        }, 1000)
       } else {
-        navigate('/vouchers')
+        if (onSuccess) onSuccess()
+        else navigate('/vouchers')
       }
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to save') }
     setSaving(false)
@@ -707,14 +715,16 @@ export default function VoucherForm({ mode }: Props) {
   return (
     <div className="mx-auto max-w-5xl pb-28">
       {/* ── Header ──────────────────────────────────────────── */}
-      <div className="flex items-center justify-between py-4">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/vouchers')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><ArrowLeft size={18} /></button>
-          <h1 className="text-lg font-semibold text-slate-900">
-            {mode === 'edit' ? `${t('common.edit', 'Edit')} ${meta}` : t('vouchers.newTransaction', 'New Transaction')}
-          </h1>
+      {!embedded && (
+        <div className="flex items-center justify-between py-4">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/vouchers')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><ArrowLeft size={18} /></button>
+            <h1 className="text-lg font-semibold text-slate-900">
+              {mode === 'edit' ? `${t('common.edit', 'Edit')} ${meta}` : t('vouchers.newTransaction', 'New Transaction')}
+            </h1>
+          </div>
         </div>
-      </div>
+      )}
 
       {error && <p className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 

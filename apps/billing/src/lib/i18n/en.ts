@@ -379,6 +379,8 @@ settings: 'Settings',
   vouchers: {
     title: 'Transactions',
     newTransaction: 'New transaction',
+    tabNewTransaction: 'New Transaction',
+    tabAllTransactions: 'All Transactions',
     closedNotice: 'The fiscal year is closed — transactions in this period are read-only. Switch to an active year in the header to create or edit entries.',
     editingDraft: 'Editing draft — changes apply to this transaction',
     cancelEdit: 'Cancel edit',

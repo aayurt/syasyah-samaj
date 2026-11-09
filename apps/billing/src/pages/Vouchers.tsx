@@ -50,6 +50,7 @@ import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
 import { exportInvoicePdf, isTemporaryReceipt } from '../lib/pdf'
 import PrintVoucher from '../components/PrintVoucher'
+import VoucherForm from './VoucherForm'
 
 interface DocTypeMeta {
   value: DocType
@@ -152,7 +153,7 @@ interface FormState {
 }
 
 const emptyForm = (): FormState => ({
-  docType: '',
+  docType: 'payment-voucher',
   date: todayAD(),
   narration: '',
   party: '',
@@ -184,6 +185,8 @@ export default function Vouchers() {
   const [saving, setSaving] = useState(false)
   const [nextNumber, setNextNumber] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
+  const initialTab = (searchParams.get('tab') as 'new' | 'all') || 'new'
+  const [activeTab, setActiveTab] = useState<'new' | 'all'>(initialTab)
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || '')
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
   const [dateFrom, setDateFrom] = useState(searchParams.get('from') || '')
@@ -193,12 +196,13 @@ export default function Vouchers() {
   // Sync type/status filters to URL search params
   useEffect(() => {
     const params = new URLSearchParams(searchParams)
+    if (activeTab && activeTab !== 'new') params.set('tab', activeTab); else params.delete('tab')
     if (typeFilter) params.set('type', typeFilter); else params.delete('type')
     if (statusFilter) params.set('status', statusFilter); else params.delete('status')
     if (dateFrom) params.set('from', dateFrom); else params.delete('from')
     if (dateTo) params.set('to', dateTo); else params.delete('to')
     setSearchParams(params, { replace: true })
-  }, [typeFilter, statusFilter, dateFrom, dateTo]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab, typeFilter, statusFilter, dateFrom, dateTo]) // eslint-disable-line react-hooks/exhaustive-deps
   const { formatDate, formatDateTime } = useCalendar()
   const [printDoc, setPrintDoc] = useState<Document | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -288,6 +292,7 @@ export default function Vouchers() {
             ? String((v as { id: unknown }).id)
             : String(v ?? '')
         resumedSeqRef.current = seq
+        setActiveTab('new')
         setViewDoc(null)
         setMenuFor(null)
         setError('')
@@ -647,66 +652,7 @@ export default function Vouchers() {
 
   // Load a draft into the entry form for editing.
   const editDraft = (d: Document) => {
-    setViewDoc(null)
-    setMenuFor(null)
-    setError('')
-    setEditingId(d.id)
-    const isJ = d.docType === 'journal-voucher'
-    const idOf = (v: unknown): string =>
-      v && typeof v === 'object' ? String((v as { id: unknown }).id) : String(v ?? '')
-    setForm({
-      docType: d.docType,
-      date: d.date?.slice(0, 10) || todayAD(),
-      narration: d.narration || '',
-      party: idOf(d.party),
-      taxRate: String(d.taxRate ?? 0),
-      paymentMethod: d.paymentMethod || 'bank',
-      bankAccount: idOf(d.bankAccount),
-      fromAccount: idOf(d.fromAccount),
-      toAccount: idOf(d.toAccount),
-      contraAmount: d.grossTotal !== undefined ? String(d.grossTotal) : '',
-      taxLines: (d.taxLines || []).map((tl) => ({
-        key: crypto.randomUUID(),
-        id: tl.id,
-        taxType: idOf(tl.taxType),
-        nature: tl.nature || 'additive',
-        rate: tl.rate !== undefined ? String(tl.rate) : '',
-      })),
-      lines: isJ
-        ? [emptyItemLine()]
-        : (d.lines || []).map((l) => ({
-            key: crypto.randomUUID(),
-            id: l.id,
-            item: idOf(l.item),
-            description: l.description || '',
-            qty: l.qty !== undefined ? String(l.qty) : '',
-            rate: l.rate !== undefined ? String(l.rate) : '',
-            amount: l.amount !== undefined ? String(l.amount) : '',
-          })),
-      journalLines: isJ
-        ? (d.journalLines || []).map((l) => ({
-            key: crypto.randomUUID(),
-            id: l.id,
-            account: idOf(l.account),
-            debit: l.debit !== undefined ? String(l.debit) : '',
-            credit: l.credit !== undefined ? String(l.credit) : '',
-            memo: l.memo || '',
-          }))
-        : [emptyJLine(), emptyJLine()],
-    })
-    // Auto-populate TDS toggle from existing withholding tax lines
-    const withholdingLine = (d.taxLines || []).find((tl) => tl.nature === 'withholding')
-    if (withholdingLine) {
-      setTdsEnabled(true)
-      setTdsTypeId(idOf(withholdingLine.taxType))
-      setTdsAccountId('') // Will be set from the tax type's account mapping
-      setTdsAmountManual('') // Auto-calc from rate
-    } else {
-      setTdsEnabled(false)
-      setTdsTypeId('')
-      setTdsAccountId('')
-      setTdsAmountManual('')
-    }
+    navigate(`/vouchers/edit/${d.id}`)
   }
 
   const voidDoc = async (id: number) => {
@@ -944,18 +890,37 @@ export default function Vouchers() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="flex items-center justify-between">
+      <div>
         <h1 className="text-lg font-semibold text-slate-900">{t('vouchers.title', 'Transactions')}</h1>
-        <button
-          data-tour="new-voucher"
-          onClick={() => navigate(typeFilter ? `/vouchers/new/${typeFilter}` : '/vouchers/new')}
-          disabled={selectedYear?.status === 'closed'}
-          title={selectedYear?.status === 'closed' ? 'This fiscal year is closed — transactions are read-only' : undefined}
-          className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <Plus size={14} />
-          {t('vouchers.newTransaction', 'New transaction')}
-        </button>
+        <div className="mt-3 flex w-fit rounded-lg bg-slate-100 p-1" role="tablist" aria-label="Transaction Entry views">
+          <button
+            data-tour="new-voucher"
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'new'}
+            onClick={() => setActiveTab('new')}
+            className={`rounded-md px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all ${
+              activeTab === 'new'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {t('vouchers.tabNewTransaction', 'New Transaction')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'all'}
+            onClick={() => setActiveTab('all')}
+            className={`rounded-md px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all ${
+              activeTab === 'all'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {t('vouchers.tabAllTransactions', 'All Transactions')}
+          </button>
+        </div>
       </div>
 
       {selectedYear?.status === 'closed' && (
@@ -977,7 +942,7 @@ export default function Vouchers() {
       )}
 
       {/* Entry form */}
-      {form.docType && meta && (
+      {activeTab === 'new' && form.docType && meta && (
         <form
           id="voucher-form"
           onSubmit={(e) => {
@@ -1752,6 +1717,7 @@ export default function Vouchers() {
                 onClick={() => {
                   setForm(emptyForm())
                   setEditingId(null)
+                  setActiveTab('all')
                 }}
                 className="rounded border border-slate-300 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
               >
@@ -1762,12 +1728,13 @@ export default function Vouchers() {
         </form>
       )}
 
-      {/* Filters */}
-      {loading && docs.length === 0 ? (
-        <TableSkeleton rows={7} />
-      ) : (
-        <>
-      {/* Filter toolbar — single row: status pills · search · type/date dropdowns */}
+      {/* Filters & Table */}
+      {activeTab === 'all' && (
+        loading && docs.length === 0 ? (
+          <TableSkeleton rows={7} />
+        ) : (
+          <>
+            {/* Filter toolbar — single row: status pills · search · type/date dropdowns */}
       <div data-tour="voucher-filters" className="mt-4 flex flex-wrap items-center gap-2">
         {/* Status pills */}
         <div className="flex items-center rounded-lg border border-slate-300 bg-white p-0.5" role="group" aria-label="Filter by status">
@@ -2126,7 +2093,7 @@ export default function Vouchers() {
         </table>
       </div>
         </>
-      )}
+      ))}
 
       {/* Print modal */}
       {printDoc && (
