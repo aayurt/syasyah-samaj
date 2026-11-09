@@ -1,19 +1,32 @@
+import React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LiquidButton } from '../components/ui/LiquidButton'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
+  ArrowLeftRight,
+  ArrowRight,
   Camera,
   Check,
   ChevronDown,
   ChevronRight,
+  ClipboardList,
+  Coins,
   FilePenLine,
+  HandCoins,
   ListCollapse,
   ListPlus,
   Minus,
+  Package,
   Plus,
+  RefreshCcw,
+  Repeat,
   Settings2,
+  ShoppingCart,
+  Truck,
   Trash2,
+  Undo2,
+  Warehouse,
 } from 'lucide-react'
 import NepaliDateInput from '../components/NepaliDateInput'
 import OutstandingInvoices from '../components/OutstandingInvoices'
@@ -71,19 +84,110 @@ const CASH_TYPES = ['payment-voucher', 'receipt-voucher']
 const fmtQty = (n: number) =>
   Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0'
 
-const DOC_TYPE_META: Record<string, { icon: string; activeClasses: string; inactiveClasses: string; textClasses: string; shortLabel: string }> = {
-  'sales-quote':       { icon: '📋', activeClasses: 'border-indigo-500 bg-indigo-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-indigo-700', shortLabel: 'Quote' },
-  'sales-invoice':     { icon: '🛒', activeClasses: 'border-crimson-500 bg-crimson-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-crimson-700', shortLabel: 'Sales Invoice' },
-  'purchase-invoice':  { icon: '📦', activeClasses: 'border-blue-500 bg-blue-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-blue-700', shortLabel: 'Purchase Invoice' },
-  'payment-voucher':   { icon: '💸', activeClasses: 'border-amber-500 bg-amber-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-amber-700', shortLabel: 'Payment' },
-  'receipt-voucher':   { icon: '📥', activeClasses: 'border-emerald-500 bg-emerald-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-emerald-700', shortLabel: 'Receipt' },
-  'credit-note':       { icon: '↩️', activeClasses: 'border-slate-400 bg-slate-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-slate-700', shortLabel: 'Credit Note' },
-  'debit-note':        { icon: '↪️', activeClasses: 'border-slate-400 bg-slate-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-slate-700', shortLabel: 'Debit Note' },
-  'petty-cash-voucher':{ icon: '🪙', activeClasses: 'border-amber-500 bg-amber-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-amber-700', shortLabel: 'Petty Cash' },
-  grn:                 { icon: '🏭', activeClasses: 'border-blue-500 bg-blue-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-blue-700', shortLabel: 'Goods Received (GRN)' },
-  'delivery-challan':  { icon: '🚚', activeClasses: 'border-emerald-500 bg-emerald-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-emerald-700', shortLabel: 'Delivery Challan' },
-  'journal-voucher':   { icon: '📒', activeClasses: 'border-violet-500 bg-violet-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-violet-700', shortLabel: 'Journal Entry' },
-  contra:              { icon: '🔄', activeClasses: 'border-orange-500 bg-orange-50', inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50', textClasses: 'text-orange-700', shortLabel: 'Contra Entry' },
+const DOC_TYPE_META: Record<string, {
+  icon: React.ReactNode
+  activeClasses: string
+  inactiveClasses: string
+  textClasses: string
+  shortLabel: string
+  category: 'sales' | 'purchase' | 'cash' | 'journal' | 'stock'
+}> = {
+  'sales-quote': {
+    icon: <ClipboardList size={20} className="shrink-0" />,
+    activeClasses: 'border-indigo-500 bg-indigo-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-indigo-700',
+    shortLabel: 'Quote',
+    category: 'sales',
+  },
+  'sales-invoice': {
+    icon: <ShoppingCart size={20} className="shrink-0" />,
+    activeClasses: 'border-crimson-500 bg-crimson-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-crimson-700',
+    shortLabel: 'Sales Invoice',
+    category: 'sales',
+  },
+  'purchase-invoice': {
+    icon: <Package size={20} className="shrink-0" />,
+    activeClasses: 'border-blue-500 bg-blue-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-blue-700',
+    shortLabel: 'Purchase Invoice',
+    category: 'purchase',
+  },
+  'payment-voucher': {
+    icon: <HandCoins size={20} className="shrink-0" />,
+    activeClasses: 'border-amber-500 bg-amber-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-amber-700',
+    shortLabel: 'Payment',
+    category: 'cash',
+  },
+  'receipt-voucher': {
+    icon: <ClipboardList size={20} className="shrink-0" />,
+    activeClasses: 'border-emerald-500 bg-emerald-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-emerald-700',
+    shortLabel: 'Receipt',
+    category: 'cash',
+  },
+  'credit-note': {
+    icon: <Undo2 size={20} className="shrink-0 text-amber-600" />,
+    activeClasses: 'border-amber-500 bg-amber-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-amber-700',
+    shortLabel: 'Credit Note',
+    category: 'sales',
+  },
+  'debit-note': {
+    icon: <RefreshCcw size={20} className="shrink-0 text-slate-600" />,
+    activeClasses: 'border-slate-500 bg-slate-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-slate-700',
+    shortLabel: 'Debit Note',
+    category: 'sales',
+  },
+  'petty-cash-voucher': {
+    icon: <Coins size={20} className="shrink-0" />,
+    activeClasses: 'border-amber-500 bg-amber-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-amber-700',
+    shortLabel: 'Petty Cash',
+    category: 'cash',
+  },
+  grn: {
+    icon: <Warehouse size={20} className="shrink-0" />,
+    activeClasses: 'border-blue-500 bg-blue-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-blue-700',
+    shortLabel: 'Goods Receipt',
+    category: 'stock',
+  },
+  'delivery-challan': {
+    icon: <Truck size={20} className="shrink-0" />,
+    activeClasses: 'border-emerald-500 bg-emerald-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-emerald-700',
+    shortLabel: 'Delivery Challan',
+    category: 'stock',
+  },
+  'journal-voucher': {
+    icon: <FilePenLine size={20} className="shrink-0" />,
+    activeClasses: 'border-violet-500 bg-violet-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-violet-700',
+    shortLabel: 'Journal Entry',
+    category: 'journal',
+  },
+  contra: {
+    icon: <ArrowLeftRight size={20} className="shrink-0 text-orange-600" />,
+    activeClasses: 'border-orange-500 bg-orange-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-orange-700',
+    shortLabel: 'Contra Entry',
+    category: 'cash',
+  },
 }
 
 type Props = {
@@ -731,30 +835,100 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
       {error && <p className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      {/* ── Doc Type Cards ──────────────────────────────────── */}
+      {/* ── Doc Type Cards ── */}
       {mode === 'create' && (
         <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <label className="mb-3 block text-sm font-medium text-slate-700">{t('vouchers.questionLabel', 'What are you recording?')}</label>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-            {(Object.keys(DOC_TYPE_META) as DocType[]).map((dt) => {
-              const m = DOC_TYPE_META[dt]
-              const active = docType === dt
+          <div className="flex items-center justify-between mb-4">
+            <button
+              type="button"
+              onClick={() => navigate('/vouchers')}
+              className="flex items-center gap-1.5 rounded px-2.5 py-1 text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              <span className="text-sm font-medium">Back</span>
+            </button>
+            <div className="text-right">
+              <span className="text-xs uppercase tracking-wider font-semibold text-slate-400 block">Step 1 of 3</span>
+              <span className="text-sm font-medium text-slate-800">
+                {t('vouchers.questionLabel', 'What are you recording?')}
+              </span>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {[
+              {
+                key: 'sales',
+                label: 'Sales & Invoicing',
+                badgeBg: 'bg-indigo-100 text-indigo-700',
+                icon: <ClipboardList size={12} />,
+              },
+              {
+                key: 'purchase',
+                label: 'Purchases & Expenses',
+                badgeBg: 'bg-blue-100 text-blue-700',
+                icon: <Package size={12} />,
+              },
+              {
+                key: 'cash',
+                label: 'Cash & Banking',
+                badgeBg: 'bg-amber-100 text-amber-700',
+                icon: <HandCoins size={12} />,
+              },
+              {
+                key: 'stock',
+                label: 'Inventory & Movement',
+                badgeBg: 'bg-emerald-100 text-emerald-700',
+                icon: <Warehouse size={12} />,
+              },
+              {
+                key: 'journal',
+                label: 'Adjustments & Journal',
+                badgeBg: 'bg-violet-100 text-violet-700',
+                icon: <FilePenLine size={12} />,
+              },
+            ].map((cat) => {
+              const types = Object.entries(DOC_TYPE_META).filter(
+                ([, m]) => m.category === cat.key
+              )
+              if (types.length === 0) return null
               return (
-                <button
-                  key={dt}
-                  type="button"
-                  onClick={() => updateDocType(dt)}
-                  className={`flex flex-col items-center gap-1.5 rounded-lg border-2 px-3 py-3 text-center transition-all ${
-                    active
-                      ? `${m.activeClasses} shadow-sm`
-                      : m.inactiveClasses
-                  }`}
-                >
-                  <span className="text-xl">{m.icon}</span>
-                  <span className={`text-xs font-medium ${active ? m.textClasses : 'text-slate-600'}`}>
-                    {docTypeLabels[dt] || m.shortLabel}
-                  </span>
-                </button>
+                <div key={cat.key}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${cat.badgeBg}`}
+                    >
+                      {cat.icon}
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      {cat.label}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {types.map(([dt, m]) => {
+                      const typeId = dt as DocType
+                      const active = docType === typeId
+                      return (
+                        <button
+                          key={dt}
+                          type="button"
+                          onClick={() => updateDocType(typeId)}
+                          className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all ${
+                            active
+                              ? `${m.activeClasses} ring-2 ring-crimson-600/20 shadow-sm ${m.textClasses} font-semibold`
+                              : `${m.inactiveClasses} text-slate-700 font-medium`
+                          }`}
+                        >
+                          <span className={active ? m.textClasses : 'text-slate-500'}>
+                            {m.icon}
+                          </span>
+                          <span className="text-sm truncate">
+                            {m.shortLabel}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               )
             })}
           </div>
