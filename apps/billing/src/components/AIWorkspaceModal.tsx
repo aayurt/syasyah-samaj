@@ -256,6 +256,16 @@ export default function AIWorkspaceModal({
 
   const hasDraft = rawJson.trim().length > 0 || preview.length > 0 || result != null
 
+  // Honor initialModel when the modal (re)opens from a wizard step so the
+  // matching model is preselected instead of defaulting to gl-accounts.
+  useEffect(() => {
+    if (!open || !initialModel) return
+    if (initialModel === model) return
+    if (hasDraft) return
+    setModel(initialModel)
+    setSchemaVersion((v) => v + 1)
+  }, [open, initialModel, model, hasDraft])
+
   const handleClose = useCallback(() => {
     if (hasDraft) {
       setCloseConfirmOpen(true)
@@ -545,15 +555,48 @@ export default function AIWorkspaceModal({
                 <div className="rounded border border-slate-200 bg-slate-900 p-3 overflow-x-auto">
                   <pre className="text-xs text-slate-300 font-mono whitespace-pre-wrap break-all">{prompt}</pre>
                 </div>
-                <div className="mt-3 flex items-center gap-2">
+                <div className="mt-3 flex items-center gap-2 flex-wrap">
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText(prompt)
+                      void navigator.clipboard.writeText(prompt)
                       pushToast('info', t('ai.copied', 'Prompt copied'))
                     }}
-                    className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
                   >
-                    <Copy size={16} /> {t('ai.copyPrompt', 'Copy prompt')}
+                    <Copy size={14} /> {t('ai.copyPrompt', 'Copy prompt')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      void navigator.clipboard.writeText(prompt)
+                      const url = `https://chat.deepseek.com/?q=${encodeURIComponent(prompt)}`
+                      void window.open(url, '_blank', 'noopener,noreferrer')
+                      pushToast('info', 'Deepseek', 'Prompt copied — chat opened')
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                  >
+                    Deepseek
+                  </button>
+                  <button
+                    onClick={() => {
+                      void navigator.clipboard.writeText(prompt)
+                      const url = `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`
+                      void window.open(url, '_blank', 'noopener,noreferrer')
+                      pushToast('info', 'ChatGPT', 'Prompt copied — chat opened')
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                  >
+                    ChatGPT
+                  </button>
+                  <button
+                    onClick={() => {
+                      void navigator.clipboard.writeText(prompt)
+                      const url = `https://gemini.google.com/?q=${encodeURIComponent(prompt)}`
+                      void window.open(url, '_blank', 'noopener,noreferrer')
+                      pushToast('info', 'Gemini', 'Prompt copied — chat opened')
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                  >
+                    Gemini
                   </button>
                 </div>
               </div>
