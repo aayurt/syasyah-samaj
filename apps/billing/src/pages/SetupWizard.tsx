@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   ArrowRight,
@@ -79,6 +79,7 @@ const CORE_DEFAULTS: { key: keyof BillingSettings; label: string }[] = [
 export default function SetupWizard() {
   useDataEpochWatcher()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const t = useT()
   const { tenantId, isIllaka, isCentral } = useTenant()
   const { years, loading: yearsLoading, refresh: refreshYears } = useFiscalYear()
@@ -195,6 +196,22 @@ export default function SetupWizard() {
 
   const step = STEPS[stepIdx]
   const isRequired = stepIdx < REQUIRED_STEPS.length
+
+  // Deep-link a wizard step via ?step=<key>, e.g. /app/setup?step=fiscalYear.
+  // Honored on mount so a shared URL opens straight at that step.
+  useEffect(() => {
+    const urlStep = searchParams.get('step')
+    const idx = STEPS.findIndex((s) => s.key === urlStep)
+    if (urlStep && idx !== -1 && idx !== stepIdx) setStepIdx(idx)
+  }, [])
+
+  // Keep the URL in sync with the current step so it is shareable / bookmarkable.
+  useEffect(() => {
+    const key = step.key
+    if (searchParams.get('step') !== key) {
+      setSearchParams({ step: key }, { replace: true })
+    }
+  }, [step.key])
 
   const satisfied: Record<string, boolean> = {
     company: Boolean(settings?.companyName && String(settings.companyName).trim()),
