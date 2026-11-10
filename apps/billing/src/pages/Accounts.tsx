@@ -32,6 +32,7 @@ const emptyForm = {
   type: 'asset' as AccountType,
   class: 'other',
   group: '',
+  description: '',
 }
 
 export default function Accounts() {
@@ -100,6 +101,7 @@ export default function Accounts() {
       type: a.type,
       class: a.class || 'other',
       group: a.group ? String(typeof a.group === 'object' ? (a.group as AccountGroup).id : a.group) : '',
+      description: a.description || '',
     })
     setEditing(a.id)
     setShowForm(true)
@@ -321,6 +323,15 @@ export default function Accounts() {
                 <option value="cash">{t('accounts.classCash', 'Cash')}</option>
                 <option value="bank">{t('accounts.classBank', 'Bank')}</option>
               </select>
+            </label>
+            <label className="text-sm text-slate-700">
+              Description
+              <textarea
+                value={form.description || ''}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                rows={2}
+              />
             </label>
             <label className="text-sm text-slate-700">
               Group

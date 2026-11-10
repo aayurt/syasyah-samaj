@@ -49,6 +49,7 @@ export interface Account {
   id: number
   code?: string
   name: string
+  description?: string
   group?: number | AccountGroup | null
   type: AccountType
   class?: AccountClass
