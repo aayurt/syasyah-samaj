@@ -905,6 +905,7 @@ export const en = {
     importTaxTypes: 'Import Tax Types with AI',
     importAccountGroups: 'Import Account Groups with AI',
     importCompanyProfile: 'Import Company Profile with AI',
+    importSubCompanies: 'Import Sub-companies with AI',
     importFiscalYear: 'Import Fiscal Year with AI',
     importedCompany: 'Company profile saved',
     importedSubCompanies: 'Sub-companies updated',
