@@ -49,6 +49,7 @@ export default function Accounts() {
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
+  const [groupToEdit, setGroupToEdit] = useState<AccountGroup | undefined>(undefined)
   const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[] } | null>(null)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCoaSetup, setShowCoaSetup] = useState(false)
@@ -108,6 +109,11 @@ export default function Accounts() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const handleEditGroup = (g: AccountGroup) => {
+    setGroupToEdit(g)
+    setShowCoaSetup(true)
+  }
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -136,11 +142,11 @@ export default function Accounts() {
     setSaving(false)
   }
 
-  const remove = async (id: number) => {
+  const remove = async (id: number, isGroup = false) => {
     if (!window.confirm('Delete this account?')) return
     try {
       // Check for dependencies before deleting
-      const balanceDep = await api<{ count: number }>('/balances', {
+      const balanceDep = await api<{ count: number }>('/gl-accounts/balances', {
         query: { depth: 0, 'account[id][equals]': String(id) },
       })
       const openingDep = await api<{ count: number }>('/opening-balances/for-year', {
@@ -153,8 +159,22 @@ export default function Accounts() {
         )
         return
       }
+      // Groups with child accounts cannot be deleted — move or delete
+      // the sub-items first so no account is left pointing at a dead group.
+      if (isGroup) {
+        const children = accounts.filter((a) => {
+          const g = a.group
+          return g && (typeof g === 'object' ? g.id === id : g === id)
+        })
+        if (children.length > 0) {
+          setError(
+            `Cannot delete heading — ${children.length} account${children.length === 1 ? '' : 's'} still assigned to it. Move or delete them first.`
+          )
+          return
+        }
+      }
       // Queued to the offline outbox — flushes on reconnect when offline.
-      await api(`/gl-accounts/${id}`, { method: 'DELETE' })
+      await api(isGroup ? `/account-groups/${id}` : `/gl-accounts/${id}`, { method: 'DELETE' })
       await load()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to delete account')
@@ -388,6 +408,7 @@ export default function Accounts() {
           groups={groups}
           openings={openings}
           onEdit={startEdit}
+          onEditGroup={handleEditGroup}
           onDelete={remove}
           onConfigureCoa={() => setShowCoaSetup(true)}
         />
@@ -395,9 +416,15 @@ export default function Accounts() {
 
       <CoaSetupModal
         isOpen={showCoaSetup}
-        onClose={() => setShowCoaSetup(false)}
+        onClose={() => {
+          setShowCoaSetup(false)
+          setGroupToEdit(undefined)
+        }}
+        onEditGroup={handleEditGroup}
+        groupToEdit={groupToEdit}
         onSuccess={() => {
           load()
+          setGroupToEdit(undefined)
           pushToast('success', 'Chart of Accounts configured successfully')
         }}
       />

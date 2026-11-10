@@ -12,14 +12,16 @@ import {
   FilePlus,
   FileText,
   IndianRupee,
+  Package,
   Receipt,
   TrendingDown,
   TrendingUp,
   Upload,
   UserPlus,
+  Users,
   Wallet,
 } from 'lucide-react'
-import { api, fmt, useSyncState } from '../lib/api'
+import { api, fmt, list, useSyncState } from '../lib/api'
 import { useT, useLang } from '../lib/i18n'
 import { toNepaliDigits } from '../lib/nepaliNumbers'
 import DataStatus from '../components/DataStatus'
@@ -36,6 +38,7 @@ import type {
   Account,
   AgingResponse,
   Document,
+  Item,
   JournalEntry,
   PnlResponse,
 } from '../lib/types'
@@ -175,6 +178,11 @@ export default function Dashboard() {
   const [tableFilter, setTableFilter] = useState<'all' | 'posted' | 'draft'>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Setup-count metrics (tenant-scoped where applicable)
+  const [illakaCount, setIllakaCount] = useState<number | null>(null)
+  const [memberCount, setMemberCount] = useState<number | null>(null)
+  const [itemCount, setItemCount] = useState<number | null>(null)
+
   const months = useMemo(() => last12Months(), [])
 
   // Keyboard shortcuts F1 (Receipt), F2 (Payment), F3 (Journal)
@@ -248,6 +256,24 @@ export default function Dashboard() {
 
     return () => { alive = false }
   }, [tenantId, cacheVersion, online])
+
+  // Setup-count metrics — illakas (tenants) are globally readable;
+  // members and items are tenant-scoped.
+  useEffect(() => {
+    let alive = true
+    list<{ id: number }>('tenants', { depth: 0, limit: 1 })
+      .then((r) => { if (alive) setIllakaCount(r.totalDocs) })
+      .catch(() => {})
+    if (tenantId) {
+      list<{ id: number }>('members', { depth: 0, limit: 1, ...tenantQuery })
+        .then((r) => { if (alive) setMemberCount(r.totalDocs) })
+        .catch(() => {})
+      list<{ id: number }>('items', { depth: 0, limit: 1, ...tenantQuery })
+        .then((r) => { if (alive) setItemCount(r.totalDocs) })
+        .catch(() => {})
+    }
+    return () => { alive = false }
+  }, [tenantId, tenantQuery, cacheVersion, online])
 
   // Filter journal entries by Fiscal Year
   const fyFrom = selectedYear?.startDate ? String(selectedYear.startDate).slice(0, 10) : ''
@@ -402,6 +428,17 @@ export default function Dashboard() {
             <Upload size={14} className="text-white" />
             <span>{t('dashboard.importData', 'Import')}</span>
           </LiquidButton>
+
+          {/* Setup Wizard button */}
+          <LiquidLink
+            to="/setup"
+            variant="outline"
+            size="xs"
+            className="font-semibold shadow-xs"
+          >
+            <Package size={14} className="text-slate-500" />
+            <span>{t('dashboard.setupWizard', 'Setup Wizard')}</span>
+          </LiquidLink>
         </div>
       </div>
 
@@ -475,6 +512,48 @@ export default function Dashboard() {
               {trialBalance?.balanced
                 ? t('dashboard.balanced', '✓ balanced')
                 : t('dashboard.outOfBalance', '✗ out of balance')}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+            <Users size={18} />
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {t('dashboard.illakaCount', 'Illaka count')}
+            </div>
+            <div className="font-mono text-lg font-bold text-slate-800">
+              {illakaCount ?? '–'}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
+            <UserPlus size={18} />
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {t('dashboard.members', 'Members')}
+            </div>
+            <div className="font-mono text-lg font-bold text-slate-800">
+              {memberCount ?? '–'}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+            <Package size={18} />
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {t('dashboard.inventoryItems', 'Inventory items')}
+            </div>
+            <div className="font-mono text-lg font-bold text-slate-800">
+              {itemCount ?? '–'}
             </div>
           </div>
         </div>

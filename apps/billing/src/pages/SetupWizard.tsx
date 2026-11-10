@@ -93,7 +93,7 @@ export default function SetupWizard() {
   const [accounts, setAccounts] = useState<Account[]>([])
   // Sub-company / ilaka management (central admin only)
   const [subCompanies, setSubCompanies] = useState<TenantOption[]>([])
-  const [subCompanyForm, setSubCompanyForm] = useState<{ name: string; code: string; type: 'central' | 'illaka'; active: boolean; slug: string }>({ name: '', code: '', type: 'illaka', active: true, slug: '' })
+  const [subCompanyForm, setSubCompanyForm] = useState<{ name: string; code: string; type: 'illaka'; active: boolean; slug: string }>({ name: '', code: '', type: 'illaka', active: true, slug: '' })
   const [editingSubCompany, setEditingSubCompany] = useState<TenantOption | null>(null)
   const [subCompanyBusy, setSubCompanyBusy] = useState('')
   const [subCompanyError, setSubCompanyError] = useState('')
@@ -220,13 +220,6 @@ export default function SetupWizard() {
     } finally {
       setBusy('')
     }
-  }
-
-  // ── Sub-company / ilaka CRUD (central admin only) ──
-  const startEditSubCompany = (tc: TenantOption) => {
-    setEditingSubCompany(tc)
-    setSubCompanyForm({ name: tc.name, code: tc.code, type: tc.type, active: tc.active ?? true, slug: tc.slug || '' })
-    setSubCompanyError('')
   }
 
   const cancelEditSubCompany = () => {
@@ -637,9 +630,6 @@ export default function SetupWizard() {
                               {t('setup.subCompanyCode', 'Code')}
                             </th>
                             <th className="text-left pb-2 text-xs font-semibold text-slate-500">
-                              {t('setup.subCompanyType', 'Type')}
-                            </th>
-                            <th className="text-left pb-2 text-xs font-semibold text-slate-500">
                               {t('setup.subCompanyActive', 'Active')}
                             </th>
                             <th className="text-right pb-2 text-xs font-semibold text-slate-500 w-24">
@@ -653,13 +643,6 @@ export default function SetupWizard() {
                               <td className="py-3 text-slate-700 font-medium">{tc.name}</td>
                               <td className="py-3 text-slate-600">{tc.code || '–'}</td>
                               <td className="py-3 text-slate-600">
-                                <span
-                                  className={`rounded px-1.5 py-0.5 text-xs ${tc.type === 'central' ? 'bg-amber-50 text-amber-700' : 'bg-indigo-50 text-indigo-700'}`}
-                                >
-                                  {tc.type}
-                                </span>
-                              </td>
-                              <td className="py-3 text-slate-600">
                                 {tc.active ? 'Yes' : 'No'}
                               </td>
                               <td className="py-3 text-right">
@@ -668,7 +651,7 @@ export default function SetupWizard() {
                                     setSubCompanyForm({
                                       name: tc.name,
                                       code: tc.code,
-                                      type: tc.type,
+                                      type: 'illaka',
                                       active: tc.active ?? true,
                                       slug: tc.slug || ''
                                     })
@@ -692,7 +675,7 @@ export default function SetupWizard() {
                           ))}
                           {subCompanies.length === 0 && (
                             <tr>
-                              <td colSpan={5} className="py-4 text-center text-xs text-slate-400">
+                              <td colSpan={4} className="py-4 text-center text-xs text-slate-400">
                                 No sub-companies yet. {t('setup.addSubCompany', 'Add sub-company')} to get started.
                               </td>
                             </tr>
@@ -747,19 +730,6 @@ export default function SetupWizard() {
                               className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
                             />
                           </div>
-                          <div>
-                            <label className="text-xs font-medium text-slate-600">
-                              {t('setup.subCompanyType', 'Type')}
-                            </label>
-                            <select
-                              value={subCompanyForm.type}
-                              onChange={(e) => setSubCompanyForm({ ...subCompanyForm, type: e.target.value as 'central' | 'illaka' })}
-                              className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500 bg-white"
-                            >
-                              <option value="illaka">Illaka</option>
-                              <option value="central">Central</option>
-                            </select>
-                          </div>
                           <div className="flex items-end">
                             <label className="text-xs font-medium text-slate-600 mr-2">
                               {t('setup.subCompanyActive', 'Active')}
@@ -771,7 +741,7 @@ export default function SetupWizard() {
                               className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                             />
                           </div>
-                          <div className="sm:col-span-2">
+                          <div className="sm:col-span-4">
                             <label className="text-xs font-medium text-slate-600">
                               {t('setup.subCompanySlug', 'Slug')} *
                             </label>

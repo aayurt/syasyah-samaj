@@ -8,7 +8,8 @@ type AccountsTableProps = {
   groups: AccountGroup[]
   openings: Record<number, number>
   onEdit: (account: Account) => void
-  onDelete: (id: number) => void
+  onEditGroup: (group: AccountGroup) => void
+  onDelete: (id: number, isGroup?: boolean) => void
   onConfigureCoa?: () => void
   className?: string
 }
@@ -26,6 +27,7 @@ export default function AccountsTable({
   groups,
   openings,
   onEdit,
+  onEditGroup,
   onDelete,
   onConfigureCoa,
   className,
@@ -149,7 +151,7 @@ export default function AccountsTable({
                   <th className="w-28 px-4 py-2">Class</th>
                   <th className="w-24 px-4 py-2">Description</th>
                   <th className="w-36 px-4 py-2 text-right">Opening (FY)</th>
-                  <th className="w-14 px-4 py-2 text-right"></th>
+                  <th className="w-14 px-4 py-2 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -187,6 +189,7 @@ export default function AccountsTable({
                         <td className="px-4 py-2 text-xs text-slate-400 italic">
                           Heading
                         </td>
+                        <td className="px-4 py-2 text-xs text-slate-500">—</td>
                         <td className="px-4 py-2 text-right font-mono text-xs font-medium text-slate-500">
                           {children.length > 0
                             ? groupTotalOpening.toLocaleString('en-US', { minimumFractionDigits: 2 })
@@ -198,13 +201,13 @@ export default function AccountsTable({
                             {
                               label: 'Edit',
                               icon: <Pencil size={13} />,
-                              onClick: () => onEdit(group),
+                              onClick: () => onEditGroup(group),
                             },
                             {
                               label: 'Delete',
                               icon: <Trash2 size={13} />,
                               danger: true,
-                              onClick: () => onDelete(group.id),
+                              onClick: () => onDelete(group.id, true),
                             },
                           ]}
                         />
