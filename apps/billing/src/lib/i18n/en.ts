@@ -907,6 +907,7 @@ export const en = {
     importCompanyProfile: 'Import Company Profile with AI',
     importFiscalYear: 'Import Fiscal Year with AI',
     importedCompany: 'Company profile saved',
+    importedSubCompanies: 'Sub-companies updated',
     importedFiscalYear: 'Fiscal year saved',
     stepPrompt: 'Prompt',
     stepPaste: 'Paste JSON',

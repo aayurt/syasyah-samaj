@@ -78,7 +78,9 @@ export function validateAgainstModel(
             ? ['name', 'type', 'rate', 'active']
             : model === 'company-profile'
               ? ['companyName']
-              : model === 'fiscal-year'
+              : model === 'sub-companies'
+                ? ['name', 'code']
+                : model === 'fiscal-year'
                 ? ['label', 'startDate', 'endDate']
                 : ['name', 'type', 'nature', 'active']
 
@@ -137,19 +139,10 @@ export function validateAgainstModel(
       if (!isBoolean(d.active)) push(errors, row, 'active', 'active must be true/false', 'error')
     } else if (model === 'company-profile') {
       if (!isNonEmptyString(d.companyName)) push(errors, row, 'companyName', 'companyName is required', 'error')
-      const subs = d.subCompanies
-      if (subs != null) {
-        if (!Array.isArray(subs)) {
-          push(errors, row, 'subCompanies', 'subCompanies must be an array', 'error')
-        } else {
-          subs.forEach((sub, k) => {
-            const s = sub && typeof sub === 'object' && !Array.isArray(sub) ? (sub as Record<string, unknown>) : {}
-            if (!isNonEmptyString(s.name)) push(errors, row, 'subCompanies.name', `sub-company ${k + 1}: name is required`, 'error')
-            if (!isNonEmptyString(s.code)) push(errors, row, 'subCompanies.code', `sub-company ${k + 1}: code is required`, 'error')
-            if (s.active != null && !isBoolean(s.active)) push(errors, row, 'subCompanies.active', `sub-company ${k + 1}: active must be true/false`, 'error')
-          })
-        }
-      }
+    } else if (model === 'sub-companies') {
+      if (!isNonEmptyString(d.name)) push(errors, row, 'name', 'name is required', 'error')
+      if (!isNonEmptyString(d.code)) push(errors, row, 'code', 'code is required', 'error')
+      if (d.active != null && !isBoolean(d.active)) push(errors, row, 'active', 'active must be true/false', 'error')
     } else {
       // account-groups (fallback)
       if (!isValidEnum(d.type, ACCOUNT_TYPES)) push(errors, row, 'type', 'type must be asset/liability/equity/income/expense', 'error')

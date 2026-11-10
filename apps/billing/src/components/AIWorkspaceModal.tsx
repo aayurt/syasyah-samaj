@@ -62,6 +62,8 @@ function fieldInputs(model: AIModel): string[] {
       return ['name', 'type', 'nature', 'active']
     case 'company-profile':
       return ['companyName', 'companyPan', 'companyContact', 'companyEmail', 'companyAddress']
+    case 'sub-companies':
+      return ['name', 'code', 'slug', 'active']
     case 'fiscal-year':
       return ['label', 'startDate', 'endDate', 'status']
     default:
@@ -147,6 +149,21 @@ function exampleJson(model: AIModel): string {
               companyContact: '9851012345',
               companyEmail: 'info@syasyahsamaj.com.np',
               companyAddress: 'Yala, Lalitpur',
+            },
+          ],
+        },
+        null,
+        2,
+      )
+    case 'sub-companies':
+      return JSON.stringify(
+        {
+          docs: [
+            {
+              name: 'Illaka Central',
+              code: 'ILLAKA-C',
+              slug: 'illaka-central',
+              active: true,
             },
           ],
         },
@@ -367,49 +384,60 @@ export default function AIWorkspaceModal({
       // they bypass executeImport (which keys off ENTITY_REGISTRY).
       if (model === 'company-profile') {
         const errs: string[] = []
-        let subUpdated = 0
         for (const row of preview) {
           try {
             await api('/globals/billing-settings', { method: 'POST', body: row.doc })
           } catch (e) {
             errs.push(e instanceof Error ? e.message : String(e))
           }
-          // Sub-companies (illaka) — update existing only, never create new.
-          const subs = row.doc.subCompanies
-          if (Array.isArray(subs)) {
-            let existing: TenantOption[] = []
-            try {
-              existing = await api<TenantOption[]>('/tenants', { query: { depth: 0, limit: 100 } })
-            } catch {
-              existing = []
-            }
-            const byCode = new Map<string, TenantOption>()
-            for (const e of existing) if (e.code) byCode.set(e.code, e)
-            for (const sub of subs) {
-              const target = byCode.get(String(sub.code || ''))
-              if (!target) continue // skip unknown sub-companies — no auto-create
-              try {
-                await api(`/tenants/${target.id}`, {
-                  method: 'PATCH',
-                  body: {
-                    name: sub.name,
-                    code: sub.code,
-                    type: 'illaka',
-                    active: sub.active ?? true,
-                    slug: sub.slug || '',
-                  },
-                  immediate: true,
-                })
-                subUpdated++
-              } catch (e) {
-                errs.push(e instanceof Error ? e.message : String(e))
-              }
-            }
-          }
         }
-        setResult({ created: preview.length - errs.length, updated: subUpdated, skipped: 0, errors: errs })
+        setResult({ created: preview.length - errs.length, updated: 0, skipped: 0, errors: errs })
         if (errs.length === 0) {
           pushToast('success', t('ai.imported', 'Import complete'), t('ai.importedCompany', 'Company profile saved'))
+          onImported?.()
+        } else {
+          pushToast('error', t('ai.importFailed', 'Import failed'), `${errs.length} failed: ${errs.join('; ')}`)
+        }
+        setExecuting(false)
+        return
+      }
+      if (model === 'sub-companies') {
+        const errs: string[] = []
+        let updated = 0
+        let existing: TenantOption[] = []
+        try {
+          existing = await api<TenantOption[]>('/tenants', { query: { depth: 0, limit: 100 } })
+        } catch {
+          existing = []
+        }
+        const byCode = new Map<string, TenantOption>()
+        for (const e of existing) if (e.code) byCode.set(e.code, e)
+        for (const row of preview) {
+          const target = byCode.get(String(row.doc.code || ''))
+          if (!target) {
+            errs.push(`no existing sub-company matches code "${String(row.doc.code || '')}" — skipped (no auto-create)`)
+            continue
+          }
+          try {
+            await api(`/tenants/${target.id}`, {
+              method: 'PATCH',
+              body: {
+                name: row.doc.name,
+                code: row.doc.code,
+                type: 'illaka',
+                active: row.doc.active ?? true,
+                slug: row.doc.slug || '',
+              },
+              immediate: true,
+            })
+            updated++
+          } catch (e) {
+            errs.push(e instanceof Error ? e.message : String(e))
+          }
+        }
+        setResult({ created: 0, updated, skipped: existing.length - byCode.size, errors: errs })
+        if (errs.length === 0) {
+          pushToast('success', t('ai.imported', 'Import complete'), t('ai.importedSubCompanies', 'Sub-companies updated'))
           onImported?.()
         } else {
           pushToast('error', t('ai.importFailed', 'Import failed'), `${errs.length} failed: ${errs.join('; ')}`)
@@ -479,6 +507,8 @@ export default function AIWorkspaceModal({
     switch (model) {
       case 'company-profile':
         return String(doc.companyName ?? doc.name ?? '')
+      case 'sub-companies':
+        return String(doc.name ?? doc.code ?? '')
       case 'fiscal-year':
         return String(doc.label ?? doc.name ?? '')
       case 'tax-types':

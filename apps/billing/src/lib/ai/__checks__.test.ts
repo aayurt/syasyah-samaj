@@ -8,13 +8,14 @@ import { AI_MODELS, modelDef } from './schemas'
 import { validateAgainstModel } from './validate'
 
 describe('AI Workspace model registry', () => {
-  it('exposes the six import models with required fields', () => {
+  it('exposes the seven import models with required fields', () => {
     expect(AI_MODELS.map((m) => m.value)).toEqual([
       'gl-accounts',
       'opening-balances',
       'tax-types',
       'account-groups',
       'company-profile',
+      'sub-companies',
       'fiscal-year',
     ])
     for (const m of AI_MODELS) {
@@ -24,6 +25,7 @@ describe('AI Workspace model registry', () => {
     }
     expect(modelDef('tax-types').label).toBe('Tax Types')
     expect(modelDef('company-profile').label).toBe('Company Profile')
+    expect(modelDef('sub-companies').label).toBe('Sub-companies')
     expect(modelDef('fiscal-year').label).toBe('Fiscal Year')
   })
 })
@@ -99,34 +101,24 @@ describe('validateAgainstModel', () => {
     expect(result.errors.some((e) => e.field === 'companyName')).toBe(true)
   })
 
-  it('company-profile validates optional subCompanies array', () => {
-    const good = {
-      docs: [{
-        companyName: 'Syasyah Samaj',
-        subCompanies: [
-          { name: 'Illaka A', code: 'ILLAKA-A', slug: 'illaka-a', active: true },
-          { name: 'Illaka B', code: 'ILLAKA-B', active: false },
-        ],
-      }],
-    }
-    expect(validateAgainstModel(good, 'company-profile', ctx).valid).toBe(true)
+  it('sub-companies validates required name/code, optional active', () => {
+    const good = { docs: [{ name: 'Illaka A', code: 'ILLAKA-A', slug: 'illaka-a', active: true }] }
+    expect(validateAgainstModel(good, 'sub-companies', ctx).valid).toBe(true)
 
-    const badSub = {
-      docs: [{
-        companyName: 'Syasyah Samaj',
-        subCompanies: [{ code: 'NO-NAME', active: true }],
-      }],
-    }
-    const r1 = validateAgainstModel(badSub, 'company-profile', ctx)
+    const badName = { docs: [{ code: 'ILLAKA-A' }] }
+    const r1 = validateAgainstModel(badName, 'sub-companies', ctx)
     expect(r1.valid).toBe(false)
-    expect(r1.errors.some((e) => e.field === 'subCompanies.name')).toBe(true)
+    expect(r1.errors.some((e) => e.field === 'name')).toBe(true)
 
-    const badNotArray = {
-      docs: [{ companyName: 'Syasyah Samaj', subCompanies: 'not an array' }],
-    }
-    const r2 = validateAgainstModel(badNotArray, 'company-profile', ctx)
+    const badCode = { docs: [{ name: 'Illaka A' }] }
+    const r2 = validateAgainstModel(badCode, 'sub-companies', ctx)
     expect(r2.valid).toBe(false)
-    expect(r2.errors.some((e) => e.field === 'subCompanies')).toBe(true)
+    expect(r2.errors.some((e) => e.field === 'code')).toBe(true)
+
+    const badActive = { docs: [{ name: 'Illaka A', code: 'ILLAKA-A', active: 'yes' }] }
+    const r3 = validateAgainstModel(badActive, 'sub-companies', ctx)
+    expect(r3.valid).toBe(false)
+    expect(r3.errors.some((e) => e.field === 'active')).toBe(true)
   })
 
   it('fiscal-year requires label/startDate/endDate and validates status enum', () => {

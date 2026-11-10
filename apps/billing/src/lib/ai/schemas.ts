@@ -6,7 +6,7 @@
  * (importExport.executeImport) — never auto-executed, never tenant-bypassing.
  */
 
-export type AIModel = 'gl-accounts' | 'opening-balances' | 'tax-types' | 'account-groups' | 'company-profile' | 'fiscal-year'
+export type AIModel = 'gl-accounts' | 'opening-balances' | 'tax-types' | 'account-groups' | 'company-profile' | 'sub-companies' | 'fiscal-year'
 
 export interface AIModelDef {
   value: AIModel
@@ -29,6 +29,7 @@ const REQUIRED: Record<AIModel, readonly string[]> = {
   'tax-types': ['name', 'type', 'rate', 'active'],
   'account-groups': ['name', 'type', 'nature', 'active'],
   'company-profile': ['companyName'],
+  'sub-companies': ['name', 'code'],
   'fiscal-year': ['label', 'startDate', 'endDate'],
 }
 
@@ -111,7 +112,7 @@ Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no ex
   {
     value: 'company-profile',
     label: 'Company Profile',
-    hint: 'Organization name, PAN, contact details, and sub-companies',
+    hint: 'Organization name, PAN, contact details',
     required: REQUIRED['company-profile'],
     prompt: ({ tenantName }) =>
       `You are an accounting assistant for "${tenantName}", a Nepali community organization.
@@ -122,11 +123,22 @@ Generate company profile details as JSON. Each profile must have:
 - companyContact: string — phone/contact number (optional)
 - companyEmail: string — email address (optional)
 - companyAddress: string — physical address (optional)
-- subCompanies: array (optional) — sub-companies / illakas under this company. Each has:
-  - name: string — sub-company name
-  - code: string — sub-company code
-  - slug: string — URL slug (optional)
-  - active: boolean — whether active (default true)
+
+Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no explanation.`,
+  },
+  {
+    value: 'sub-companies',
+    label: 'Sub-companies',
+    hint: 'Sub-companies / illakas under this company',
+    required: REQUIRED['sub-companies'],
+    prompt: ({ tenantName }) =>
+      `You are an accounting assistant for "${tenantName}", a Nepali community organization.
+
+Generate sub-companies (illakas) as JSON. Each sub-company must have:
+- name: string — sub-company name
+- code: string — sub-company code (used to match an existing illaka — new ones are not created)
+- slug: string — URL slug (optional)
+- active: boolean — whether active (default true)
 
 Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no explanation.`,
   },
