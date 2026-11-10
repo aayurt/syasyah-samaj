@@ -10,7 +10,7 @@
  * Step flow: Prompt → Paste JSON → Validate → Preview → Execute → Done.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertCircle,
   ArrowRight,
@@ -224,6 +224,15 @@ export default function AIWorkspaceModal({
     skipped: number
     errors: string[]
   } | null>(null)
+
+  // Built-in browser language model (Gemini Nano via window.LanguageModel)
+  const [gemini, setGemini] = useState<{
+    status: 'idle' | 'checking' | 'ready' | 'unavailable' | 'error'
+    prompt: string
+    response: string
+    error: string
+  }>({ status: 'idle', prompt: '', response: '', error: '' })
+  const geminiSessionRef = useRef<any>(null)
 
   const def = modelDef(model)
   const tenantName =
@@ -494,6 +503,44 @@ export default function AIWorkspaceModal({
     }
   }, [model, preview, validation, t, onImported])
 
+  const checkBuiltInGemini = useCallback(async () => {
+    setGemini({ status: 'checking', prompt: '', response: '', error: '' })
+    if (typeof window === 'undefined' || !('LanguageModel' in window)) {
+      setGemini({ status: 'unavailable', prompt: '', response: '', error: 'Built-in language model not available in this browser.' })
+      return
+    }
+    try {
+      const availability = await (window as any).LanguageModel.availability()
+      if (availability === 'unavailable') {
+        setGemini({ status: 'unavailable', prompt: '', response: '', error: t('ai.geminiUnavailable', 'Built-in Gemini not available on this device.') })
+        return
+      }
+      const session = await (window as any).LanguageModel.create()
+      geminiSessionRef.current = session
+      setGemini({ status: 'ready', prompt: '', response: '', error: '' })
+    } catch (e) {
+      setGemini({ status: 'error', prompt: '', response: '', error: e instanceof Error ? e.message : String(e) })
+    }
+  }, [t])
+
+  const askBuiltInGemini = useCallback(async () => {
+    if (!geminiSessionRef.current || !gemini.prompt.trim()) return
+    setGemini((prev) => ({ ...prev, status: 'checking', response: '', error: '' }))
+    try {
+      const response = await geminiSessionRef.current.prompt(gemini.prompt)
+      setGemini((prev) => ({ ...prev, status: 'ready', response: String(response) }))
+    } catch (e) {
+      setGemini((prev) => ({ ...prev, status: 'error', error: e instanceof Error ? e.message : String(e) }))
+    }
+  }, [gemini.prompt])
+
+  const useGeminiResponse = useCallback(() => {
+    if (!gemini.response.trim()) return
+    setRawJson(gemini.response)
+    setStep('paste')
+    pushToast('info', t('ai.copied', 'Prompt copied'), t('ai.geminiResponsePasted', 'Gemini response pasted into JSON'))
+  }, [gemini.response, t, pushToast])
+
   const byRow = new Map<number, AIValidationIssue[]>()
   for (const issue of [...validation.errors, ...validation.warnings]) {
     const list = byRow.get(issue.row) ?? []
@@ -719,7 +766,64 @@ export default function AIWorkspaceModal({
                   >
                     Gemini
                   </button>
+                  <button
+                    onClick={checkBuiltInGemini}
+                    className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                  >
+                    {gemini.status === 'checking' ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <Sparkles size={12} />
+                    )}
+                    {t('ai.geminiBuiltIn', 'InBuilt Gemini Browser')}
+                  </button>
                 </div>
+                {gemini.status !== 'idle' && (
+                  <div className="mt-3 space-y-2 rounded border bg-slate-50 p-3">
+                    {gemini.status === 'unavailable' || gemini.status === 'error' ? (
+                      <p className="text-xs text-red-600">{gemini.error}</p>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                          <Sparkles size={12} className="text-crimson-600" />
+                          {t('ai.geminiLabel', 'Prompt for built-in Gemini')}
+                        </div>
+                        <textarea
+                          value={gemini.prompt}
+                          onChange={(e) => setGemini((prev) => ({ ...prev, prompt: e.target.value }))}
+                          rows={3}
+                          className="w-full rounded border border-slate-300 bg-white px-2 py-2 text-xs font-mono text-slate-700 focus:outline-none focus:ring-1 focus:ring-crimson-600"
+                          placeholder="Ask built-in Gemini to refine the import prompt..."
+                        />
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            onClick={askBuiltInGemini}
+                            disabled={gemini.status !== 'ready'}
+                            className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {t('ai.geminiAsk', 'Ask built-in Gemini')}
+                          </button>
+                          {gemini.response && (
+                            <button
+                              onClick={useGeminiResponse}
+                              className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                            >
+                              <ArrowRight size={12} /> {t('ai.geminiUse', 'Use this response')}
+                            </button>
+                          )}
+                        </div>
+                        {gemini.response && (
+                          <div className="mt-2 rounded border border-slate-200 bg-white p-2 text-xs text-slate-600 overflow-x-auto max-h-32 overflow-y-auto">
+                            {gemini.response}
+                          </div>
+                        )}
+                        {gemini.status === 'ready' && !gemini.response && (
+                          <p className="text-xs text-emerald-600">{t('ai.geminiReady', 'Built-in Gemini ready — type a prompt above.')}</p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               <p className="text-xs text-slate-500">{t('ai.promptHint', 'Open ChatGPT, Claude or Gemini, paste the prompt above, and return only the JSON.')}</p>
             </div>
