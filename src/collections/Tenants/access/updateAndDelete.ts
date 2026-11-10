@@ -7,7 +7,7 @@ export const updateAndDeleteAccess: Access = ({ req }) => {
     return false
   }
 
-  if (isSuperAdmin(req.user)) {
+  if (isSuperAdmin(req.user) || req.user.role === 'admin') {
     return true
   }
 

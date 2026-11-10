@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -27,7 +27,7 @@ import {
   CalendarDays,
 } from 'lucide-react'
 import { api, fmt, protectGlobalsFields, useSyncState } from '../lib/api'
-import { authClient, clearCachedSession } from '../lib/auth'
+import { authClient, clearCachedSession, isAdminUser } from '../lib/auth'
 import { adToBsString, formatDate } from '../lib/nepaliDate'
 import { useCalendar } from '../lib/calendar'
 import { useFiscalYear } from '../lib/fiscalYear'
@@ -216,7 +216,106 @@ export default function Settings() {
   const navigate = useNavigate()
   const { section: activeSection } = useParams<{ section?: string }>()
   const { update: updateCalendar } = useCalendar()
-  const { tenantId } = useTenant()
+  const { tenantId, tenants, setTenantId } = useTenant()
+  const { data: session } = authClient.useSession()
+  const userRole = (session?.user as any)?.role as string | undefined
+  const isAdmin = isAdminUser(userRole)
+
+  // Sub-companies / Ilakas state
+  const [subCompanies, setSubCompanies] = useState<any[]>([])
+  const [loadingTenants, setLoadingTenants] = useState(false)
+  const [tenantModalOpen, setTenantModalOpen] = useState(false)
+  const [editingTenant, setEditingTenant] = useState<any | null>(null)
+  const [tenantName, setTenantName] = useState('')
+  const [tenantCode, setTenantCode] = useState('')
+  const [tenantSlug, setTenantSlug] = useState('')
+  const [tenantType, setTenantType] = useState<'central' | 'illaka'>('illaka')
+  const [tenantPhone, setTenantPhone] = useState('')
+  const [tenantEmail, setTenantEmail] = useState('')
+  const [tenantActive, setTenantActive] = useState(true)
+  const [savingTenant, setSavingTenant] = useState(false)
+  const [tenantError, setTenantError] = useState('')
+
+  const loadSubCompanies = useCallback(() => {
+    setLoadingTenants(true)
+    api<{ docs: any[] }>('/tenants', { query: { limit: 100, depth: 0, sort: 'name' } })
+      .then((res) => {
+        setSubCompanies(res.docs || [])
+      })
+      .catch(() => {})
+      .finally(() => setLoadingTenants(false))
+  }, [])
+
+  useEffect(() => {
+    if (activeSection === 'company') {
+      loadSubCompanies()
+    }
+  }, [activeSection, loadSubCompanies])
+
+  const openCreateTenant = () => {
+    setEditingTenant(null)
+    setTenantName('')
+    setTenantCode('')
+    setTenantSlug('')
+    setTenantType('illaka')
+    setTenantPhone('')
+    setTenantEmail('')
+    setTenantActive(true)
+    setTenantError('')
+    setTenantModalOpen(true)
+  }
+
+  const openEditTenant = (tDoc: any) => {
+    setEditingTenant(tDoc)
+    setTenantName(tDoc.name || '')
+    setTenantCode(tDoc.code || '')
+    setTenantSlug(tDoc.slug || '')
+    setTenantType(tDoc.type || 'illaka')
+    setTenantPhone(tDoc.contactInfo?.phone || '')
+    setTenantEmail(tDoc.contactInfo?.email || '')
+    setTenantActive(tDoc.active !== false)
+    setTenantError('')
+    setTenantModalOpen(true)
+  }
+
+  const handleSaveTenant = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!tenantName.trim()) {
+      setTenantError('Name is required')
+      return
+    }
+    const computedSlug = (tenantSlug.trim() || tenantName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
+    if (!computedSlug) {
+      setTenantError('Slug is required')
+      return
+    }
+    setSavingTenant(true)
+    setTenantError('')
+    try {
+      const payloadBody = {
+        name: tenantName.trim(),
+        code: tenantCode.trim() || undefined,
+        slug: computedSlug,
+        type: tenantType,
+        active: tenantActive,
+        contactInfo: {
+          phone: tenantPhone.trim() || undefined,
+          email: tenantEmail.trim() || undefined,
+        },
+      }
+      if (editingTenant) {
+        await api(`/tenants/${editingTenant.id}`, { method: 'PATCH', body: payloadBody })
+      } else {
+        await api('/tenants', { method: 'POST', body: payloadBody })
+      }
+      setTenantModalOpen(false)
+      loadSubCompanies()
+    } catch (err: any) {
+      setTenantError(err.message || 'Failed to save sub-company')
+    } finally {
+      setSavingTenant(false)
+    }
+  }
 
   // Selected section from URL (/settings/:section)
 
@@ -1305,6 +1404,99 @@ export default function Settings() {
             />
           </div>
         )}
+
+        {/* ── Sub-Companies / Ilakas Section ── */}
+        <div className="mt-8 border-t border-slate-200 pt-6">
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h3 className="text-base font-semibold text-slate-800">Sub-Companies / Ilakas</h3>
+              <p className="text-xs text-slate-500">
+                Manage branch units, branches and community ilakas under this organization. Requires admin access.
+              </p>
+            </div>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={openCreateTenant}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors w-fit"
+              >
+                <Plus size={14} />
+                <span>Add Sub-Company</span>
+              </button>
+            )}
+          </div>
+
+          {loadingTenants ? (
+            <div className="py-6 text-center text-sm text-slate-400">Loading sub-companies…</div>
+          ) : subCompanies.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+              No sub-companies or ilakas configured yet.
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3">Code</th>
+                    <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3">Contact</th>
+                    <th className="px-4 py-3">Status</th>
+                    {isAdmin && <th className="px-4 py-3 text-right">Actions</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {subCompanies.map((tc) => (
+                    <tr key={tc.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-700">
+                        {tc.code || '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-slate-900">{tc.name}</div>
+                        <div className="text-xs text-slate-400 font-mono">/{tc.slug}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
+                          tc.type === 'central'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {tc.type === 'central' ? 'Central' : 'Ilaka'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-600">
+                        {tc.contactInfo?.phone && <div>📞 {tc.contactInfo.phone}</div>}
+                        {tc.contactInfo?.email && <div className="text-slate-400">✉️ {tc.contactInfo.email}</div>}
+                        {!tc.contactInfo?.phone && !tc.contactInfo?.email && <span className="text-slate-400">—</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          tc.active !== false
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {tc.active !== false ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      {isAdmin && (
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => openEditTenant(tc)}
+                            className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                            title="Edit Sub-Company"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </Section>
       )}
 
@@ -2401,6 +2593,144 @@ export default function Settings() {
             loadCoa()
           }}
         />
+      )}
+
+      {/* ── Add / Edit Sub-Company (Tenant) Modal ─────────── */}
+      {tenantModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-slate-800">
+                {editingTenant ? 'Edit Sub-Company / Ilaka' : 'Add Sub-Company / Ilaka'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setTenantModalOpen(false)}
+                className="rounded p-1 text-slate-400 hover:bg-slate-100"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {tenantError && (
+              <div className="mb-4 rounded border border-red-200 bg-red-50 p-2.5 text-xs text-red-600">
+                {tenantError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveTenant} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={tenantName}
+                  onChange={(e) => {
+                    setTenantName(e.target.value)
+                    if (!editingTenant && !tenantSlug) {
+                      setTenantSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
+                    }
+                  }}
+                  placeholder="e.g. Ilaka 01 - Patan"
+                  className={inputCls}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Code</label>
+                  <input
+                    type="text"
+                    value={tenantCode}
+                    onChange={(e) => setTenantCode(e.target.value.toUpperCase())}
+                    placeholder="e.g. IL01"
+                    className={`${inputCls} font-mono`}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Type</label>
+                  <select
+                    value={tenantType}
+                    onChange={(e) => setTenantType(e.target.value as 'central' | 'illaka')}
+                    className={inputCls}
+                  >
+                    <option value="illaka">Ilaka</option>
+                    <option value="central">Central</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Slug (URL identifier) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={tenantSlug}
+                  onChange={(e) => setTenantSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, ''))}
+                  placeholder="e.g. ilaka-01"
+                  className={`${inputCls} font-mono`}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Phone</label>
+                  <input
+                    type="tel"
+                    value={tenantPhone}
+                    onChange={(e) => setTenantPhone(e.target.value)}
+                    placeholder="e.g. 01-5544332"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                  <input
+                    type="email"
+                    value={tenantEmail}
+                    onChange={(e) => setTenantEmail(e.target.value)}
+                    placeholder="e.g. ilaka01@syasyahsamaj.com"
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="tenantActiveCheck"
+                  checked={tenantActive}
+                  onChange={(e) => setTenantActive(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <label htmlFor="tenantActiveCheck" className="text-sm font-medium text-slate-700">
+                  Active for accounting & operations
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setTenantModalOpen(false)}
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingTenant}
+                  className="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {savingTenant ? 'Saving…' : editingTenant ? 'Save Changes' : 'Create Sub-Company'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   )

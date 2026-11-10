@@ -1,13 +1,13 @@
 import type { CollectionConfig } from 'payload'
 
 import { sendFCMTopicNotification } from '@/utilities/sendFCMNotification'
+import { isAdmin } from '@/access/admin'
 import { updateAndDeleteAccess } from './access/updateAndDelete'
-import { isSuperAdminAccess } from '@/access/isSuperAdmin'
 
 export const Tenants: CollectionConfig = {
   slug: 'tenants',
   access: {
-    create: isSuperAdminAccess,
+    create: isAdmin,
     delete: updateAndDeleteAccess,
     read: () => true,
     update: updateAndDeleteAccess,
