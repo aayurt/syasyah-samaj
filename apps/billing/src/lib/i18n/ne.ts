@@ -904,6 +904,10 @@ settings: 'सेटिङहरू',
     importOpenings: 'AI सँग खुला शेषर आयात गर्नुहोस्',
     importTaxTypes: 'AI सँग कर प्रकारहरू आयात गर्नुहोस्',
     importAccountGroups: 'AI सँग खाता समूहहरू आयात गर्नुहोस्',
+    importCompanyProfile: 'AI सँग कम्पनी प्रोफाइल आयात गर्नुहोस्',
+    importFiscalYear: 'AI सँग राजकोषीय बर्ष आयात गर्नुहोस्',
+    importedCompany: 'कम्पनी प्रोफाइल सुरक्षित भयो',
+    importedFiscalYear: 'राजकोषीय बर्ष सुरक्षित भयो',
   },
 
   // ── Posting page ──

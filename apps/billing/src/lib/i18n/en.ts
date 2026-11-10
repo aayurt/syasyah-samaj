@@ -904,6 +904,10 @@ settings: 'Settings',
     importOpenings: 'Import Opening Balances with AI',
     importTaxTypes: 'Import Tax Types with AI',
     importAccountGroups: 'Import Account Groups with AI',
+    importCompanyProfile: 'Import Company Profile with AI',
+    importFiscalYear: 'Import Fiscal Year with AI',
+    importedCompany: 'Company profile saved',
+    importedFiscalYear: 'Fiscal year saved',
   },
 
   // ── Posting page ──

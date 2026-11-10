@@ -76,7 +76,11 @@ export function validateAgainstModel(
           ? ['accountCode', 'accountName', 'fiscalYear', 'amount']
           : model === 'tax-types'
             ? ['name', 'type', 'rate', 'active']
-            : ['name', 'type', 'nature', 'active']
+            : model === 'company-profile'
+              ? ['companyName']
+              : model === 'fiscal-year'
+                ? ['label', 'startDate', 'endDate']
+                : ['name', 'type', 'nature', 'active']
 
     for (const field of required) {
       if (!(field in d) || d[field] === null || d[field] === undefined) {
@@ -120,11 +124,20 @@ export function validateAgainstModel(
       if (!isValidEnum(d.type, TAX_KINDS)) push(errors, row, 'type', 'type must be sales/purchase', 'error')
       if (!isNumber(d.rate)) push(errors, row, 'rate', 'rate must be a number (percent)', 'error')
       if (!isBoolean(d.active)) push(errors, row, 'active', 'active must be true/false', 'error')
-    } else {
-      // account-groups
+    } else if (model === 'fiscal-year') {
+      if (!isNonEmptyString(d.label)) push(errors, row, 'label', 'label is required', 'error')
+      if (!isNonEmptyString(d.startDate)) push(errors, row, 'startDate', 'startDate is required', 'error')
+      if (!isNonEmptyString(d.endDate)) push(errors, row, 'endDate', 'endDate is required', 'error')
+      if (d.status != null && !isValidEnum(d.status, new Set(['active', 'inactive']))) {
+        push(errors, row, 'status', 'status must be active/inactive', 'error')
+      }
+    } else if (model === 'account-groups') {
       if (!isValidEnum(d.type, ACCOUNT_TYPES)) push(errors, row, 'type', 'type must be asset/liability/equity/income/expense', 'error')
       if (!isValidEnum(d.nature, GROUP_NATURES)) push(errors, row, 'nature', 'nature must be debit/credit', 'error')
       if (!isBoolean(d.active)) push(errors, row, 'active', 'active must be true/false', 'error')
+    } else {
+      // company-profile
+      if (!isNonEmptyString(d.companyName)) push(errors, row, 'companyName', 'companyName is required', 'error')
     }
   })
 

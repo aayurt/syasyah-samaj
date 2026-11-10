@@ -8,12 +8,14 @@ import { AI_MODELS, modelDef } from './schemas'
 import { validateAgainstModel } from './validate'
 
 describe('AI Workspace model registry', () => {
-  it('exposes the four import models with required fields', () => {
+  it('exposes the six import models with required fields', () => {
     expect(AI_MODELS.map((m) => m.value)).toEqual([
       'gl-accounts',
       'opening-balances',
       'tax-types',
       'account-groups',
+      'company-profile',
+      'fiscal-year',
     ])
     for (const m of AI_MODELS) {
       expect(typeof m.prompt).toBe('function')
@@ -21,6 +23,8 @@ describe('AI Workspace model registry', () => {
       expect(m.required.length).toBeGreaterThan(0)
     }
     expect(modelDef('tax-types').label).toBe('Tax Types')
+    expect(modelDef('company-profile').label).toBe('Company Profile')
+    expect(modelDef('fiscal-year').label).toBe('Fiscal Year')
   })
 })
 
@@ -84,5 +88,27 @@ describe('validateAgainstModel', () => {
     expect(validateAgainstModel(parsed, 'account-groups', ctx).valid).toBe(true)
     const bad = { docs: [{ name: 'Banks', type: 'asset', nature: 'sideways', active: true }] }
     expect(validateAgainstModel(bad, 'account-groups', ctx).valid).toBe(false)
+  })
+
+  it('company-profile requires companyName', () => {
+    const good = { docs: [{ companyName: 'Syasyah Samaj', companyPan: '603774469' }] }
+    expect(validateAgainstModel(good, 'company-profile', ctx).valid).toBe(true)
+    const bad = { docs: [{ companyPan: '603774469' }] }
+    const result = validateAgainstModel(bad, 'company-profile', ctx)
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.field === 'companyName')).toBe(true)
+  })
+
+  it('fiscal-year requires label/startDate/endDate and validates status enum', () => {
+    const good = { docs: [{ label: '2026-27', startDate: '2026-04-01', endDate: '2027-03-31', status: 'active' }] }
+    expect(validateAgainstModel(good, 'fiscal-year', ctx).valid).toBe(true)
+    const bad = { docs: [{ startDate: '2026-04-01', endDate: '2027-03-31' }] }
+    let result = validateAgainstModel(bad, 'fiscal-year', ctx)
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.field === 'label')).toBe(true)
+    const badStatus = { docs: [{ label: '2026-27', startDate: '2026-04-01', endDate: '2027-03-31', status: 'bogus' }] }
+    result = validateAgainstModel(badStatus, 'fiscal-year', ctx)
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.field === 'status')).toBe(true)
   })
 })

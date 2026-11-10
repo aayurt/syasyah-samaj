@@ -1012,12 +1012,34 @@ export default function SetupWizard() {
 
             {step.key === 'company' && (
               <button
+                onClick={() => {
+                  setAiInitialModel('company-profile')
+                  setAiOpen(true)
+                }}
+                className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <Sparkles size={14} /> {t('ai.importCompanyProfile', 'Import Company Profile with AI')}
+              </button>
+            )}
+            {step.key === 'company' && (
+              <button
                 onClick={() => void saveCompany()}
                 disabled={busy === 'company' || !settingsLoaded}
                 className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
               >
                 {busy === 'company' ? <Loader2 size={15} className="animate-spin" /> : null}
                 Save & continue
+              </button>
+            )}
+            {step.key === 'fiscalYear' && (
+              <button
+                onClick={() => {
+                  setAiInitialModel('fiscal-year')
+                  setAiOpen(true)
+                }}
+                className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <Sparkles size={14} /> {t('ai.importFiscalYear', 'Import Fiscal Year with AI')}
               </button>
             )}
             {step.key === 'fiscalYear' && (

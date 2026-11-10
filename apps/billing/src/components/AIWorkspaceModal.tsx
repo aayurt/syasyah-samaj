@@ -59,8 +59,14 @@ function fieldInputs(model: AIModel): string[] {
       return ['accountCode', 'accountName', 'fiscalYear', 'amount']
     case 'tax-types':
       return ['name', 'type', 'rate', 'active']
-    default:
+    case 'account-groups':
       return ['name', 'type', 'nature', 'active']
+    case 'company-profile':
+      return ['companyName', 'companyPan', 'companyContact', 'companyEmail', 'companyAddress']
+    case 'fiscal-year':
+      return ['label', 'startDate', 'endDate', 'status']
+    default:
+      return ['name']
   }
 }
 
@@ -69,6 +75,12 @@ function enumOptions(model: AIModel, field: string): { label: string; value: str
     return [
       { label: 'Sales', value: 'sales' },
       { label: 'Purchase', value: 'purchase' },
+    ]
+  }
+  if (model === 'fiscal-year' && field === 'status') {
+    return [
+      { label: 'Active', value: 'active' },
+      { label: 'Inactive', value: 'inactive' },
     ]
   }
   if (field === 'type') {
@@ -126,6 +138,26 @@ function exampleJson(model: AIModel): string {
       )
     case 'tax-types':
       return JSON.stringify({ docs: [{ name: 'VAT 13%', type: 'sales', rate: 13, active: true }] }, null, 2)
+    case 'company-profile':
+      return JSON.stringify(
+        {
+          docs: [
+            {
+              companyName: 'Syasyah Samaj',
+              companyPan: '603774469',
+              companyContact: '9851012345',
+              companyEmail: 'info@syasyahsamaj.com.np',
+              companyAddress: 'Yala, Lalitpur',
+            },
+          ],
+        },
+        null,
+        2,
+      )
+    case 'fiscal-year':
+      return JSON.stringify({
+        docs: [{ label: '2026-27', startDate: '2026-04-01', endDate: '2027-03-31', status: 'active' }],
+      }, null, 2)
     default:
       return JSON.stringify({ docs: [{ name: 'Bank Accounts', type: 'asset', nature: 'debit', active: true }] }, null, 2)
   }
@@ -310,6 +342,49 @@ export default function AIWorkspaceModal({
       (row) => ({ doc: row.doc, action: row.action }),
     )
     try {
+      // Company profile and fiscal year are single-record writes through the
+      // same endpoints the wizard uses — they are not entity collections, so
+      // they bypass executeImport (which keys off ENTITY_REGISTRY).
+      if (model === 'company-profile') {
+        const errs: string[] = []
+        for (const row of preview) {
+          try {
+            await api('/globals/billing-settings', { method: 'POST', body: row.doc })
+          } catch (e) {
+            errs.push(e instanceof Error ? e.message : String(e))
+          }
+        }
+        setResult({ created: preview.length - errs.length, updated: 0, skipped: 0, errors: errs })
+        if (errs.length === 0) {
+          pushToast('success', t('ai.imported', 'Import complete'), t('ai.importedCompany', 'Company profile saved'))
+          onImported?.()
+        } else {
+          pushToast('error', t('ai.importFailed', 'Import failed'), `${errs.length} failed: ${errs.join('; ')}`)
+        }
+        setExecuting(false)
+        return
+      }
+      if (model === 'fiscal-year') {
+        const errs: string[] = []
+        for (const row of preview) {
+          try {
+            const body: Record<string, unknown> = { ...row.doc, status: 'active', isActive: true }
+            if (tenantId) body.tenant = Number(tenantId)
+            await api('/fiscal-years', { method: 'POST', body })
+          } catch (e) {
+            errs.push(e instanceof Error ? e.message : String(e))
+          }
+        }
+        setResult({ created: preview.length - errs.length, updated: 0, skipped: 0, errors: errs })
+        if (errs.length === 0) {
+          pushToast('success', t('ai.imported', 'Import complete'), t('ai.importedFiscalYear', 'Fiscal year saved'))
+          onImported?.()
+        } else {
+          pushToast('error', t('ai.importFailed', 'Import failed'), `${errs.length} failed: ${errs.join('; ')}`)
+        }
+        setExecuting(false)
+        return
+      }
       const res = await executeImport(model, records)
       setResult(res)
       if (res.errors.length === 0) {

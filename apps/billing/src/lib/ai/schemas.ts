@@ -6,7 +6,7 @@
  * (importExport.executeImport) — never auto-executed, never tenant-bypassing.
  */
 
-export type AIModel = 'gl-accounts' | 'opening-balances' | 'tax-types' | 'account-groups'
+export type AIModel = 'gl-accounts' | 'opening-balances' | 'tax-types' | 'account-groups' | 'company-profile' | 'fiscal-year'
 
 export interface AIModelDef {
   value: AIModel
@@ -28,6 +28,8 @@ const REQUIRED: Record<AIModel, readonly string[]> = {
   'opening-balances': ['accountCode', 'accountName', 'fiscalYear', 'amount'],
   'tax-types': ['name', 'type', 'rate', 'active'],
   'account-groups': ['name', 'type', 'nature', 'active'],
+  'company-profile': ['companyName'],
+  'fiscal-year': ['label', 'startDate', 'endDate'],
 }
 
 export const ACCOUNT_TYPES = new Set(['asset', 'liability', 'equity', 'income', 'expense'])
@@ -103,6 +105,39 @@ Generate account groups as JSON. Each group must have:
 - type: one of "asset", "liability", "equity", "income", "expense"
 - nature: one of "debit", "credit"
 - active: boolean
+
+Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no explanation.`,
+  },
+  {
+    value: 'company-profile',
+    label: 'Company Profile',
+    hint: 'Organization name, PAN, contact details',
+    required: REQUIRED['company-profile'],
+    prompt: ({ tenantName }) =>
+      `You are an accounting assistant for "${tenantName}", a Nepali community organization.
+
+Generate company profile details as JSON. Each profile must have:
+- companyName: string — legal organization name
+- companyPan: string — Nepali PAN number (optional)
+- companyContact: string — phone/contact number (optional)
+- companyEmail: string — email address (optional)
+- companyAddress: string — physical address (optional)
+
+Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no explanation.`,
+  },
+  {
+    value: 'fiscal-year',
+    label: 'Fiscal Year',
+    hint: 'Accounting period start/end dates',
+    required: REQUIRED['fiscal-year'],
+    prompt: ({ tenantName }) =>
+      `You are an accounting assistant for "${tenantName}", a Nepali community organization.
+
+Generate a fiscal year as JSON. Each fiscal year must have:
+- label: string — e.g. "2026-27"
+- startDate: string — ISO date, e.g. "2026-04-01"
+- endDate: string — ISO date, e.g. "2027-03-31"
+- status: one of "active", "inactive" (default active)
 
 Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no explanation.`,
   },
