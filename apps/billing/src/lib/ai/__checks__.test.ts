@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { AI_MODELS, modelDef } from './schemas'
+import { AI_MODELS, modelDef, AIModel } from './schemas'
 import { validateAgainstModel } from './validate'
 
 describe('AI Workspace model registry', () => {
@@ -132,5 +132,31 @@ describe('validateAgainstModel', () => {
     result = validateAgainstModel(badStatus, 'fiscal-year', ctx)
     expect(result.valid).toBe(false)
     expect(result.errors.some((e) => e.field === 'status')).toBe(true)
+  })
+
+  it('every model accepts its valid example JSON', () => {
+    const examples: Record<AIModel, Record<string, unknown>[]> = {
+      'gl-accounts': [{ code: '1101', name: 'Cash', type: 'asset', class: 'cash', group: 'Bank & Cash', openingBalance: 50000, active: true }],
+      'opening-balances': [{ accountCode: '1101', accountName: 'Cash', fiscalYear: '2026-27', amount: 50000 }],
+      'tax-types': [{ name: 'VAT 13%', type: 'sales', rate: 13, active: true }],
+      'account-groups': [{ name: 'Bank Accounts', type: 'asset', nature: 'debit', active: true }],
+      'company-profile': [{ companyName: 'Syasyah Samaj', companyPan: '603774469' }],
+      'sub-companies': [{ name: 'Illaka Central', code: 'ILLAKA-C', slug: 'illaka-central', active: true }],
+      'fiscal-year': [{ label: '2026-27', startDate: '2026-04-01', endDate: '2027-03-31', status: 'active' }],
+    }
+    for (const [model, docs] of Object.entries(examples)) {
+      const result = validateAgainstModel({ docs }, model as AIModel, ctx)
+      expect(result.valid, `${model}: ${JSON.stringify(result.errors)}`).toBe(true)
+    }
+  })
+
+  it('every model rejects wrong top-level shape', () => {
+    for (const m of AI_MODELS) {
+      expect(validateAgainstModel(null, m.value, ctx).valid).toBe(false)
+      expect(validateAgainstModel([1, 2], m.value, ctx).valid).toBe(false)
+      expect(validateAgainstModel('string', m.value, ctx).valid).toBe(false)
+      expect(validateAgainstModel({ docs: [] }, m.value, ctx).valid).toBe(false)
+      expect(validateAgainstModel({ docs: [{}] }, m.value, ctx).valid).toBe(false)
+    }
   })
 })

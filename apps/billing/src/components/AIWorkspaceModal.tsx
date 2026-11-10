@@ -406,7 +406,8 @@ export default function AIWorkspaceModal({
         let updated = 0
         let existing: TenantOption[] = []
         try {
-          existing = await api<TenantOption[]>('/tenants', { query: { depth: 0, limit: 100 } })
+          const res = await api<{ docs: TenantOption[] }>('/tenants', { query: { depth: 0, limit: 100 } })
+          existing = res.docs ?? []
         } catch {
           existing = []
         }
