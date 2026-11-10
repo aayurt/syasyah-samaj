@@ -147,6 +147,7 @@ export default function AccountsTable({
                   <th className="w-24 px-4 py-2">Code</th>
                   <th className="px-4 py-2">Account Heading / Subheading</th>
                   <th className="w-28 px-4 py-2">Class</th>
+                  <th className="w-24 px-4 py-2">Description</th>
                   <th className="w-36 px-4 py-2 text-right">Opening (FY)</th>
                   <th className="w-14 px-4 py-2 text-right"></th>
                 </tr>
@@ -210,6 +211,9 @@ export default function AccountsTable({
                               <td className="px-4 py-2 text-xs text-slate-500 capitalize">
                                 {a.class || 'other'}
                               </td>
+                              <td className="px-4 py-2 text-xs text-slate-500">
+                                {a.description || '—'}
+                              </td>
                               <td className="px-4 py-2 text-right font-mono text-xs text-slate-700 font-medium">
                                 {opening.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                               </td>
@@ -251,6 +255,9 @@ export default function AccountsTable({
                       </td>
                       <td className="px-4 py-2 text-xs text-slate-500 capitalize">
                         {a.class || 'other'}
+                      </td>
+                      <td className="px-4 py-2 text-xs text-slate-500">
+                        {a.description || '—'}
                       </td>
                       <td className="px-4 py-2 text-right font-mono text-xs text-slate-700 font-medium">
                         {opening.toLocaleString('en-US', { minimumFractionDigits: 2 })}
