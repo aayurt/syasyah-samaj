@@ -139,9 +139,9 @@ export function calculateNepalStatutory(
     netSalary,
     componentBreakdown: [
       { componentCode: 'BASIC', componentName: 'Basic Salary', componentType: 'earning', amount: basic, taxable: 1 },
-      ...(ssfEmployee > 0 ? [{ componentCode: 'SSF_EE', componentName: 'SSF (Employee)', componentType: 'deduction', amount: ssfEmployee, taxable: 0 }] : []),
-      ...(pfEmployee > 0 ? [{ componentCode: 'PF_EE', componentName: 'PF (Employee)', componentType: 'deduction', amount: pfEmployee, taxable: 0 }] : []),
-      ...(citMonthly > 0 ? [{ componentCode: 'CIT', componentName: 'Income Tax', componentType: 'deduction', amount: citMonthly, taxable: 0 }] : []),
+      ...(ssfEmployee > 0 ? [{ componentCode: 'SSF_EE', componentName: 'SSF (Employee)', componentType: 'deduction' as const, amount: ssfEmployee, taxable: 0 }] : []),
+      ...(pfEmployee > 0 ? [{ componentCode: 'PF_EE', componentName: 'PF (Employee)', componentType: 'deduction' as const, amount: pfEmployee, taxable: 0 }] : []),
+      ...(citMonthly > 0 ? [{ componentCode: 'CIT', componentName: 'Income Tax', componentType: 'deduction' as const, amount: citMonthly, taxable: 0 }] : []),
     ],
   }
 }

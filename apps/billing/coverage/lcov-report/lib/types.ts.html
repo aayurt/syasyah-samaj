@@ -676,7 +676,39 @@
 <a name='L600'></a><a href='#L600'>600</a>
 <a name='L601'></a><a href='#L601'>601</a>
 <a name='L602'></a><a href='#L602'>602</a>
-<a name='L603'></a><a href='#L603'>603</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L603'></a><a href='#L603'>603</a>
+<a name='L604'></a><a href='#L604'>604</a>
+<a name='L605'></a><a href='#L605'>605</a>
+<a name='L606'></a><a href='#L606'>606</a>
+<a name='L607'></a><a href='#L607'>607</a>
+<a name='L608'></a><a href='#L608'>608</a>
+<a name='L609'></a><a href='#L609'>609</a>
+<a name='L610'></a><a href='#L610'>610</a>
+<a name='L611'></a><a href='#L611'>611</a>
+<a name='L612'></a><a href='#L612'>612</a>
+<a name='L613'></a><a href='#L613'>613</a>
+<a name='L614'></a><a href='#L614'>614</a>
+<a name='L615'></a><a href='#L615'>615</a>
+<a name='L616'></a><a href='#L616'>616</a>
+<a name='L617'></a><a href='#L617'>617</a>
+<a name='L618'></a><a href='#L618'>618</a>
+<a name='L619'></a><a href='#L619'>619</a>
+<a name='L620'></a><a href='#L620'>620</a>
+<a name='L621'></a><a href='#L621'>621</a>
+<a name='L622'></a><a href='#L622'>622</a>
+<a name='L623'></a><a href='#L623'>623</a>
+<a name='L624'></a><a href='#L624'>624</a>
+<a name='L625'></a><a href='#L625'>625</a>
+<a name='L626'></a><a href='#L626'>626</a>
+<a name='L627'></a><a href='#L627'>627</a>
+<a name='L628'></a><a href='#L628'>628</a>
+<a name='L629'></a><a href='#L629'>629</a>
+<a name='L630'></a><a href='#L630'>630</a>
+<a name='L631'></a><a href='#L631'>631</a>
+<a name='L632'></a><a href='#L632'>632</a>
+<a name='L633'></a><a href='#L633'>633</a>
+<a name='L634'></a><a href='#L634'>634</a>
+<a name='L635'></a><a href='#L635'>635</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -885,6 +917,38 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1777,6 +1841,11 @@ export interface Employee {
   position?: string
   phone?: string
   pan?: string
+  bankName?: string | null
+  bankAccountNumber?: string | null
+  annualSalary?: number | null
+  joiningDate?: string | null
+  terminationDate?: string | null
   /** Work state — drives PT slabs and LWF frequency (india-payroll). */
   employmentState?: string | null
   /** EPF Universal Account Number. */
@@ -1794,6 +1863,44 @@ export interface Employee {
   basicSalary: number
   allowances: PayrollEarning[]
   deductions: PayrollDeduction[]
+  tenant?: number | null
+}
+&nbsp;
+export interface PayrollGroup {
+  id: number
+  name: string
+  frequency: 'MONTHLY' | 'WEEKLY' | 'FORTNIGHTLY' | 'FOUR_WEEKLY'
+  periodsPerYear: number
+  fiscalYear: number | null
+  active: boolean
+  tenant?: number | null
+}
+&nbsp;
+export type PayrollRunStatus = 'draft' | 'calculated' | 'posted' | 'void'
+&nbsp;
+export interface PayrollRun {
+  id: number
+  batchNumber: string
+  approvalStatus: 'Draft' | 'Submitted' | 'Approved' | 'Rejected'
+  varianceReview: boolean
+  runNumber: string
+  /** Pay period, YYYY-MM. */
+  period: string
+  /** Pay / journal date, YYYY-MM-DD. */
+  payDate: string
+  status: PayrollRunStatus
+  lines: PayrollRunLine[]
+  grossPay: number
+  totalDeductions: number
+  netPay: number
+  expenseAccount?: number | Account | null
+  paymentAccount?: number | Account | null
+  employerContributions?: PayrollEmployerContribution[]
+  statutoryExpenseAccount?: number | Account | null
+  journalEntry?: number | null
+  postedAt?: string
+  postedBy?: string
+  voidedAt?: string
   tenant?: number | null
 }
 &nbsp;
@@ -1822,14 +1929,28 @@ export interface PayrollEmployerContribution {
   account?: number | Account | null
 }
 &nbsp;
-/** /globals/payroll-settings — india-payroll compliance configuration. */
+/** /globals/payroll-settings — supports Nepal (SSF/PF/CIT) and India (EPF/ESIC/PT/LWF/TDS). */
 export interface PayrollSettings {
+  country?: 'Nepal' | 'India'
+  // Nepal
+  ssfEnabled?: boolean
+  pfEnabled?: boolean
+  citEnabled?: boolean
+  ssfRate?: number
+  pfRate?: number
+  ssfMinBasic?: number
+  ssfNumber?: string | null
+  pfNumber?: string | null
+  panNumber?: string | null
+  ssfPayableAccount?: number | Account | null
+  pfPayableAccount?: number | Account | null
+  citPayableAccount?: number | Account | null
+  // India (kept for backward compatibility)
   epfEnabled?: boolean
   esicEnabled?: boolean
   professionalTaxEnabled?: boolean
   lwfEnabled?: boolean
   tdsEnabled?: boolean
-  pfNumber?: string | null
   esiNumber?: string | null
   lwfNumber?: string | null
   defaultEmploymentState?: string | null
@@ -1855,31 +1976,6 @@ export interface PayrollRunLine {
   net: number
   statutory?: PayrollStatutorySnapshot | null
 }
-&nbsp;
-export type PayrollRunStatus = 'draft' | 'posted' | 'void'
-&nbsp;
-export interface PayrollRun {
-  id: number
-  runNumber: string
-  /** Pay period, YYYY-MM. */
-  period: string
-  /** Pay / journal date, YYYY-MM-DD. */
-  payDate: string
-  status: PayrollRunStatus
-  lines: PayrollRunLine[]
-  grossPay: number
-  totalDeductions: number
-  netPay: number
-  expenseAccount?: number | Account | null
-  paymentAccount?: number | Account | null
-  employerContributions?: PayrollEmployerContribution[]
-  statutoryExpenseAccount?: number | Account | null
-  journalEntry?: number | null
-  postedAt?: string
-  postedBy?: string
-  voidedAt?: string
-  tenant?: number | null
-}
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -1887,7 +1983,7 @@ export interface PayrollRun {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-11-09T18:08:04.793Z
+                at 2026-11-10T04:42:01.659Z
             </div>
         <script src="../prettify.js"></script>
         <script>

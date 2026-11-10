@@ -1,0 +1,3 @@
+═══ Daily Billing Sync Check ═══
+✗ Cannot reach remote Postgres at 82.165.181.153:5432
+  spawnSync psql ENOENT

@@ -108,7 +108,7 @@ export const PayGroups: CollectionConfig = {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const { id } = req.params
+        const id = req.routeParams?.id as string
         const { tenant, fiscalYearId } = (await req.json?.()) as {
           tenant?: number | string
           fiscalYearId?: number | string
@@ -182,7 +182,8 @@ export const PayGroups: CollectionConfig = {
                   period: periodStart.toISOString().slice(0, 7),
                   startDate: periodStart.toISOString().slice(0, 10),
                   endDate: periodEnd.toISOString().slice(0, 10),
-                  fiscalYear: fiscalYearId,
+                  fiscalYear: Number(fiscalYearId),
+                  company: tId,
                   tenant: tId,
                 },
                 overrideAccess: false,
@@ -227,7 +228,8 @@ export const PayGroups: CollectionConfig = {
                   period: periodLabel,
                   startDate: periodStart.toISOString().slice(0, 10),
                   endDate: periodEnd.toISOString().slice(0, 10),
-                  fiscalYear: fiscalYearId,
+                  fiscalYear: Number(fiscalYearId),
+                  company: tId,
                   tenant: tId,
                 },
                 overrideAccess: false,

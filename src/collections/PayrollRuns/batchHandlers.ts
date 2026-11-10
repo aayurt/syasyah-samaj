@@ -191,18 +191,20 @@ export async function calculatePayrollBatch(req: PayloadRequest): Promise<Respon
 
     if (ssfEnabled && basicTotal > 0) {
       const amount = round2(basicTotal * (ssfRate / 100))
+      const acc = relId((payrollSettings as any)?.ssfPayableAccount)
       employerContributions.push({
         label: 'SSF Employer',
         amount,
-        ...((payrollSettings as any)?.ssfPayableAccount ? { account: relId((payrollSettings as any).ssfPayableAccount) } : {}),
+        ...(acc ? { account: acc } : {}),
       })
     }
     if (pfEnabled && !ssfEnabled && basicTotal > 0) {
       const amount = round2(basicTotal * (pfRate / 100))
+      const acc = relId((payrollSettings as any)?.pfPayableAccount)
       employerContributions.push({
         label: 'PF Employer',
         amount,
-        ...((payrollSettings as any)?.pfPayableAccount ? { account: relId((payrollSettings as any).pfPayableAccount) } : {}),
+        ...(acc ? { account: acc } : {}),
       })
     }
 

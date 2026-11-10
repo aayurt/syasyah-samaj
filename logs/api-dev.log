@@ -244,3 +244,4 @@ Is payroll_runs_salary_slips table created or renamed from another table?
  GET /api/globals/billing-settings?depth=1 200 in 44972ms
  GET /api/globals/billing-settings?depth=0 200 in 44993ms
  GET /api/globals/billing-settings?depth=0 200 in 19983ms
+ ✓ Compiled in 116ms
