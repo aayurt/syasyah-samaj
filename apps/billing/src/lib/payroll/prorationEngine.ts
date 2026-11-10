@@ -8,7 +8,7 @@
  * Ported from QniPay `backend/src/utils/prorationEngine.ts`.
  */
 
-import { countWorkingDatesInRange, listDates } from './payrollDays'
+import { listDates } from './payrollDays'
 
 /**
  * Input to completed-months proration.
