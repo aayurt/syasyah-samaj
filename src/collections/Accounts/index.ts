@@ -193,6 +193,13 @@ export const Accounts: CollectionConfig = {
       required: true,
     },
     {
+      name: 'description',
+      type: 'textarea',
+      admin: {
+        description: 'Optional note or heading/subheading context for this account.',
+      },
+    },
+    {
       name: 'group',
       type: 'relationship',
       relationTo: 'account-groups',
