@@ -214,10 +214,13 @@ export default function AIWorkspaceModal({
     illakaCode ||
     tenantId ||
     'your organization'
-  const ctx: { tenantName: string; accounts: { code: string; name: string }[] } = {
-    tenantName,
-    accounts: accountCtx,
-  }
+  const ctx = useMemo(
+    () => ({
+      tenantName,
+      accounts: accountCtx,
+    }),
+    [tenantName, accountCtx],
+  )
 
   const prompt = useMemo(() => def.prompt(ctx), [def, ctx])
 
