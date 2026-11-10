@@ -442,6 +442,23 @@ export default function AIWorkspaceModal({
   const errorCount = validation.errors.length
   const warningCount = validation.warnings.length
 
+  const docLabel = (doc: Record<string, unknown>, model: AIModel): string => {
+    switch (model) {
+      case 'company-profile':
+        return String(doc.companyName ?? doc.name ?? '')
+      case 'fiscal-year':
+        return String(doc.label ?? doc.name ?? '')
+      case 'tax-types':
+        return String(doc.taxName ?? doc.name ?? '')
+      case 'account-groups':
+        return String(doc.groupName ?? doc.name ?? '')
+      case 'opening-balances':
+        return String(doc.accountCode ?? doc.code ?? '')
+      default:
+        return String(doc.accountCode ?? doc.name ?? doc.code ?? '')
+    }
+  }
+
   if (!open) return null
 
   return (
@@ -662,19 +679,12 @@ export default function AIWorkspaceModal({
               {parseError && (
                 <p className="text-xs text-red-600">{t('ai.invalidJson', 'Invalid JSON')}: {parseError}</p>
               )}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center">
                 <button
                   onClick={() => setRawJson(exampleJson(model))}
                   className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
                 >
                   {t('ai.exampleBtn', 'Insert example')}
-                </button>
-                <button
-                  onClick={handleParse}
-                  disabled={!rawJson.trim() || !!parseError}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40"
-                >
-                  {t('ai.validateBtn', 'Validate against schema')} <ArrowRight size={15} />
                 </button>
               </div>
             </div>
@@ -729,7 +739,7 @@ export default function AIWorkspaceModal({
                           <td className="px-3 py-2 text-slate-400 font-mono">{i + 1}</td>
                           <td className="px-3 py-2 text-sm text-slate-700">
                             <code className="truncate">
-                              {String(d.code ?? d.name ?? d.accountCode ?? '')}
+                              {docLabel(d, model)}
                             </code>
                           </td>
                           <td className="px-3 py-2 text-right">
