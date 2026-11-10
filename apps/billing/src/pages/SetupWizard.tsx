@@ -97,6 +97,7 @@ export default function SetupWizard() {
   const [editingSubCompany, setEditingSubCompany] = useState<TenantOption | null>(null)
   const [subCompanyBusy, setSubCompanyBusy] = useState('')
   const [subCompanyError, setSubCompanyError] = useState('')
+  const [subCompanyModalOpen, setSubCompanyModalOpen] = useState(false)
 
   // Company form
   const [company, setCompany] = useState({ companyName: '', companyPan: '', companyContact: '', companyEmail: '', companyAddress: '' })
@@ -232,6 +233,7 @@ export default function SetupWizard() {
     setEditingSubCompany(null)
     setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '' })
     setSubCompanyError('')
+    setSubCompanyModalOpen(false)
   }
 
   const saveSubCompany = async () => {
@@ -608,19 +610,13 @@ export default function SetupWizard() {
                     <h3 className="text-sm font-medium text-slate-700">
                       {t('setup.subCompanies', 'Sub-companies')} (ilakas)
                     </h3>
-                    {editingSubCompany ? (
-                      <button
-                        onClick={cancelEditSubCompany}
-                        className="rounded px-2 py-1 text-xs text-slate-500 hover:text-red-600"
-                      >
-                        <X size={13} /> Cancel
-                      </button>
-                    ) : (
+                    {!subCompanyModalOpen && (
                       <button
                         onClick={() => {
                           setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '' })
                           setEditingSubCompany(null)
                           setSubCompanyError('')
+                          setSubCompanyModalOpen(true)
                         }}
                         className="inline-flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800"
                       >
@@ -629,152 +625,191 @@ export default function SetupWizard() {
                     )}
                   </div>
 
-                  {editingSubCompany ? (
-                    <div className="rounded-lg border border-slate-200 bg-white p-4">
-                      <div className="grid gap-3 sm:grid-cols-4">
-                        <div className="sm:col-span-2">
-                          <label className="text-xs font-medium text-slate-600">
-                            {t('setup.subCompanyName', 'Name')} *
-                          </label>
-                          <input
-                            value={subCompanyForm.name}
-                            onChange={(e) => setSubCompanyForm({ ...subCompanyForm, name: e.target.value })}
-                            className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-600">
-                            {t('setup.subCompanyCode', 'Code')} *
-                          </label>
-                          <input
-                            value={subCompanyForm.code}
-                            onChange={(e) => setSubCompanyForm({ ...subCompanyForm, code: e.target.value })}
-                            placeholder="IL01"
-                            className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-600">
-                            {t('setup.subCompanyType', 'Type')}
-                          </label>
-                          <select
-                            value={subCompanyForm.type}
-                            onChange={(e) => setSubCompanyForm({ ...subCompanyForm, type: e.target.value as 'central' | 'illaka' })}
-                            className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500 bg-white"
-                          >
-                            <option value="illaka">Illaka</option>
-                            <option value="central">Central</option>
-                          </select>
-                        </div>
-                        <div className="flex items-end">
-                          <label className="text-xs font-medium text-slate-600 mr-2">
-                            {t('setup.subCompanyActive', 'Active')}
-                          </label>
-                          <input
-                            type="checkbox"
-                            checked={subCompanyForm.active}
-                            onChange={(e) => setSubCompanyForm({ ...subCompanyForm, active: e.target.checked })}
-                            className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
-                          />
-                        </div>
-                        <div className="sm:col-span-2">
-                          <label className="text-xs font-medium text-slate-600">
-                            {t('setup.subCompanySlug', 'Slug')} *
-                          </label>
-                          <input
-                            value={subCompanyForm.slug}
-                            onChange={(e) => setSubCompanyForm({ ...subCompanyForm, slug: e.target.value })}
-                            placeholder="ilaka-name"
-                            className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-4 flex items-center gap-2">
-                        <button
-                          onClick={saveSubCompany}
-                          disabled={subCompanyBusy !== ''}
-                          className="inline-flex items-center gap-1 rounded bg-crimson-600 px-3 py-2 text-xs font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                        >
-                          {subCompanyBusy === (editingSubCompany ? 'update' : 'create') ? (
-                            <Loader2 size={13} className="animate-spin" />
-                          ) : editingSubCompany ? (
-                            <Edit2 size={13} />
-                          ) : (
-                            <Plus size={13} />
-                          )}
-                          {subCompanyBusy !== '' ? 'Saving…' : editingSubCompany ? t('setup.subCompanyUpdated', 'Update') : t('setup.addSubCompany', 'Create')}
-                        </button>
-                      </div>
-                      {subCompanyError && (
-                        <p className="mt-2 text-xs text-red-600">{subCompanyError}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="rounded-lg border border-slate-200 bg-white p-4">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-slate-200">
-                              <th className="text-left pb-2 text-xs font-semibold text-slate-500">
-                                {t('setup.subCompanyName', 'Name')}
-                              </th>
-                              <th className="text-left pb-2 text-xs font-semibold text-slate-500">
-                                {t('setup.subCompanyCode', 'Code')}
-                              </th>
-                              <th className="text-left pb-2 text-xs font-semibold text-slate-500">
-                                {t('setup.subCompanyType', 'Type')}
-                              </th>
-                              <th className="text-left pb-2 text-xs font-semibold text-slate-500">
-                                {t('setup.subCompanyActive', 'Active')}
-                              </th>
-                              <th className="text-right pb-2 text-xs font-semibold text-slate-500 w-24">
-                                Actions
-                              </th>
+                  <div className="rounded-lg border border-slate-200 bg-white p-4">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-200">
+                            <th className="text-left pb-2 text-xs font-semibold text-slate-500">
+                              {t('setup.subCompanyName', 'Name')}
+                            </th>
+                            <th className="text-left pb-2 text-xs font-semibold text-slate-500">
+                              {t('setup.subCompanyCode', 'Code')}
+                            </th>
+                            <th className="text-left pb-2 text-xs font-semibold text-slate-500">
+                              {t('setup.subCompanyType', 'Type')}
+                            </th>
+                            <th className="text-left pb-2 text-xs font-semibold text-slate-500">
+                              {t('setup.subCompanyActive', 'Active')}
+                            </th>
+                            <th className="text-right pb-2 text-xs font-semibold text-slate-500 w-24">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {subCompanies.map((tc) => (
+                            <tr key={tc.id}>
+                              <td className="py-3 text-slate-700 font-medium">{tc.name}</td>
+                              <td className="py-3 text-slate-600">{tc.code || '–'}</td>
+                              <td className="py-3 text-slate-600">
+                                <span
+                                  className={`rounded px-1.5 py-0.5 text-xs ${tc.type === 'central' ? 'bg-amber-50 text-amber-700' : 'bg-indigo-50 text-indigo-700'}`}
+                                >
+                                  {tc.type}
+                                </span>
+                              </td>
+                              <td className="py-3 text-slate-600">
+                                {tc.active ? 'Yes' : 'No'}
+                              </td>
+                              <td className="py-3 text-right">
+                                <button
+                                  onClick={() => {
+                                    setSubCompanyForm({
+                                      name: tc.name,
+                                      code: tc.code,
+                                      type: tc.type,
+                                      active: tc.active ?? true,
+                                      slug: tc.slug || ''
+                                    })
+                                    setEditingSubCompany(tc)
+                                    setSubCompanyError('')
+                                    setSubCompanyModalOpen(true)
+                                  }}
+                                  className="mr-2 rounded px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => deleteSubCompany(tc.id)}
+                                  disabled={subCompanyBusy === 'delete'}
+                                  className="rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {subCompanies.map((tc) => (
-                              <tr key={tc.id}>
-                                <td className="py-3 text-slate-700 font-medium">{tc.name}</td>
-                                <td className="py-3 text-slate-600">{tc.code || '–'}</td>
-                                <td className="py-3 text-slate-600">
-                                  <span
-                                    className={`rounded px-1.5 py-0.5 text-xs ${tc.type === 'central' ? 'bg-amber-50 text-amber-700' : 'bg-indigo-50 text-indigo-700'}`}
-                                  >
-                                    {tc.type}
-                                  </span>
-                                </td>
-                                <td className="py-3 text-slate-600">
-                                  {tc.active ? 'Yes' : 'No'}
-                                </td>
-                                <td className="py-3 text-right">
-                                  <button
-                                    onClick={() => startEditSubCompany(tc)}
-                                    className="mr-2 rounded px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() => deleteSubCompany(tc.id)}
-                                    disabled={subCompanyBusy === 'delete'}
-                                    className="rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40"
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                            {subCompanies.length === 0 && (
-                              <tr>
-                                <td colSpan={5} className="py-4 text-center text-xs text-slate-400">
-                                  No sub-companies yet. {t('setup.addSubCompany', 'Add sub-company')} to get started.
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                          ))}
+                          {subCompanies.length === 0 && (
+                            <tr>
+                              <td colSpan={5} className="py-4 text-center text-xs text-slate-400">
+                                No sub-companies yet. {t('setup.addSubCompany', 'Add sub-company')} to get started.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </div>
+                  </div>
+
+                  {/* Modal */}
+                  {subCompanyModalOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+                        onClick={cancelEditSubCompany}
+                      />
+                      <div
+                        className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-slate-200 bg-white p-6 shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-sm font-medium text-slate-700">
+                            {editingSubCompany ? t('setup.subCompanyUpdated', 'Edit sub-company') : t('setup.addSubCompany', 'Add sub-company')}
+                          </h3>
+                          <button
+                            onClick={cancelEditSubCompany}
+                            className="rounded px-2 py-1 text-xs text-slate-500 hover:text-red-600"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-4">
+                          <div className="sm:col-span-2">
+                            <label className="text-xs font-medium text-slate-600">
+                              {t('setup.subCompanyName', 'Name')} *
+                            </label>
+                            <input
+                              autoFocus
+                              value={subCompanyForm.name}
+                              onChange={(e) => setSubCompanyForm({ ...subCompanyForm, name: e.target.value })}
+                              className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-slate-600">
+                              {t('setup.subCompanyCode', 'Code')} *
+                            </label>
+                            <input
+                              value={subCompanyForm.code}
+                              onChange={(e) => setSubCompanyForm({ ...subCompanyForm, code: e.target.value })}
+                              placeholder="IL01"
+                              className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-slate-600">
+                              {t('setup.subCompanyType', 'Type')}
+                            </label>
+                            <select
+                              value={subCompanyForm.type}
+                              onChange={(e) => setSubCompanyForm({ ...subCompanyForm, type: e.target.value as 'central' | 'illaka' })}
+                              className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500 bg-white"
+                            >
+                              <option value="illaka">Illaka</option>
+                              <option value="central">Central</option>
+                            </select>
+                          </div>
+                          <div className="flex items-end">
+                            <label className="text-xs font-medium text-slate-600 mr-2">
+                              {t('setup.subCompanyActive', 'Active')}
+                            </label>
+                            <input
+                              type="checkbox"
+                              checked={subCompanyForm.active}
+                              onChange={(e) => setSubCompanyForm({ ...subCompanyForm, active: e.target.checked })}
+                              className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                            />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="text-xs font-medium text-slate-600">
+                              {t('setup.subCompanySlug', 'Slug')} *
+                            </label>
+                            <input
+                              value={subCompanyForm.slug}
+                              onChange={(e) => setSubCompanyForm({ ...subCompanyForm, slug: e.target.value })}
+                              placeholder="ilaka-name"
+                              className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-6 flex items-center gap-2">
+                          <button
+                            onClick={cancelEditSubCompany}
+                            className="rounded px-3 py-2 text-xs font-medium text-slate-600 border border-slate-300 hover:bg-slate-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={saveSubCompany}
+                            disabled={subCompanyBusy !== ''}
+                            className="inline-flex items-center gap-1 rounded bg-crimson-600 px-3 py-2 text-xs font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                          >
+                            {subCompanyBusy === (editingSubCompany ? 'update' : 'create') ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : editingSubCompany ? (
+                              <Edit2 size={13} />
+                            ) : (
+                              <Plus size={13} />
+                            )}
+                            {subCompanyBusy !== '' ? 'Saving…' : editingSubCompany ? t('setup.subCompanyUpdated', 'Update') : t('setup.addSubCompany', 'Create')}
+                          </button>
+                        </div>
+                        {subCompanyError && (
+                          <p className="mt-3 text-xs text-red-600">{subCompanyError}</p>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               )}
