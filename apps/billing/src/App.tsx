@@ -149,10 +149,9 @@ const navGroups: { title?: string; titleKey?: string; items: NavItem[] }[] = [
     titleKey: 'nav.logs',
     items: [{ to: '/activity', label: 'Recent Activity', labelKey: 'nav.recentActivity', icon: History }],
   },
-  { items: [{ to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: SettingsIcon }] },
-  // Entry point into the separate Payroll system (india-payroll).
-  { items: [{ to: '/payroll', label: 'Payroll System', labelKey: 'nav.payrollSystem', icon: ArrowLeftRight, end: true, feature: 'payrollEnabled' }] },
-]
+  { items: [{ to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: SettingsIcon }] }
+    // Payroll System removed — payroll is now a standalone module; no header or sidebar tab.
+  ]
 
 /**
  * Payroll system nav — rendered instead of the accounting nav on /payroll
