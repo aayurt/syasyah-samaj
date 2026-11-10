@@ -170,6 +170,14 @@ export default function AIWorkspaceModal({
   onImported,
 }: AIWorkspaceModalProps) {
   const t = useT()
+
+  const STEP_ORDER = [
+    { key: 'prompt', label: t('ai.stepPrompt', 'Prompt') },
+    { key: 'paste', label: t('ai.stepPaste', 'Paste JSON') },
+    { key: 'validate', label: t('ai.stepValidate', 'Validate') },
+    { key: 'preview', label: t('ai.stepPreview', 'Preview') },
+    { key: 'execute', label: t('ai.stepExecute', 'Import') },
+  ] as { key: Step; label: string }[]
   const { tenantId, isCentral, isIllaka, illakaCode, tenants } = useTenant()
   const tenantQuery = { tenant: tenantId } as Record<string, string | undefined>
   const [model, setModel] = useState<AIModel>(initialModel ?? 'gl-accounts')
@@ -540,6 +548,36 @@ export default function AIWorkspaceModal({
         )}
 
         <main className="flex-1 overflow-y-auto p-6">
+          {/* Stepper */ }
+          <div className="mb-6">
+            <ol className="flex items-center gap-2 text-xs">
+              {STEP_ORDER.map((s, i) => {
+                const active = step === s.key
+                const done = STEP_ORDER.findIndex((s) => s.key === step) > i
+                return (
+                  <li key={s.key} className="flex items-center gap-2">
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
+                        active
+                          ? 'bg-crimson-600 border-crimson-600 text-white'
+                          : done
+                            ? 'bg-emerald-600 border-emerald-600 text-white'
+                            : 'border-slate-300 text-slate-400'
+                      }`}
+                    >
+                      {done ? <CheckCircle2 size={12} /> : i + 1}
+                    </div>
+                    <span className={`font-medium ${
+                      active ? 'text-crimson-700' : done ? 'text-emerald-700' : 'text-slate-500'
+                    }`}>{s.label}</span>
+                    {i < STEP_ORDER.length - 1 && (
+                      <ArrowRight size={12} className={`shrink-0 ${done ? 'text-emerald-400' : 'text-slate-300'}`} />
+                    )}
+                  </li>
+                )
+              })}
+            </ol>
+          </div>
           {/* ── Step 1: Prompt ── */}
           {step === 'prompt' && (
             <div className="space-y-4">

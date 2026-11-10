@@ -908,6 +908,12 @@ settings: 'सेटिङहरू',
     importFiscalYear: 'AI सँग राजकोषीय बर्ष आयात गर्नुहोस्',
     importedCompany: 'कम्पनी प्रोफाइल सुरक्षित भयो',
     importedFiscalYear: 'राजकोषीय बर्ष सुरक्षित भयो',
+    stepPrompt: 'प्रोम्प्ट',
+    stepPaste: 'JSON पस्ट गर्नुहोस्',
+    stepValidate: 'प्रमाणित गर्नुहोस्',
+    stepPreview: 'प्रीभ्यूम',
+    stepExecute: 'आयात गर्नुहोस्',
+    stepDone: 'सम्पन्न',
   },
 
   // ── Posting page ──

@@ -908,6 +908,12 @@ settings: 'Settings',
     importFiscalYear: 'Import Fiscal Year with AI',
     importedCompany: 'Company profile saved',
     importedFiscalYear: 'Fiscal year saved',
+    stepPrompt: 'Prompt',
+    stepPaste: 'Paste JSON',
+    stepValidate: 'Validate',
+    stepPreview: 'Preview',
+    stepExecute: 'Import',
+    stepDone: 'Done',
   },
 
   // ── Posting page ──
