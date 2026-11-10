@@ -16,6 +16,8 @@ export type TenantOption = {
   code: string
   name: string
   type: 'central' | 'illaka'
+  active?: boolean
+  slug?: string
 }
 
 type TenantCtx = {

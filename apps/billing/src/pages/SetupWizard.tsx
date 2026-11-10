@@ -8,17 +8,23 @@ import {
   CheckCircle2,
   Circle,
   Database,
+  Edit2,
   Hourglass,
   Loader2,
+  Package,
   PartyPopper,
+  Plus,
   Sparkles,
+  Trash2,
+  UserPlus,
   Wallet,
+  X,
 } from 'lucide-react'
 import { api, list, getEngine } from '../lib/api'
 import { useDataEpochWatcher, runSeedDemo, runSeedSelective, SEED_KEYS } from '../lib/dataOps'
 import type { SeedKey } from '../lib/dataOps'
 import { useFiscalYear } from '../lib/fiscalYear'
-import { useTenant } from '../lib/tenant'
+import { useTenant, type TenantOption } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import { adToBsString } from '../lib/nepaliDate'
@@ -72,7 +78,7 @@ export default function SetupWizard() {
   useDataEpochWatcher()
   const navigate = useNavigate()
   const t = useT()
-  const { tenantId, isIllaka } = useTenant()
+  const { tenantId, isIllaka, isCentral } = useTenant()
   const { years, loading: yearsLoading, refresh: refreshYears } = useFiscalYear()
 
   const [stepIdx, setStepIdx] = useState(0)
@@ -81,7 +87,16 @@ export default function SetupWizard() {
   const [syncing, setSyncing] = useState(true)
   const [chartCount, setChartCount] = useState<number | null>(null)
   const [docCount, setDocCount] = useState<number | null>(null)
+  const [illakaCount, setIllakaCount] = useState<number | null>(null)
+  const [memberCount, setMemberCount] = useState<number | null>(null)
+  const [itemCount, setItemCount] = useState<number | null>(null)
   const [accounts, setAccounts] = useState<Account[]>([])
+  // Sub-company / ilaka management (central admin only)
+  const [subCompanies, setSubCompanies] = useState<TenantOption[]>([])
+  const [subCompanyForm, setSubCompanyForm] = useState<{ name: string; code: string; type: 'central' | 'illaka'; active: boolean; slug: string }>({ name: '', code: '', type: 'illaka', active: true, slug: '' })
+  const [editingSubCompany, setEditingSubCompany] = useState<TenantOption | null>(null)
+  const [subCompanyBusy, setSubCompanyBusy] = useState('')
+  const [subCompanyError, setSubCompanyError] = useState('')
 
   // Company form
   const [company, setCompany] = useState({ companyName: '', companyPan: '', companyContact: '', companyEmail: '', companyAddress: '' })
@@ -106,15 +121,22 @@ export default function SetupWizard() {
   const tenantQuery = useMemo(() => (tenantId ? { tenant: tenantId } : {}), [tenantId])
 
   const refreshFacts = useCallback(async () => {
-    const [s, chartRes, docRes] = await Promise.all([
+    const [s, chartRes, docRes, illakaRes, memberRes, itemRes] = await Promise.all([
       api<BillingSettings>('/globals/billing-settings', { query: { depth: 1 } }).catch(() => null),
       list<Account>('gl-accounts', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null),
       list<Document>('documents', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null),
+      list<TenantOption>('tenants', { depth: 0, limit: 100 }).catch(() => null),
+      tenantId ? list<{ id: number }>('members', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null) : Promise.resolve(null),
+      tenantId ? list<{ id: number }>('items', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null) : Promise.resolve(null),
     ])
     setSettings(s)
     setSettingsLoaded(true)
     setChartCount(chartRes?.totalDocs ?? 0)
     setDocCount(docRes?.totalDocs ?? 0)
+    setIllakaCount(illakaRes?.totalDocs ?? 0)
+    setMemberCount(memberRes?.totalDocs ?? 0)
+    setItemCount(itemRes?.totalDocs ?? 0)
+    setSubCompanies(illakaRes?.docs ?? [])
     if (s) {
       setCompany({
         companyName: s.companyName || '',
@@ -196,6 +218,67 @@ export default function SetupWizard() {
       setError(e instanceof Error ? e.message : 'Failed to save company profile')
     } finally {
       setBusy('')
+    }
+  }
+
+  // ── Sub-company / ilaka CRUD (central admin only) ──
+  const startEditSubCompany = (tc: TenantOption) => {
+    setEditingSubCompany(tc)
+    setSubCompanyForm({ name: tc.name, code: tc.code, type: tc.type, active: tc.active ?? true, slug: tc.slug || '' })
+    setSubCompanyError('')
+  }
+
+  const cancelEditSubCompany = () => {
+    setEditingSubCompany(null)
+    setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '' })
+    setSubCompanyError('')
+  }
+
+  const saveSubCompany = async () => {
+    const { name, code, type, active, slug } = subCompanyForm
+    if (!name || !code || !slug) {
+      setSubCompanyError('Name, code and slug are required.')
+      return
+    }
+    setSubCompanyBusy(editingSubCompany ? 'update' : 'create')
+    setSubCompanyError('')
+    try {
+      if (editingSubCompany) {
+        await api(`/tenants/${editingSubCompany.id}`, {
+          method: 'PATCH',
+          body: { name, code, type, active, slug },
+          immediate: true,
+        })
+        pushToast('success', 'Sub-company updated')
+      } else {
+        await api('/tenants', {
+          method: 'POST',
+          body: { name, code, type, active, slug },
+          immediate: true,
+        })
+        pushToast('success', 'Sub-company created')
+      }
+      await refreshFacts()
+      cancelEditSubCompany()
+    } catch (e) {
+      setSubCompanyError(e instanceof Error ? e.message : 'Failed to save sub-company')
+    } finally {
+      setSubCompanyBusy('')
+    }
+  }
+
+  const deleteSubCompany = async (id: string) => {
+    if (!window.confirm('Delete this sub-company? This cannot be undone.')) return
+    setSubCompanyBusy('delete')
+    try {
+      await api(`/tenants/${id}`, { method: 'DELETE', immediate: true })
+      pushToast('success', 'Sub-company deleted')
+      await refreshFacts()
+      if (editingSubCompany?.id === id) cancelEditSubCompany()
+    } catch (e) {
+      setSubCompanyError(e instanceof Error ? e.message : 'Failed to delete sub-company')
+    } finally {
+      setSubCompanyBusy('')
     }
   }
 
@@ -390,6 +473,62 @@ export default function SetupWizard() {
         </div>
       </div>
 
+      {/* Where you stand — current state tied to dashboard metrics */}
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+            <Building2 size={18} />
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {t('setup.illakaCount', 'Illaka count')}
+            </div>
+            <div className="font-mono text-lg font-bold text-slate-800">
+              {illakaCount ?? '–'}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
+            <UserPlus size={18} />
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {t('setup.members', 'Members')}
+            </div>
+            <div className="font-mono text-lg font-bold text-slate-800">
+              {memberCount ?? '–'}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+            <Package size={18} />
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {t('setup.inventoryItems', 'Inventory items')}
+            </div>
+            <div className="font-mono text-lg font-bold text-slate-800">
+              {itemCount ?? '–'}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+            <Wallet size={18} />
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {t('setup.chartOfAccounts', 'Chart of accounts')}
+            </div>
+            <div className="font-mono text-lg font-bold text-slate-800">
+              {chartCount ?? '–'}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Active step card */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start gap-4">
@@ -461,6 +600,184 @@ export default function SetupWizard() {
                   />
                 </div>
               </div>
+
+              {/* Sub-company / ilaka management (central admin only) */}
+              {isCentral && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-slate-700">
+                      {t('setup.subCompanies', 'Sub-companies')} (ilakas)
+                    </h3>
+                    {editingSubCompany ? (
+                      <button
+                        onClick={cancelEditSubCompany}
+                        className="rounded px-2 py-1 text-xs text-slate-500 hover:text-red-600"
+                      >
+                        <X size={13} /> Cancel
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '' })
+                          setEditingSubCompany(null)
+                          setSubCompanyError('')
+                        }}
+                        className="inline-flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800"
+                      >
+                        <Plus size={12} /> {t('setup.addSubCompany', 'Add sub-company')}
+                      </button>
+                    )}
+                  </div>
+
+                  {editingSubCompany ? (
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                      <div className="grid gap-3 sm:grid-cols-4">
+                        <div className="sm:col-span-2">
+                          <label className="text-xs font-medium text-slate-600">
+                            {t('setup.subCompanyName', 'Name')} *
+                          </label>
+                          <input
+                            value={subCompanyForm.name}
+                            onChange={(e) => setSubCompanyForm({ ...subCompanyForm, name: e.target.value })}
+                            className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-slate-600">
+                            {t('setup.subCompanyCode', 'Code')} *
+                          </label>
+                          <input
+                            value={subCompanyForm.code}
+                            onChange={(e) => setSubCompanyForm({ ...subCompanyForm, code: e.target.value })}
+                            placeholder="IL01"
+                            className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-slate-600">
+                            {t('setup.subCompanyType', 'Type')}
+                          </label>
+                          <select
+                            value={subCompanyForm.type}
+                            onChange={(e) => setSubCompanyForm({ ...subCompanyForm, type: e.target.value as 'central' | 'illaka' })}
+                            className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500 bg-white"
+                          >
+                            <option value="illaka">Illaka</option>
+                            <option value="central">Central</option>
+                          </select>
+                        </div>
+                        <div className="flex items-end">
+                          <label className="text-xs font-medium text-slate-600 mr-2">
+                            {t('setup.subCompanyActive', 'Active')}
+                          </label>
+                          <input
+                            type="checkbox"
+                            checked={subCompanyForm.active}
+                            onChange={(e) => setSubCompanyForm({ ...subCompanyForm, active: e.target.checked })}
+                            className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="text-xs font-medium text-slate-600">
+                            {t('setup.subCompanySlug', 'Slug')} *
+                          </label>
+                          <input
+                            value={subCompanyForm.slug}
+                            onChange={(e) => setSubCompanyForm({ ...subCompanyForm, slug: e.target.value })}
+                            placeholder="ilaka-name"
+                            className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center gap-2">
+                        <button
+                          onClick={saveSubCompany}
+                          disabled={subCompanyBusy !== ''}
+                          className="inline-flex items-center gap-1 rounded bg-crimson-600 px-3 py-2 text-xs font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                        >
+                          {subCompanyBusy === (editingSubCompany ? 'update' : 'create') ? (
+                            <Loader2 size={13} className="animate-spin" />
+                          ) : editingSubCompany ? (
+                            <Edit2 size={13} />
+                          ) : (
+                            <Plus size={13} />
+                          )}
+                          {subCompanyBusy !== '' ? 'Saving…' : editingSubCompany ? t('setup.subCompanyUpdated', 'Update') : t('setup.addSubCompany', 'Create')}
+                        </button>
+                      </div>
+                      {subCompanyError && (
+                        <p className="mt-2 text-xs text-red-600">{subCompanyError}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-slate-200">
+                              <th className="text-left pb-2 text-xs font-semibold text-slate-500">
+                                {t('setup.subCompanyName', 'Name')}
+                              </th>
+                              <th className="text-left pb-2 text-xs font-semibold text-slate-500">
+                                {t('setup.subCompanyCode', 'Code')}
+                              </th>
+                              <th className="text-left pb-2 text-xs font-semibold text-slate-500">
+                                {t('setup.subCompanyType', 'Type')}
+                              </th>
+                              <th className="text-left pb-2 text-xs font-semibold text-slate-500">
+                                {t('setup.subCompanyActive', 'Active')}
+                              </th>
+                              <th className="text-right pb-2 text-xs font-semibold text-slate-500 w-24">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {subCompanies.map((tc) => (
+                              <tr key={tc.id}>
+                                <td className="py-3 text-slate-700 font-medium">{tc.name}</td>
+                                <td className="py-3 text-slate-600">{tc.code || '–'}</td>
+                                <td className="py-3 text-slate-600">
+                                  <span
+                                    className={`rounded px-1.5 py-0.5 text-xs ${tc.type === 'central' ? 'bg-amber-50 text-amber-700' : 'bg-indigo-50 text-indigo-700'}`}
+                                  >
+                                    {tc.type}
+                                  </span>
+                                </td>
+                                <td className="py-3 text-slate-600">
+                                  {tc.active ? 'Yes' : 'No'}
+                                </td>
+                                <td className="py-3 text-right">
+                                  <button
+                                    onClick={() => startEditSubCompany(tc)}
+                                    className="mr-2 rounded px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => deleteSubCompany(tc.id)}
+                                    disabled={subCompanyBusy === 'delete'}
+                                    className="rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            {subCompanies.length === 0 && (
+                              <tr>
+                                <td colSpan={5} className="py-4 text-center text-xs text-slate-400">
+                                  No sub-companies yet. {t('setup.addSubCompany', 'Add sub-company')} to get started.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
