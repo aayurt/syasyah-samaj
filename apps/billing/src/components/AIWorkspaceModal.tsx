@@ -412,7 +412,9 @@ export default function AIWorkspaceModal({
       }
       if (model === 'sub-companies') {
         const errs: string[] = []
+        let created = 0
         let updated = 0
+        let skipped = 0
         let existing: TenantOption[] = []
         try {
           const res = await api<{ docs: TenantOption[] }>('/tenants', { query: { depth: 0, limit: 100 } })
@@ -424,30 +426,29 @@ export default function AIWorkspaceModal({
         for (const e of existing) if (e.code) byCode.set(e.code, e)
         for (const row of preview) {
           const target = byCode.get(String(row.doc.code || ''))
-          if (!target) {
-            errs.push(`no existing sub-company matches code "${String(row.doc.code || '')}" — skipped (no auto-create)`)
-            continue
+          const body = {
+            name: row.doc.name,
+            code: row.doc.code,
+            type: 'illaka',
+            active: row.doc.active ?? true,
+            slug: row.doc.slug || '',
           }
           try {
-            await api(`/tenants/${target.id}`, {
-              method: 'PATCH',
-              body: {
-                name: row.doc.name,
-                code: row.doc.code,
-                type: 'illaka',
-                active: row.doc.active ?? true,
-                slug: row.doc.slug || '',
-              },
-              immediate: true,
-            })
-            updated++
+            if (target) {
+              await api(`/tenants/${target.id}`, { method: 'PATCH', body, immediate: true })
+              updated++
+            } else {
+              await api('/tenants', { method: 'POST', body, immediate: true })
+              created++
+            }
           } catch (e) {
             errs.push(e instanceof Error ? e.message : String(e))
           }
         }
-        setResult({ created: 0, updated, skipped: existing.length - byCode.size, errors: errs })
+        skipped = existing.length - byCode.size
+        setResult({ created, updated, skipped, errors: errs })
         if (errs.length === 0) {
-          pushToast('success', t('ai.imported', 'Import complete'), t('ai.importedSubCompanies', 'Sub-companies updated'))
+          pushToast('success', t('ai.imported', 'Import complete'), t('ai.importedSubCompanies', 'Sub-companies synced'))
           onImported?.()
         } else {
           pushToast('error', t('ai.importFailed', 'Import failed'), `${errs.length} failed: ${errs.join('; ')}`)
