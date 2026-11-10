@@ -902,6 +902,8 @@ settings: 'सेटिङहरू',
     keep: 'संपादन जारी राख्नुहोस्',
     importCoa: 'AI सँग खाताको चार्ट आयात गर्नुहोस्',
     importOpenings: 'AI सँग खुला शेषर आयात गर्नुहोस्',
+    importTaxTypes: 'AI सँग कर प्रकारहरू आयात गर्नुहोस्',
+    importAccountGroups: 'AI सँग खाता समूहहरू आयात गर्नुहोस्',
   },
 
   // ── Posting page ──

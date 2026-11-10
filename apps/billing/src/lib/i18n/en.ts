@@ -902,6 +902,8 @@ settings: 'Settings',
     keep: 'Keep editing',
     importCoa: 'Import Chart of Accounts with AI',
     importOpenings: 'Import Opening Balances with AI',
+    importTaxTypes: 'Import Tax Types with AI',
+    importAccountGroups: 'Import Account Groups with AI',
   },
 
   // ── Posting page ──
