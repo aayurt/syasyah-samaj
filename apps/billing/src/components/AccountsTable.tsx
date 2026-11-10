@@ -192,7 +192,23 @@ export default function AccountsTable({
                             ? groupTotalOpening.toLocaleString('en-US', { minimumFractionDigits: 2 })
                             : '—'}
                         </td>
-                        <td className="px-4 py-2 text-right"></td>
+                        <td className="px-4 py-2 text-right">
+                        <ActionMenu
+                          items={[
+                            {
+                              label: 'Edit',
+                              icon: <Pencil size={13} />,
+                              onClick: () => onEdit(group),
+                            },
+                            {
+                              label: 'Delete',
+                              icon: <Trash2 size={13} />,
+                              danger: true,
+                              onClick: () => onDelete(group.id),
+                            },
+                          ]}
+                        />
+                      </td>
                       </tr>
 
                       {/* Subheading (Accounts under group) */}
