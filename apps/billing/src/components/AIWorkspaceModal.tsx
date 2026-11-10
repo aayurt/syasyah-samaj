@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { executeImport, type ImportAction } from '../lib/importExport'
-import { useTenant } from '../lib/tenant'
+import { useTenant, type TenantOption } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import type { Account } from '../lib/types'
@@ -367,20 +367,30 @@ export default function AIWorkspaceModal({
       // they bypass executeImport (which keys off ENTITY_REGISTRY).
       if (model === 'company-profile') {
         const errs: string[] = []
-        let subCreated = 0
+        let subUpdated = 0
         for (const row of preview) {
           try {
             await api('/globals/billing-settings', { method: 'POST', body: row.doc })
           } catch (e) {
             errs.push(e instanceof Error ? e.message : String(e))
           }
-          // Sub-companies (illaka) — same endpoint the wizard uses.
+          // Sub-companies (illaka) — update existing only, never create new.
           const subs = row.doc.subCompanies
           if (Array.isArray(subs)) {
+            let existing: TenantOption[] = []
+            try {
+              existing = await api<TenantOption[]>('/tenants', { query: { depth: 0, limit: 100 } })
+            } catch {
+              existing = []
+            }
+            const byCode = new Map<string, TenantOption>()
+            for (const e of existing) if (e.code) byCode.set(e.code, e)
             for (const sub of subs) {
+              const target = byCode.get(String(sub.code || ''))
+              if (!target) continue // skip unknown sub-companies — no auto-create
               try {
-                await api('/tenants', {
-                  method: 'POST',
+                await api(`/tenants/${target.id}`, {
+                  method: 'PATCH',
                   body: {
                     name: sub.name,
                     code: sub.code,
@@ -390,14 +400,14 @@ export default function AIWorkspaceModal({
                   },
                   immediate: true,
                 })
-                subCreated++
+                subUpdated++
               } catch (e) {
                 errs.push(e instanceof Error ? e.message : String(e))
               }
             }
           }
         }
-        setResult({ created: preview.length - errs.length + subCreated, updated: 0, skipped: 0, errors: errs })
+        setResult({ created: preview.length - errs.length, updated: subUpdated, skipped: 0, errors: errs })
         if (errs.length === 0) {
           pushToast('success', t('ai.imported', 'Import complete'), t('ai.importedCompany', 'Company profile saved'))
           onImported?.()
