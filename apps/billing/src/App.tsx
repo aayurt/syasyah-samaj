@@ -381,36 +381,6 @@ function Shell({ email }: { email: string }) {
         <header className="print:hidden flex flex-wrap items-center justify-between border-b border-slate-200 bg-white px-3 py-2 md:px-6 md:py-2.5 gap-2">
           <div className="flex items-center gap-3">
             <Breadcrumbs />
-            {/* System switcher — Accounting ⇄ Payroll (india-payroll). Only visible when payrollEnabled */}
-            {features.payrollEnabled !== false && (
-              <div
-                data-testid="system-switcher"
-                className="hidden items-center rounded-lg bg-slate-100 p-0.5 md:flex"
-              >
-                <button
-                  onClick={() => navigate('/')}
-                  aria-pressed={!inPayroll}
-                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                    !inPayroll
-                      ? 'bg-white text-slate-900 shadow'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  {t('switcher.accounting', 'Accounting')}
-                </button>
-                <button
-                  onClick={() => navigate('/payroll')}
-                  aria-pressed={inPayroll}
-                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                    inPayroll
-                      ? 'bg-white text-slate-900 shadow'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  {t('switcher.payroll', 'Payroll')}
-                </button>
-              </div>
-            )}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3">
             <IllakaSwitcher />
