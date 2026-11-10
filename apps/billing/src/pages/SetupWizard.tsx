@@ -29,6 +29,8 @@ import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import { adToBsString } from '../lib/nepaliDate'
 import type { Account, BillingSettings, Document } from '../lib/types'
+import type { AIModel } from '../lib/ai/schemas'
+import AIWorkspaceModal from '../components/AIWorkspaceModal'
 import AccountSelect from '../components/AccountSelect'
 
 /**
@@ -98,6 +100,9 @@ export default function SetupWizard() {
   const [subCompanyBusy, setSubCompanyBusy] = useState('')
   const [subCompanyError, setSubCompanyError] = useState('')
   const [subCompanyModalOpen, setSubCompanyModalOpen] = useState(false)
+  // AI Workspace import (Chart of Accounts / Opening Balances)
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiInitialModel, setAiInitialModel] = useState<AIModel | null>(null)
 
   // Company form
   const [company, setCompany] = useState({ companyName: '', companyPan: '', companyContact: '', companyEmail: '', companyAddress: '' })
@@ -902,8 +907,17 @@ export default function SetupWizard() {
               >
                 Open Opening Balances
               </button>
-            </div>
-          )}
+              <button
+                onClick={() => {
+                  setAiInitialModel('opening-balances')
+                  setAiOpen(true)
+                }}
+                className="mt-3 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <Sparkles size={14} /> {t('ai.importOpenings', 'Import Opening Balances with AI')}
+              </button>
+              </div>
+              )}
 
           {step.key === 'demo' && (
             <div className="space-y-4">
@@ -1010,6 +1024,17 @@ export default function SetupWizard() {
             )}
             {step.key === 'seeds' && (
               <button
+                onClick={() => {
+                  setAiInitialModel('gl-accounts')
+                  setAiOpen(true)
+                }}
+                className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <Sparkles size={14} /> {t('ai.importCoa', 'Import Chart of Accounts with AI')}
+              </button>
+            )}
+            {step.key === 'seeds' && (
+              <button
                 onClick={() => void runSelectiveSeed()}
                 disabled={busy === 'seeds'}
                 className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
@@ -1057,6 +1082,17 @@ export default function SetupWizard() {
           </button>
         </div>
       )}
+
+      <AIWorkspaceModal
+        open={aiOpen}
+        onClose={() => setAiOpen(false)}
+        initialModel={aiInitialModel ?? undefined}
+        onImported={() => {
+          setAiOpen(false)
+          setAiInitialModel(null)
+          void refreshFacts()
+        }}
+      />
     </div>
   )
 }

@@ -1,0 +1,842 @@
+/** AI Workspace modal (§Phase 2).
+ *
+ * Self-contained backdrop-blur panel. The user brings their own external LLM
+ * (ChatGPT / Claude / Gemini): this app only generates the prompt, validates
+ * the JSON they paste back, shows an editable preview table, and — on their
+ * explicit Confirm — writes through the existing API layer only
+ * (importExport.executeImport). Nothing is auto-executed, no AI provider is
+ * called from here, and tenant scope comes from useTenant().
+ *
+ * Step flow: Prompt → Paste JSON → Validate → Preview → Execute → Done.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  ChevronRight,
+  Copy,
+  FileJson,
+  Info,
+  Loader2,
+  Play,
+  Sparkles,
+  Trash2,
+  X,
+} from 'lucide-react'
+import { api } from '../lib/api'
+import { executeImport, type ImportAction } from '../lib/importExport'
+import { useTenant } from '../lib/tenant'
+import { useT } from '../lib/i18n'
+import { pushToast } from '../lib/toast'
+import type { Account } from '../lib/types'
+import type { AIModel } from '../lib/ai/schemas'
+import { AI_MODELS, modelDef } from '../lib/ai/schemas'
+import { validateAgainstModel, type AIValidationIssue } from '../lib/ai/validate'
+
+type Step = 'prompt' | 'paste' | 'validate' | 'preview' | 'execute'
+
+interface PreviewRow {
+  doc: Record<string, unknown>
+  action: ImportAction
+}
+
+interface AIWorkspaceModalProps {
+  open: boolean
+  onClose: () => void
+  initialModel?: AIModel
+  onImported?: () => void
+}
+
+const NUMERIC_FIELDS = new Set(['openingBalance', 'amount', 'rate'])
+
+function fieldInputs(model: AIModel): string[] {
+  switch (model) {
+    case 'gl-accounts':
+      return ['code', 'name', 'type', 'class', 'group', 'openingBalance', 'active']
+    case 'opening-balances':
+      return ['accountCode', 'accountName', 'fiscalYear', 'amount']
+    case 'tax-types':
+      return ['name', 'type', 'rate', 'active']
+    default:
+      return ['name', 'type', 'nature', 'active']
+  }
+}
+
+function enumOptions(model: AIModel, field: string): { label: string; value: string }[] {
+  if (model === 'tax-types' && field === 'type') {
+    return [
+      { label: 'Sales', value: 'sales' },
+      { label: 'Purchase', value: 'purchase' },
+    ]
+  }
+  if (field === 'type') {
+    return ['asset', 'liability', 'equity', 'income', 'expense'].map((v) => ({
+      label: v.charAt(0).toUpperCase() + v.slice(1),
+      value: v,
+    }))
+  }
+  if (field === 'class') {
+    return ['cash', 'bank', 'receivable', 'payable', 'other'].map((v) => ({
+      label: v.charAt(0).toUpperCase() + v.slice(1),
+      value: v,
+    }))
+  }
+  if (field === 'nature') {
+    return [
+      { label: 'Debit', value: 'debit' },
+      { label: 'Credit', value: 'credit' },
+    ]
+  }
+  if (field === 'active') {
+    return [
+      { label: 'Yes', value: 'true' },
+      { label: 'No', value: 'false' },
+    ]
+  }
+  return []
+}
+
+function exampleJson(model: AIModel): string {
+  switch (model) {
+    case 'gl-accounts':
+      return JSON.stringify(
+        {
+          docs: [
+            {
+              code: '1101',
+              name: 'Cash on Hand',
+              type: 'asset',
+              class: 'cash',
+              group: 'Bank & Cash',
+              openingBalance: 50000,
+              active: true,
+            },
+          ],
+        },
+        null,
+        2,
+      )
+    case 'opening-balances':
+      return JSON.stringify(
+        { docs: [{ accountCode: '1101', accountName: 'Cash on Hand', fiscalYear: '2026-27', amount: 50000 }] },
+        null,
+        2,
+      )
+    case 'tax-types':
+      return JSON.stringify({ docs: [{ name: 'VAT 13%', type: 'sales', rate: 13, active: true }] }, null, 2)
+    default:
+      return JSON.stringify({ docs: [{ name: 'Bank Accounts', type: 'asset', nature: 'debit', active: true }] }, null, 2)
+  }
+}
+
+export default function AIWorkspaceModal({
+  open,
+  onClose,
+  initialModel,
+  onImported,
+}: AIWorkspaceModalProps) {
+  const t = useT()
+  const { tenantId, isCentral, isIllaka, illakaCode, tenants } = useTenant()
+  const tenantQuery = { tenant: tenantId } as Record<string, string | undefined>
+  const [model, setModel] = useState<AIModel>(initialModel ?? 'gl-accounts')
+  const [schemaVersion, setSchemaVersion] = useState(0)
+  const [step, setStep] = useState<Step>('prompt')
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmNextModel, setConfirmNextModel] = useState<AIModel | null>(null)
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false)
+
+  // Draft state
+  const [rawJson, setRawJson] = useState('')
+  const [parsed, setParsed] = useState<Record<string, unknown> | null>(null)
+  const [parseError, setParseError] = useState('')
+  const [validating, setValidating] = useState(false)
+  const [validation, setValidation] = useState<{
+    valid: boolean
+    errors: AIValidationIssue[]
+    warnings: AIValidationIssue[]
+  }>({ valid: false, errors: [], warnings: [] })
+  const [preview, setPreview] = useState<PreviewRow[]>([])
+  const [accountCtx, setAccountCtx] = useState<{ code: string; name: string }[]>([])
+
+  // Execution
+  const [executing, setExecuting] = useState(false)
+  const [result, setResult] = useState<{
+    created: number
+    updated: number
+    skipped: number
+    errors: string[]
+  } | null>(null)
+
+  const def = modelDef(model)
+  const tenantName =
+    tenants.find((t) => String(t.id) === tenantId)?.name ||
+    illakaCode ||
+    tenantId ||
+    'your organization'
+  const ctx: { tenantName: string; accounts: { code: string; name: string }[] } = {
+    tenantName,
+    accounts: accountCtx,
+  }
+
+  const prompt = useMemo(() => def.prompt(ctx), [def, ctx])
+
+  // Source docs re-validated whenever they or the account context change.
+  const sourceDocs = useMemo(
+    () =>
+      step === 'validate' ? ((parsed?.docs as unknown[]) ?? []) : preview.map((p) => p.doc),
+    [step, parsed, preview],
+  )
+
+  useEffect(() => {
+    if (sourceDocs.length === 0) {
+      setValidation({ valid: false, errors: [], warnings: [] })
+      return
+    }
+    setValidating(true)
+    Promise.resolve()
+      .then(() => validateAgainstModel({ docs: sourceDocs }, model, ctx))
+      .then((res) => {
+        setValidation(res)
+        setValidating(false)
+      })
+      .catch(() => {
+        setValidating(false)
+      })
+  }, [sourceDocs, model, ctx])
+
+  // Existing chart of accounts, for opening-balance account-code context.
+  useEffect(() => {
+    if (step !== 'validate' || model !== 'opening-balances') return
+    let alive = true
+    void api<{ docs: Account[] }>('/gl-accounts', {
+      query: { depth: 0, limit: 500, ...tenantQuery },
+    })
+      .then((res) => {
+        if (!alive) return
+        setAccountCtx((res.docs ?? []).map((a) => ({ code: String(a.code), name: String(a.name || '') })))
+      })
+    return () => {
+      alive = false
+    }
+  }, [step, model, tenantId, tenantQuery])
+
+  const hasDraft = rawJson.trim().length > 0 || preview.length > 0 || result != null
+
+  const handleClose = useCallback(() => {
+    if (hasDraft) {
+      setCloseConfirmOpen(true)
+      return
+    }
+    onClose()
+  }, [hasDraft, onClose])
+
+  const handleModelChange = useCallback((next: AIModel) => {
+    if (next === model) return
+    setConfirmNextModel(next)
+    setConfirmOpen(true)
+  }, [model])
+
+  const confirmModelChange = useCallback(() => {
+    const next = confirmNextModel
+    setConfirmOpen(false)
+    setConfirmNextModel(null)
+    if (!next) return
+    setModel(next)
+    setSchemaVersion((v) => v + 1)
+    setStep('prompt')
+    setRawJson('')
+    setParsed(null)
+    setParseError('')
+    setValidation({ valid: false, errors: [], warnings: [] })
+    setPreview([])
+  }, [confirmNextModel])
+
+  const handleParse = useCallback(() => {
+    setParseError('')
+    let parsedJson: Record<string, unknown>
+    try {
+      parsedJson = JSON.parse(rawJson || '{}')
+    } catch (e) {
+      setParseError(e instanceof Error ? e.message : 'Invalid JSON')
+      setParsed(null)
+      return
+    }
+    if (!parsedJson || typeof parsedJson !== 'object' || Array.isArray(parsedJson)) {
+      setParseError('Expected a JSON object')
+      setParsed(null)
+      return
+    }
+    setParsed(parsedJson)
+    setStep('validate')
+  }, [rawJson])
+
+  const toPreview = useCallback(() => {
+    const docs = (parsed?.docs as unknown[]) ?? []
+    const rows: PreviewRow[] = docs.map((doc) => ({
+      doc:
+        doc && typeof doc === 'object' && !Array.isArray(doc)
+          ? { ...(doc as Record<string, unknown>) }
+          : {},
+      action: 'create',
+    }))
+    setPreview(rows)
+    setStep('preview')
+  }, [parsed])
+
+  const updateCell = useCallback((idx: number, field: string, value: unknown) => {
+    const coerced =
+      NUMERIC_FIELDS.has(field) && typeof value === 'string'
+        ? value === ''
+          ? undefined
+          : Number(value)
+        : value
+    setPreview((prev) =>
+      prev.map((row, i) =>
+        i === idx ? { ...row, doc: { ...row.doc, [field]: coerced } } : row,
+      ),
+    )
+  }, [])
+
+  const removeRow = useCallback((idx: number) => {
+    setPreview((prev) => prev.filter((_row, i) => i !== idx))
+  }, [])
+
+  const handleExecute = useCallback(async () => {
+    if (validation.errors.length > 0) return
+    setExecuting(true)
+    const records: { doc: Record<string, unknown>; action: ImportAction }[] = preview.map(
+      (row) => ({ doc: row.doc, action: row.action }),
+    )
+    try {
+      const res = await executeImport(model, records)
+      setResult(res)
+      if (res.errors.length === 0) {
+        pushToast(
+          'success',
+          t('ai.imported', 'Import complete'),
+          `${res.created} created, ${res.updated} updated, ${res.skipped} skipped`,
+        )
+        onImported?.()
+      } else {
+        pushToast(
+          'error',
+          t('ai.importFailed', 'Import failed'),
+          `${res.errors.length} record(s) failed: ${res.errors.join('; ')}`,
+        )
+      }
+    } catch (e) {
+      pushToast(
+        'error',
+        t('ai.importFailed', 'Import failed'),
+        e instanceof Error ? e.message : String(e),
+      )
+    } finally {
+      setExecuting(false)
+    }
+  }, [model, preview, validation, t, onImported])
+
+  const byRow = new Map<number, AIValidationIssue[]>()
+  for (const issue of [...validation.errors, ...validation.warnings]) {
+    const list = byRow.get(issue.row) ?? []
+    list.push(issue)
+    byRow.set(issue.row, list)
+  }
+
+  const errorCount = validation.errors.length
+  const warningCount = validation.warnings.length
+
+  if (!open) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center"
+      aria-modal="true"
+      role="dialog"
+      aria-label={t('ai.title', 'Import with AI')}
+    >
+      <div className="absolute inset-0 backdrop-blur-sm bg-black/40" onClick={handleClose} />
+      <div className="relative z-10 w-full max-w-2xl rounded-xl border border-slate-200 bg-white overflow-hidden flex flex-col h-[88vh] shadow-2xl">
+        <header className="flex items-center justify-between gap-2 px-5 py-4 border-b border-slate-200 bg-white">
+          <div className="flex items-center gap-2">
+            <Sparkles size={18} className="text-crimson-600" />
+            <span className="text-sm font-semibold text-slate-800">{t('ai.title', 'Import with AI')}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
+                isIllaka ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-600'
+              }`}
+            >
+              {illakaCode || tenantId || 'All'}
+              {isIllaka ? ' (illaka)' : isCentral ? ' (central)' : ''}
+            </span>
+            <label className="flex items-center gap-1.5 text-xs text-slate-500">
+              {t('ai.model', 'Model')}:{' '}
+              <select
+                value={model}
+                onChange={(e) => handleModelChange(e.target.value as AIModel)}
+                className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-crimson-600"
+                disabled={step !== 'prompt' && step !== 'execute'}
+              >
+                {AI_MODELS.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              onClick={handleClose}
+              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-900"
+              aria-label={t('ai.close', 'Close')}
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </header>
+
+        {/* Model-change confirmation overlay */}
+        {confirmOpen && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/25">
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-lg max-w-md w-full mx-4">
+              <p className="text-sm text-slate-700">
+                {t(
+                  'ai.changeModel',
+                  'Switching to NEXT clears your draft and restarts at the prompt. Continue?',
+                ).replace('NEXT', confirmNextModel ?? '')}
+              </p>
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setConfirmOpen(false)
+                    setConfirmNextModel(null)
+                  }}
+                  className="rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  {t('ai.changeCancel', 'Cancel')}
+                </button>
+                <button
+                  onClick={confirmModelChange}
+                  className="rounded px-3 py-2 text-sm font-medium text-white bg-crimson-600 hover:bg-crimson-700"
+                >
+                  {t('ai.changeConfirm', 'Continue')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Close-with-draft confirmation */}
+        {closeConfirmOpen && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/25">
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-lg max-w-md w-full mx-4">
+              <p className="text-sm text-slate-700">
+                {t('ai.discardMsg', 'You have unsaved changes. Close anyway?')}
+              </p>
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setCloseConfirmOpen(false)
+                    onClose()
+                  }}
+                  className="rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  {t('ai.discard', 'Discard')}
+                </button>
+                <button
+                  onClick={() => setCloseConfirmOpen(false)}
+                  className="rounded px-3 py-2 text-sm font-medium text-white bg-crimson-600 hover:bg-crimson-700"
+                >
+                  {t('ai.keep', 'Keep editing')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <main className="flex-1 overflow-y-auto p-6">
+          {/* ── Step 1: Prompt ── */}
+          {step === 'prompt' && (
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <Info size={18} className="mt-0.5 shrink-0 text-slate-500" />
+                <div>
+                  <p className="text-sm font-medium text-slate-700">{t('ai.intro', 'Generate a prompt, run it in your AI tool, then paste the JSON back here.')}</p>
+                  <p className="mt-1 text-xs text-slate-500">{t('ai.noSensitive', 'No account IDs, passwords or personal data are sent in the prompt.')}</p>
+                </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <p className="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wider">{def.label}</p>
+                <div className="rounded border border-slate-200 bg-slate-900 p-3 overflow-x-auto">
+                  <pre className="text-xs text-slate-300 font-mono whitespace-pre-wrap break-all">{prompt}</pre>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(prompt)
+                      pushToast('info', t('ai.copied', 'Prompt copied'))
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <Copy size={16} /> {t('ai.copyPrompt', 'Copy prompt')}
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500">{t('ai.promptHint', 'Open ChatGPT, Claude or Gemini, paste the prompt above, and return only the JSON.')}</p>
+            </div>
+          )}
+
+          {/* ── Step 2: Paste JSON ── */}
+          {step === 'paste' && (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-700">
+                {t('ai.pasteLabel', 'Paste JSON response')} —{' '}
+                <span className="font-medium text-slate-500">{def.label}</span>
+              </p>
+              <textarea
+                value={rawJson}
+                onChange={(e) => setRawJson(e.target.value)}
+                rows={14}
+                className="w-full rounded border border-slate-300 bg-slate-50 px-3 py-3 text-sm font-mono text-slate-700 focus:outline-none focus:ring-1 focus:ring-crimson-600"
+                placeholder='{ "docs": [ ... ] }'
+                spellCheck={false}
+              />
+              {parseError && (
+                <p className="text-xs text-red-600">{t('ai.invalidJson', 'Invalid JSON')}: {parseError}</p>
+              )}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setRawJson(exampleJson(model))}
+                  className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
+                >
+                  <FileJson size={14} /> {t('ai.exampleBtn', 'Insert example')}
+                </button>
+                <button
+                  onClick={handleParse}
+                  disabled={!rawJson.trim() || !!parseError}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40"
+                >
+                  {t('ai.validateBtn', 'Validate against schema')} <ArrowRight size={15} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 3: Validate ── */}
+          {step === 'validate' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-bold ${
+                      errorCount === 0
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-red-50 text-red-700 border border-red-200'
+                    }`}
+                  >
+                    {errorCount === 0
+                      ? t('ai.valid', 'Valid')
+                      : `${errorCount} ${t('ai.errors', 'error(s)')}`}
+                  </span>
+                  {warningCount > 0 && (
+                    <span className="px-2 py-1 rounded text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                      {warningCount} {t('ai.warnings', 'warning(s)')}
+                    </span>
+                  )}
+                </div>
+                {validating && (
+                  <span className="flex items-center gap-2 text-xs text-slate-500">
+                    <Loader2 size={14} className="animate-spin" /> {t('ai.validating', 'Validating…')}
+                  </span>
+                )}
+              </div>
+              {errorCount === 0 && warningCount === 0 && Array.isArray(parsed?.docs) && parsed.docs.length > 0 && (
+                <p className="text-xs text-emerald-600">{t('ai.noIssues', 'No issues found')}</p>
+              )}
+              <div className="rounded border border-slate-200 bg-white overflow-hidden">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50">
+                      <th className="px-3 py-2 text-slate-400 font-medium w-12">#</th>
+                      <th className="px-3 py-2 text-slate-400 font-medium">Document</th>
+                      <th className="px-3 py-2 text-slate-400 font-medium text-right w-20">Issues</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(parsed?.docs as unknown[]).map((doc, i) => {
+                      const d = doc as Record<string, unknown>
+                      const issues = byRow.get(i + 1) ?? []
+                      return (
+                        <tr key={i} className="border-b border-slate-100 hover:bg-slate-25">
+                          <td className="px-3 py-2 text-slate-400 font-mono">{i + 1}</td>
+                          <td className="px-3 py-2 text-sm text-slate-700">
+                            <code className="truncate">
+                              {String(d.code ?? d.name ?? d.accountCode ?? '')}
+                            </code>
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            {issues.length === 0 ? (
+                              <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-1 text-[10px] font-medium text-emerald-700 border border-emerald-200">
+                                {t('ai.valid', 'Valid')}
+                              </span>
+                            ) : (
+                              issues.map((issue, j) => (
+                                <span
+                                  key={j}
+                                  className={`inline-block mb-1 rounded bg-${
+                                    issue.severity === 'error' ? 'red' : 'amber'
+                                  }-50 px-2 py-1 text-[10px] font-medium border ${
+                                    issue.severity === 'error'
+                                      ? 'border-red-200 text-red-700'
+                                      : 'border-amber-200 text-amber-700'
+                                  }`}
+                                >
+                                  {issue.field}: {issue.message}
+                                </span>
+                              ))
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs text-slate-500">
+                {errorCount > 0
+                  ? t('ai.fixRows', 'Fix the rows in preview, then continue.')
+                  : warningCount > 0
+                    ? t('ai.warningsNonBlocking', 'Warnings are non-blocking — continue to preview if you want to adjust anything.')
+                    : ''}
+              </p>
+            </div>
+          )}
+
+          {/* ── Step 4: Preview ── */}
+          {step === 'preview' && (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-700">
+                {t('ai.previewHint', 'Correct any cell below, then run Import. Nothing is written until you confirm.')}
+              </p>
+              <div className="rounded border border-slate-200 bg-white overflow-hidden">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50">
+                      <th className="px-3 py-2 text-slate-400 font-medium w-12">#</th>
+                      {fieldInputs(model).map((field) => (
+                        <th key={field} className="px-3 py-2 text-slate-400 font-medium">
+                          {field.charAt(0).toUpperCase() + field.slice(1)}
+                        </th>
+                      ))}
+                      <th className="px-3 py-2 text-slate-400 font-medium text-right w-24">Status</th>
+                      <th className="px-3 py-2 text-slate-400 font-medium w-16"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.map((row, i) => {
+                      const issues = byRow.get(i + 1) ?? []
+                      const cells = fieldInputs(model)
+                      return (
+                        <tr key={i} className="border-b border-slate-100 hover:bg-slate-25 group">
+                          <td className="px-3 py-2 text-slate-400 font-mono">{i + 1}</td>
+                          {cells.map((field) => {
+                            const opts = enumOptions(model, field)
+                            const value = row.doc[field]
+                            const isSelect = opts.length > 0
+                            const isNumeric = NUMERIC_FIELDS.has(field)
+                            return (
+                              <td key={field} className="px-3 py-2">
+                                {isSelect ? (
+                                  <select
+                                    value={String(value ?? opts[0]?.value ?? '')}
+                                    onChange={(e) => updateCell(i, field, e.target.value)}
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-crimson-600"
+                                  >
+                                    {opts.map((o) => (
+                                      <option key={o.value} value={o.value}>
+                                        {o.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : isNumeric ? (
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    value={value == null ? '' : String(value)}
+                                    onChange={(e) => updateCell(i, field, e.target.value)}
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-crimson-600"
+                                  />
+                                ) : (
+                                  <input
+                                    value={value == null ? '' : String(value)}
+                                    onChange={(e) => updateCell(i, field, e.target.value)}
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-crimson-600"
+                                  />
+                                )}
+                              </td>
+                            )
+                          })}
+                          <td className="px-3 py-2 text-right">
+                            {issues.length === 0 ? (
+                              <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-1 text-[10px] font-medium text-emerald-700 border border-emerald-200">
+                                {t('ai.valid', 'Valid')}
+                              </span>
+                            ) : (
+                              <>
+                                {issues.map((issue, j) => (
+                                  <span
+                                    key={j}
+                                    className={`inline-block mb-1 rounded bg-${
+                                      issue.severity === 'error' ? 'red' : 'amber'
+                                    }-50 px-2 py-1 text-[10px] font-medium border ${
+                                      issue.severity === 'error'
+                                        ? 'border-red-200 text-red-700'
+                                        : 'border-amber-200 text-amber-700'
+                                    }`}
+                                  >
+                                    {issue.severity === 'error' ? '✖' : '⚠'}{' '}
+                                    {issue.message}
+                                  </span>
+                                ))}
+                              </>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <button
+                              onClick={() => removeRow(i)}
+                              className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                              title="Remove row"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 5: Execute ── */}
+          {step === 'execute' && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              {executing ? (
+                <>
+                  <Loader2 size={32} className="mb-4 animate-spin text-crimson-600" />
+                  <p className="text-sm text-slate-600">{t('ai.importing', 'Importing…')}</p>
+                </>
+              ) : result ? (
+                <>
+                  {result.errors.length === 0 ? (
+                    <CheckCircle2 size={32} className="mb-4 text-emerald-600" />
+                  ) : (
+                    <AlertCircle size={32} className="mb-4 text-amber-600" />
+                  )}
+                  <p className="text-sm text-slate-700">
+                    {result.errors.length === 0
+                      ? `${t('ai.imported', 'Import complete')}: ${resCreated(result)}`
+                      : `${t('ai.partialImport', 'Partially imported')}: ${resCreated(result)}`}
+                  </p>
+                  {result.errors.length > 0 && (
+                    <p className="mt-1 text-xs text-amber-600">
+                      {t('ai.importErrors', 'Failed:')}{' '}
+                      {result.errors.join('; ')}
+                    </p>
+                  )}
+                </>
+              ) : null}
+            </div>
+          )}
+        </main>
+
+        <footer className="flex items-center justify-between gap-2 px-5 py-3 border-t border-slate-100 bg-slate-50">
+          {step === 'prompt' ? (
+            <button
+              onClick={() => setStep('paste')}
+              className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700"
+            >
+              {t('ai.pasteJson', 'Paste JSON →')} <ArrowRight size={15} />
+            </button>
+          ) : step === 'execute' && result ? (
+            <>
+              <button
+                onClick={() => {
+                  setStep('prompt')
+                  setRawJson('')
+                  setParsed(null)
+                  setParseError('')
+                  setValidation({ valid: false, errors: [], warnings: [] })
+                  setPreview([])
+                  setResult(null)
+                }}
+                className="rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+              >
+                {t('ai.importAnother', 'Import another')}
+              </button>
+              <button
+                onClick={handleClose}
+                className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700"
+              >
+                {t('ai.close', 'Close')}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => {
+                  if (step === 'paste') setStep('prompt')
+                  else if (step === 'validate') setStep('paste')
+                  else setStep('validate')
+                }}
+                className="rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+              >
+                <ChevronRight size={14} className="rotate-180" /> {t('ai.back', 'Back')}
+              </button>
+              {step === 'paste' && (
+                <button
+                  onClick={handleParse}
+                  disabled={!rawJson.trim() || !!parseError}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40"
+                >
+                  {t('ai.validateBtn', 'Validate against schema')} <ArrowRight size={15} />
+                </button>
+              )}
+              {step === 'validate' && (
+                <button
+                  onClick={toPreview}
+                  disabled={errorCount > 0}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40"
+                >
+                  {t('ai.preview', 'Preview')} <ArrowRight size={15} />
+                </button>
+              )}
+              {step === 'preview' && (
+                <button
+                  onClick={() => setStep('execute')}
+                  disabled={errorCount > 0 || executing}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40"
+                >
+                  {t('ai.importInto', 'Import into')} {def.label} <Play size={15} />
+                </button>
+              )}
+              {step === 'execute' && !executing && !result && (
+                <button
+                  onClick={handleExecute}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700"
+                >
+                  {t('ai.importNow', 'Run import')} <Play size={15} />
+                </button>
+              )}
+            </>
+          )}
+        </footer>
+      </div>
+    </div>
+  )
+}
+
+function resCreated(res: { created: number; updated: number; skipped: number }): string {
+  return `${res.created} created, ${res.updated} updated, ${res.skipped} skipped`
+}

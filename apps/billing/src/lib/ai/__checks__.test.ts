@@ -1,0 +1,88 @@
+/** AI Workspace — pure-function checks (no Payload, no network).
+ *
+ * Run: pnpm --filter @afno/billing test --run src/lib/ai/__checks__.test.ts
+ */
+
+import { describe, expect, it } from 'vitest'
+import { AI_MODELS, modelDef } from './schemas'
+import { validateAgainstModel } from './validate'
+
+describe('AI Workspace model registry', () => {
+  it('exposes the four import models with required fields', () => {
+    expect(AI_MODELS.map((m) => m.value)).toEqual([
+      'gl-accounts',
+      'opening-balances',
+      'tax-types',
+      'account-groups',
+    ])
+    for (const m of AI_MODELS) {
+      expect(typeof m.prompt).toBe('function')
+      expect(m.prompt({ tenantName: 'Syasyah Samaj' })).toContain('{ "docs":')
+      expect(m.required.length).toBeGreaterThan(0)
+    }
+    expect(modelDef('tax-types').label).toBe('Tax Types')
+  })
+})
+
+describe('validateAgainstModel', () => {
+  const ctx = {
+    tenantName: 'Syasyah Samaj',
+    accounts: [{ code: '1101', name: 'Cash' }, { code: '1201', name: 'Bank' }],
+  }
+
+  it('accepts a valid chart of accounts', () => {
+    const parsed = {
+      docs: [
+        { code: '1101', name: 'Cash', type: 'asset', class: 'cash', group: 'Bank & Cash', openingBalance: 50000, active: true },
+      ],
+    }
+    const result = validateAgainstModel(parsed, 'gl-accounts', ctx)
+    expect(result.valid).toBe(true)
+    expect(result.errors).toEqual([])
+  })
+
+  it('rejects missing fields, bad enums and duplicate codes', () => {
+    const parsed = {
+      docs: [
+        { code: '1101', name: 'Cash', type: 'asset', class: 'cash', group: 'G', openingBalance: 0, active: true },
+        { name: 'Dup', type: 'asset', class: 'cash', group: 'G', openingBalance: 0, active: true }, // missing code + dup code below
+        { code: '1101', name: 'Dup', type: 'bogus', class: 'cash', group: 'G', openingBalance: 0, active: true },
+      ],
+    }
+    const result = validateAgainstModel(parsed, 'gl-accounts', ctx)
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.field === 'code' && e.message.includes('Missing'))).toBe(true)
+    expect(result.errors.some((e) => e.field === 'type' && e.message.includes('must be'))).toBe(true)
+    expect(result.errors.some((e) => e.message.includes('Duplicate'))).toBe(true)
+  })
+
+  it('opening-balances requires accountCode to exist in chart of accounts', () => {
+    const parsed = {
+      docs: [{ accountCode: '9999', accountName: 'Ghost', fiscalYear: '2026-27', amount: 100 }],
+    }
+    const result = validateAgainstModel(parsed, 'opening-balances', ctx)
+    expect(result.valid).toBe(false)
+    expect(result.warnings.some((w) => w.field === 'accountCode' && w.message.includes('not found'))).toBe(true)
+    expect(result.errors.some((e) => e.field === 'amount' && e.message.includes('number'))).toBe(false)
+  })
+
+  it('rejects non-object root and empty docs', () => {
+    expect(validateAgainstModel([1, 2], 'gl-accounts', ctx).valid).toBe(false)
+    expect(validateAgainstModel({ docs: [] }, 'gl-accounts', ctx).valid).toBe(false)
+    expect(validateAgainstModel('not json', 'gl-accounts', ctx).valid).toBe(false)
+  })
+
+  it('tax-types validates sales/purchase enum and numeric rate', () => {
+    const parsed = { docs: [{ name: 'VAT', type: 'sales', rate: 13, active: true }] }
+    expect(validateAgainstModel(parsed, 'tax-types', ctx).valid).toBe(true)
+    const bad = { docs: [{ name: 'VAT', type: 'import', rate: 'high', active: true }] }
+    expect(validateAgainstModel(bad, 'tax-types', ctx).valid).toBe(false)
+  })
+
+  it('account-groups validates debit/credit nature', () => {
+    const parsed = { docs: [{ name: 'Banks', type: 'asset', nature: 'debit', active: true }] }
+    expect(validateAgainstModel(parsed, 'account-groups', ctx).valid).toBe(true)
+    const bad = { docs: [{ name: 'Banks', type: 'asset', nature: 'sideways', active: true }] }
+    expect(validateAgainstModel(bad, 'account-groups', ctx).valid).toBe(false)
+  })
+})
