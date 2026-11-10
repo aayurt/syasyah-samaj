@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react'
 import { api } from '../lib/api'
+import { authClient, isAdminUser } from '../lib/auth'
 import { executeImport, type ImportAction } from '../lib/importExport'
 import { useTenant, type TenantOption } from '../lib/tenant'
 import { useT } from '../lib/i18n'
@@ -196,6 +197,12 @@ export default function AIWorkspaceModal({
   ] as { key: Step; label: string }[]
   const { tenantId, isCentral, isIllaka, illakaCode, tenants } = useTenant()
   const tenantQuery = { tenant: tenantId } as Record<string, string | undefined>
+
+  // Auth session — used to gate data-creating actions behind admin role
+  const { data: session } = authClient.useSession()
+  const userRole = (session?.user as { role?: string } | undefined)?.role
+  const canWrite = isAdminUser(userRole)
+
   const [model, setModel] = useState<AIModel>(initialModel ?? 'gl-accounts')
   const [schemaVersion, setSchemaVersion] = useState(0)
   const [step, setStep] = useState<Step>('prompt')
@@ -383,6 +390,10 @@ export default function AIWorkspaceModal({
 
   const handleExecute = useCallback(async () => {
     if (validation.errors.length > 0) return
+    if (!canWrite) {
+      pushToast('error', t('ai.needAdmin', 'Admin required'), t('ai.needAdminMsg', 'Only admins can create or modify data.'))
+      return
+    }
     setExecuting(true)
     const records: { doc: Record<string, unknown>; action: ImportAction }[] = preview.map(
       (row) => ({ doc: row.doc, action: row.action }),
@@ -595,6 +606,16 @@ export default function AIWorkspaceModal({
             >
               {illakaCode || tenantId || 'All'}
               {isIllaka ? ' (illaka)' : isCentral ? ' (central)' : ''}
+            </span>
+            <span
+              className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
+                canWrite
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : 'bg-amber-50 border-amber-200 text-amber-700'
+              }`}
+            >
+              {t('ai.role', 'Role')}: {userRole ?? '—'}
+              {canWrite ? ' (admin)' : ' (no write)'}
             </span>
             <label className="flex items-center gap-1.5 text-xs text-slate-500">
               {t('ai.model', 'Model')}:{' '}
