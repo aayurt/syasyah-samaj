@@ -367,14 +367,37 @@ export default function AIWorkspaceModal({
       // they bypass executeImport (which keys off ENTITY_REGISTRY).
       if (model === 'company-profile') {
         const errs: string[] = []
+        let subCreated = 0
         for (const row of preview) {
           try {
             await api('/globals/billing-settings', { method: 'POST', body: row.doc })
           } catch (e) {
             errs.push(e instanceof Error ? e.message : String(e))
           }
+          // Sub-companies (illaka) — same endpoint the wizard uses.
+          const subs = row.doc.subCompanies
+          if (Array.isArray(subs)) {
+            for (const sub of subs) {
+              try {
+                await api('/tenants', {
+                  method: 'POST',
+                  body: {
+                    name: sub.name,
+                    code: sub.code,
+                    type: 'illaka',
+                    active: sub.active ?? true,
+                    slug: sub.slug || '',
+                  },
+                  immediate: true,
+                })
+                subCreated++
+              } catch (e) {
+                errs.push(e instanceof Error ? e.message : String(e))
+              }
+            }
+          }
         }
-        setResult({ created: preview.length - errs.length, updated: 0, skipped: 0, errors: errs })
+        setResult({ created: preview.length - errs.length + subCreated, updated: 0, skipped: 0, errors: errs })
         if (errs.length === 0) {
           pushToast('success', t('ai.imported', 'Import complete'), t('ai.importedCompany', 'Company profile saved'))
           onImported?.()

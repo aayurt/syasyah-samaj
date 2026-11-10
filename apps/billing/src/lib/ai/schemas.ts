@@ -111,7 +111,7 @@ Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no ex
   {
     value: 'company-profile',
     label: 'Company Profile',
-    hint: 'Organization name, PAN, contact details',
+    hint: 'Organization name, PAN, contact details, and sub-companies',
     required: REQUIRED['company-profile'],
     prompt: ({ tenantName }) =>
       `You are an accounting assistant for "${tenantName}", a Nepali community organization.
@@ -122,6 +122,11 @@ Generate company profile details as JSON. Each profile must have:
 - companyContact: string — phone/contact number (optional)
 - companyEmail: string — email address (optional)
 - companyAddress: string — physical address (optional)
+- subCompanies: array (optional) — sub-companies / illakas under this company. Each has:
+  - name: string — sub-company name
+  - code: string — sub-company code
+  - slug: string — URL slug (optional)
+  - active: boolean — whether active (default true)
 
 Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no explanation.`,
   },

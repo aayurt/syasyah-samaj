@@ -99,6 +99,36 @@ describe('validateAgainstModel', () => {
     expect(result.errors.some((e) => e.field === 'companyName')).toBe(true)
   })
 
+  it('company-profile validates optional subCompanies array', () => {
+    const good = {
+      docs: [{
+        companyName: 'Syasyah Samaj',
+        subCompanies: [
+          { name: 'Illaka A', code: 'ILLAKA-A', slug: 'illaka-a', active: true },
+          { name: 'Illaka B', code: 'ILLAKA-B', active: false },
+        ],
+      }],
+    }
+    expect(validateAgainstModel(good, 'company-profile', ctx).valid).toBe(true)
+
+    const badSub = {
+      docs: [{
+        companyName: 'Syasyah Samaj',
+        subCompanies: [{ code: 'NO-NAME', active: true }],
+      }],
+    }
+    const r1 = validateAgainstModel(badSub, 'company-profile', ctx)
+    expect(r1.valid).toBe(false)
+    expect(r1.errors.some((e) => e.field === 'subCompanies.name')).toBe(true)
+
+    const badNotArray = {
+      docs: [{ companyName: 'Syasyah Samaj', subCompanies: 'not an array' }],
+    }
+    const r2 = validateAgainstModel(badNotArray, 'company-profile', ctx)
+    expect(r2.valid).toBe(false)
+    expect(r2.errors.some((e) => e.field === 'subCompanies')).toBe(true)
+  })
+
   it('fiscal-year requires label/startDate/endDate and validates status enum', () => {
     const good = { docs: [{ label: '2026-27', startDate: '2026-04-01', endDate: '2027-03-31', status: 'active' }] }
     expect(validateAgainstModel(good, 'fiscal-year', ctx).valid).toBe(true)
