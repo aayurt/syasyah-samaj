@@ -137,6 +137,20 @@ export default function Accounts() {
   const remove = async (id: number) => {
     if (!window.confirm('Delete this account?')) return
     try {
+      // Check for dependencies before deleting
+      const balanceDep = await api<{ count: number }>('/balances', {
+        query: { depth: 0, 'account[id][equals]': String(id) },
+      })
+      const openingDep = await api<{ count: number }>('/opening-balances/for-year', {
+        query: { depth: 0, 'account[id][equals]': String(id), fiscalYear: String(selectedYear?.id) },
+      })
+      const hasDep = (balanceDep.count || 0) > 0 || (openingDep.count || 0) > 0
+      if (hasDep) {
+        setError(
+          'Cannot delete account — it is referenced by posted journal entries or opening balances. Remove those first.'
+        )
+        return
+      }
       // Queued to the offline outbox — flushes on reconnect when offline.
       await api(`/gl-accounts/${id}`, { method: 'DELETE' })
       await load()
