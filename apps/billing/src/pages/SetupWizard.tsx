@@ -115,8 +115,8 @@ export default function SetupWizard() {
   const [fyCal, setFyCal] = useState<'AD' | 'BS'>('AD')
   const [fyBs, setFyBs] = useState({ start: '', end: '' })
   const [fyEditRow, setFyEditRow] = useState<string | null>(null)
-  const [fyRowDraft, setFyRowDraft] = useState<{ label: string; startDate: string; endDate: string }>({
-    label: '', startDate: '', endDate: '',
+  const [fyRowDraft, setFyRowDraft] = useState<{ label: string; startDate: string; endDate: string; status: string }>({
+    label: '', startDate: '', endDate: '', status: 'active',
   })
   const toggleFyCal = () => {
     setFyCal((c) => {
@@ -365,7 +365,6 @@ export default function SetupWizard() {
       await refreshYears()
       bumpGlobals()
       pushToast('success', 'Fiscal year created', label || fy.startDate)
-      setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create fiscal year')
     } finally {
@@ -416,7 +415,7 @@ export default function SetupWizard() {
       pushToast('error', 'Date range overlaps', 'This fiscal year overlaps an existing period.')
       return
     }
-    api(`/fiscal-years/${id}`, { method: 'PATCH', body: { label: d.label || undefined, startDate: d.startDate, endDate: d.endDate } })
+    api(`/fiscal-years/${id}`, { method: 'PATCH', body: { label: d.label || undefined, startDate: d.startDate, endDate: d.endDate, status: d.status } })
       .then(() => { setFyEditRow(null); void refreshYears(); pushToast('success', 'Year updated') })
       .catch((e) => pushToast('error', 'Failed to update year', e instanceof Error ? e.message : String(e)))
   }
@@ -1067,7 +1066,16 @@ export default function SetupWizard() {
                               <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.endDate || '').slice(0, 10)}</td>
                             )}
                             <td className="px-3 py-2">
-                              {isClosed ? (
+                              {fyEditRow === String(y.id) ? (
+                                <select
+                                  defaultValue={y.status || 'active'}
+                                  className="w-full text-xs border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none bg-white"
+                                  onChange={(e) => setFyRowDraft({ ...fyRowDraft, status: e.target.value })}
+                                >
+                                  <option value="active">Active</option>
+                                  <option value="closed">Closed</option>
+                                </select>
+                              ) : isClosed ? (
                                 <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
                                   <Lock size={10} /> Closed
                                 </span>
@@ -1121,7 +1129,7 @@ export default function SetupWizard() {
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      setFyRowDraft({ label: y.label || '', startDate: String(y.startDate || '').slice(0, 10), endDate: String(y.endDate || '').slice(0, 10) })
+                                      setFyRowDraft({ label: y.label || '', startDate: String(y.startDate || '').slice(0, 10), endDate: String(y.endDate || '').slice(0, 10), status: y.status || 'active' })
                                       setFyEditRow(String(y.id))
                                     }}
                                     title="Edit year"
@@ -1359,16 +1367,6 @@ export default function SetupWizard() {
                 className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
               >
                 <Sparkles size={14} /> {t('ai.importFiscalYear', 'Import Fiscal Year with AI')}
-              </button>
-            )}
-            {step.key === 'fiscalYear' && (
-              <button
-                onClick={() => void createFiscalYear()}
-                disabled={busy === 'fiscalYear' || !fy.startDate || !fy.endDate || (fyCal === 'BS' && (!bsToAdString(fyBs.start) || !bsToAdString(fyBs.end)))}
-                className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-              >
-                {busy === 'fiscalYear' ? <Loader2 size={15} className="animate-spin" /> : null}
-                Create fiscal year
               </button>
             )}
             {step.key === 'seeds' && (
