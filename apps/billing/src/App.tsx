@@ -322,17 +322,18 @@ function Shell({ email }: { email: string }) {
   }, [])
 
   // Fresh (or just-cleaned) books land on the onboarding wizard instead of an
-  // empty dashboard. Redirect only when setup is KNOWN incomplete — a loading
-  // or in-use status must never bounce the user away.
+  // empty dashboard. Redirect any accounting route to /setup when setup is
+  // KNOWN incomplete — a loading or in-use status must never bounce the user
+  // away (existing books stay usable; only fresh tenants are compelled).
   useEffect(() => {
     if (
-      location.pathname === '/' &&
-      !setup.loading &&
-      !setup.complete &&
-      !setup.inUse
-    ) {
-      navigate('/setup', { replace: true })
-    }
+      setup.loading ||
+      setup.complete ||
+      setup.inUse ||
+      location.pathname === '/setup' ||
+      location.pathname.startsWith('/payroll')
+    ) return
+    navigate('/setup', { replace: true })
   }, [location.pathname, setup.loading, setup.complete, setup.inUse, navigate])
 
   const closeTour = () => {
