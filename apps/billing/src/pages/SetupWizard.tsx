@@ -536,6 +536,25 @@ export default function SetupWizard() {
               </button>
             )
           })}
+          {OPTIONAL_STEPS.map((s, i) => {
+            const done = satisfied[s.key]
+            const active = REQUIRED_STEPS.length + i === stepIdx
+            return (
+              <button
+                key={s.key}
+                onClick={() => !busy && setStepIdx(REQUIRED_STEPS.length + i)}
+                className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${active
+                  ? 'border-slate-500 bg-slate-50 text-slate-700'
+                  : done
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : 'border-slate-200 bg-white text-slate-400'
+                  }`}
+              >
+                {done ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+                <span className="hidden sm:inline">{s.title} (optional)</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
