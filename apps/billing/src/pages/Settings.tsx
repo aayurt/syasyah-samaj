@@ -1824,7 +1824,7 @@ export default function Settings() {
               <button
                 type="button"
                 onClick={() => void fySave()}
-                disabled={fySaving}
+                disabled={fySaving || !fyForm.startDate || !fyForm.endDate}
                 className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
               >
                 {fySaving ? t("hint.savingLabel") : fyEditing ? t("hint.saveChangesLabel") : t("hint.createYearLabel")}

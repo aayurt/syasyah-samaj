@@ -73,7 +73,9 @@ export default function NepaliDateInput({
     const ad = bsToAdString(
       `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
     )
-    if (ad) onChange(ad)
+    // Always notify the parent so form state is never stuck empty — even if
+    // BS→AD conversion fails, the caller gets a value instead of silence.
+    onChange(ad || `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
   }
 
   const handleChange = (raw: string) => {
