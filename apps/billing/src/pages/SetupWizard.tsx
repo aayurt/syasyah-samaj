@@ -101,6 +101,9 @@ export default function SetupWizard() {
   const [illakaCount, setIllakaCount] = useState<number | null>(null)
   const [memberCount, setMemberCount] = useState<number | null>(null)
   const [itemCount, setItemCount] = useState<number | null>(null)
+  const [accountGroupsCount, setAccountGroupsCount] = useState<number | null>(null)
+  const [taxTypesCount, setTaxTypesCount] = useState<number | null>(null)
+  const [partiesCount, setPartiesCount] = useState<number | null>(null)
   const [accounts, setAccounts] = useState<Account[]>([])
   // Sub-company / ilaka management (central admin only)
   const [subCompanies, setSubCompanies] = useState<TenantOption[]>([])
@@ -146,13 +149,16 @@ export default function SetupWizard() {
   const tenantQuery = useMemo(() => (tenantId ? { tenant: tenantId } : {}), [tenantId])
 
   const refreshFacts = useCallback(async () => {
-    const [s, chartRes, docRes, illakaRes, memberRes, itemRes] = await Promise.all([
+    const [s, chartRes, docRes, illakaRes, memberRes, itemRes, agRes, ttRes, ptRes] = await Promise.all([
       api<BillingSettings>('/globals/billing-settings', { query: { depth: 1 } }).catch(() => null),
       list<Account>('gl-accounts', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null),
       list<Document>('documents', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null),
       list<TenantOption>('tenants', { depth: 0, limit: 100 }).catch(() => null),
       tenantId ? list<{ id: number }>('members', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null) : Promise.resolve(null),
       tenantId ? list<{ id: number }>('items', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null) : Promise.resolve(null),
+      tenantId ? list<{ id: number }>('account-groups', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null) : Promise.resolve(null),
+      tenantId ? list<{ id: number }>('tax-types', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null) : Promise.resolve(null),
+      tenantId ? list<{ id: number }>('parties', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null) : Promise.resolve(null),
     ])
     setSettings(s)
     setSettingsLoaded(true)
@@ -160,6 +166,9 @@ export default function SetupWizard() {
     setIllakaCount(illakaRes?.totalDocs ?? 0)
     setMemberCount(memberRes?.totalDocs ?? 0)
     setItemCount(itemRes?.totalDocs ?? 0)
+    setAccountGroupsCount(agRes?.totalDocs ?? 0)
+    setTaxTypesCount(ttRes?.totalDocs ?? 0)
+    setPartiesCount(ptRes?.totalDocs ?? 0)
     setSubCompanies(illakaRes?.docs ?? [])
     if (s) {
       setCompany({
@@ -233,12 +242,13 @@ export default function SetupWizard() {
   const satisfied: Record<string, boolean> = {
     company: Boolean(settings?.companyName && String(settings.companyName).trim()),
     fiscalYear: (years?.length ?? 0) > 0 || Boolean(settings?.activeFiscalYear),
-    'seed-accounts': Boolean(seedDone['seed-accounts']),
-    'seed-taxTypes': Boolean(seedDone['seed-taxTypes']),
+    'seed-account-groups': Boolean(seedDone['seed-account-groups']) || (accountGroupsCount ?? 0) > 0,
+    'seed-accounts': Boolean(seedDone['seed-accounts']) || (chartCount ?? 0) > 0,
+    'seed-taxTypes': Boolean(seedDone['seed-taxTypes']) || (taxTypesCount ?? 0) > 0,
     defaults: CORE_DEFAULTS.every((d) => settings && settings[d.key] != null),
-    'seed-parties': Boolean(seedDone['seed-parties']),
-    'seed-items': Boolean(seedDone['seed-items']),
-    'seed-members': Boolean(seedDone['seed-members']),
+    'seed-parties': Boolean(seedDone['seed-parties']) || (partiesCount ?? 0) > 0,
+    'seed-items': Boolean(seedDone['seed-items']) || (itemCount ?? 0) > 0,
+    'seed-members': Boolean(seedDone['seed-members']) || (memberCount ?? 0) > 0,
     openings: true,
   }
 
