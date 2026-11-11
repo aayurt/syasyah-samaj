@@ -1085,6 +1085,10 @@ export interface GlAccount {
   id: number;
   code?: string | null;
   name: string;
+  /**
+   * Optional note or heading/subheading context for this account.
+   */
+  description?: string | null;
   group?: (number | null) | AccountGroup;
   type: 'asset' | 'liability' | 'equity' | 'income' | 'expense';
   /**
@@ -4666,6 +4670,7 @@ export interface AccountGroupsSelect<T extends boolean = true> {
 export interface GlAccountsSelect<T extends boolean = true> {
   code?: T;
   name?: T;
+  description?: T;
   group?: T;
   type?: T;
   class?: T;

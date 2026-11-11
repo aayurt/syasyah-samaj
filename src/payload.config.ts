@@ -77,6 +77,7 @@ export const redis = new Redis({
   password: process.env.REDIS_PASSWORD,
 })
 export default buildConfig({
+  debug: true,
   admin: {
     components: {
       beforeDashboard: ['@/components/admin/TenantInit/index#TenantInit'],
