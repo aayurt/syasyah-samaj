@@ -129,6 +129,22 @@ Be helpful without being annoying: check in a few times a day, do useful backgro
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.
 
+## Graphify — Knowledge Graph
+
+This repo uses [Graphify](https://github.com/Graphify-Labs/graphify) to turn the codebase into a local, queryable knowledge graph. Graphify parses code with tree-sitter AST (deterministic, no vector store, nothing leaves the machine). Use it to trace relationships between collections, hooks, endpoints, and schemas instead of grepping.
+
+### Usage
+
+- `/graphify` — map the project into a knowledge graph (code + docs + configs)
+- Query the graph instead of grepping: trace how a Payload collection connects to its access hooks, beforeChange hooks, and API routes
+- Graphify output lives in `.graphify/` — do not commit it
+
+### Conventions
+
+- Run Graphify before large refactors to understand the codebase topology
+- Use graph edges to verify no collection is updated without its access hooks firing
+- Tag edges: `EXTRACTED` = explicit in source, `INFERRED` = resolved by Graphify
+
 ## Related
 
 - [Default AGENTS.md](/reference/AGENTS.default)

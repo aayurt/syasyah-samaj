@@ -25,3 +25,8 @@ apps/billing/e2e/.auth/
 apps/billing/test-results/
 apps/billing/playwright-report/
 .serena/
+
+# Graphify knowledge graph output (local, do not commit)
+.graphify/
+graphify-data/
+.graphify-cache/

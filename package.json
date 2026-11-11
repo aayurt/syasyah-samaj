@@ -71,7 +71,7 @@
     "react-hook-form": "7.45.4",
     "react-leaflet": "^5.0.0",
     "resend": "^6.9.1",
-    "sharp": "^0.35.3",
+    "sharp": "^0.33.0",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7"
   },
