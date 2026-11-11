@@ -914,12 +914,6 @@ export default function AIWorkspaceModal({
                       />
                       <div className="mt-2 flex items-center gap-2">
                         <button
-                          onClick={() => setGemini((prev) => ({ ...prev, prompt: effectivePrompt }))}
-                          className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
-                        >
-                          {t('ai.effectivePrompt', 'Load full prompt')}
-                        </button>
-                        <button
                           onClick={askBuiltInGemini}
                           disabled={gemini.status !== 'ready'}
                           className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
