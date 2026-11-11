@@ -1700,16 +1700,13 @@ function SeedTable({
         )}
       </div>
 
-      {/* Seed Data section */}
+      {/* Seed Data section — only when no current data */}
+      {empty && (
       <div>
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Seed Data</p>
-        {empty ? (
-          <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
-            No records yet. Seed the {title.toLowerCase()} below.
-          </div>
-        ) : (
-          renderTable()
-        )}
+        <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
+          No records yet. Seed the {title.toLowerCase()} below.
+        </div>
         <div className="flex items-center justify-between mb-1">
           {aiModel && (
             <button
@@ -1729,6 +1726,7 @@ function SeedTable({
           </button>
         </div>
       </div>
+      )}
     </div>
   )
 }
