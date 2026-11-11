@@ -1143,6 +1143,8 @@ export default function SetupWizard() {
             seedKey="accountGroups"
             seedLabel="Seed types & groups"
             icon={<Layers size={18} className="text-slate-400" />}
+            aiModel="account-groups"
+            aiLabel="Import Account Types & Groups with AI"
             columns={[
               { key: 'code', label: 'Code', type: 'readonly' },
               { key: 'name', label: 'Group', type: 'text' },
@@ -1210,6 +1212,8 @@ export default function SetupWizard() {
             seedKey="parties"
             seedLabel="Seed parties"
             icon={<UserPlus size={18} className="text-slate-400" />}
+            aiModel="gl-accounts"
+            aiLabel="Import Parties with AI"
             columns={[
               { key: 'name', label: 'Party', type: 'text' },
               { key: 'type', label: 'Type', type: 'select', options: ['customer', 'vendor', 'both'] },
@@ -1231,6 +1235,8 @@ export default function SetupWizard() {
             seedKey="items"
             seedLabel="Seed items"
             icon={<Package size={18} className="text-slate-400" />}
+            aiModel="gl-accounts"
+            aiLabel="Import Items with AI"
             columns={[
               { key: 'code', label: 'Code', type: 'readonly' },
               { key: 'name', label: 'Item', type: 'text' },
@@ -1252,6 +1258,8 @@ export default function SetupWizard() {
             seedKey="members"
             seedLabel="Seed members"
             icon={<Users size={18} className="text-slate-400" />}
+            aiModel="gl-accounts"
+            aiLabel="Import Members with AI"
             columns={[
               { key: 'fullName', label: 'Member', type: 'text' },
               { key: 'email', label: 'Email', type: 'text' },
@@ -1328,12 +1336,17 @@ export default function SetupWizard() {
           </button>
 
           <div className="flex items-center gap-2">
-            {step.key.startsWith('seed-') && !seedDone[step.key] && (
+            {step.key.startsWith('seed-') && (
               <button
-                onClick={() => { setSeedDone((p) => ({ ...p, [step.key]: true })) }}
-                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-500 hover:bg-slate-100"
+                onClick={() => {
+                  if (!seedDone[step.key]) {
+                    setSeedDone((p) => ({ ...p, [step.key]: true }))
+                  }
+                  setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
+                }}
+                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
-                Skip <ArrowRight size={15} />
+                {seedDone[step.key] ? t('setup.next', 'Next') : 'Skip'} <ArrowRight size={15} />
               </button>
             )}
             {step.key === 'openings' && (
@@ -1388,15 +1401,7 @@ export default function SetupWizard() {
                 <Sparkles size={14} /> {t('ai.importFiscalYear', 'Import Fiscal Year with AI')}
               </button>
             )}
-            {/* Seed steps: seed button lives in the table; Next appears once seeded */}
-            {step.key.startsWith('seed-') && seedDone[step.key] && (
-              <button
-                onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
-                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
-              >
-                {t('setup.next', 'Next')} <ArrowRight size={15} />
-              </button>
-            )}
+            {/* Seed steps: single Skip/Next button above handles both cases */}
             {step.key === 'defaults' && (
               <button
                 onClick={() => void saveDefaults()}
@@ -1708,14 +1713,12 @@ function SeedTable({
           No records yet. Seed the {title.toLowerCase()} below.
         </div>
         <div className="flex items-center justify-between mb-1">
-          {aiModel && (
-            <button
-              onClick={() => { setAiInitialModel(aiModel); setAiOpen(true) }}
-              className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-            >
-              <Sparkles size={14} /> {aiLabel}
-            </button>
-          )}
+          <button
+            onClick={() => { setAiInitialModel(aiModel ?? 'gl-accounts'); setAiOpen(true) }}
+            className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            <Sparkles size={14} /> {aiLabel ?? 'Import with AI'}
+          </button>
           <button
             onClick={doSeed}
             disabled={busyId === 'seed'}
