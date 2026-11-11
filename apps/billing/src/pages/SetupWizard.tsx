@@ -1855,7 +1855,8 @@ function SeedTable({
         )}
       </div>
 
-      {/* Seed Data section — always available */}
+      {/* Seed Data section — only when current data is empty */}
+      {empty ? (
       <div>
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Seed Data</p>
         {seedRows && seedRows.length > 0 ? (
@@ -1896,6 +1897,7 @@ function SeedTable({
             </button>
           </div>
         )}
+      ) : null}
       </div>
     </div>
   )
