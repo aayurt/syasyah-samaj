@@ -145,6 +145,14 @@ This repo uses [Graphify](https://github.com/Graphify-Labs/graphify) to turn the
 - Use graph edges to verify no collection is updated without its access hooks firing
 - Tag edges: `EXTRACTED` = explicit in source, `INFERRED` = resolved by Graphify
 
+### Sharp / Node version pin (VPS compatibility)
+
+**Problem:** `sharp` 0.35.x requires Node >=20.9.0 and a linux-x64 native binding. Local dev runs Node 26/darwin-arm64; the VPS (PersonalVPS) runs Node 18.19.1/linux-x64. `rsync` of `node_modules` shipped a darwin sharp binary that crashed on the VPS, causing PATCH 500 on all collections (Payload loads sharp during update operations).
+
+**Fix:** Pin `sharp` to `^0.33.0` in `package.json` (supports Node ^18.17.0). Never `rsync node_modules` across platforms — the deploy script runs `pnpm install` on the VPS to build native bindings for the server's platform.
+
+**Verification:** PATCH returns `403 JSON` (auth required) instead of `500 HTML`; VPS error log is clean.
+
 ## Related
 
 - [Default AGENTS.md](/reference/AGENTS.default)
