@@ -1882,12 +1882,6 @@ function SeedTable({
           )}
           <div className="flex items-center justify-between mb-1 mt-1">
             <button
-              onClick={() => { setAiInitialModel(aiModel ?? 'gl-accounts'); setAiOpen(true) }}
-              className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-            >
-              <Sparkles size={14} /> {aiLabel ?? 'Import with AI'}
-            </button>
-            <button
               onClick={doSeed}
               disabled={busyId === 'seed'}
               className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
@@ -1898,6 +1892,16 @@ function SeedTable({
           </div>
         </div>
       ) : null}
+
+      {/* AI Import — every step, whether or not data exists yet */}
+      <div className="flex items-center gap-2 mb-1 mt-1">
+        <button
+          onClick={() => { setAiInitialModel(aiModel ?? 'gl-accounts'); setAiOpen(true) }}
+          className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+        >
+          <Sparkles size={14} /> {aiLabel ?? 'Import with AI'}
+        </button>
+      </div>
     </div>
   )
 }
