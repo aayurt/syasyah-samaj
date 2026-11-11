@@ -185,7 +185,7 @@ export default function SetupWizard() {
       setSyncing(true)
       try {
         const engine = getEngine()
-        await engine.syncAll().catch(() => {})
+        await engine.syncAll().catch(() => { })
       } catch {
         /* proceed with local facts if offline */
       }
@@ -205,7 +205,7 @@ export default function SetupWizard() {
     if (tenantId) {
       void api<{ docs: Account[] }>('/gl-accounts', { query: { depth: 0, sort: 'name', limit: 500, ...tenantQuery } })
         .then((r) => setAccounts(r.docs || []))
-        .catch(() => {})
+        .catch(() => { })
     } else {
       setAccounts([])
     }
@@ -358,7 +358,7 @@ export default function SetupWizard() {
         })
         const created = res.docs?.[0]
         if (created) {
-          await api('/globals/billing-settings', { method: 'POST', body: { activeFiscalYear: created.id } }).catch(() => {})
+          await api('/globals/billing-settings', { method: 'POST', body: { activeFiscalYear: created.id } }).catch(() => { })
         }
       }
       await refreshYears()
@@ -374,7 +374,7 @@ export default function SetupWizard() {
   const fySetActive = (id: string) => {
     api(`/fiscal-years/${id}`, { method: 'PATCH', body: { isActive: true } })
       .then(async () => {
-        await api('/globals/billing-settings', { method: 'POST', body: { activeFiscalYear: Number(id) } }).catch(() => {})
+        await api('/globals/billing-settings', { method: 'POST', body: { activeFiscalYear: Number(id) } }).catch(() => { })
         await refreshYears()
         pushToast('success', 'Working year set')
       })
@@ -524,13 +524,12 @@ export default function SetupWizard() {
               <button
                 key={s.key}
                 onClick={() => !busy && setStepIdx(i)}
-                className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  active
-                    ? 'border-crimson-500 bg-crimson-50 text-crimson-700'
-                    : done
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                      : 'border-slate-200 bg-white text-slate-500'
-                }`}
+                className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${active
+                  ? 'border-crimson-500 bg-crimson-50 text-crimson-700'
+                  : done
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : 'border-slate-200 bg-white text-slate-500'
+                  }`}
               >
                 {done ? <CheckCircle2 size={14} /> : <Circle size={14} />}
                 <span className="hidden sm:inline">{s.title}</span>
@@ -860,425 +859,425 @@ export default function SetupWizard() {
 
           {step.key === 'fiscalYear' && (
             <>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500">Calendar</span>
-                <button
-                  onClick={toggleFyCal}
-                  className={`rounded border border-slate-300 px-2.5 py-1 text-xs ${fyCal === 'AD' ? 'bg-slate-100' : ''}`}
-                >
-                  AD
-                </button>
-                <button
-                  onClick={toggleFyCal}
-                  className={`rounded border border-slate-300 px-2.5 py-1 text-xs ${fyCal === 'BS' ? 'bg-slate-100' : ''}`}
-                >
-                  BS
-                </button>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500">Calendar</span>
+                  <button
+                    onClick={toggleFyCal}
+                    className={`rounded border border-slate-300 px-2.5 py-1 text-xs ${fyCal === 'AD' ? 'bg-slate-100' : ''}`}
+                  >
+                    AD
+                  </button>
+                  <button
+                    onClick={toggleFyCal}
+                    className={`rounded border border-slate-300 px-2.5 py-1 text-xs ${fyCal === 'BS' ? 'bg-slate-100' : ''}`}
+                  >
+                    BS
+                  </button>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Start date</label>
+                    {fyCal === 'AD' ? (
+                      <input
+                        type="date"
+                        value={fy.startDate}
+                        onChange={(e) => setFy({ ...fy, startDate: e.target.value })}
+                        className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={fyBs.start}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          setFyBs({ ...fyBs, start: v })
+                          const ad = bsToAdString(v)
+                          if (ad) setFy({ ...fy, startDate: ad })
+                        }}
+                        placeholder="YYYY-MM-DD"
+                        className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                      />
+                    )}
+                    {fyCal === 'BS' && fyBs.start && !bsToAdString(fyBs.start) && (
+                      <p className="mt-1 text-xs text-red-600">Invalid BS date</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">End date</label>
+                    {fyCal === 'AD' ? (
+                      <input
+                        type="date"
+                        value={fy.endDate}
+                        onChange={(e) => setFy({ ...fy, endDate: e.target.value })}
+                        className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={fyBs.end}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          setFyBs({ ...fyBs, end: v })
+                          const ad = bsToAdString(v)
+                          if (ad) setFy({ ...fy, endDate: ad })
+                        }}
+                        placeholder="YYYY-MM-DD"
+                        className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                      />
+                    )}
+                    {fyCal === 'BS' && fyBs.end && !bsToAdString(fyBs.end) && (
+                      <p className="mt-1 text-xs text-red-600">Invalid BS date</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Label (optional)</label>
+                    <input
+                      value={fy.label}
+                      onChange={(e) => setFy({ ...fy, label: e.target.value })}
+                      placeholder="e.g. 2083-84"
+                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Label is auto-generated from the start date (BS year) when left blank. The new year
+                  becomes the active working year.
+                </p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <label className="text-xs font-medium text-slate-600">Start date</label>
-                  {fyCal === 'AD' ? (
-                    <input
-                      type="date"
-                      value={fy.startDate}
-                      onChange={(e) => setFy({ ...fy, startDate: e.target.value })}
-                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      value={fyBs.start}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        setFyBs({ ...fyBs, start: v })
-                        const ad = bsToAdString(v)
-                        if (ad) setFy({ ...fy, startDate: ad })
-                      }}
-                      placeholder="YYYY-MM-DD"
-                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                    />
-                  )}
-                  {fyCal === 'BS' && fyBs.start && !bsToAdString(fyBs.start) && (
-                    <p className="mt-1 text-xs text-red-600">Invalid BS date</p>
-                  )}
+              <div className="mt-6">
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">Fiscal years</p>
+                    <p className="text-xs text-slate-400">
+                      Set the working year · Close/reopen · Edit inline · Delete
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void createFiscalYear()}
+                    disabled={busy === 'fiscalYear' || !fy.startDate || !fy.endDate}
+                    className="flex items-center gap-1.5 rounded-md bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                  >
+                    <Plus size={14} /> Add Year
+                  </button>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-600">End date</label>
-                  {fyCal === 'AD' ? (
-                    <input
-                      type="date"
-                      value={fy.endDate}
-                      onChange={(e) => setFy({ ...fy, endDate: e.target.value })}
-                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      value={fyBs.end}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        setFyBs({ ...fyBs, end: v })
-                        const ad = bsToAdString(v)
-                        if (ad) setFy({ ...fy, endDate: ad })
-                      }}
-                      placeholder="YYYY-MM-DD"
-                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                    />
-                  )}
-                  {fyCal === 'BS' && fyBs.end && !bsToAdString(fyBs.end) && (
-                    <p className="mt-1 text-xs text-red-600">Invalid BS date</p>
-                  )}
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-600">Label (optional)</label>
-                  <input
-                    value={fy.label}
-                    onChange={(e) => setFy({ ...fy, label: e.target.value })}
-                    placeholder="e.g. 2083-84"
-                    className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-slate-400">
-                Label is auto-generated from the start date (BS year) when left blank. The new year
-                becomes the active working year.
-              </p>
-            </div>
-            <div className="mt-6">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Fiscal years</p>
-                  <p className="text-xs text-slate-400">
-                    Set the working year · Close/reopen · Edit inline · Delete
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void createFiscalYear()}
-                  disabled={busy === 'fiscalYear' || !fy.startDate || !fy.endDate}
-                  className="flex items-center gap-1.5 rounded-md bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  <Plus size={14} /> Add Year
-                </button>
-              </div>
-              {(years?.length ?? 0) === 0 ? (
-                <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
-                  No fiscal years defined. Add the first period above.
-                </div>
-              ) : (
-                <div className="overflow-x-auto rounded border border-slate-200">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                        <th className="px-3 py-2">Working</th>
-                        <th className="px-3 py-2">Label</th>
-                        <th className="px-3 py-2">Start</th>
-                        <th className="px-3 py-2">End</th>
-                        <th className="px-3 py-2">Status</th>
-                        <th className="px-3 py-2 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {years.map((y) => {
-                        const isWorking = Boolean(y.isActive) || String(y.id) === String(settings?.activeFiscalYear)
-                        const isClosed = y.status === 'closed'
-                        return (
-                          <tr key={y.id} className="border-b border-slate-100 last:border-0">
-                            <td className="px-3 py-2">
-                              {isClosed ? (
-                                <span className="h-5 w-5 rounded-full border border-slate-200 bg-slate-50 text-slate-300 flex items-center justify-center">
-                                  <CheckCircle2 size={12} />
-                                </span>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => fySetActive(String(y.id))}
-                                  title={isWorking ? 'Working year' : 'Set as working year'}
-                                  className={`h-5 w-5 rounded-full border flex items-center justify-center ${isWorking ? 'border-crimson-600 bg-crimson-600 text-white' : 'border-slate-300 text-transparent hover:border-crimson-400'}`}
-                                >
-                                  <CheckCircle2 size={12} />
-                                </button>
-                              )}
-                            </td>
-                            {fyEditRow === String(y.id) ? (
+                {(years?.length ?? 0) === 0 ? (
+                  <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
+                    No fiscal years defined. Add the first period above.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded border border-slate-200">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                          <th className="px-3 py-2">Working</th>
+                          <th className="px-3 py-2">Label</th>
+                          <th className="px-3 py-2">Start</th>
+                          <th className="px-3 py-2">End</th>
+                          <th className="px-3 py-2">Status</th>
+                          <th className="px-3 py-2 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {years.map((y) => {
+                          const isWorking = Boolean(y.isActive) || String(y.id) === String(settings?.activeFiscalYear)
+                          const isClosed = y.status === 'closed'
+                          return (
+                            <tr key={y.id} className="border-b border-slate-100 last:border-0">
                               <td className="px-3 py-2">
-                                <input
-                                  defaultValue={fyRowDraft.label || y.label || ''}
-                                  className="w-full text-sm font-medium border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
-                                  onChange={(e) => setFyRowDraft({ ...fyRowDraft, label: e.target.value })}
-                                  autoFocus
-                                />
-                              </td>
-                            ) : (
-                              <td className="px-3 py-2 font-medium text-slate-800">{y.label || `FY ${y.startDate}`}</td>
-                            )}
-                            {fyEditRow === String(y.id) ? (
-                              <td className="px-3 py-2">
-                                <input
-                                  type="date"
-                                  defaultValue={String(y.startDate || '').slice(0, 10)}
-                                  className="w-full text-xs text-slate-500 border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
-                                  onChange={(e) => setFyRowDraft({ ...fyRowDraft, startDate: e.target.value })}
-                                />
-                              </td>
-                            ) : (
-                              <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.startDate || '').slice(0, 10)}</td>
-                            )}
-                            {fyEditRow === String(y.id) ? (
-                              <td className="px-3 py-2">
-                                <input
-                                  type="date"
-                                  defaultValue={String(y.endDate || '').slice(0, 10)}
-                                  className="w-full text-xs text-slate-500 border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
-                                  onChange={(e) => setFyRowDraft({ ...fyRowDraft, endDate: e.target.value })}
-                                />
-                              </td>
-                            ) : (
-                              <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.endDate || '').slice(0, 10)}</td>
-                            )}
-                            <td className="px-3 py-2">
-                              {fyEditRow === String(y.id) ? (
-                                <select
-                                  defaultValue={y.status || 'active'}
-                                  className="w-full text-xs border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none bg-white"
-                                  onChange={(e) => setFyRowDraft({ ...fyRowDraft, status: e.target.value })}
-                                >
-                                  <option value="active">Active</option>
-                                  <option value="closed">Closed</option>
-                                </select>
-                              ) : isClosed ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
-                                  <Lock size={10} /> Closed
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                                  <Unlock size={10} /> Active
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2">
-                              {fyEditRow === String(y.id) ? (
-                                <div className="flex items-center justify-end gap-1">
+                                {isClosed ? (
+                                  <span className="h-5 w-5 rounded-full border border-slate-200 bg-slate-50 text-slate-300 flex items-center justify-center">
+                                    <CheckCircle2 size={12} />
+                                  </span>
+                                ) : (
                                   <button
                                     type="button"
-                                    onClick={() => fyRowSave(String(y.id))}
-                                    title="Save"
-                                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-crimson-600"
+                                    onClick={() => fySetActive(String(y.id))}
+                                    title={isWorking ? 'Working year' : 'Set as working year'}
+                                    className={`h-5 w-5 rounded-full border flex items-center justify-center ${isWorking ? 'border-crimson-600 bg-crimson-600 text-white' : 'border-slate-300 text-transparent hover:border-crimson-400'}`}
                                   >
-                                    <Save size={14} />
+                                    <CheckCircle2 size={12} />
                                   </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setFyEditRow(null)}
-                                    title="Cancel"
-                                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                                  >
-                                    <X size={14} />
-                                  </button>
-                                </div>
+                                )}
+                              </td>
+                              {fyEditRow === String(y.id) ? (
+                                <td className="px-3 py-2">
+                                  <input
+                                    defaultValue={fyRowDraft.label || y.label || ''}
+                                    className="w-full text-sm font-medium border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                                    onChange={(e) => setFyRowDraft({ ...fyRowDraft, label: e.target.value })}
+                                    autoFocus
+                                  />
+                                </td>
                               ) : (
-                                <div className="flex items-center justify-end gap-1">
-                                  {isClosed ? (
+                                <td className="px-3 py-2 font-medium text-slate-800">{y.label || `FY ${y.startDate}`}</td>
+                              )}
+                              {fyEditRow === String(y.id) ? (
+                                <td className="px-3 py-2">
+                                  <input
+                                    type="date"
+                                    defaultValue={String(y.startDate || '').slice(0, 10)}
+                                    className="w-full text-xs text-slate-500 border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                                    onChange={(e) => setFyRowDraft({ ...fyRowDraft, startDate: e.target.value })}
+                                  />
+                                </td>
+                              ) : (
+                                <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.startDate || '').slice(0, 10)}</td>
+                              )}
+                              {fyEditRow === String(y.id) ? (
+                                <td className="px-3 py-2">
+                                  <input
+                                    type="date"
+                                    defaultValue={String(y.endDate || '').slice(0, 10)}
+                                    className="w-full text-xs text-slate-500 border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                                    onChange={(e) => setFyRowDraft({ ...fyRowDraft, endDate: e.target.value })}
+                                  />
+                                </td>
+                              ) : (
+                                <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.endDate || '').slice(0, 10)}</td>
+                              )}
+                              <td className="px-3 py-2">
+                                {fyEditRow === String(y.id) ? (
+                                  <select
+                                    defaultValue={y.status || 'active'}
+                                    className="w-full text-xs border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none bg-white"
+                                    onChange={(e) => setFyRowDraft({ ...fyRowDraft, status: e.target.value })}
+                                  >
+                                    <option value="active">Active</option>
+                                    <option value="closed">Closed</option>
+                                  </select>
+                                ) : isClosed ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                                    <Lock size={10} /> Closed
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                                    <Unlock size={10} /> Active
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2">
+                                {fyEditRow === String(y.id) ? (
+                                  <div className="flex items-center justify-end gap-1">
                                     <button
                                       type="button"
-                                      onClick={() => fyOpen(String(y.id))}
-                                      title="Reopen year"
-                                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600"
+                                      onClick={() => fyRowSave(String(y.id))}
+                                      title="Save"
+                                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-crimson-600"
                                     >
-                                      <Unlock size={14} />
+                                      <Save size={14} />
                                     </button>
-                                  ) : (
                                     <button
                                       type="button"
-                                      onClick={() => fyClose(String(y.id))}
-                                      title="Close year"
-                                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-amber-600"
+                                      onClick={() => setFyEditRow(null)}
+                                      title="Cancel"
+                                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                                     >
-                                      <Lock size={14} />
+                                      <X size={14} />
                                     </button>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setFyRowDraft({ label: y.label || '', startDate: String(y.startDate || '').slice(0, 10), endDate: String(y.endDate || '').slice(0, 10), status: y.status || 'active' })
-                                      setFyEditRow(String(y.id))
-                                    }}
-                                    title="Edit year"
-                                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                                  >
-                                    <Edit2 size={14} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => fyDelete(String(y.id))}
-                                    title="Delete year"
-                                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-              <p className="mt-3 text-xs text-slate-400">
-                Working year drives transaction numbering. Closed years reject new entries.
-              </p>
-            </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-end gap-1">
+                                    {isClosed ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => fyOpen(String(y.id))}
+                                        title="Reopen year"
+                                        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600"
+                                      >
+                                        <Unlock size={14} />
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => fyClose(String(y.id))}
+                                        title="Close year"
+                                        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-amber-600"
+                                      >
+                                        <Lock size={14} />
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setFyRowDraft({ label: y.label || '', startDate: String(y.startDate || '').slice(0, 10), endDate: String(y.endDate || '').slice(0, 10), status: y.status || 'active' })
+                                        setFyEditRow(String(y.id))
+                                      }}
+                                      title="Edit year"
+                                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                    >
+                                      <Edit2 size={14} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => fyDelete(String(y.id))}
+                                      title="Delete year"
+                                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <p className="mt-3 text-xs text-slate-400">
+                  Working year drives transaction numbering. Closed years reject new entries.
+                </p>
+              </div>
             </>
           )}
 
-        {step.key === 'seed-account-groups' && (
-          <SeedTable
-            collection="account-groups"
-            title="Account Types & Groups"
-            subtitle="Parent groups — Asset, Liability, Equity, Income, Expense. Seed first, then accounts."
-            seedKey="accountGroups"
-            seedLabel="Seed types & groups"
-            icon={<Layers size={18} className="text-slate-400" />}
-            aiModel="account-groups"
-            aiLabel="Import Account Types & Groups with AI"
-            columns={[
-              { key: 'code', label: 'Code', type: 'readonly' },
-              { key: 'name', label: 'Group', type: 'text' },
-              { key: 'type', label: 'Type', type: 'select', options: ['asset', 'liability', 'equity', 'income', 'expense'] },
-              { key: 'description', label: 'Description', type: 'text' },
-            ]}
-            tenantId={tenantId}
-            tenantQuery={tenantQuery}
-            setSeedDone={setSeedDone}
-            setAiOpen={setAiOpen}
-            setAiInitialModel={setAiInitialModel}
-          />
-        )}
-        {step.key === 'seed-accounts' && (
-          <SeedTable
-            collection="gl-accounts"
-            title="Chart of Accounts"
-            subtitle="Starter chart — seed then edit inline. Edits persist to the ledger."
-            seedKey="accounts"
-            seedLabel="Seed chart"
-            icon={<Database size={18} className="text-slate-400" />}
-            columns={[
-              { key: 'code', label: 'Code', type: 'readonly' },
-              { key: 'name', label: 'Account', type: 'text' },
-              { key: 'type', label: 'Type', type: 'select', options: ['asset', 'liability', 'equity', 'income', 'expense'] },
-              { key: 'active', label: 'Active', type: 'boolean' },
-            ]}
-            aiModel="gl-accounts"
-            aiLabel="Import Chart of Accounts with AI"
-            tenantId={tenantId}
-            tenantQuery={tenantQuery}
-            setSeedDone={setSeedDone}
-            setAiOpen={setAiOpen}
-            setAiInitialModel={setAiInitialModel}
-          />
-        )}
-        {step.key === 'seed-taxTypes' && (
-          <SeedTable
-            collection="tax-types"
-            title="Tax Types"
-            subtitle="VAT @ 13% plus sales/purchase ledger wiring."
-            seedKey="taxTypes"
-            seedLabel="Seed tax types"
-            icon={<Tag size={18} className="text-slate-400" />}
-            columns={[
-              { key: 'code', label: 'Code', type: 'readonly' },
-              { key: 'name', label: 'Tax', type: 'text' },
-              { key: 'rate', label: 'Rate %', type: 'number' },
-              { key: 'active', label: 'Active', type: 'boolean' },
-            ]}
-            seedRows={[
-              { code: 'VAT', name: 'Value Added Tax', nature: 'additive', rate: 13, active: true },
-              { code: 'TDS', name: 'Tax Deducted at Source', nature: 'withholding', rate: 1.5, active: true },
-              { code: 'GST', name: 'Goods and Services Tax', nature: 'additive', rate: 18, active: true },
-              { code: 'LUX', name: 'Luxury Tax', nature: 'additive', rate: 40, active: true },
-            ]}
-            aiModel="tax-types"
-            aiLabel="Import Tax Types with AI"
-            tenantId={tenantId}
-            tenantQuery={tenantQuery}
-            setSeedDone={setSeedDone}
-            setAiOpen={setAiOpen}
-            setAiInitialModel={setAiInitialModel}
-          />
-        )}
-        {step.key === 'seed-parties' && (
-          <SeedTable
-            collection="parties"
-            title="Parties"
-            subtitle="Customers and vendors — still editable after setup."
-            seedKey="parties"
-            seedLabel="Seed parties"
-            icon={<UserPlus size={18} className="text-slate-400" />}
-            aiModel="gl-accounts"
-            aiLabel="Import Parties with AI"
-            columns={[
-              { key: 'name', label: 'Party', type: 'text' },
-              { key: 'type', label: 'Type', type: 'select', options: ['customer', 'vendor', 'both'] },
-              { key: 'email', label: 'Email', type: 'text' },
-              { key: 'phone', label: 'Phone', type: 'text' },
-            ]}
-            tenantId={tenantId}
-            tenantQuery={tenantQuery}
-            setSeedDone={setSeedDone}
-            setAiOpen={setAiOpen}
-            setAiInitialModel={setAiInitialModel}
-          />
-        )}
-        {step.key === 'seed-items' && (
-          <SeedTable
-            collection="items"
-            title="Items"
-            subtitle="Stock items with rates — still editable after setup."
-            seedKey="items"
-            seedLabel="Seed items"
-            icon={<Package size={18} className="text-slate-400" />}
-            aiModel="gl-accounts"
-            aiLabel="Import Items with AI"
-            columns={[
-              { key: 'code', label: 'Code', type: 'readonly' },
-              { key: 'name', label: 'Item', type: 'text' },
-              { key: 'unit', label: 'Unit', type: 'text' },
-              { key: 'salePrice', label: 'Sale Price', type: 'number' },
-            ]}
-            tenantId={tenantId}
-            tenantQuery={tenantQuery}
-            setSeedDone={setSeedDone}
-            setAiOpen={setAiOpen}
-            setAiInitialModel={setAiInitialModel}
-          />
-        )}
-        {step.key === 'seed-members' && (
-          <SeedTable
-            collection="members"
-            title="Members"
-            subtitle="Membership types plus sample members."
-            seedKey="members"
-            seedLabel="Seed members"
-            icon={<Users size={18} className="text-slate-400" />}
-            aiModel="gl-accounts"
-            aiLabel="Import Members with AI"
-            columns={[
-              { key: 'fullName', label: 'Member', type: 'text' },
-              { key: 'email', label: 'Email', type: 'text' },
-              { key: 'role', label: 'Role', type: 'text' },
-              { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] },
-            ]}
-            tenantId={tenantId}
-            tenantQuery={tenantQuery}
-            setSeedDone={setSeedDone}
-            setAiOpen={setAiOpen}
-            setAiInitialModel={setAiInitialModel}
-          />
-        )}
+          {step.key === 'seed-account-groups' && (
+            <SeedTable
+              collection="account-groups"
+              title="Account Types & Groups"
+              subtitle="Parent groups — Asset, Liability, Equity, Income, Expense. Seed first, then accounts."
+              seedKey="accountGroups"
+              seedLabel="Seed types & groups"
+              icon={<Layers size={18} className="text-slate-400" />}
+              aiModel="account-groups"
+              aiLabel="Import Account Types & Groups with AI"
+              columns={[
+                { key: 'code', label: 'Code', type: 'readonly' },
+                { key: 'name', label: 'Group', type: 'text' },
+                { key: 'type', label: 'Type', type: 'select', options: ['asset', 'liability', 'equity', 'income', 'expense'] },
+                { key: 'description', label: 'Description', type: 'text' },
+              ]}
+              tenantId={tenantId}
+              tenantQuery={tenantQuery}
+              setSeedDone={setSeedDone}
+              setAiOpen={setAiOpen}
+              setAiInitialModel={setAiInitialModel}
+            />
+          )}
+          {step.key === 'seed-accounts' && (
+            <SeedTable
+              collection="gl-accounts"
+              title="Chart of Accounts"
+              subtitle="Starter chart — seed then edit inline. Edits persist to the ledger."
+              seedKey="accounts"
+              seedLabel="Seed chart"
+              icon={<Database size={18} className="text-slate-400" />}
+              columns={[
+                { key: 'code', label: 'Code', type: 'readonly' },
+                { key: 'name', label: 'Account', type: 'text' },
+                { key: 'type', label: 'Type', type: 'select', options: ['asset', 'liability', 'equity', 'income', 'expense'] },
+                { key: 'active', label: 'Active', type: 'boolean' },
+              ]}
+              aiModel="gl-accounts"
+              aiLabel="Import Chart of Accounts with AI"
+              tenantId={tenantId}
+              tenantQuery={tenantQuery}
+              setSeedDone={setSeedDone}
+              setAiOpen={setAiOpen}
+              setAiInitialModel={setAiInitialModel}
+            />
+          )}
+          {step.key === 'seed-taxTypes' && (
+            <SeedTable
+              collection="tax-types"
+              title="Tax Types"
+              subtitle="VAT @ 13% plus sales/purchase ledger wiring."
+              seedKey="taxTypes"
+              seedLabel="Seed tax types"
+              icon={<Tag size={18} className="text-slate-400" />}
+              columns={[
+                { key: 'code', label: 'Code', type: 'readonly' },
+                { key: 'name', label: 'Tax', type: 'text' },
+                { key: 'rate', label: 'Rate %', type: 'number' },
+                { key: 'active', label: 'Active', type: 'boolean' },
+              ]}
+              seedRows={[
+                { code: 'VAT', name: 'Value Added Tax', nature: 'additive', rate: 13, active: true },
+                { code: 'TDS', name: 'Tax Deducted at Source', nature: 'withholding', rate: 1.5, active: true },
+                { code: 'GST', name: 'Goods and Services Tax', nature: 'additive', rate: 18, active: true },
+                { code: 'LUX', name: 'Luxury Tax', nature: 'additive', rate: 40, active: true },
+              ]}
+              aiModel="tax-types"
+              aiLabel="Import Tax Types with AI"
+              tenantId={tenantId}
+              tenantQuery={tenantQuery}
+              setSeedDone={setSeedDone}
+              setAiOpen={setAiOpen}
+              setAiInitialModel={setAiInitialModel}
+            />
+          )}
+          {step.key === 'seed-parties' && (
+            <SeedTable
+              collection="parties"
+              title="Parties"
+              subtitle="Customers and vendors — still editable after setup."
+              seedKey="parties"
+              seedLabel="Seed parties"
+              icon={<UserPlus size={18} className="text-slate-400" />}
+              aiModel="gl-accounts"
+              aiLabel="Import Parties with AI"
+              columns={[
+                { key: 'name', label: 'Party', type: 'text' },
+                { key: 'type', label: 'Type', type: 'select', options: ['customer', 'vendor', 'both'] },
+                { key: 'email', label: 'Email', type: 'text' },
+                { key: 'phone', label: 'Phone', type: 'text' },
+              ]}
+              tenantId={tenantId}
+              tenantQuery={tenantQuery}
+              setSeedDone={setSeedDone}
+              setAiOpen={setAiOpen}
+              setAiInitialModel={setAiInitialModel}
+            />
+          )}
+          {step.key === 'seed-items' && (
+            <SeedTable
+              collection="items"
+              title="Items"
+              subtitle="Stock items with rates — still editable after setup."
+              seedKey="items"
+              seedLabel="Seed items"
+              icon={<Package size={18} className="text-slate-400" />}
+              aiModel="gl-accounts"
+              aiLabel="Import Items with AI"
+              columns={[
+                { key: 'code', label: 'Code', type: 'readonly' },
+                { key: 'name', label: 'Item', type: 'text' },
+                { key: 'unit', label: 'Unit', type: 'text' },
+                { key: 'salePrice', label: 'Sale Price', type: 'number' },
+              ]}
+              tenantId={tenantId}
+              tenantQuery={tenantQuery}
+              setSeedDone={setSeedDone}
+              setAiOpen={setAiOpen}
+              setAiInitialModel={setAiInitialModel}
+            />
+          )}
+          {step.key === 'seed-members' && (
+            <SeedTable
+              collection="members"
+              title="Members"
+              subtitle="Membership types plus sample members."
+              seedKey="members"
+              seedLabel="Seed members"
+              icon={<Users size={18} className="text-slate-400" />}
+              aiModel="gl-accounts"
+              aiLabel="Import Members with AI"
+              columns={[
+                { key: 'fullName', label: 'Member', type: 'text' },
+                { key: 'email', label: 'Email', type: 'text' },
+                { key: 'role', label: 'Role', type: 'text' },
+                { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] },
+              ]}
+              tenantId={tenantId}
+              tenantQuery={tenantQuery}
+              setSeedDone={setSeedDone}
+              setAiOpen={setAiOpen}
+              setAiInitialModel={setAiInitialModel}
+            />
+          )}
           {step.key === 'defaults' && (
             <div className="space-y-3">
               {CORE_DEFAULTS.map((d) => (
@@ -1320,8 +1319,8 @@ export default function SetupWizard() {
               >
                 <Sparkles size={14} /> {t('ai.importOpenings', 'Import Opening Balances with AI')}
               </button>
-              </div>
-              )}
+            </div>
+          )}
 
         </div>
 
@@ -1857,48 +1856,50 @@ function SeedTable({
 
       {/* Seed Data section — only when current data is empty */}
       {empty ? (
-      <div>
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Seed Data</p>
-        {seedRows && seedRows.length > 0 ? (
-          <>
-            {renderSeedTable()}
-            <div className="flex items-center justify-between mb-1">
+        <div>
+          {seedRows && seedRows.length > 0 && (<p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Seed Data</p>)}
+          {seedRows && seedRows.length > 0 ? (
+            <>
+              {renderSeedTable()}
+              <div className="flex items-center justify-between mb-1 mt-1">
+                <button
+                  onClick={() => { setAiInitialModel(aiModel ?? 'gl-accounts'); setAiOpen(true) }}
+                  className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <Sparkles size={14} /> {aiLabel ?? 'Import with AI'}
+                </button>
+                <button
+                  onClick={doSeed}
+                  disabled={busyId === 'seed'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
+                  {seedLabel}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-between mb-1 mt-1">
               <button
                 onClick={() => { setAiInitialModel(aiModel ?? 'gl-accounts'); setAiOpen(true) }}
                 className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
               >
                 <Sparkles size={14} /> {aiLabel ?? 'Import with AI'}
               </button>
-              <button
-                onClick={doSeed}
-                disabled={busyId === 'seed'}
-                className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-              >
-                {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
-                {seedLabel}
-              </button>
+              {
+                seedRows && seedRows.length === 0 &&
+                <button
+                  onClick={doSeed}
+                  disabled={busyId === 'seed'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
+                  {seedLabel}
+                </button>}
             </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-between mb-1">
-            <button
-              onClick={() => { setAiInitialModel(aiModel ?? 'gl-accounts'); setAiOpen(true) }}
-              className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-            >
-              <Sparkles size={14} /> {aiLabel ?? 'Import with AI'}
-            </button>
-            <button
-              onClick={doSeed}
-              disabled={busyId === 'seed'}
-              className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-            >
-              {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
-              {seedLabel}
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       ) : null}
-      </div>
     </div>
   )
 }
