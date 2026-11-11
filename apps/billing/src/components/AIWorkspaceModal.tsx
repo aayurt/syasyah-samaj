@@ -438,7 +438,7 @@ export default function AIWorkspaceModal({
         for (const row of preview) {
           const target = byCode.get(String(row.doc.code || ''))
           const body = {
-            name: row.doc.name,
+            name: { en: row.doc.name },
             code: row.doc.code,
             type: 'illaka',
             active: row.doc.active ?? true,
