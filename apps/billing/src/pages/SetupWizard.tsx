@@ -1536,13 +1536,13 @@ function SeedTable({
         <div className="flex items-center gap-3 text-sm text-slate-600">
           {icon}
           <div>
-            <p className="font-medium">{title}</p>
+            <p className="font-medium">Seed Chart Data</p>
             <p className="text-xs text-slate-400">{subtitle}</p>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 mb-1">
+      <div className="flex items-center gap-2 mb-1">
         <button
           onClick={doSeed}
           disabled={busyId === 'seed'}
@@ -1559,12 +1559,6 @@ function SeedTable({
             <Sparkles size={14} /> {aiLabel}
           </button>
         )}
-        <button
-          onClick={() => { setSeedDone((p) => ({ ...p, [seedKey]: true })) }}
-          className="text-xs text-slate-400 hover:text-slate-600 underline"
-        >
-          Skip
-        </button>
       </div>
 
       {empty ? (
@@ -1686,6 +1680,12 @@ function SeedTable({
           </table>
         </div>
       )}
+      <button
+        onClick={() => { setSeedDone((p) => ({ ...p, [seedKey]: true })) }}
+        className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-500 hover:bg-slate-100"
+      >
+        <ArrowLeft size={15} /> Skip
+      </button>
     </div>
   )
 }
