@@ -257,6 +257,27 @@ export default function AIWorkspaceModal({
 
   const prompt = useMemo(() => def.prompt(ctx), [def, ctx])
 
+  const [threadMessages, setThreadMessages] = useState<{ id: string; content: string }[]>([])
+  const [threadDraft, setThreadDraft] = useState('')
+
+  const effectivePrompt = useMemo(
+    () => [prompt, ...threadMessages.map((m) => m.content)].filter(Boolean).join('\n\n'),
+    [prompt, threadMessages],
+  )
+
+  const sendThreadMessage = () => {
+    const text = threadDraft.trim()
+    if (!text) return
+    const msg = { id: crypto.randomUUID?.() ?? `${Date.now()}`, content: text }
+    setThreadMessages((prev) => [...prev, msg])
+    setThreadDraft('')
+  }
+
+  const clearThread = () => {
+    setThreadMessages([])
+    setThreadDraft('')
+  }
+
   // Source docs re-validated whenever they or the account context change.
   const sourceDocs = useMemo(
     () =>
@@ -319,6 +340,8 @@ export default function AIWorkspaceModal({
     setResult(null)
     setExecuting(false)
     setGemini({ status: 'idle', prompt: '', response: '', error: '' })
+    setThreadMessages([])
+    setThreadDraft('')
     setAccountCtx([])
   }, [])
 
@@ -756,15 +779,69 @@ export default function AIWorkspaceModal({
                   <p className="mt-1 text-xs text-slate-500">{t('ai.noSensitive', 'No account IDs, passwords or personal data are sent in the prompt.')}</p>
                 </div>
               </div>
+
+              {/* base system template */}
               <div className="rounded-lg border border-slate-200 bg-white p-4">
                 <p className="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wider">{def.label}</p>
                 <div className="rounded border border-slate-200 bg-slate-900 p-3 overflow-x-auto">
                   <pre className="text-xs text-slate-300 font-mono whitespace-pre-wrap break-all">{prompt}</pre>
                 </div>
+              </div>
+
+              {/* message thread */}
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('ai.messageThread', 'Prompt thread')}</p>
+                  <button
+                    onClick={clearThread}
+                    disabled={threadMessages.length === 0}
+                    className={`text-xs ${threadMessages.length === 0 ? 'text-slate-300' : 'text-slate-500 hover:text-red-600'}`}
+                  >
+                    {t('ai.clearThread', 'Clear thread')}
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto mb-3">
+                  {threadMessages.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center py-4">{t('ai.noMessages', 'No messages yet — type below and send to build your prompt.')}</p>
+                  ) : (
+                    threadMessages.map((m) => (
+                      <div key={m.id} className="flex justify-end">
+                        <div className="max-w-[82%] rounded bg-crimson-600 px-3 py-2 text-xs text-white break-words">
+                          {m.content}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <textarea
+                    value={threadDraft}
+                    onChange={(e) => setThreadDraft(e.target.value)}
+                    rows={2}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendThreadMessage())}
+                    className="flex-1 rounded border border-slate-300 bg-white px-2 py-2 text-xs font-mono text-slate-700 focus:outline-none focus:ring-1 focus:ring-crimson-600"
+                    placeholder="Type a line to add to the prompt…"
+                  />
+                  <button
+                    onClick={sendThreadMessage}
+                    disabled={!threadDraft.trim()}
+                    className={`inline-flex items-center gap-1.5 rounded px-3 py-2 text-xs text-white ${!threadDraft.trim() ? 'bg-slate-300 cursor-not-allowed' : 'bg-crimson-600 hover:bg-crimson-700'}`}
+                  >
+                    {t('ai.send', 'Send')}
+                  </button>
+                </div>
+              </div>
+
+              {/* effective prompt (template + all messages concatenated) */}
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <p className="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wider">{t('ai.effectivePrompt', 'Full prompt sent to AI')}</p>
+                <div className="rounded border border-slate-200 bg-slate-900 p-3 overflow-x-auto">
+                  <pre className="text-xs text-slate-300 font-mono whitespace-pre-wrap break-all">{effectivePrompt}</pre>
+                </div>
                 <div className="mt-3 flex items-center gap-2 flex-wrap">
                   <button
                     onClick={() => {
-                      void navigator.clipboard.writeText(prompt)
+                      void navigator.clipboard.writeText(effectivePrompt)
                       pushToast('info', t('ai.copied', 'Prompt copied'))
                     }}
                     className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
@@ -773,8 +850,8 @@ export default function AIWorkspaceModal({
                   </button>
                   <button
                     onClick={() => {
-                      void navigator.clipboard.writeText(prompt)
-                      const url = `https://chat.deepseek.com/?q=${encodeURIComponent(prompt)}`
+                      void navigator.clipboard.writeText(effectivePrompt)
+                      const url = `https://chat.deepseek.com/?q=${encodeURIComponent(effectivePrompt)}`
                       void window.open(url, '_blank', 'noopener,noreferrer')
                       pushToast('info', 'Deepseek', 'Prompt copied — chat opened')
                     }}
@@ -784,8 +861,8 @@ export default function AIWorkspaceModal({
                   </button>
                   <button
                     onClick={() => {
-                      void navigator.clipboard.writeText(prompt)
-                      const url = `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`
+                      void navigator.clipboard.writeText(effectivePrompt)
+                      const url = `https://chatgpt.com/?q=${encodeURIComponent(effectivePrompt)}`
                       void window.open(url, '_blank', 'noopener,noreferrer')
                       pushToast('info', 'ChatGPT', 'Prompt copied — chat opened')
                     }}
@@ -795,8 +872,8 @@ export default function AIWorkspaceModal({
                   </button>
                   <button
                     onClick={() => {
-                      void navigator.clipboard.writeText(prompt)
-                      const url = `https://gemini.google.com/?q=${encodeURIComponent(prompt)}`
+                      void navigator.clipboard.writeText(effectivePrompt)
+                      const url = `https://gemini.google.com/?q=${encodeURIComponent(effectivePrompt)}`
                       void window.open(url, '_blank', 'noopener,noreferrer')
                       pushToast('info', 'Gemini', 'Prompt copied — chat opened')
                     }}
@@ -816,53 +893,60 @@ export default function AIWorkspaceModal({
                     {t('ai.geminiBuiltIn', 'InBuilt Gemini Browser')}
                   </button>
                 </div>
-                {gemini.status !== 'idle' && (
-                  <div className="mt-3 space-y-2 rounded border bg-slate-50 p-3">
-                    {gemini.status === 'unavailable' || gemini.status === 'error' ? (
-                      <p className="text-xs text-red-600">{gemini.error}</p>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
-                          <Sparkles size={12} className="text-crimson-600" />
-                          {t('ai.geminiLabel', 'Prompt for built-in Gemini')}
-                        </div>
-                        <textarea
-                          value={gemini.prompt}
-                          onChange={(e) => setGemini((prev) => ({ ...prev, prompt: e.target.value }))}
-                          rows={3}
-                          className="w-full rounded border border-slate-300 bg-white px-2 py-2 text-xs font-mono text-slate-700 focus:outline-none focus:ring-1 focus:ring-crimson-600"
-                          placeholder="Ask built-in Gemini to refine the import prompt..."
-                        />
-                        <div className="mt-2 flex items-center gap-2">
-                          <button
-                            onClick={askBuiltInGemini}
-                            disabled={gemini.status !== 'ready'}
-                            className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {t('ai.geminiAsk', 'Ask built-in Gemini')}
-                          </button>
-                          {gemini.response && (
-                            <button
-                              onClick={useGeminiResponse}
-                              className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
-                            >
-                              <ArrowRight size={12} /> {t('ai.geminiUse', 'Use this response')}
-                            </button>
-                          )}
-                        </div>
-                        {gemini.response && (
-                          <div className="mt-2 rounded border border-slate-200 bg-white p-2 text-xs text-slate-600 overflow-x-auto max-h-32 overflow-y-auto">
-                            {gemini.response}
-                          </div>
-                        )}
-                        {gemini.status === 'ready' && !gemini.response && (
-                          <p className="text-xs text-emerald-600">{t('ai.geminiReady', 'Built-in Gemini ready — type a prompt above.')}</p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
               </div>
+
+              {gemini.status !== 'idle' && (
+                <div className="mt-3 space-y-2 rounded border bg-slate-50 p-3">
+                  {gemini.status === 'unavailable' || gemini.status === 'error' ? (
+                    <p className="text-xs text-red-600">{gemini.error}</p>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                        <Sparkles size={12} className="text-crimson-600" />
+                        {t('ai.geminiLabel', 'Prompt for built-in Gemini')}
+                      </div>
+                      <textarea
+                        value={gemini.prompt || effectivePrompt}
+                        onChange={(e) => setGemini((prev) => ({ ...prev, prompt: e.target.value }))}
+                        rows={3}
+                        className="w-full rounded border border-slate-300 bg-white px-2 py-2 text-xs font-mono text-slate-700 focus:outline-none focus:ring-1 focus:ring-crimson-600"
+                        placeholder="Ask built-in Gemini to refine the import prompt…"
+                      />
+                      <div className="mt-2 flex items-center gap-2">
+                        <button
+                          onClick={() => setGemini((prev) => ({ ...prev, prompt: effectivePrompt }))}
+                          className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                        >
+                          {t('ai.effectivePrompt', 'Load full prompt')}
+                        </button>
+                        <button
+                          onClick={askBuiltInGemini}
+                          disabled={gemini.status !== 'ready'}
+                          className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {t('ai.geminiAsk', 'Ask built-in Gemini')}
+                        </button>
+                        {gemini.response && (
+                          <button
+                            onClick={useGeminiResponse}
+                            className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                          >
+                            <ArrowRight size={12} /> {t('ai.geminiUse', 'Use this response')}
+                          </button>
+                        )}
+                      </div>
+                      {gemini.response && (
+                        <div className="mt-2 rounded border border-slate-200 bg-white p-2 text-xs text-slate-600 overflow-x-auto max-h-32 overflow-y-auto">
+                          {gemini.response}
+                        </div>
+                      )}
+                      {gemini.status === 'ready' && !gemini.response && (
+                        <p className="text-xs text-emerald-600">{t('ai.geminiReady', 'Built-in Gemini ready — type a prompt above.')}</p>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
               <p className="text-xs text-slate-500">{t('ai.promptHint', 'Open ChatGPT, Claude or Gemini, paste the prompt above, and return only the JSON.')}</p>
             </div>
           )}
