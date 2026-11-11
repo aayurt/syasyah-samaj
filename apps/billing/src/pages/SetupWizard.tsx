@@ -27,7 +27,7 @@ import { useFiscalYear } from '../lib/fiscalYear'
 import { useTenant, type TenantOption } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
-import { adToBsString } from '../lib/nepaliDate'
+import { adToBsString, bsToAdString } from '../lib/nepaliDate'
 import type { Account, BillingSettings, Document } from '../lib/types'
 import type { AIModel } from '../lib/ai/schemas'
 import AIWorkspaceModal from '../components/AIWorkspaceModal'
@@ -109,6 +109,20 @@ export default function SetupWizard() {
   const [company, setCompany] = useState({ companyName: '', companyPan: '', companyContact: '', companyEmail: '', companyAddress: '' })
   // Fiscal year form
   const [fy, setFy] = useState({ label: '', startDate: '2026-07-16', endDate: '2027-07-15' })
+  const [fyCal, setFyCal] = useState<'AD' | 'BS'>('AD')
+  const [fyBs, setFyBs] = useState({ start: '', end: '' })
+  const toggleFyCal = () => {
+    setFyCal((c) => {
+      const next = c === 'AD' ? 'BS' : 'AD'
+      if (next === 'BS') {
+        setFyBs({
+          start: fy.startDate ? adToBsString(fy.startDate) : '',
+          end: fy.endDate ? adToBsString(fy.endDate) : '',
+        })
+      }
+      return next
+    })
+  }
   // Default accounts form
   const [defaults, setDefaults] = useState<Record<string, string>>({})
   // Selective seeding
@@ -819,24 +833,75 @@ export default function SetupWizard() {
 
           {step.key === 'fiscalYear' && (
             <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500">Calendar</span>
+                <button
+                  onClick={toggleFyCal}
+                  className={`rounded border border-slate-300 px-2.5 py-1 text-xs ${fyCal === 'AD' ? 'bg-slate-100' : ''}`}
+                >
+                  AD
+                </button>
+                <button
+                  onClick={toggleFyCal}
+                  className={`rounded border border-slate-300 px-2.5 py-1 text-xs ${fyCal === 'BS' ? 'bg-slate-100' : ''}`}
+                >
+                  BS
+                </button>
+              </div>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
                   <label className="text-xs font-medium text-slate-600">Start date</label>
-                  <input
-                    type="date"
-                    value={fy.startDate}
-                    onChange={(e) => setFy({ ...fy, startDate: e.target.value })}
-                    className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
+                  {fyCal === 'AD' ? (
+                    <input
+                      type="date"
+                      value={fy.startDate}
+                      onChange={(e) => setFy({ ...fy, startDate: e.target.value })}
+                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={fyBs.start}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setFyBs({ ...fyBs, start: v })
+                        const ad = bsToAdString(v)
+                        if (ad) setFy({ ...fy, startDate: ad })
+                      }}
+                      placeholder="YYYY-MM-DD"
+                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                    />
+                  )}
+                  {fyCal === 'BS' && fyBs.start && !bsToAdString(fyBs.start) && (
+                    <p className="mt-1 text-xs text-red-600">Invalid BS date</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-medium text-slate-600">End date</label>
-                  <input
-                    type="date"
-                    value={fy.endDate}
-                    onChange={(e) => setFy({ ...fy, endDate: e.target.value })}
-                    className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
+                  {fyCal === 'AD' ? (
+                    <input
+                      type="date"
+                      value={fy.endDate}
+                      onChange={(e) => setFy({ ...fy, endDate: e.target.value })}
+                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={fyBs.end}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setFyBs({ ...fyBs, end: v })
+                        const ad = bsToAdString(v)
+                        if (ad) setFy({ ...fy, endDate: ad })
+                      }}
+                      placeholder="YYYY-MM-DD"
+                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                    />
+                  )}
+                  {fyCal === 'BS' && fyBs.end && !bsToAdString(fyBs.end) && (
+                    <p className="mt-1 text-xs text-red-600">Invalid BS date</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-medium text-slate-600">Label (optional)</label>
@@ -1065,7 +1130,7 @@ export default function SetupWizard() {
             {step.key === 'fiscalYear' && (
               <button
                 onClick={() => void createFiscalYear()}
-                disabled={busy === 'fiscalYear' || !fy.startDate || !fy.endDate || (years?.length ?? 0) > 0 || Boolean(settings?.activeFiscalYear)}
+                disabled={busy === 'fiscalYear' || !fy.startDate || !fy.endDate || (fyCal === 'BS' && (!bsToAdString(fyBs.start) || !bsToAdString(fyBs.end)))}
                 className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
               >
                 {busy === 'fiscalYear' ? <Loader2 size={15} className="animate-spin" /> : null}
