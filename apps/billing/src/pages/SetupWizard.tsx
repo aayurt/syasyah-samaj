@@ -1372,7 +1372,7 @@ export default function SetupWizard() {
                 }}
                 className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
-                {seedDone[step.key] ? t('setup.next', 'Next') : 'Skip'} <ArrowRight size={15} />
+                {t('setup.next', 'Next')} <ArrowRight size={15} />
               </button>
             )}
             {step.key === 'openings' && (
