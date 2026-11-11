@@ -1132,162 +1132,115 @@ export default function SetupWizard() {
             </>
           )}
 
-          {step.key === 'seed-accounts' && (
-            <div className="space-y-3">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                <div className="flex items-center gap-3 text-sm text-slate-600">
-                  <Database size={18} className="text-slate-400" />
-                  <div>
-                    <p className="font-medium">Chart of accounts & groups</p>
-                    <p className="text-xs text-slate-400">
-                      Seeds the starter chart — 6 groups, 18 accounts, plus default-account mappings.
-                      Idempotent: anything already present is skipped.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  onClick={() => void runSeedStep('accounts')}
-                  disabled={busy === 'accounts'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busy === 'accounts' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
-                  Seed chart
-                </button>
-                <button
-                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-accounts': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
-                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                >
-                  Skip
-                </button>
-              </div>
-            </div>
-          )}
-          {step.key === 'seed-taxTypes' && (
-            <div className="space-y-3">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                <div className="flex items-center gap-3 text-sm text-slate-600">
-                  <Tag size={18} className="text-slate-400" />
-                  <div>
-                    <p className="font-medium">Tax types</p>
-                    <p className="text-xs text-slate-400">
-                      Seeds VAT @ 13% with its sales and purchase ledger wiring.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  onClick={() => void runSeedStep('taxTypes')}
-                  disabled={busy === 'taxTypes'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busy === 'taxTypes' ? <Loader2 size={15} className="animate-spin" /> : <Tag size={15} />}
-                  Seed tax types
-                </button>
-                <button
-                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-taxTypes': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
-                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                >
-                  Skip
-                </button>
-              </div>
-            </div>
-          )}
-          {step.key === 'seed-parties' && (
-            <div className="space-y-3">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                <div className="flex items-center gap-3 text-sm text-slate-600">
-                  <UserPlus size={18} className="text-slate-400" />
-                  <div>
-                    <p className="font-medium">Parties</p>
-                    <p className="text-xs text-slate-400">
-                      Seeds sample customers and vendors. Still editable after setup.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  onClick={() => void runSeedStep('parties')}
-                  disabled={busy === 'parties'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busy === 'parties' ? <Loader2 size={15} className="animate-spin" /> : <UserPlus size={15} />}
-                  Seed parties
-                </button>
-                <button
-                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-parties': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
-                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                >
-                  Skip
-                </button>
-              </div>
-            </div>
-          )}
-          {step.key === 'seed-items' && (
-            <div className="space-y-3">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                <div className="flex items-center gap-3 text-sm text-slate-600">
-                  <Package size={18} className="text-slate-400" />
-                  <div>
-                    <p className="font-medium">Items</p>
-                    <p className="text-xs text-slate-400">
-                      Seeds sample stock items with rates. Still editable after setup.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  onClick={() => void runSeedStep('items')}
-                  disabled={busy === 'items'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busy === 'items' ? <Loader2 size={15} className="animate-spin" /> : <Package size={15} />}
-                  Seed items
-                </button>
-                <button
-                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-items': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
-                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                >
-                  Skip
-                </button>
-              </div>
-            </div>
-          )}
-          {step.key === 'seed-members' && (
-            <div className="space-y-3">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                <div className="flex items-center gap-3 text-sm text-slate-600">
-                  <Users size={18} className="text-slate-400" />
-                  <div>
-                    <p className="font-medium">Members & membership types</p>
-                    <p className="text-xs text-slate-400">
-                      Seeds General / Permanent / Lifetime types plus sample members.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  onClick={() => void runSeedStep('members')}
-                  disabled={busy === 'members'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busy === 'members' ? <Loader2 size={15} className="animate-spin" /> : <Users size={15} />}
-                  Seed members
-                </button>
-                <button
-                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-members': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
-                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                >
-                  Skip
-                </button>
-              </div>
-            </div>
-          )}
+        {step.key === 'seed-accounts' && (
+          <SeedTable
+            collection="gl-accounts"
+            title="Chart of Accounts"
+            subtitle="Starter chart — seed then edit inline. Edits persist to the ledger."
+            seedKey="accounts"
+            seedLabel="Seed chart"
+            icon={<Database size={18} className="text-slate-400" />}
+            columns={[
+              { key: 'code', label: 'Code', type: 'readonly' },
+              { key: 'name', label: 'Account', type: 'text' },
+              { key: 'type', label: 'Type', type: 'select', options: ['asset', 'liability', 'equity', 'income', 'expense'] },
+              { key: 'active', label: 'Active', type: 'boolean' },
+            ]}
+            aiModel="gl-accounts"
+            aiLabel="Import Chart of Accounts with AI"
+            tenantId={tenantId}
+            tenantQuery={tenantQuery}
+            setSeedDone={setSeedDone}
+            setAiOpen={setAiOpen}
+            setAiInitialModel={setAiInitialModel}
+          />
+        )}
+        {step.key === 'seed-taxTypes' && (
+          <SeedTable
+            collection="tax-types"
+            title="Tax Types"
+            subtitle="VAT @ 13% plus sales/purchase ledger wiring."
+            seedKey="taxTypes"
+            seedLabel="Seed tax types"
+            icon={<Tag size={18} className="text-slate-400" />}
+            columns={[
+              { key: 'code', label: 'Code', type: 'readonly' },
+              { key: 'name', label: 'Tax', type: 'text' },
+              { key: 'rate', label: 'Rate %', type: 'number' },
+              { key: 'active', label: 'Active', type: 'boolean' },
+            ]}
+            aiModel="tax-types"
+            aiLabel="Import Tax Types with AI"
+            tenantId={tenantId}
+            tenantQuery={tenantQuery}
+            setSeedDone={setSeedDone}
+            setAiOpen={setAiOpen}
+            setAiInitialModel={setAiInitialModel}
+          />
+        )}
+        {step.key === 'seed-parties' && (
+          <SeedTable
+            collection="parties"
+            title="Parties"
+            subtitle="Customers and vendors — still editable after setup."
+            seedKey="parties"
+            seedLabel="Seed parties"
+            icon={<UserPlus size={18} className="text-slate-400" />}
+            columns={[
+              { key: 'name', label: 'Party', type: 'text' },
+              { key: 'type', label: 'Type', type: 'select', options: ['customer', 'vendor', 'both'] },
+              { key: 'email', label: 'Email', type: 'text' },
+              { key: 'phone', label: 'Phone', type: 'text' },
+            ]}
+            tenantId={tenantId}
+            tenantQuery={tenantQuery}
+            setSeedDone={setSeedDone}
+            setAiOpen={setAiOpen}
+            setAiInitialModel={setAiInitialModel}
+          />
+        )}
+        {step.key === 'seed-items' && (
+          <SeedTable
+            collection="items"
+            title="Items"
+            subtitle="Stock items with rates — still editable after setup."
+            seedKey="items"
+            seedLabel="Seed items"
+            icon={<Package size={18} className="text-slate-400" />}
+            columns={[
+              { key: 'code', label: 'Code', type: 'readonly' },
+              { key: 'name', label: 'Item', type: 'text' },
+              { key: 'unit', label: 'Unit', type: 'text' },
+              { key: 'salePrice', label: 'Sale Price', type: 'number' },
+            ]}
+            tenantId={tenantId}
+            tenantQuery={tenantQuery}
+            setSeedDone={setSeedDone}
+            setAiOpen={setAiOpen}
+            setAiInitialModel={setAiInitialModel}
+          />
+        )}
+        {step.key === 'seed-members' && (
+          <SeedTable
+            collection="members"
+            title="Members"
+            subtitle="Membership types plus sample members."
+            seedKey="members"
+            seedLabel="Seed members"
+            icon={<Users size={18} className="text-slate-400" />}
+            columns={[
+              { key: 'fullName', label: 'Member', type: 'text' },
+              { key: 'email', label: 'Email', type: 'text' },
+              { key: 'role', label: 'Role', type: 'text' },
+              { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] },
+            ]}
+            tenantId={tenantId}
+            tenantQuery={tenantQuery}
+            setSeedDone={setSeedDone}
+            setAiOpen={setAiOpen}
+            setAiInitialModel={setAiInitialModel}
+          />
+        )}
           {step.key === 'defaults' && (
             <div className="space-y-3">
               {CORE_DEFAULTS.map((d) => (
@@ -1404,135 +1357,14 @@ export default function SetupWizard() {
                 <Sparkles size={14} /> {t('ai.importFiscalYear', 'Import Fiscal Year with AI')}
               </button>
             )}
-            {step.key === 'seed-accounts' && seedDone['seed-accounts'] && (
+            {/* Seed steps: seed button lives in the table; Next appears once seeded */}
+            {step.key.startsWith('seed-') && seedDone[step.key] && (
               <button
                 onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
                 className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
                 {t('setup.next', 'Next')} <ArrowRight size={15} />
               </button>
-            )}
-            {step.key === 'seed-accounts' && !seedDone['seed-accounts'] && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => void runSeedStep('accounts')}
-                  disabled={busy === 'accounts'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busy === 'accounts' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
-                  Seed chart
-                </button>
-                <button
-                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-accounts': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
-                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                >
-                  Skip
-                </button>
-              </div>
-            )}
-            {step.key === 'seed-taxTypes' && seedDone['seed-taxTypes'] && (
-              <button
-                onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
-                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
-              >
-                {t('setup.next', 'Next')} <ArrowRight size={15} />
-              </button>
-            )}
-            {step.key === 'seed-taxTypes' && !seedDone['seed-taxTypes'] && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => void runSeedStep('taxTypes')}
-                  disabled={busy === 'taxTypes'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busy === 'taxTypes' ? <Loader2 size={15} className="animate-spin" /> : <Tag size={15} />}
-                  Seed tax types
-                </button>
-                <button
-                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-taxTypes': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
-                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                >
-                  Skip
-                </button>
-              </div>
-            )}
-            {step.key === 'seed-parties' && seedDone['seed-parties'] && (
-              <button
-                onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
-                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
-              >
-                {t('setup.next', 'Next')} <ArrowRight size={15} />
-              </button>
-            )}
-            {step.key === 'seed-parties' && !seedDone['seed-parties'] && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => void runSeedStep('parties')}
-                  disabled={busy === 'parties'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busy === 'parties' ? <Loader2 size={15} className="animate-spin" /> : <UserPlus size={15} />}
-                  Seed parties
-                </button>
-                <button
-                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-parties': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
-                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                >
-                  Skip
-                </button>
-              </div>
-            )}
-            {step.key === 'seed-items' && seedDone['seed-items'] && (
-              <button
-                onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
-                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
-              >
-                {t('setup.next', 'Next')} <ArrowRight size={15} />
-              </button>
-            )}
-            {step.key === 'seed-items' && !seedDone['seed-items'] && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => void runSeedStep('items')}
-                  disabled={busy === 'items'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busy === 'items' ? <Loader2 size={15} className="animate-spin" /> : <Package size={15} />}
-                  Seed items
-                </button>
-                <button
-                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-items': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
-                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                >
-                  Skip
-                </button>
-              </div>
-            )}
-            {step.key === 'seed-members' && seedDone['seed-members'] && (
-              <button
-                onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
-                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
-              >
-                {t('setup.next', 'Next')} <ArrowRight size={15} />
-              </button>
-            )}
-            {step.key === 'seed-members' && !seedDone['seed-members'] && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => void runSeedStep('members')}
-                  disabled={busy === 'members'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busy === 'members' ? <Loader2 size={15} className="animate-spin" /> : <Users size={15} />}
-                  Seed members
-                </button>
-                <button
-                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-members': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
-                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                >
-                  Skip
-                </button>
-              </div>
             )}
             {step.key === 'defaults' && (
               <button
@@ -1584,6 +1416,276 @@ export default function SetupWizard() {
           void refreshFacts()
         }}
       />
+    </div>
+  )
+}
+
+/** Reusable table for each seed step: list + inline edit + delete + seed + AI import. */
+type SeedCol = {
+  key: string
+  label: string
+  type: 'text' | 'number' | 'select' | 'boolean' | 'readonly'
+  options?: string[]
+}
+
+type SeedTableProps = {
+  collection: string
+  title: string
+  subtitle: string
+  seedKey: SeedKey
+  seedLabel: string
+  icon: any
+  columns: SeedCol[]
+  aiModel?: AIModel
+  aiLabel?: string
+  tenantId: string | undefined
+  tenantQuery: { tenant?: string | number }
+  setSeedDone: (updater: (prev: Record<string, boolean>) => Record<string, boolean>) => void
+  setAiOpen: (v: boolean) => void
+  setAiInitialModel: (v: AIModel | null) => void
+}
+
+function SeedTable({
+  collection, title, subtitle, seedKey, seedLabel, icon, columns, aiModel, aiLabel,
+  tenantId, tenantQuery, setSeedDone, setAiOpen, setAiInitialModel,
+}: SeedTableProps) {
+  const [records, setRecords] = useState<any[]>([])
+  const [editRow, setEditRow] = useState<string | null>(null)
+  const [rowDraft, setRowDraft] = useState<Record<string, any>>({})
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  useEffect(() => {
+    void loadRecords()
+  }, [])
+
+  const loadRecords = async () => {
+    const res = await api<{ docs: any[] }>(`/${collection}`, {
+      query: { limit: 1000, depth: 0, ...tenantQuery },
+    })
+    setRecords(res.docs ?? [])
+  }
+
+  const startEdit = (row: any) => {
+    const draft: Record<string, any> = {}
+    for (const col of columns) {
+      if (col.type !== 'readonly') draft[col.key] = row[col.key] ?? ''
+    }
+    setRowDraft(draft)
+    setEditRow(String(row.id))
+  }
+
+  const saveRow = async (id: string) => {
+    setBusyId(id)
+    try {
+      const body: Record<string, any> = {}
+      for (const col of columns) {
+        if (col.type !== 'readonly') body[col.key] = rowDraft[col.key]
+      }
+      await api(`/${collection}/${id}`, { method: 'PATCH', body })
+      setEditRow(null)
+      setBusyId(null)
+      void loadRecords()
+      pushToast('success', `${title} updated`)
+    } catch (e) {
+      setBusyId(null)
+      pushToast('error', `Failed to update ${title}`, e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  const deleteRow = async (id: string) => {
+    if (!window.confirm(`Delete this ${title}?`)) return
+    setBusyId(id)
+    try {
+      await api(`/${collection}/${id}`, { method: 'DELETE' })
+      setBusyId(null)
+      void loadRecords()
+      pushToast('success', `${title} deleted`)
+    } catch (e) {
+      setBusyId(null)
+      pushToast('error', `Failed to delete ${title}`, e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  const doSeed = async () => {
+    if (!tenantId) {
+      pushToast('error', 'Select an ilaka first', 'Pick the tenant to set up from the switcher.')
+      return
+    }
+    setBusyId('seed')
+    try {
+      const res = await runSeedSelective(tenantId, [seedKey])
+      if (res.error) {
+        pushToast('error', 'Seed failed', res.error)
+        return
+      }
+      setSeedDone((prev) => ({ ...prev, [seedKey]: true }))
+      void loadRecords()
+      pushToast('success', 'Seeded', 'Records added. Edit or delete any row inline.')
+    } catch (e) {
+      pushToast('error', 'Failed to seed', e instanceof Error ? e.message : 'Seed failed')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const empty = (records.length ?? 0) === 0
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+        <div className="flex items-center gap-3 text-sm text-slate-600">
+          {icon}
+          <div>
+            <p className="font-medium">{title}</p>
+            <p className="text-xs text-slate-400">{subtitle}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <button
+          onClick={doSeed}
+          disabled={busyId === 'seed'}
+          className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+        >
+          {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
+          {seedLabel}
+        </button>
+        {aiModel && (
+          <button
+            onClick={() => { setAiInitialModel(aiModel); setAiOpen(true) }}
+            className="mt-3 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            <Sparkles size={14} /> {aiLabel}
+          </button>
+        )}
+        <button
+          onClick={() => { setSeedDone((p) => ({ ...p, [seedKey]: true })) }}
+          className="text-xs text-slate-400 hover:text-slate-600 underline"
+        >
+          Skip
+        </button>
+      </div>
+
+      {empty ? (
+        <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
+          No records yet. Seed the {title.toLowerCase()} above.
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded border border-slate-200">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                {columns.map((c) => (
+                  <th key={c.key} className="px-3 py-2">{c.label}</th>
+                ))}
+                <th className="px-3 py-2 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.map((row) => (
+                <tr key={row.id} className="border-b border-slate-100 last:border-0">
+                  {columns.map((c) => {
+                    const editing = editRow === String(row.id)
+                    if (editing && c.type !== 'readonly') {
+                      let input: any
+                      if (c.type === 'select') {
+                        input = (
+                          <select
+                            defaultValue={String(row[c.key] ?? '')}
+                            className="w-full text-xs border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none bg-white"
+                            onChange={(e) => setRowDraft({ ...rowDraft, [c.key]: e.target.value })}
+                          >
+                            {c.options!.map((o) => (
+                              <option key={o} value={o}>{o}</option>
+                            ))}
+                          </select>
+                        )
+                      } else if (c.type === 'boolean') {
+                        input = (
+                          <input
+                            type="checkbox"
+                            defaultChecked={Boolean(row[c.key])}
+                            className="rounded focus:ring-crimson-500"
+                            onChange={(e) => setRowDraft({ ...rowDraft, [c.key]: e.target.checked })}
+                          />
+                        )
+                      } else {
+                        input = (
+                          <input
+                            defaultValue={String(row[c.key] ?? '')}
+                            className="w-full text-sm border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                            onChange={(e) => setRowDraft({ ...rowDraft, [c.key]: e.target.value })}
+                          />
+                        )
+                      }
+                      return <td key={c.key} className="px-3 py-2">{input}</td>
+                    }
+                    if (c.type === 'boolean') {
+                      return (
+                        <td key={c.key} className="px-3 py-2">
+                          {Boolean(row[c.key]) ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                              <Unlock size={10} /> Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                              <Lock size={10} /> Inactive
+                            </span>
+                          )}
+                        </td>
+                      )
+                    }
+                    return <td key={c.key} className="px-3 py-2 text-slate-700">{row[c.key] ?? '—'}</td>
+                  })}
+                  <td className="px-3 py-2">
+                    {editRow === String(row.id) ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => saveRow(String(row.id))}
+                          title="Save"
+                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-crimson-600"
+                        >
+                          <Save size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditRow(null)}
+                          title="Cancel"
+                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(row)}
+                          title="Edit"
+                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteRow(String(row.id))}
+                          disabled={busyId === String(row.id) || busyId === 'seed'}
+                          title="Delete"
+                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
