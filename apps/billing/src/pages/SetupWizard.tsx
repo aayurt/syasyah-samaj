@@ -1432,7 +1432,7 @@ export default function SetupWizard() {
             )}
 
             {/* When the required step is already done, allow moving on. */}
-            {isRequired && satisfied[step.key] && !busy && (
+            {isRequired && satisfied[step.key] && !busy && !step.key.startsWith('seed-') && (
               <button
                 onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
                 className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
