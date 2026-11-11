@@ -1562,155 +1562,162 @@ function SeedTable({
   const empty = (records.length ?? 0) === 0
 
   return (
-    <div className="space-y-3">
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-        <div className="flex items-center gap-3 text-sm text-slate-600">
-          {icon}
-          <div>
-            <p className="font-medium">Seed Chart Data</p>
-            <p className="text-xs text-slate-400">{subtitle}</p>
+    <div className="space-y-4">
+      {/* Overall header */}
+      <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        {icon}
+        <div>
+          <p className="font-medium text-slate-700">{title}</p>
+          <p className="text-xs text-slate-400">{subtitle}</p>
+        </div>
+      </div>
+
+      {/* Current Data section */}
+      <div>
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Current Data</p>
+        {empty ? (
+          <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
+            No records yet. Seed the {title.toLowerCase()} below.
           </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between mb-1">
-        {aiModel && (
-          <button
-            onClick={() => { setAiInitialModel(aiModel); setAiOpen(true) }}
-            className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            <Sparkles size={14} /> {aiLabel}
-          </button>
-        )}
-        <button
-          onClick={doSeed}
-          disabled={busyId === 'seed'}
-          className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-        >
-          {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
-          {seedLabel}
-        </button>
-      </div>
-
-      {empty ? (
-        <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
-          No records yet. Seed the {title.toLowerCase()} above.
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded border border-slate-200">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                {columns.map((c) => (
-                  <th key={c.key} className="px-3 py-2">{c.label}</th>
-                ))}
-                <th className="px-3 py-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.map((row) => (
-                <tr key={row.id} className="border-b border-slate-100 last:border-0">
-                  {columns.map((c) => {
-                    const editing = editRow === String(row.id)
-                    if (editing && c.type !== 'readonly') {
-                      let input: any
-                      if (c.type === 'select') {
-                        input = (
-                          <select
-                            defaultValue={String(row[c.key] ?? '')}
-                            className="w-full text-xs border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none bg-white"
-                            onChange={(e) => setRowDraft({ ...rowDraft, [c.key]: e.target.value })}
-                          >
-                            {c.options!.map((o) => (
-                              <option key={o} value={o}>{o}</option>
-                            ))}
-                          </select>
-                        )
-                      } else if (c.type === 'boolean') {
-                        input = (
-                          <input
-                            type="checkbox"
-                            defaultChecked={Boolean(row[c.key])}
-                            className="rounded focus:ring-crimson-500"
-                            onChange={(e) => setRowDraft({ ...rowDraft, [c.key]: e.target.checked })}
-                          />
-                        )
-                      } else {
-                        input = (
-                          <input
-                            defaultValue={String(row[c.key] ?? '')}
-                            className="w-full text-sm border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
-                            onChange={(e) => setRowDraft({ ...rowDraft, [c.key]: e.target.value })}
-                          />
+        ) : (
+          <div className="overflow-x-auto rounded border border-slate-200">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                  {columns.map((c) => (
+                    <th key={c.key} className="px-3 py-2">{c.label}</th>
+                  ))}
+                  <th className="px-3 py-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.map((row) => (
+                  <tr key={row.id} className="border-b border-slate-100 last:border-0">
+                    {columns.map((c) => {
+                      const editing = editRow === String(row.id)
+                      if (editing && c.type !== 'readonly') {
+                        let input: any
+                        if (c.type === 'select') {
+                          input = (
+                            <select
+                              defaultValue={String(row[c.key] ?? '')}
+                              className="w-full text-xs border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none bg-white"
+                              onChange={(e) => setRowDraft({ ...rowDraft, [c.key]: e.target.value })}
+                            >
+                              {c.options!.map((o) => (
+                                <option key={o} value={o}>{o}</option>
+                              ))}
+                            </select>
+                          )
+                        } else if (c.type === 'boolean') {
+                          input = (
+                            <input
+                              type="checkbox"
+                              defaultChecked={Boolean(row[c.key])}
+                              className="rounded focus:ring-crimson-500"
+                              onChange={(e) => setRowDraft({ ...rowDraft, [c.key]: e.target.checked })}
+                            />
+                          )
+                        } else {
+                          input = (
+                            <input
+                              defaultValue={String(row[c.key] ?? '')}
+                              className="w-full text-sm border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                              onChange={(e) => setRowDraft({ ...rowDraft, [c.key]: e.target.value })}
+                            />
+                          )
+                        }
+                        return <td key={c.key} className="px-3 py-2">{input}</td>
+                      }
+                      if (c.type === 'boolean') {
+                        return (
+                          <td key={c.key} className="px-3 py-2">
+                            {Boolean(row[c.key]) ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                                <Unlock size={10} /> Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                                <Lock size={10} /> Inactive
+                              </span>
+                            )}
+                          </td>
                         )
                       }
-                      return <td key={c.key} className="px-3 py-2">{input}</td>
-                    }
-                    if (c.type === 'boolean') {
-                      return (
-                        <td key={c.key} className="px-3 py-2">
-                          {Boolean(row[c.key]) ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                              <Unlock size={10} /> Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
-                              <Lock size={10} /> Inactive
-                            </span>
-                          )}
-                        </td>
-                      )
-                    }
-                    return <td key={c.key} className="px-3 py-2 text-slate-700">{row[c.key] ?? '—'}</td>
-                  })}
-                  <td className="px-3 py-2">
-                    {editRow === String(row.id) ? (
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => saveRow(String(row.id))}
-                          title="Save"
-                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-crimson-600"
-                        >
-                          <Save size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditRow(null)}
-                          title="Cancel"
-                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => startEdit(row)}
-                          title="Edit"
-                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteRow(String(row.id))}
-                          disabled={busyId === String(row.id) || busyId === 'seed'}
-                          title="Delete"
-                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      return <td key={c.key} className="px-3 py-2 text-slate-700">{row[c.key] ?? '—'}</td>
+                    })}
+                    <td className="px-3 py-2">
+                      {editRow === String(row.id) ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => saveRow(String(row.id))}
+                            title="Save"
+                            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-crimson-600"
+                          >
+                            <Save size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditRow(null)}
+                            title="Cancel"
+                            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(row)}
+                            title="Edit"
+                            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteRow(String(row.id))}
+                            disabled={busyId === String(row.id) || busyId === 'seed'}
+                            title="Delete"
+                            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Seed Data section */}
+      <div>
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Seed Data</p>
+        <div className="flex items-center justify-between mb-1">
+          {aiModel && (
+            <button
+              onClick={() => { setAiInitialModel(aiModel); setAiOpen(true) }}
+              className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              <Sparkles size={14} /> {aiLabel}
+            </button>
+          )}
+          <button
+            onClick={doSeed}
+            disabled={busyId === 'seed'}
+            className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+          >
+            {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
+            {seedLabel}
+          </button>
         </div>
-      )}
+      </div>
     </div>
   )
 }
