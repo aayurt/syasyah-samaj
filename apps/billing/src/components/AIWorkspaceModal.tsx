@@ -438,18 +438,19 @@ export default function AIWorkspaceModal({
         for (const row of preview) {
           const target = byCode.get(String(row.doc.code || ''))
           const body = {
-            name: { en: row.doc.name },
+            name: row.doc.name,
             code: row.doc.code,
             type: 'illaka',
             active: row.doc.active ?? true,
             slug: row.doc.slug || '',
           }
+          const locale = { query: { locale: 'en' } }
           try {
             if (target) {
-              await api(`/tenants/${target.id}`, { method: 'PATCH', body, immediate: true })
+              await api(`/tenants/${target.id}`, { method: 'PATCH', body, immediate: true, ...locale })
               updated++
             } else {
-              await api('/tenants', { method: 'POST', body, immediate: true })
+              await api('/tenants', { method: 'POST', body, immediate: true, ...locale })
               created++
             }
           } catch (e) {

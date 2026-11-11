@@ -136,7 +136,7 @@ Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no ex
 
 Generate sub-companies (illakas) as JSON. Each sub-company must have:
 - name: string — sub-company name
-- code: string — sub-company code (used to match an existing illaka — new ones are not created)
+- code: string — sub-company code (matches an existing illaka; unknown codes are created)
 - slug: string — URL slug (optional)
 - active: boolean — whether active (default true)
 
