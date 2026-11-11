@@ -21,6 +21,7 @@
     "reinstall": "cross-env NODE_OPTIONS=--no-deprecation rm -rf node_modules && rm pnpm-lock.yaml && pnpm --ignore-workspace install",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "format": "prettier --write ./locales/translations/gen/en.json ./locales/translations/gen/ne.json ./locales/translations/gen/new.json --plugin=prettier-plugin-sort-json",
+    "graphify": "graphify update .",
     "translate": "jsontt ./locales/translations/gen/en.json --module google2 --from en --to ne --fallback yes --concurrencylimit 10 -n '' && pnpm format"
   },
   "dependencies": {

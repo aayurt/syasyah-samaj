@@ -129,23 +129,7 @@ Be helpful without being annoying: check in a few times a day, do useful backgro
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.
 
-## Graphify — Knowledge Graph
-
-This repo uses [Graphify](https://github.com/Graphify-Labs/graphify) to turn the codebase into a local, queryable knowledge graph. Graphify parses code with tree-sitter AST (deterministic, no vector store, nothing leaves the machine). Use it to trace relationships between collections, hooks, endpoints, and schemas instead of grepping.
-
-### Usage
-
-- `/graphify` — map the project into a knowledge graph (code + docs + configs)
-- Query the graph instead of grepping: trace how a Payload collection connects to its access hooks, beforeChange hooks, and API routes
-- Graphify output lives in `.graphify/` — do not commit it
-
-### Conventions
-
-- Run Graphify before large refactors to understand the codebase topology
-- Use graph edges to verify no collection is updated without its access hooks firing
-- Tag edges: `EXTRACTED` = explicit in source, `INFERRED` = resolved by Graphify
-
-### Sharp / Node version pin (VPS compatibility)
+## Sharp / Node version pin (VPS compatibility)
 
 **Problem:** `sharp` 0.35.x requires Node >=20.9.0 and a linux-x64 native binding. Local dev runs Node 26/darwin-arm64; the VPS (PersonalVPS) runs Node 18.19.1/linux-x64. `rsync` of `node_modules` shipped a darwin sharp binary that crashed on the VPS, causing PATCH 500 on all collections (Payload loads sharp during update operations).
 
@@ -158,3 +142,16 @@ This repo uses [Graphify](https://github.com/Graphify-Labs/graphify) to turn the
 - [Default AGENTS.md](/reference/AGENTS.default)
 - [Automations vs heartbeat](/automation#automations-vs-heartbeat)
 - [Heartbeat](/gateway/heartbeat)
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+When the user types `/graphify`, invoke the `skill` tool with `skill: "graphify"` before doing anything else.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
