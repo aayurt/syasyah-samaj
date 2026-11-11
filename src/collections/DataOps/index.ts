@@ -588,10 +588,10 @@ export const DataOps: CollectionConfig = {
   labels: { singular: 'Data Operation', plural: 'Data Operations' },
   admin: { hidden: true },
   access: {
-    create: () => false,
-    read: () => false,
-    update: () => false,
-    delete: () => false,
+    create: ({ req }) => isBillingUser(req.user),
+    read: ({ req }) => isBillingUser(req.user),
+    update: ({ req }) => isBillingUser(req.user),
+    delete: ({ req }) => isBillingUser(req.user),
   },
   fields: [
     {
