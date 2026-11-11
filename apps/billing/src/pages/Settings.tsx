@@ -881,6 +881,16 @@ export default function Settings() {
       pushToast('error', 'Missing dates', 'Both start and end date are required.')
       return
     }
+    // Overlap check: new [start,end] must not intersect any existing period.
+    const overlapsExisting = fiscalYears.some((y) => {
+      if (fyEditing && y.id === fyEditing) return false
+      return fyForm.startDate <= (y.endDate ?? '') && (y.startDate ?? '') <= fyForm.endDate
+    })
+    if (overlapsExisting) {
+      pushToast('error', 'Date range overlaps', 'This fiscal year overlaps an existing period. Pick non-overlapping dates.')
+      setFySaving(false)
+      return
+    }
     // A closed year cannot be the working year — override makeActive if so.
     const makeActive = fyForm.status === 'active' && fyForm.makeActive
     setFySaving(true)

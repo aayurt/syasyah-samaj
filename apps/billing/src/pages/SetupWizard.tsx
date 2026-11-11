@@ -307,6 +307,15 @@ export default function SetupWizard() {
     setBusy('fiscalYear')
     setError('')
     try {
+      // Overlap check: new [start,end] must not intersect any existing period.
+      const overlapsExisting = (years ?? []).some((y) => {
+        return fy.startDate <= (y.endDate ?? '') && (y.startDate ?? '') <= fy.endDate
+      })
+      if (overlapsExisting) {
+        pushToast('error', 'Date range overlaps', 'This fiscal year overlaps an existing period. Pick non-overlapping dates.')
+        setBusy('')
+        return
+      }
       let label = fy.label.trim()
       if (!label && fy.startDate) {
         const bs = adToBsString(fy.startDate)
