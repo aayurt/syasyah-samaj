@@ -11,11 +11,14 @@ import {
   Edit2,
   Hourglass,
   Loader2,
+  Lock,
   Package,
   PartyPopper,
   Plus,
+  Save,
   Sparkles,
   Trash2,
+  Unlock,
   UserPlus,
   Wallet,
   X,
@@ -111,6 +114,10 @@ export default function SetupWizard() {
   const [fy, setFy] = useState({ label: '', startDate: '2026-07-16', endDate: '2027-07-15' })
   const [fyCal, setFyCal] = useState<'AD' | 'BS'>('AD')
   const [fyBs, setFyBs] = useState({ start: '', end: '' })
+  const [fyEditRow, setFyEditRow] = useState<string | null>(null)
+  const [fyRowDraft, setFyRowDraft] = useState<{ label: string; startDate: string; endDate: string }>({
+    label: '', startDate: '', endDate: '',
+  })
   const toggleFyCal = () => {
     setFyCal((c) => {
       const next = c === 'AD' ? 'BS' : 'AD'
@@ -364,6 +371,54 @@ export default function SetupWizard() {
     } finally {
       setBusy('')
     }
+  }
+
+  const fySetActive = (id: string) => {
+    api(`/fiscal-years/${id}`, { method: 'PATCH', body: { isActive: true } })
+      .then(async () => {
+        await api('/globals/billing-settings', { method: 'POST', body: { activeFiscalYear: Number(id) } }).catch(() => {})
+        await refreshYears()
+        pushToast('success', 'Working year set')
+      })
+      .catch((e) => pushToast('error', 'Failed to set working year', e instanceof Error ? e.message : String(e)))
+  }
+
+  const fyClose = (id: string) => {
+    api(`/fiscal-years/${id}`, { method: 'PATCH', body: { status: 'closed' } })
+      .then(() => { void refreshYears(); pushToast('success', 'Year closed') })
+      .catch((e) => pushToast('error', 'Failed to close year', e instanceof Error ? e.message : String(e)))
+  }
+
+  const fyOpen = (id: string) => {
+    api(`/fiscal-years/${id}`, { method: 'PATCH', body: { status: 'active' } })
+      .then(() => { void refreshYears(); pushToast('success', 'Year opened') })
+      .catch((e) => pushToast('error', 'Failed to open year', e instanceof Error ? e.message : String(e)))
+  }
+
+  const fyDelete = (id: string) => {
+    if (!window.confirm('Delete this fiscal year? This cannot be undone.')) return
+    api(`/fiscal-years/${id}`, { method: 'DELETE' })
+      .then(() => { void refreshYears(); pushToast('success', 'Year deleted') })
+      .catch((e) => pushToast('error', 'Failed to delete year', e instanceof Error ? e.message : String(e)))
+  }
+
+  const fyRowSave = async (id: string) => {
+    const d = fyRowDraft
+    if (!d.startDate || !d.endDate) {
+      pushToast('error', 'Missing dates', 'Both start and end date are required.')
+      return
+    }
+    const overlapsExisting = (years ?? []).some((y) => {
+      if (String(y.id) === id) return false
+      return d.startDate <= (y.endDate ?? '') && (y.startDate ?? '') <= d.endDate
+    })
+    if (overlapsExisting) {
+      pushToast('error', 'Date range overlaps', 'This fiscal year overlaps an existing period.')
+      return
+    }
+    api(`/fiscal-years/${id}`, { method: 'PATCH', body: { label: d.label || undefined, startDate: d.startDate, endDate: d.endDate } })
+      .then(() => { setFyEditRow(null); void refreshYears(); pushToast('success', 'Year updated') })
+      .catch((e) => pushToast('error', 'Failed to update year', e instanceof Error ? e.message : String(e)))
   }
 
   const runSelectiveSeed = async () => {
@@ -832,6 +887,7 @@ export default function SetupWizard() {
           )}
 
           {step.key === 'fiscalYear' && (
+            <>
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-500">Calendar</span>
@@ -918,6 +974,184 @@ export default function SetupWizard() {
                 becomes the active working year.
               </p>
             </div>
+            <div className="mt-6">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Fiscal years</p>
+                  <p className="text-xs text-slate-400">
+                    Set the working year · Close/reopen · Edit inline · Delete
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void createFiscalYear()}
+                  disabled={busy === 'fiscalYear' || !fy.startDate || !fy.endDate}
+                  className="flex items-center gap-1.5 rounded-md bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  <Plus size={14} /> Add Year
+                </button>
+              </div>
+              {(years?.length ?? 0) === 0 ? (
+                <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
+                  No fiscal years defined. Add the first period above.
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded border border-slate-200">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                        <th className="px-3 py-2">Working</th>
+                        <th className="px-3 py-2">Label</th>
+                        <th className="px-3 py-2">Start</th>
+                        <th className="px-3 py-2">End</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {years.map((y) => {
+                        const isWorking = Boolean(y.isActive) || String(y.id) === String(settings?.activeFiscalYear)
+                        const isClosed = y.status === 'closed'
+                        return (
+                          <tr key={y.id} className="border-b border-slate-100 last:border-0">
+                            <td className="px-3 py-2">
+                              {isClosed ? (
+                                <span className="h-5 w-5 rounded-full border border-slate-200 bg-slate-50 text-slate-300 flex items-center justify-center">
+                                  <CheckCircle2 size={12} />
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => fySetActive(String(y.id))}
+                                  title={isWorking ? 'Working year' : 'Set as working year'}
+                                  className={`h-5 w-5 rounded-full border flex items-center justify-center ${isWorking ? 'border-crimson-600 bg-crimson-600 text-white' : 'border-slate-300 text-transparent hover:border-crimson-400'}`}
+                                >
+                                  <CheckCircle2 size={12} />
+                                </button>
+                              )}
+                            </td>
+                            {fyEditRow === String(y.id) ? (
+                              <td className="px-3 py-2">
+                                <input
+                                  defaultValue={fyRowDraft.label || y.label || ''}
+                                  className="w-full text-sm font-medium border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                                  onChange={(e) => setFyRowDraft({ ...fyRowDraft, label: e.target.value })}
+                                  autoFocus
+                                />
+                              </td>
+                            ) : (
+                              <td className="px-3 py-2 font-medium text-slate-800">{y.label || `FY ${y.startDate}`}</td>
+                            )}
+                            {fyEditRow === String(y.id) ? (
+                              <td className="px-3 py-2">
+                                <input
+                                  type="date"
+                                  defaultValue={String(y.startDate || '').slice(0, 10)}
+                                  className="w-full text-xs text-slate-500 border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                                  onChange={(e) => setFyRowDraft({ ...fyRowDraft, startDate: e.target.value })}
+                                />
+                              </td>
+                            ) : (
+                              <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.startDate || '').slice(0, 10)}</td>
+                            )}
+                            {fyEditRow === String(y.id) ? (
+                              <td className="px-3 py-2">
+                                <input
+                                  type="date"
+                                  defaultValue={String(y.endDate || '').slice(0, 10)}
+                                  className="w-full text-xs text-slate-500 border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                                  onChange={(e) => setFyRowDraft({ ...fyRowDraft, endDate: e.target.value })}
+                                />
+                              </td>
+                            ) : (
+                              <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.endDate || '').slice(0, 10)}</td>
+                            )}
+                            <td className="px-3 py-2">
+                              {isClosed ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                                  <Lock size={10} /> Closed
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                                  <Unlock size={10} /> Active
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              {fyEditRow === String(y.id) ? (
+                                <div className="flex items-center justify-end gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => fyRowSave(String(y.id))}
+                                    title="Save"
+                                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-crimson-600"
+                                  >
+                                    <Save size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setFyEditRow(null)}
+                                    title="Cancel"
+                                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-end gap-1">
+                                  {isClosed ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => fyOpen(String(y.id))}
+                                      title="Reopen year"
+                                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600"
+                                    >
+                                      <Unlock size={14} />
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => fyClose(String(y.id))}
+                                      title="Close year"
+                                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-amber-600"
+                                    >
+                                      <Lock size={14} />
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setFyRowDraft({ label: y.label || '', startDate: String(y.startDate || '').slice(0, 10), endDate: String(y.endDate || '').slice(0, 10) })
+                                      setFyEditRow(String(y.id))
+                                    }}
+                                    title="Edit year"
+                                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                  >
+                                    <Edit2 size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => fyDelete(String(y.id))}
+                                    title="Delete year"
+                                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <p className="mt-3 text-xs text-slate-400">
+                Working year drives transaction numbering. Closed years reject new entries.
+              </p>
+            </div>
+            </>
           )}
 
           {step.key === 'seeds' && (
