@@ -13,18 +13,19 @@ import {
   Loader2,
   Lock,
   Package,
-  PartyPopper,
   Plus,
   Save,
   Sparkles,
+  Tag,
   Trash2,
   Unlock,
   UserPlus,
+  Users,
   Wallet,
   X,
 } from 'lucide-react'
 import { api, list, getEngine } from '../lib/api'
-import { useDataEpochWatcher, runSeedDemo, runSeedSelective, SEED_KEYS } from '../lib/dataOps'
+import { useDataEpochWatcher, runSeedSelective } from '../lib/dataOps'
 import type { SeedKey } from '../lib/dataOps'
 import { useFiscalYear } from '../lib/fiscalYear'
 import { useTenant, type TenantOption } from '../lib/tenant'
@@ -57,13 +58,16 @@ interface StepDef {
 const REQUIRED_STEPS: StepDef[] = [
   { key: 'company', title: 'Company Profile', blurb: 'Enter the org name and contact details shown on invoices.', icon: Building2 },
   { key: 'fiscalYear', title: 'Fiscal Year', blurb: 'Define the accounting period that drives voucher numbering.', icon: CalendarDays },
-  { key: 'seeds', title: 'Seed Master Data', blurb: 'Choose which master records to pre-fill — you can skip all and enter them later.', icon: Database },
+  { key: 'seed-accounts', title: 'Chart of Accounts', blurb: 'Starter chart — groups, accounts, and default-account mappings.', icon: Database },
+  { key: 'seed-taxTypes', title: 'Tax Types', blurb: 'VAT @ 13% plus its sales/purchase ledger wiring.', icon: Tag },
   { key: 'defaults', title: 'Default Accounts', blurb: 'Map the default accounts the posting engine needs.', icon: Wallet },
 ]
 
 const OPTIONAL_STEPS: StepDef[] = [
+  { key: 'seed-parties', title: 'Parties', blurb: 'Sample customers and vendors (still editable).', icon: UserPlus },
+  { key: 'seed-items', title: 'Items', blurb: 'Sample stock items with rates (still editable).', icon: Package },
+  { key: 'seed-members', title: 'Members', blurb: 'Membership types plus sample members.', icon: Users },
   { key: 'openings', title: 'Opening Balances', blurb: 'Enter opening balances per account for the year.', icon: Hourglass, optional: true },
-  { key: 'demo', title: 'Demo Data', blurb: 'Add sample parties, items and draft vouchers for testing.', icon: PartyPopper, optional: true },
 ]
 
 const STEPS = [...REQUIRED_STEPS, ...OPTIONAL_STEPS]
@@ -92,7 +96,6 @@ export default function SetupWizard() {
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [syncing, setSyncing] = useState(true)
   const [chartCount, setChartCount] = useState<number | null>(null)
-  const [docCount, setDocCount] = useState<number | null>(null)
   const [illakaCount, setIllakaCount] = useState<number | null>(null)
   const [memberCount, setMemberCount] = useState<number | null>(null)
   const [itemCount, setItemCount] = useState<number | null>(null)
@@ -132,16 +135,8 @@ export default function SetupWizard() {
   }
   // Default accounts form
   const [defaults, setDefaults] = useState<Record<string, string>>({})
-  // Selective seeding
-  const [seedSelection, setSeedSelection] = useState<Record<SeedKey, boolean>>({
-    accounts: true,
-    taxTypes: true,
-    parties: true,
-    items: true,
-    members: true,
-    fiscalYears: true,
-  })
-  const [seedingDone, setSeedingDone] = useState(false)
+  // Per-seed-step completion (each seed area is its own wizard step now)
+  const [seedDone, setSeedDone] = useState<Record<string, boolean>>({})
 
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
@@ -160,7 +155,6 @@ export default function SetupWizard() {
     setSettings(s)
     setSettingsLoaded(true)
     setChartCount(chartRes?.totalDocs ?? 0)
-    setDocCount(docRes?.totalDocs ?? 0)
     setIllakaCount(illakaRes?.totalDocs ?? 0)
     setMemberCount(memberRes?.totalDocs ?? 0)
     setItemCount(itemRes?.totalDocs ?? 0)
@@ -237,10 +231,13 @@ export default function SetupWizard() {
   const satisfied: Record<string, boolean> = {
     company: Boolean(settings?.companyName && String(settings.companyName).trim()),
     fiscalYear: (years?.length ?? 0) > 0 || Boolean(settings?.activeFiscalYear),
-    seeds: seedingDone || (chartCount ?? 0) > 0,
+    'seed-accounts': Boolean(seedDone['seed-accounts']),
+    'seed-taxTypes': Boolean(seedDone['seed-taxTypes']),
     defaults: CORE_DEFAULTS.every((d) => settings && settings[d.key] != null),
+    'seed-parties': Boolean(seedDone['seed-parties']),
+    'seed-items': Boolean(seedDone['seed-items']),
+    'seed-members': Boolean(seedDone['seed-members']),
     openings: true,
-    demo: (docCount ?? 0) > 0,
   }
 
   const canNext = !busy && (isRequired ? satisfied[step.key] : true)
@@ -420,20 +417,15 @@ export default function SetupWizard() {
       .catch((e) => pushToast('error', 'Failed to update year', e instanceof Error ? e.message : String(e)))
   }
 
-  const runSelectiveSeed = async () => {
+  const runSeedStep = async (seedKey: SeedKey) => {
     if (!tenantId) {
       pushToast('error', 'Select an ilaka first', 'Pick the tenant to set up from the switcher.')
       return
     }
-    const chosen = SEED_KEYS.filter((s) => seedSelection[s.key]).map((s) => s.key)
-    if (chosen.length === 0) {
-      pushToast('error', 'Nothing selected', 'Tick at least one area to seed, or skip this step.')
-      return
-    }
-    setBusy('seeds')
+    setBusy(seedKey)
     setError('')
     try {
-      const res = await runSeedSelective(tenantId, chosen)
+      const res = await runSeedSelective(tenantId, [seedKey])
       if (res.error) {
         setError(res.error)
         return
@@ -444,12 +436,12 @@ export default function SetupWizard() {
       if (res.partyCount) parts.push(`${res.partyCount} parties`)
       if (res.membersCreated) parts.push(`${res.membersCreated} members`)
       if (res.seededYear != null) parts.push('a fiscal year')
-      pushToast('success', 'Master data seeded', parts.join(', ') || 'Done')
-      setSeedingDone(true)
+      pushToast('success', 'Seeded', parts.join(', ') || 'Done')
+      setSeedDone((prev) => ({ ...prev, [seedKey]: true }))
       await refreshFacts()
       setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to seed master data')
+      setError(e instanceof Error ? e.message : 'Failed to seed')
     } finally {
       setBusy('')
     }
@@ -469,28 +461,6 @@ export default function SetupWizard() {
       setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save default accounts')
-    } finally {
-      setBusy('')
-    }
-  }
-
-  const seedDemo = async () => {
-    if (!tenantId) {
-      pushToast('error', 'Select an ilaka first', 'Pick the tenant from the switcher.')
-      return
-    }
-    setBusy('demo')
-    setError('')
-    try {
-      const res = await runSeedDemo(tenantId, false)
-      if (res.error) {
-        setError(res.error)
-        return
-      }
-      pushToast('success', 'Demo data added', `${res.partyCount ?? 0} parties, ${res.draftCount ?? 0} draft vouchers`)
-      await refreshFacts()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to seed demo data')
     } finally {
       setBusy('')
     }
@@ -1162,52 +1132,162 @@ export default function SetupWizard() {
             </>
           )}
 
-          {step.key === 'seeds' && (
+          {step.key === 'seed-accounts' && (
             <div className="space-y-3">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
                 <div className="flex items-center gap-3 text-sm text-slate-600">
                   <Database size={18} className="text-slate-400" />
                   <div>
-                    <p className="font-medium">Selectively pre-fill master data</p>
+                    <p className="font-medium">Chart of accounts & groups</p>
                     <p className="text-xs text-slate-400">
-                      Tick the areas you want seeded for this tenant, then confirm. Anything you
-                      skip stays manual and you can enter it later. All seeding is idempotent and
-                      never overwrites existing records.
+                      Seeds the starter chart — 6 groups, 18 accounts, plus default-account mappings.
+                      Idempotent: anything already present is skipped.
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                {SEED_KEYS.map((s) => (
-                  <label
-                    key={s.key}
-                    className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-slate-300"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={seedSelection[s.key]}
-                      onChange={(e) =>
-                        setSeedSelection((prev) => ({ ...prev, [s.key]: e.target.checked }))
-                      }
-                      disabled={busy === 'seeds'}
-                      className="mt-0.5 h-4 w-4 accent-crimson-600"
-                    />
-                    <div>
-                      <p className="text-sm font-medium text-slate-700">{s.label}</p>
-                      <p className="text-xs text-slate-400">{s.blurb}</p>
-                    </div>
-                  </label>
-                ))}
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  onClick={() => void runSeedStep('accounts')}
+                  disabled={busy === 'accounts'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busy === 'accounts' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
+                  Seed chart
+                </button>
+                <button
+                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-accounts': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
+                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  Skip
+                </button>
               </div>
-              {(chartCount ?? 0) > 0 && (
-                <p className="text-xs text-amber-600">
-                  You already have a chart of accounts — seeding is skipped for anything already
-                  present.
-                </p>
-              )}
             </div>
           )}
-
+          {step.key === 'seed-taxTypes' && (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                  <Tag size={18} className="text-slate-400" />
+                  <div>
+                    <p className="font-medium">Tax types</p>
+                    <p className="text-xs text-slate-400">
+                      Seeds VAT @ 13% with its sales and purchase ledger wiring.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  onClick={() => void runSeedStep('taxTypes')}
+                  disabled={busy === 'taxTypes'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busy === 'taxTypes' ? <Loader2 size={15} className="animate-spin" /> : <Tag size={15} />}
+                  Seed tax types
+                </button>
+                <button
+                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-taxTypes': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
+                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+          )}
+          {step.key === 'seed-parties' && (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                  <UserPlus size={18} className="text-slate-400" />
+                  <div>
+                    <p className="font-medium">Parties</p>
+                    <p className="text-xs text-slate-400">
+                      Seeds sample customers and vendors. Still editable after setup.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  onClick={() => void runSeedStep('parties')}
+                  disabled={busy === 'parties'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busy === 'parties' ? <Loader2 size={15} className="animate-spin" /> : <UserPlus size={15} />}
+                  Seed parties
+                </button>
+                <button
+                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-parties': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
+                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+          )}
+          {step.key === 'seed-items' && (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                  <Package size={18} className="text-slate-400" />
+                  <div>
+                    <p className="font-medium">Items</p>
+                    <p className="text-xs text-slate-400">
+                      Seeds sample stock items with rates. Still editable after setup.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  onClick={() => void runSeedStep('items')}
+                  disabled={busy === 'items'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busy === 'items' ? <Loader2 size={15} className="animate-spin" /> : <Package size={15} />}
+                  Seed items
+                </button>
+                <button
+                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-items': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
+                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+          )}
+          {step.key === 'seed-members' && (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                  <Users size={18} className="text-slate-400" />
+                  <div>
+                    <p className="font-medium">Members & membership types</p>
+                    <p className="text-xs text-slate-400">
+                      Seeds General / Permanent / Lifetime types plus sample members.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  onClick={() => void runSeedStep('members')}
+                  disabled={busy === 'members'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busy === 'members' ? <Loader2 size={15} className="animate-spin" /> : <Users size={15} />}
+                  Seed members
+                </button>
+                <button
+                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-members': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
+                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+          )}
           {step.key === 'defaults' && (
             <div className="space-y-3">
               {CORE_DEFAULTS.map((d) => (
@@ -1252,43 +1332,6 @@ export default function SetupWizard() {
               </div>
               )}
 
-          {step.key === 'demo' && (
-            <div className="space-y-4">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                <div className="flex items-start gap-3">
-                  <Sparkles size={18} className="mt-0.5 shrink-0 text-crimson-500" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-700">Add demo data</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Adds sample parties, items and 5 draft vouchers so you can try posting, journal
-                      reports and the daybook before real entries. Your existing data is untouched.
-                    </p>
-                    {settings?.demoSeedEnabled === false && (
-                      <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
-                        Demo data is disabled — enable it in Settings → Feature Toggles.
-                      </p>
-                    )}
-                    {(docCount ?? 0) > 0 && (
-                      <p className="mt-2 text-xs text-amber-600">
-                        You already have {docCount} document(s) — the seeder only runs if you want
-                        the extras.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              {settings?.demoSeedEnabled !== false && (
-                <button
-                  disabled={busy === 'demo'}
-                  onClick={() => void seedDemo()}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busy === 'demo' ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
-                  {busy === 'demo' ? 'Seeding…' : 'Add demo data'}
-                </button>
-              )}
-            </div>
-          )}
         </div>
 
         {error && (
@@ -1310,14 +1353,6 @@ export default function SetupWizard() {
           <div className="flex items-center gap-2">
             {/* Optional steps: offer Skip and the primary action */}
             {step.key === 'openings' && (
-              <button
-                onClick={finish}
-                className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-              >
-                Skip for now
-              </button>
-            )}
-            {step.key === 'demo' && (
               <button
                 onClick={finish}
                 className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
@@ -1369,57 +1404,135 @@ export default function SetupWizard() {
                 <Sparkles size={14} /> {t('ai.importFiscalYear', 'Import Fiscal Year with AI')}
               </button>
             )}
-            {step.key === 'seeds' && (
+            {step.key === 'seed-accounts' && seedDone['seed-accounts'] && (
               <button
-                onClick={() => setSeedingDone(true)}
-                disabled={busy === 'seeds'}
-                className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
+                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
-                Skip for now
+                {t('setup.next', 'Next')} <ArrowRight size={15} />
               </button>
             )}
-            {step.key === 'seeds' && (
+            {step.key === 'seed-accounts' && !seedDone['seed-accounts'] && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => void runSeedStep('accounts')}
+                  disabled={busy === 'accounts'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busy === 'accounts' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
+                  Seed chart
+                </button>
+                <button
+                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-accounts': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
+                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  Skip
+                </button>
+              </div>
+            )}
+            {step.key === 'seed-taxTypes' && seedDone['seed-taxTypes'] && (
               <button
-                onClick={() => {
-                  setAiInitialModel('gl-accounts')
-                  setAiOpen(true)
-                }}
-                className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
+                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
-                <Sparkles size={14} /> {t('ai.importCoa', 'Import Chart of Accounts with AI')}
+                {t('setup.next', 'Next')} <ArrowRight size={15} />
               </button>
             )}
-            {step.key === 'seeds' && (
+            {step.key === 'seed-taxTypes' && !seedDone['seed-taxTypes'] && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => void runSeedStep('taxTypes')}
+                  disabled={busy === 'taxTypes'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busy === 'taxTypes' ? <Loader2 size={15} className="animate-spin" /> : <Tag size={15} />}
+                  Seed tax types
+                </button>
+                <button
+                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-taxTypes': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
+                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  Skip
+                </button>
+              </div>
+            )}
+            {step.key === 'seed-parties' && seedDone['seed-parties'] && (
               <button
-                onClick={() => {
-                  setAiInitialModel('tax-types')
-                  setAiOpen(true)
-                }}
-                className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
+                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
-                <Sparkles size={14} /> {t('ai.importTaxTypes', 'Import Tax Types with AI')}
+                {t('setup.next', 'Next')} <ArrowRight size={15} />
               </button>
             )}
-            {step.key === 'seeds' && (
+            {step.key === 'seed-parties' && !seedDone['seed-parties'] && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => void runSeedStep('parties')}
+                  disabled={busy === 'parties'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busy === 'parties' ? <Loader2 size={15} className="animate-spin" /> : <UserPlus size={15} />}
+                  Seed parties
+                </button>
+                <button
+                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-parties': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
+                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  Skip
+                </button>
+              </div>
+            )}
+            {step.key === 'seed-items' && seedDone['seed-items'] && (
               <button
-                onClick={() => {
-                  setAiInitialModel('account-groups')
-                  setAiOpen(true)
-                }}
-                className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
+                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
-                <Sparkles size={14} /> {t('ai.importAccountGroups', 'Import Account Groups with AI')}
+                {t('setup.next', 'Next')} <ArrowRight size={15} />
               </button>
             )}
-            {step.key === 'seeds' && (
+            {step.key === 'seed-items' && !seedDone['seed-items'] && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => void runSeedStep('items')}
+                  disabled={busy === 'items'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busy === 'items' ? <Loader2 size={15} className="animate-spin" /> : <Package size={15} />}
+                  Seed items
+                </button>
+                <button
+                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-items': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
+                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  Skip
+                </button>
+              </div>
+            )}
+            {step.key === 'seed-members' && seedDone['seed-members'] && (
               <button
-                onClick={() => void runSelectiveSeed()}
-                disabled={busy === 'seeds'}
-                className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
+                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
-                {busy === 'seeds' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
-                {busy === 'seeds' ? 'Seeding…' : 'Seed selected'}
+                {t('setup.next', 'Next')} <ArrowRight size={15} />
               </button>
+            )}
+            {step.key === 'seed-members' && !seedDone['seed-members'] && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => void runSeedStep('members')}
+                  disabled={busy === 'members'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busy === 'members' ? <Loader2 size={15} className="animate-spin" /> : <Users size={15} />}
+                  Seed members
+                </button>
+                <button
+                  onClick={() => { setSeedDone((p) => ({ ...p, 'seed-members': true })); setStepIdx((i) => Math.min(i + 1, STEPS.length - 1)) }}
+                  className="rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                >
+                  Skip
+                </button>
+              </div>
             )}
             {step.key === 'defaults' && (
               <button
