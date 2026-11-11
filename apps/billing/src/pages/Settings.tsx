@@ -17,6 +17,7 @@ import {
   Pencil,
   Plus,
   RotateCcw,
+  Save,
   ToggleLeft,
   Trash2,
   Unlock,
@@ -377,6 +378,11 @@ export default function Settings() {
     swap?: FiscalYear
     swapIsWorking?: boolean
   } | null>(null)
+  // Inline row editing in the fiscal years table.
+  const [fyEditRow, setFyEditRow] = useState<number | null>(null)
+  const [fyRowDraft, setFyRowDraft] = useState<{ label: string; startDate: string; endDate: string }>({
+    label: '', startDate: '', endDate: '',
+  })
   // Reset the form every time the modal opens — the webview survives window
   // close (hide-to-tray) and modal cancels, so stale input must be cleared here.
   const openFyModal = () => {
@@ -874,6 +880,37 @@ export default function Settings() {
         void refreshFiscalYears()
       })
       .catch((err) => pushToast('error', 'Failed to delete year', err instanceof Error ? err.message : String(err)))
+  }
+
+  // Inline save for a row edited directly in the table.
+  const fyRowSave = async (year: FiscalYear) => {
+    const d = fyRowDraft
+    if (!d.startDate || !d.endDate) {
+      pushToast('error', 'Missing dates', 'Both start and end date are required.')
+      return
+    }
+    const overlapsExisting = fiscalYears.some((y) => {
+      if (y.id === year.id) return false
+      return d.startDate <= (y.endDate ?? '') && (y.startDate ?? '') <= d.endDate
+    })
+    if (overlapsExisting) {
+      pushToast('error', 'Date range overlaps', 'This fiscal year overlaps an existing period. Pick non-overlapping dates.')
+      return
+    }
+    setFySaving(true)
+    try {
+      await api(`/fiscal-years/${year.id}`, {
+        method: 'PATCH',
+        body: { label: d.label.trim(), startDate: d.startDate, endDate: d.endDate },
+      })
+      pushToast('success', 'Fiscal year updated', String(d.label || year.id))
+      setFyEditRow(null)
+      void refreshFiscalYears()
+    } catch (err) {
+      pushToast('error', 'Failed to update year', err instanceof Error ? err.message : String(err))
+    } finally {
+      setFySaving(false)
+    }
   }
 
   const fySave = async () => {
@@ -1589,9 +1626,42 @@ export default function Settings() {
                             </button>
                           )}
                         </td>
-                        <td className="px-3 py-2 font-medium text-slate-800">{y.label || `FY ${y.startDate}`}</td>
-                        <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.startDate || '').slice(0, 10)}</td>
-                        <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.endDate || '').slice(0, 10)}</td>
+                        {fyEditRow === y.id ? (
+                          <td className="px-3 py-2">
+                            <input
+                              defaultValue={fyRowDraft.label || y.label || ''}
+                              className="w-full text-sm font-medium border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                              onChange={(e) => setFyRowDraft({ ...fyRowDraft, label: e.target.value })}
+                              autoFocus
+                            />
+                          </td>
+                        ) : (
+                          <td className="px-3 py-2 font-medium text-slate-800">{y.label || `FY ${y.startDate}`}</td>
+                        )}
+                        {fyEditRow === y.id ? (
+                          <td className="px-3 py-2">
+                            <input
+                              type="date"
+                              defaultValue={fyRowDraft.startDate || String(y.startDate || '').slice(0, 10)}
+                              className="w-full text-xs text-slate-500 border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                              onChange={(e) => setFyRowDraft({ ...fyRowDraft, startDate: e.target.value })}
+                            />
+                          </td>
+                        ) : (
+                          <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.startDate || '').slice(0, 10)}</td>
+                        )}
+                        {fyEditRow === y.id ? (
+                          <td className="px-3 py-2">
+                            <input
+                              type="date"
+                              defaultValue={fyRowDraft.endDate || String(y.endDate || '').slice(0, 10)}
+                              className="w-full text-xs text-slate-500 border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                              onChange={(e) => setFyRowDraft({ ...fyRowDraft, endDate: e.target.value })}
+                            />
+                          </td>
+                        ) : (
+                          <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.endDate || '').slice(0, 10)}</td>
+                        )}
                         <td className="px-3 py-2">
                           {y.status === 'closed' ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
@@ -1604,43 +1674,68 @@ export default function Settings() {
                           )}
                         </td>
                         <td className="px-3 py-2">
-                          <div className="flex items-center justify-end gap-1">
-                            {y.status === 'closed' ? (
+                          {fyEditRow === y.id ? (
+                            <div className="flex items-center justify-end gap-1">
                               <button
                                 type="button"
-                                onClick={() => fyReopen(y)}
-                                title={t("settings.openThisYear")}
-                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600"
+                                onClick={() => fyRowSave(y)}
+                                disabled={fySaving}
+                                title={t("settings.saveYear")}
+                                className={`rounded p-1 ${fySaving ? 'opacity-50 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100 hover:text-crimson-600'}`}
                               >
-                                <Unlock size={14} />
+                                <Save size={14} />
                               </button>
-                            ) : (
                               <button
                                 type="button"
-                                onClick={() => fyClose(y)}
-                                title={t("settings.closeThisYear")}
-                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-amber-600"
+                                onClick={() => setFyEditRow(null)}
+                                title={t("settings.cancelEdit")}
+                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                               >
-                                <Lock size={14} />
+                                <X size={14} />
                               </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => openFyEdit(y)}
-                              title={t("settings.editFiscalYear")}
-                              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                            >
-                              <Pencil size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => fyDelete(y)}
-                              title={t("settings.deleteFiscalYear")}
-                              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-end gap-1">
+                              {y.status === 'closed' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => fyReopen(y)}
+                                  title={t("settings.openThisYear")}
+                                  className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600"
+                                >
+                                  <Unlock size={14} />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => fyClose(y)}
+                                  title={t("settings.closeThisYear")}
+                                  className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-amber-600"
+                                >
+                                  <Lock size={14} />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFyRowDraft({ label: y.label || '', startDate: String(y.startDate || '').slice(0, 10), endDate: String(y.endDate || '').slice(0, 10) })
+                                  setFyEditRow(y.id)
+                                }}
+                                title={t("settings.editFiscalYear")}
+                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => fyDelete(y)}
+                                title={t("settings.deleteFiscalYear")}
+                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     )

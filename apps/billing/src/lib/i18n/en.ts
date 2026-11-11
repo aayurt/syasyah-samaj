@@ -297,6 +297,7 @@ export const en = {
     openThisYear: 'Open this fiscal year',
     closeThisYear: 'Close this fiscal year (read-only)',
     editFiscalYear: 'Edit fiscal year',
+    saveYear: 'Save year',
     deleteFiscalYear: 'Delete fiscal year',
     editSeries: 'Edit series',
     deleteSeriesBtn: 'Delete series',
