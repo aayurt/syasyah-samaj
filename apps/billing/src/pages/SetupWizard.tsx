@@ -1684,15 +1684,6 @@ function SeedTable({
 
   return (
     <div className="space-y-4">
-      {/* Overall header */}
-      <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-        {icon}
-        <div>
-          <p className="font-medium text-slate-700">{title}</p>
-          <p className="text-xs text-slate-400">{subtitle}</p>
-        </div>
-      </div>
-
       {/* Current Data section */}
       <div>
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Current Data</p>
