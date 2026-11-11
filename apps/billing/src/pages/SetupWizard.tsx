@@ -516,7 +516,7 @@ export default function SetupWizard() {
             Complete the required steps below before you start posting.
           </p>
         </div>
-        <div className="mt-6 flex items-center justify-center gap-2">
+        <div className="mt-6 overflow-x-auto px-2 flex items-center gap-2 scrollbar-hide">
           {REQUIRED_STEPS.map((s, i) => {
             const done = satisfied[s.key]
             const active = i === stepIdx
