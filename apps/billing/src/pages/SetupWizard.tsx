@@ -109,6 +109,7 @@ export default function SetupWizard() {
   const [accounts, setAccounts] = useState<Account[]>([])
   // Sub-company / ilaka management (central admin only)
   const [subCompanies, setSubCompanies] = useState<TenantOption[]>([])
+  const [selectedSubCompanies, setSelectedSubCompanies] = useState<Set<string>>(new Set())
   const [subCompanyForm, setSubCompanyForm] = useState<{ name: string; code: string; type: 'illaka'; active: boolean; slug: string }>({ name: '', code: '', type: 'illaka', active: true, slug: '' })
   const [editingSubCompany, setEditingSubCompany] = useState<TenantOption | null>(null)
   const [subCompanyBusy, setSubCompanyBusy] = useState('')
@@ -321,14 +322,52 @@ export default function SetupWizard() {
     setSubCompanyBusy('delete')
     try {
       await api(`/tenants/${id}`, { method: 'DELETE', immediate: true })
-      pushToast('success', 'Sub-company deleted')
       await refreshFacts()
       if (editingSubCompany?.id === id) cancelEditSubCompany()
+      pushToast('success', 'Sub-company deleted')
     } catch (e) {
       setSubCompanyError(e instanceof Error ? e.message : 'Failed to delete sub-company')
     } finally {
       setSubCompanyBusy('')
     }
+  }
+
+  const toggleSubCompany = (id: string, checked: boolean) => {
+    setSelectedSubCompanies((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }
+
+  const toggleSelectAllSubCompanies = (checked: boolean, ids: string[]) => {
+    const next = new Set(selectedSubCompanies)
+    if (checked) ids.forEach((id) => next.add(id))
+    else ids.forEach((id) => next.delete(id))
+    setSelectedSubCompanies(next)
+  }
+
+  const clearSelectionSubCompanies = () => setSelectedSubCompanies(new Set())
+
+  const deleteSelectedSubCompanies = async () => {
+    const ids = Array.from(selectedSubCompanies)
+    if (ids.length === 0) return
+    if (!window.confirm(`Delete ${ids.length} sub-companies?`)) return
+    setSubCompanyBusy('delete')
+    let failed = 0
+    for (const id of ids) {
+      try {
+        await api(`/tenants/${id}`, { method: 'DELETE' })
+      } catch {
+        failed += 1
+      }
+    }
+    setSubCompanyBusy('')
+    clearSelectionSubCompanies()
+    await refreshFacts()
+    if (failed === 0) pushToast('success', `Deleted ${ids.length} sub-companies`)
+    else pushToast('warning', `Deleted ${ids.length - failed} of ${ids.length} sub-companies`, `${failed} failed`)
   }
 
   const createFiscalYear = async () => {
@@ -719,12 +758,47 @@ export default function SetupWizard() {
                       </button>
                     )}
                   </div>
-
+                  {selectedSubCompanies.size > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-slate-700">{selectedSubCompanies.size} selected</span>
+                      <button
+                        type="button"
+                        onClick={deleteSelectedSubCompanies}
+                        disabled={subCompanyBusy === 'delete'}
+                        className="inline-flex items-center gap-1 rounded bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
+                      >
+                        <Trash2 size={13} /> Delete selected
+                      </button>
+                      <button
+                        type="button"
+                        onClick={clearSelectionSubCompanies}
+                        className="inline-flex items-center gap-1 rounded border border-slate-300 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
                   <div className="rounded-lg border border-slate-200 bg-white p-4">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-slate-200">
+                            <th className="text-center pb-2 w-10">
+                              <input
+                                type="checkbox"
+                                checked={
+                                  subCompanies.length > 0 &&
+                                  subCompanies.every((tc) => selectedSubCompanies.has(tc.id))
+                                }
+                                onChange={(e) =>
+                                  toggleSelectAllSubCompanies(
+                                    e.target.checked,
+                                    subCompanies.map((tc) => tc.id)
+                                  )
+                                }
+                                className="rounded focus:ring-crimson-500"
+                              />
+                            </th>
                             <th className="text-left pb-2 text-xs font-semibold text-slate-500">
                               {t('setup.subCompanyName', 'Name')}
                             </th>
@@ -742,6 +816,14 @@ export default function SetupWizard() {
                         <tbody className="divide-y divide-slate-100">
                           {subCompanies.map((tc) => (
                             <tr key={tc.id}>
+                              <td className="py-3 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSubCompanies.has(tc.id)}
+                                  onChange={(e) => toggleSubCompany(tc.id, e.target.checked)}
+                                  className="rounded focus:ring-crimson-500"
+                                />
+                              </td>
                               <td className="py-3 text-slate-700 font-medium">{tc.name}</td>
                               <td className="py-3 text-slate-600">{tc.code || '–'}</td>
                               <td className="py-3 text-slate-600">
@@ -777,7 +859,7 @@ export default function SetupWizard() {
                           ))}
                           {subCompanies.length === 0 && (
                             <tr>
-                              <td colSpan={4} className="py-4 text-center text-xs text-slate-400">
+                              <td colSpan={5} className="py-4 text-center text-xs text-slate-400">
                                 No sub-companies yet. {t('setup.addSubCompany', 'Add sub-company')} to get started.
                               </td>
                             </tr>
