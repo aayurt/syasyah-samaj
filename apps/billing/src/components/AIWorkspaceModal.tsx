@@ -278,6 +278,14 @@ export default function AIWorkspaceModal({
     setThreadDraft('')
   }
 
+  const formatJson = (text: string) => {
+    try {
+      return JSON.stringify(JSON.parse(text), null, 2)
+    } catch {
+      return text
+    }
+  }
+
   // Source docs re-validated whenever they or the account context change.
   const sourceDocs = useMemo(
     () =>
@@ -902,42 +910,41 @@ export default function AIWorkspaceModal({
                 <div className="mt-3 space-y-2 rounded border bg-slate-50 p-3">
                   {gemini.status === 'unavailable' || gemini.status === 'error' ? (
                     <p className="text-xs text-red-600">{gemini.error}</p>
+                  ) : gemini.status === 'checking' ? (
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <Loader2 size={12} className="animate-spin" /> {t('ai.geminiAsk', 'Asking built-in Gemini…')}
+                    </div>
                   ) : (
                     <>
-                      <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
-                        <Sparkles size={12} className="text-crimson-600" />
-                        {t('ai.geminiLabel', 'Prompt for built-in Gemini')}
-                      </div>
-                      <textarea
-                        value={gemini.prompt || effectivePrompt}
-                        onChange={(e) => setGemini((prev) => ({ ...prev, prompt: e.target.value }))}
-                        rows={3}
-                        className="w-full rounded border border-slate-300 bg-white px-2 py-2 text-xs font-mono text-slate-700 focus:outline-none focus:ring-1 focus:ring-crimson-600"
-                        placeholder="Ask built-in Gemini to refine the import prompt…"
-                      />
-                      <div className="mt-2 flex items-center gap-2">
-                        <button
-                          onClick={() => askBuiltInGemini()}
-                          disabled={gemini.status !== 'ready'}
-                          className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {t('ai.geminiAsk', 'Ask built-in Gemini')}
-                        </button>
-                        {gemini.response && (
-                          <button
-                            onClick={useGeminiResponse}
-                            className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
-                          >
-                            <ArrowRight size={12} /> {t('ai.geminiUse', 'Use this response')}
-                          </button>
-                        )}
-                      </div>
                       {gemini.response && (
-                        <div className="mt-2 rounded border border-slate-200 bg-white p-2 text-xs text-slate-600 overflow-x-auto max-h-32 overflow-y-auto">
-                          {gemini.response}
-                        </div>
+                        <>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('ai.effectivePrompt', 'Generated JSON')}</p>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  const pretty = formatJson(gemini.response)
+                                  void navigator.clipboard.writeText(pretty)
+                                  pushToast('info', t('ai.copied', 'Prompt copied'))
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                              >
+                                <Copy size={14} /> {t('ai.copyPrompt', 'Copy')}
+                              </button>
+                              <button
+                                onClick={useGeminiResponse}
+                                className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                              >
+                                <ArrowRight size={12} /> {t('ai.geminiUse', 'Use this response')}
+                              </button>
+                            </div>
+                          </div>
+                          <div className="rounded border border-slate-200 bg-slate-900 p-3 overflow-x-auto max-h-64 overflow-y-auto">
+                            <pre className="text-xs text-slate-300 font-mono whitespace-pre-wrap break-all">{formatJson(gemini.response)}</pre>
+                          </div>
+                        </>
                       )}
-                      {gemini.status === 'ready' && !gemini.response && (
+                      {!gemini.response && gemini.status === 'ready' && (
                         <p className="text-xs text-emerald-600">{t('ai.geminiReady', 'Built-in Gemini ready — type a prompt above.')}</p>
                       )}
                     </>
