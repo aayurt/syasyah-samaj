@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Building2,
   CalendarDays,
+  Check,
   CheckCircle2,
   Circle,
   Database,
@@ -16,6 +17,7 @@ import {
   Package,
   Plus,
   Save,
+  Square,
   Sparkles,
   Tag,
   Trash2,
@@ -1540,6 +1542,7 @@ function SeedTable({
   const [seedEditRow, setSeedEditRow] = useState<string | null>(null)
   const [seedRowDraft, setSeedRowDraft] = useState<Record<string, any>>({})
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const cellText = (v: any) =>
     v == null ? '—' : typeof v === 'object' ? String(v?.name ?? v?.title ?? v) : String(v)
@@ -1594,6 +1597,44 @@ function SeedTable({
       setBusyId(null)
       pushToast('error', `Failed to delete ${title}`, e instanceof Error ? e.message : String(e))
     }
+  }
+
+  const toggleRow = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = (checked: boolean, ids: string[]) => {
+    const next = new Set(selectedIds)
+    if (checked) ids.forEach((id) => next.add(id))
+    else ids.forEach((id) => next.delete(id))
+    setSelectedIds(next)
+  }
+
+  const clearSelection = () => setSelectedIds(new Set())
+
+  const deleteSelected = async () => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    if (!window.confirm(`Delete ${ids.length} ${title}?`)) return
+    setBusyId('multi')
+    let failed = 0
+    for (const id of ids) {
+      try {
+        await api(`/${collection}/${id}`, { method: 'DELETE' })
+      } catch {
+        failed += 1
+      }
+    }
+    setBusyId(null)
+    clearSelection()
+    void loadRecords()
+    if (failed === 0) pushToast('success', `Deleted ${ids.length} ${title}`)
+    else pushToast('warning', `Deleted ${ids.length - failed} of ${ids.length} ${title}`, `${failed} failed`)
   }
 
   const doSeed = async () => {
@@ -1655,6 +1696,14 @@ function SeedTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <th className="px-3 py-2 text-center">
+                <input
+                  type="checkbox"
+                  checked={data.length > 0 && data.every((r) => selectedIds.has(String(r.id ?? r.code)))}
+                  onChange={(e) => toggleSelectAll(e.target.checked, data.map((r) => String(r.id ?? r.code)))}
+                  className="rounded focus:ring-crimson-500"
+                />
+              </th>
               {columns.map((c) => (
                 <th key={c.key} className="px-3 py-2">{c.label}</th>
               ))}
@@ -1664,8 +1713,17 @@ function SeedTable({
           <tbody>
             {data.map((row) => {
               const editing = seedEditRow === String(row.id ?? row.code)
+              const rowId = String(row.id ?? row.code)
               return (
-                <tr key={row.id ?? row.code} className="border-b border-slate-100 last:border-0">
+                <tr key={rowId} className="border-b border-slate-100 last:border-0">
+                  <td className="px-3 py-2 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(rowId)}
+                      onChange={(e) => toggleRow(rowId, e.target.checked)}
+                      className="rounded focus:ring-crimson-500"
+                    />
+                  </td>
                   {columns.map((c) => {
                     if (editing && c.type !== 'readonly') {
                       let input: any
@@ -1775,6 +1833,14 @@ function SeedTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+            <th className="px-3 py-2 text-center">
+              <input
+                type="checkbox"
+                checked={records.length > 0 && records.every((r) => selectedIds.has(String(r.id)))}
+                onChange={(e) => toggleSelectAll(e.target.checked, records.map((r) => String(r.id)))}
+                className="rounded focus:ring-crimson-500"
+              />
+            </th>
             {columns.map((c) => (
               <th key={c.key} className="px-3 py-2">{c.label}</th>
             ))}
@@ -1784,6 +1850,14 @@ function SeedTable({
         <tbody>
           {records.map((row) => (
             <tr key={row.id} className="border-b border-slate-100 last:border-0">
+              <td className="px-3 py-2 text-center">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(String(row.id))}
+                  onChange={(e) => toggleRow(String(row.id), e.target.checked)}
+                  className="rounded focus:ring-crimson-500"
+                />
+              </td>
               {columns.map((c) => {
                 const editing = editRow === String(row.id)
                 if (editing && c.type !== 'readonly') {
@@ -1888,6 +1962,26 @@ function SeedTable({
 
   return (
     <div className="space-y-4">
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-slate-700">{selectedIds.size} selected</span>
+          <button
+            type="button"
+            onClick={deleteSelected}
+            disabled={busyId === 'multi'}
+            className="inline-flex items-center gap-1 rounded bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
+          >
+            <Trash2 size={13} /> Delete selected
+          </button>
+          <button
+            type="button"
+            onClick={clearSelection}
+            className="inline-flex items-center gap-1 rounded border border-slate-300 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
+          >
+            Clear
+          </button>
+        </div>
+      )}
       {/* Current Data section */}
       <div>
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Current Data</p>
