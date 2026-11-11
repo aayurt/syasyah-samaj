@@ -33,6 +33,7 @@ const emptyForm = {
   class: 'other',
   group: '',
   description: '',
+  parent: '',
 }
 
 export default function Accounts() {
@@ -96,6 +97,7 @@ export default function Accounts() {
   }
 
   const startEdit = (a: Account) => {
+    const p = a.parent && typeof a.parent !== 'number' ? (a.parent as Account).id : a.parent
     setForm({
       name: a.name,
       code: a.code || '',
@@ -103,6 +105,7 @@ export default function Accounts() {
       class: a.class || 'other',
       group: a.group ? String(typeof a.group === 'object' ? (a.group as AccountGroup).id : a.group) : '',
       description: a.description || '',
+      parent: p ? String(p) : '',
     })
     setEditing(a.id)
     setShowForm(true)
@@ -125,6 +128,7 @@ export default function Accounts() {
         type: form.type,
         class: form.class,
         group: form.group ? Number(form.group) : undefined,
+        ...(form.parent ? { parent: Number(form.parent) } : {}),
         ...(tenantId ? { tenant: tenantId } : {}),
       }
       if (editing) {
@@ -190,6 +194,39 @@ export default function Accounts() {
   // groups, etc.). When the type changes and the picked group no longer
   // matches, the group selection is cleared.
   const groupsOfType = groups.filter((g) => g.type === form.type)
+
+  // Resolve parent id from an account (Payload may return object at depth:1 or raw id)
+  const parentIdOf = (a: Account): number | null => {
+    const p = a.parent
+    if (p === null || p === undefined) return null
+    return typeof p === 'object' ? p.id : p
+  }
+
+  // All descendant ids of the account being edited — excluded from parent options to prevent cycles
+  const descendantIds = useMemo(() => {
+    if (editing === null) return new Set<number>()
+    const seen = new Set<number>()
+    const queue = [editing]
+    while (queue.length) {
+      const cur = queue.shift()!
+      if (seen.has(cur)) continue
+      seen.add(cur)
+      for (const a of accounts) {
+        const p = parentIdOf(a)
+        if (p === cur) {
+          seen.add(a.id)
+          queue.push(a.id)
+        }
+      }
+    }
+    seen.delete(editing)
+    return seen
+  }, [accounts, editing])
+
+  const parentOptions = useMemo(() => {
+    if (editing === null) return accounts
+    return accounts.filter((a) => a.id !== editing && !descendantIds.has(a.id))
+  }, [accounts, editing, descendantIds])
   const changeType = (type: AccountType) =>
     setForm((f) => ({
       ...f,
@@ -369,6 +406,25 @@ export default function Accounts() {
                   groupsOfType.map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </label>
+            <label className="text-sm text-slate-700">
+              Parent
+              <select
+                value={form.parent}
+                onChange={(e) => setForm({ ...form, parent: e.target.value })}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+              >
+                <option value="">— none —</option>
+                {parentOptions.length === 0 ? (
+                  <option value="__no-parents__" disabled>No parent accounts available</option>
+                ) : (
+                  parentOptions.map((a) => (
+                    <option key={a.id} value={String(a.id)}>
+                      {a.code ? `[${a.code}] ` : ''}{a.name}
                     </option>
                   ))
                 )}

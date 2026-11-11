@@ -22,6 +22,14 @@ const TYPE_LABELS: Record<AccountType, string> = {
   expense: 'Expense',
 }
 
+const parentName = (a: Account, accounts: Account[]): string => {
+  const p = a.parent
+  if (p === null || p === undefined) return '—'
+  const id = typeof p === 'object' ? p.id : p
+  const parent = accounts.find((x) => x.id === id)
+  return parent ? parent.name : '—'
+}
+
 export default function AccountsTable({
   accounts,
   groups,
@@ -150,6 +158,7 @@ export default function AccountsTable({
                   <th className="px-4 py-2">Account Heading / Subheading</th>
                   <th className="w-28 px-4 py-2">Class</th>
                   <th className="w-24 px-4 py-2">Description</th>
+                  <th className="w-28 px-4 py-2">Parent</th>
                   <th className="w-36 px-4 py-2 text-right">Opening (FY)</th>
                   <th className="w-14 px-4 py-2 text-right">Actions</th>
                 </tr>
@@ -186,9 +195,10 @@ export default function AccountsTable({
                             </span>
                           </button>
                         </td>
-                        <td className="px-4 py-2 text-xs text-slate-400 italic">
+                        <td className="px-4 py-2 text-xs text-slate-500 italic">
                           Heading
                         </td>
+                        <td className="px-4 py-2 text-xs text-slate-500">—</td>
                         <td className="px-4 py-2 text-xs text-slate-500">—</td>
                         <td className="px-4 py-2 text-right font-mono text-xs font-medium text-slate-500">
                           {children.length > 0
@@ -233,6 +243,7 @@ export default function AccountsTable({
                               <td className="px-4 py-2 text-xs text-slate-500">
                                 {a.description || '—'}
                               </td>
+                              <td className="px-4 py-2 text-xs text-slate-500">{parentName(a, accounts)}</td>
                               <td className="px-4 py-2 text-right font-mono text-xs text-slate-700 font-medium">
                                 {opening.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                               </td>
@@ -278,6 +289,7 @@ export default function AccountsTable({
                       <td className="px-4 py-2 text-xs text-slate-500">
                         {a.description || '—'}
                       </td>
+                      <td className="px-4 py-2 text-xs text-slate-500">{parentName(a, accounts)}</td>
                       <td className="px-4 py-2 text-right font-mono text-xs text-slate-700 font-medium">
                         {opening.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </td>

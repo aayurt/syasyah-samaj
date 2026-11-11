@@ -51,6 +51,7 @@ export interface Account {
   name: string
   description?: string
   group?: number | AccountGroup | null
+  parent?: number | Account | null
   type: AccountType
   class?: AccountClass
   openingBalance?: number
