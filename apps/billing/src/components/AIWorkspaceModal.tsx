@@ -309,13 +309,27 @@ export default function AIWorkspaceModal({
     setSchemaVersion((v) => v + 1)
   }, [open, initialModel, model, hasDraft])
 
+  const resetDraft = useCallback(() => {
+    setStep('prompt')
+    setRawJson('')
+    setParsed(null)
+    setParseError('')
+    setValidation({ valid: false, errors: [], warnings: [] })
+    setPreview([])
+    setResult(null)
+    setExecuting(false)
+    setGemini({ status: 'idle', prompt: '', response: '', error: '' })
+    setAccountCtx([])
+  }, [])
+
   const handleClose = useCallback(() => {
     if (hasDraft) {
       setCloseConfirmOpen(true)
       return
     }
+    resetDraft()
     onClose()
-  }, [hasDraft, onClose])
+  }, [hasDraft, onClose, resetDraft])
 
   const handleModelChange = useCallback((next: AIModel) => {
     if (next === model) return
@@ -683,6 +697,7 @@ export default function AIWorkspaceModal({
                 <button
                   onClick={() => {
                     setCloseConfirmOpen(false)
+                    resetDraft()
                     onClose()
                   }}
                   className="rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
