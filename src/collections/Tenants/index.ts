@@ -33,16 +33,20 @@ export const Tenants: CollectionConfig = {
           // The central C00 row is an accounting unit, not a website ilaka —
           // don't push a notification for it.
           if (doc.code === 'C00' || doc.type === 'central') return doc
-          await sendFCMTopicNotification({
-            topic: 'syasyah-samaj-ilaka',
-            notification: {
-              title: 'Keep an eye on ' + doc.name + ' events.',
-              body: doc.description || 'Check out the ' + doc.name + ' events.',
-              imageUrl: doc.coverImage?.url,
-              id: doc.id,
-              link: `/ilaka/${doc.slug}`,
-            },
-          })
+          try {
+            await sendFCMTopicNotification({
+              topic: 'syasyah-samaj-ilaka',
+              notification: {
+                title: 'Keep an eye on ' + doc.name + ' events.',
+                body: doc.description || 'Check out the ' + doc.name + ' events.',
+                imageUrl: doc.coverImage?.url,
+                id: doc.id,
+                link: `/ilaka/${doc.slug}`,
+              },
+            })
+          } catch {
+            // FCM failure must not block tenant create/update.
+          }
         }
         return doc
       },
