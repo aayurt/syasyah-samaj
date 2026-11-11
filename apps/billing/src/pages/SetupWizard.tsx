@@ -1170,9 +1170,11 @@ export default function SetupWizard() {
                 { key: 'name', label: 'Account', type: 'text' },
                 { key: 'type', label: 'Type', type: 'select', options: ['asset', 'liability', 'equity', 'income', 'expense'] },
                 { key: 'active', label: 'Active', type: 'boolean' },
+                { key: 'parent', label: 'Parent', type: 'readonly' },
               ]}
               aiModel="gl-accounts"
               aiLabel="Import Chart of Accounts with AI"
+              depth={1}
               tenantId={tenantId}
               tenantQuery={tenantQuery}
               setSeedDone={setSeedDone}
@@ -1408,14 +1410,25 @@ export default function SetupWizard() {
             )}
             {/* Seed steps: single Skip/Next button above handles both cases */}
             {step.key === 'defaults' && (
-              <button
-                onClick={() => void saveDefaults()}
-                disabled={busy === 'defaults'}
-                className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-              >
-                {busy === 'defaults' ? <Loader2 size={15} className="animate-spin" /> : null}
-                Save & continue
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    setAiInitialModel('gl-accounts')
+                    setAiOpen(true)
+                  }}
+                  className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <Sparkles size={14} /> {t('ai.importDefaultAccounts', 'Import Default Accounts with AI')}
+                </button>
+                <button
+                  onClick={() => void saveDefaults()}
+                  disabled={busy === 'defaults'}
+                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+                >
+                  {busy === 'defaults' ? <Loader2 size={15} className="animate-spin" /> : null}
+                  Save & continue
+                </button>
+              </>
             )}
 
             {/* When the required step is already done, allow moving on. */}
@@ -1482,6 +1495,7 @@ type SeedTableProps = {
   seedRows?: Record<string, any>[]
   tenantId: string | undefined
   tenantQuery: { tenant?: string | number }
+  depth?: number
   setSeedDone: (updater: (prev: Record<string, boolean>) => Record<string, boolean>) => void
   setAiOpen: (v: boolean) => void
   setAiInitialModel: (v: AIModel | null) => void
@@ -1489,7 +1503,7 @@ type SeedTableProps = {
 
 function SeedTable({
   collection, title, subtitle, seedKey, seedLabel, icon, columns, aiModel, aiLabel, seedRows,
-  tenantId, tenantQuery, setSeedDone, setAiOpen, setAiInitialModel,
+  tenantId, tenantQuery, depth, setSeedDone, setAiOpen, setAiInitialModel,
 }: SeedTableProps) {
   const [records, setRecords] = useState<any[]>([])
   const [editRow, setEditRow] = useState<string | null>(null)
@@ -1498,13 +1512,16 @@ function SeedTable({
   const [seedRowDraft, setSeedRowDraft] = useState<Record<string, any>>({})
   const [busyId, setBusyId] = useState<string | null>(null)
 
+  const cellText = (v: any) =>
+    v == null ? '—' : typeof v === 'object' ? String(v?.name ?? v?.title ?? v) : String(v)
+
   useEffect(() => {
     void loadRecords()
   }, [])
 
   const loadRecords = async () => {
     const res = await api<{ docs: any[] }>(`/${collection}`, {
-      query: { limit: 1000, depth: 0, ...tenantQuery },
+      query: { limit: 1000, depth: depth ?? 0, ...tenantQuery },
     })
     setRecords(res.docs ?? [])
   }
@@ -1670,7 +1687,7 @@ function SeedTable({
                         </td>
                       )
                     }
-                    return <td key={c.key} className="px-3 py-2 text-slate-700">{row[c.key] ?? '—'}</td>
+                    return <td key={c.key} className="px-3 py-2 text-slate-700">{cellText(row[c.key])}</td>
                   })}
                   <td className="px-3 py-2">
                     {editing ? (
@@ -1789,7 +1806,7 @@ function SeedTable({
                     </td>
                   )
                 }
-                return <td key={c.key} className="px-3 py-2 text-slate-700">{row[c.key] ?? '—'}</td>
+                return <td key={c.key} className="px-3 py-2 text-slate-700">{cellText(row[c.key])}</td>
               })}
               <td className="px-3 py-2">
                 {editRow === String(row.id) ? (

@@ -12,6 +12,15 @@ import { sumPostedByAccount } from '@/utilities/journalSums'
 import { round2, toNum } from '@/utilities/journalValidation'
 import { paginate, parsePagination } from '@/utilities/pagination'
 
+/** Reject an account that is its own parent (defensive; cycles beyond that
+ * are out of scope — ponytail: add cycle check if multi-level parenting lands). */
+const forbidSelfParent = ({ data }: { data?: any }) => {
+  if (data?.parent != null && data?.id != null && data.parent === data.id) {
+    throw new Error('An account cannot be its own parent.')
+  }
+  return true
+}
+
 export const Accounts: CollectionConfig = {
   // NB: slug 'accounts' is taken by the better-auth plugin's account collection.
   slug: 'gl-accounts',
@@ -205,6 +214,14 @@ export const Accounts: CollectionConfig = {
       relationTo: 'account-groups',
     },
     {
+      name: 'parent',
+      type: 'relationship',
+      relationTo: 'gl-accounts',
+      admin: {
+        description: 'Parent account — creates a sub-account (parent → child) hierarchy.',
+      },
+    },
+    {
       name: 'type',
       type: 'select',
       required: true,
@@ -250,6 +267,6 @@ export const Accounts: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeValidate: [assignTenant],
+    beforeValidate: [assignTenant, forbidSelfParent],
   },
 }
