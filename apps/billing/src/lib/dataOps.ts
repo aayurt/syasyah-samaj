@@ -37,6 +37,7 @@ export const SEED_COLLECTIONS = [
 
 /** Selective-seed keys the server accepts for POST /data-ops/seed-demo. */
 export type SeedKey =
+  | 'accountGroups'
   | 'accounts'
   | 'taxTypes'
   | 'parties'
@@ -45,6 +46,7 @@ export type SeedKey =
   | 'fiscalYears'
 
 export const SEED_KEYS: { key: SeedKey; label: string; blurb: string }[] = [
+  { key: 'accountGroups', label: 'Account types & groups', blurb: 'Asset, liability, equity, income, expense — the parent structure accounts belong to.' },
   { key: 'accounts', label: 'Chart of accounts & groups', blurb: 'Starter chart — 6 groups, 18 accounts, and the default-account mappings.' },
   { key: 'taxTypes', label: 'Tax types', blurb: 'VAT @ 13% plus its sales/purchase ledger wiring.' },
   { key: 'parties', label: 'Parties', blurb: 'A few sample customers and vendors (still editable).' },
@@ -96,6 +98,7 @@ export async function runCleanup(tenant: string): Promise<CleanupResult> {
 export interface SeedResult {
   ok: boolean
   tenant?: string
+  groups?: number
   chart?: { groups: number; accounts: number }
   taxId?: number | null
   defaultsApplied?: string[]

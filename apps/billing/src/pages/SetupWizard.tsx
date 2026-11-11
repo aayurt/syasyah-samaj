@@ -10,6 +10,7 @@ import {
   Database,
   Edit2,
   Hourglass,
+  Layers,
   Loader2,
   Lock,
   Package,
@@ -58,6 +59,7 @@ interface StepDef {
 const REQUIRED_STEPS: StepDef[] = [
   { key: 'company', title: 'Company Profile', blurb: 'Enter the org name and contact details shown on invoices.', icon: Building2 },
   { key: 'fiscalYear', title: 'Fiscal Year', blurb: 'Define the accounting period that drives voucher numbering.', icon: CalendarDays },
+  { key: 'seed-account-groups', title: 'Account Types & Groups', blurb: 'Asset, liability, equity, income, expense — the parent structure accounts belong to.', icon: Layers },
   { key: 'seed-accounts', title: 'Chart of Accounts', blurb: 'Starter chart — groups, accounts, and default-account mappings.', icon: Database },
   { key: 'seed-taxTypes', title: 'Tax Types', blurb: 'VAT @ 13% plus its sales/purchase ledger wiring.', icon: Tag },
   { key: 'defaults', title: 'Default Accounts', blurb: 'Map the default accounts the posting engine needs.', icon: Wallet },
@@ -431,6 +433,7 @@ export default function SetupWizard() {
         return
       }
       const parts: string[] = []
+      if (res.groups) parts.push(`${res.groups} groups`)
       if (res.chart?.accounts) parts.push(`${res.chart.accounts} accounts`)
       if (res.taxId != null) parts.push('VAT')
       if (res.partyCount) parts.push(`${res.partyCount} parties`)
@@ -1132,6 +1135,27 @@ export default function SetupWizard() {
             </>
           )}
 
+        {step.key === 'seed-account-groups' && (
+          <SeedTable
+            collection="account-groups"
+            title="Account Types & Groups"
+            subtitle="Parent groups — Asset, Liability, Equity, Income, Expense. Seed first, then accounts."
+            seedKey="accountGroups"
+            seedLabel="Seed types & groups"
+            icon={<Layers size={18} className="text-slate-400" />}
+            columns={[
+              { key: 'code', label: 'Code', type: 'readonly' },
+              { key: 'name', label: 'Group', type: 'text' },
+              { key: 'type', label: 'Type', type: 'select', options: ['asset', 'liability', 'equity', 'income', 'expense'] },
+              { key: 'description', label: 'Description', type: 'text' },
+            ]}
+            tenantId={tenantId}
+            tenantQuery={tenantQuery}
+            setSeedDone={setSeedDone}
+            setAiOpen={setAiOpen}
+            setAiInitialModel={setAiInitialModel}
+          />
+        )}
         {step.key === 'seed-accounts' && (
           <SeedTable
             collection="gl-accounts"

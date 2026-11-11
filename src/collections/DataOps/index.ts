@@ -234,7 +234,35 @@ async function ensureTaxType(payload: Payload, tenant: string): Promise<number |
   }
 }
 
-async function ensureChart(payload: Payload, tenant: string): Promise<{ groups: number; accounts: number }> {
+async function ensureAccountGroups(payload: Payload, tenant: string): Promise<Record<string, number>> {
+  const tid = toNum(tenant)
+  const groupIds: Record<string, number> = {}
+  for (const g of STARTER_GROUPS) {
+    const existing = await payload.find({
+      collection: 'account-groups',
+      where: { code: { equals: g.code }, tenant: { equals: tenant } },
+      limit: 1,
+      depth: 0,
+    })
+    if (existing.docs[0]?.id) {
+      groupIds[g.code] = existing.docs[0].id as number
+      continue
+    }
+    const created = await payload.create({
+      collection: 'account-groups',
+      data: { ...g, tenant: tid },
+      overrideAccess: true,
+    })
+    groupIds[g.code] = created.id as number
+  }
+  return groupIds
+}
+
+async function ensureChart(
+  payload: Payload,
+  tenant: string,
+  preExistingGroups?: Record<string, number>,
+): Promise<{ groups: number; accounts: number }> {
   const tid = toNum(tenant)
   try {
     const count = await payload.find({
@@ -245,15 +273,9 @@ async function ensureChart(payload: Payload, tenant: string): Promise<{ groups: 
     })
     if ((count.totalDocs ?? 0) > 0) return { groups: 0, accounts: 0 }
 
-    const groupIds: Record<string, number> = {}
-    for (const g of STARTER_GROUPS) {
-      const created = await payload.create({
-        collection: 'account-groups',
-        data: { ...g, tenant: tid },
-        overrideAccess: true,
-      })
-      groupIds[g.code] = created.id as number
-    }
+    const groupIds = preExistingGroups ?? await ensureAccountGroups(payload, tenant)
+    const groupsCreated = preExistingGroups ? 0 : STARTER_GROUPS.length
+
     for (const a of STARTER_ACCOUNTS) {
       await payload.create({
         collection: 'gl-accounts',
@@ -261,7 +283,7 @@ async function ensureChart(payload: Payload, tenant: string): Promise<{ groups: 
         overrideAccess: true,
       })
     }
-    return { groups: STARTER_GROUPS.length, accounts: STARTER_ACCOUNTS.length }
+    return { groups: groupsCreated, accounts: STARTER_ACCOUNTS.length }
   } catch {
     return { groups: 0, accounts: 0 }
   }
@@ -633,12 +655,14 @@ export const DataOps: CollectionConfig = {
           : null
         const want = (key: string): boolean => {
           if (seeds) return seeds.includes(key)
-          if (key === 'accounts' || key === 'taxTypes') return true
+          if (key === 'accountGroups' || key === 'accounts' || key === 'taxTypes') return true
           if (chartOnly) return false
           return key !== 'members' && key !== 'fiscalYears'
         }
 
-        const chart = want('accounts') ? await ensureChart(req.payload, tenant) : { groups: 0, accounts: 0 }
+        const groupIds = want('accountGroups') ? await ensureAccountGroups(req.payload, tenant) : {}
+        const groupsCreated = want('accountGroups') ? Object.keys(groupIds).length : 0
+        const chart = want('accounts') ? await ensureChart(req.payload, tenant, groupIds) : { groups: 0, accounts: 0 }
         const taxId = want('taxTypes') ? await ensureTaxType(req.payload, tenant) : null
         const defaultsApplied = want('accounts') ? await ensureDefaults(req.payload) : []
 
@@ -685,6 +709,7 @@ export const DataOps: CollectionConfig = {
           tenant,
           chartOnly,
           seeds,
+          groups: groupsCreated,
           chart,
           taxId,
           defaultsApplied,
