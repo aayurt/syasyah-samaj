@@ -226,7 +226,7 @@ async function ensureSeedTaxTypes(payload: Payload, tenant: string): Promise<{ c
   for (const t of SEED_TAX_TYPES) {
     const existing = await payload.find({
       collection: 'tax-types',
-      where: { code: { equals: t.code }, tenant: { equals: tenant } },
+      where: { code: { equals: t.code }, tenant: { equals: tid } },
       limit: 1,
       depth: 0,
     })
