@@ -279,10 +279,11 @@ export default function AIWorkspaceModal({
   }
 
   const formatJson = (text: string) => {
+    const cleaned = text.replace(/```json\n?|```\n?/g, '').trim()
     try {
-      return JSON.stringify(JSON.parse(text), null, 2)
+      return JSON.stringify(JSON.parse(cleaned), null, 2)
     } catch {
-      return text
+      return cleaned
     }
   }
 
@@ -597,7 +598,8 @@ export default function AIWorkspaceModal({
 
   const useGeminiResponse = useCallback(() => {
     if (!gemini.response.trim()) return
-    setRawJson(gemini.response)
+    const cleaned = gemini.response.replace(/```json\n?|```\n?/g, '').trim()
+    setRawJson(cleaned)
     setStep('paste')
     pushToast('info', t('ai.copied', 'Prompt copied'), t('ai.geminiResponsePasted', 'Gemini response pasted into JSON'))
   }, [gemini.response, t, pushToast])
