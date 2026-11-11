@@ -212,26 +212,35 @@ const SEED_MEMBERS = [
   { fullName: 'Krishna Maharjan', email: 'krishna.maharjan@example.com', phoneNumber: '9800000103', status: 'active', typeIdx: 2 },
 ] as const
 
-async function ensureTaxType(payload: Payload, tenant: string): Promise<number | null> {
+const SEED_TAX_TYPES = [
+  { code: 'VAT', name: 'Value Added Tax', nature: 'additive', rate: 13, active: true },
+  { code: 'TDS', name: 'Tax Deducted at Source', nature: 'withholding', rate: 1.5, active: true },
+] as const
+
+async function ensureSeedTaxTypes(payload: Payload, tenant: string): Promise<{ created: number; ids: number[] }> {
   const tid = toNum(tenant)
-  try {
+  const ids: number[] = []
+  let created = 0
+  for (const t of SEED_TAX_TYPES) {
     const existing = await payload.find({
       collection: 'tax-types',
-      where: { code: { equals: 'VAT' }, tenant: { equals: tenant } },
+      where: { code: { equals: t.code }, tenant: { equals: tenant } },
       limit: 1,
       depth: 0,
     })
-    if (existing.docs[0]?.id) return existing.docs[0].id as number
-    const created = await payload.create({
+    if (existing.docs[0]?.id) {
+      ids.push(existing.docs[0].id as number)
+      continue
+    }
+    const rec = await payload.create({
       collection: 'tax-types',
-      data: { code: 'VAT', name: 'VAT', nature: 'additive', rate: 13, active: true, tenant: tid },
+      data: { ...t, tenant: tid },
       overrideAccess: true,
     })
-    return created.id as number
-  } catch {
-    // Code uniqueness may already be taken by another tenant — skip tax seeding.
-    return null
+    ids.push(rec.id as number)
+    created++
   }
+  return { created, ids }
 }
 
 async function ensureAccountGroups(payload: Payload, tenant: string): Promise<Record<string, number>> {
@@ -663,7 +672,8 @@ export const DataOps: CollectionConfig = {
         const groupIds = want('accountGroups') ? await ensureAccountGroups(req.payload, tenant) : {}
         const groupsCreated = want('accountGroups') ? Object.keys(groupIds).length : 0
         const chart = want('accounts') ? await ensureChart(req.payload, tenant, groupIds) : { groups: 0, accounts: 0 }
-        const taxId = want('taxTypes') ? await ensureTaxType(req.payload, tenant) : null
+        const taxTypes = want('taxTypes') ? await ensureSeedTaxTypes(req.payload, tenant) : { created: 0, ids: [] }
+        const taxId = taxTypes.ids[0] ?? null
         const defaultsApplied = want('accounts') ? await ensureDefaults(req.payload) : []
 
         let parties = { customer: 0, both: 0, vendor: 0 }
@@ -712,6 +722,7 @@ export const DataOps: CollectionConfig = {
           groups: groupsCreated,
           chart,
           taxId,
+          taxTypes: { created: taxTypes.created, count: taxTypes.ids.length },
           defaultsApplied,
           membershipTypes: membershipTypes.length,
           membersCreated,
