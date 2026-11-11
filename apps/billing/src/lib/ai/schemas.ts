@@ -6,7 +6,7 @@
  * (importExport.executeImport) — never auto-executed, never tenant-bypassing.
  */
 
-export type AIModel = 'gl-accounts' | 'opening-balances' | 'tax-types' | 'account-groups' | 'company-profile' | 'sub-companies' | 'fiscal-year'
+export type AIModel = 'gl-accounts' | 'opening-balances' | 'tax-types' | 'account-groups' | 'company-profile' | 'sub-companies' | 'fiscal-year' | 'parties' | 'items' | 'members'
 
 export interface AIModelDef {
   value: AIModel
@@ -31,6 +31,9 @@ const REQUIRED: Record<AIModel, readonly string[]> = {
   'company-profile': ['companyName'],
   'sub-companies': ['name', 'code'],
   'fiscal-year': ['label', 'startDate', 'endDate'],
+  'parties': ['name', 'type'],
+  'items': ['code', 'name'],
+  'members': ['fullName'],
 }
 
 export const ACCOUNT_TYPES = new Set(['asset', 'liability', 'equity', 'income', 'expense'])
@@ -155,6 +158,56 @@ Generate a fiscal year as JSON. Each fiscal year must have:
 - startDate: string — ISO date, e.g. "2026-04-01"
 - endDate: string — ISO date, e.g. "2027-03-31"
 - status: one of "active", "inactive" (default active)
+
+Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no explanation.`,
+  },
+  {
+    value: 'parties',
+    label: 'Parties',
+    hint: 'Customers and vendors',
+    required: REQUIRED['parties'],
+    prompt: ({ tenantName }) =>
+      `You are an accounting assistant for "${tenantName}", a Nepali community organization.
+
+Generate parties (customers and vendors) as JSON. Each party must have:
+- name: string — party name
+- type: one of "customer", "vendor", "both"
+- email: string — email address (optional)
+- phone: string — phone number (optional)
+- active: boolean — whether active (default true)
+
+Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no explanation.`,
+  },
+  {
+    value: 'items',
+    label: 'Items',
+    hint: 'Stock items with sale prices',
+    required: REQUIRED['items'],
+    prompt: ({ tenantName }) =>
+      `You are an accounting assistant for "${tenantName}", a Nepali community organization.
+
+Generate stock items as JSON. Each item must have:
+- code: string — item code
+- name: string — item name
+- unit: string — unit of measure, e.g. "pcs", "kg", "bundle"
+- salePrice: number — sale price per unit
+- active: boolean — whether active (default true)
+
+Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no explanation.`,
+  },
+  {
+    value: 'members',
+    label: 'Members',
+    hint: 'Membership members with roles',
+    required: REQUIRED['members'],
+    prompt: ({ tenantName }) =>
+      `You are an accounting assistant for "${tenantName}", a Nepali community organization.
+
+Generate members as JSON. Each member must have:
+- fullName: string — member full name
+- email: string — email address (optional)
+- role: string — member role
+- status: one of "active", "inactive"
 
 Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no explanation.`,
   },

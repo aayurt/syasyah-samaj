@@ -1332,7 +1332,7 @@ export default function SetupWizard() {
               seedKey="parties"
               seedLabel="Seed parties"
               icon={<UserPlus size={18} className="text-slate-400" />}
-              aiModel="gl-accounts"
+              aiModel="parties"
               aiLabel="Import Parties with AI"
               columns={[
                 { key: 'name', label: 'Party', type: 'text' },
@@ -1355,7 +1355,7 @@ export default function SetupWizard() {
               seedKey="items"
               seedLabel="Seed items"
               icon={<Package size={18} className="text-slate-400" />}
-              aiModel="gl-accounts"
+              aiModel="items"
               aiLabel="Import Items with AI"
               columns={[
                 { key: 'code', label: 'Code', type: 'readonly' },
@@ -1378,7 +1378,7 @@ export default function SetupWizard() {
               seedKey="members"
               seedLabel="Seed members"
               icon={<Users size={18} className="text-slate-400" />}
-              aiModel="gl-accounts"
+              aiModel="members"
               aiLabel="Import Members with AI"
               columns={[
                 { key: 'fullName', label: 'Member', type: 'text' },

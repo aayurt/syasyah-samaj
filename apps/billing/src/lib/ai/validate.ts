@@ -82,6 +82,12 @@ export function validateAgainstModel(
                 ? ['name', 'code']
                 : model === 'fiscal-year'
                 ? ['label', 'startDate', 'endDate']
+                : model === 'parties'
+                ? ['name']
+                : model === 'items'
+                ? ['code', 'name']
+                : model === 'members'
+                ? ['fullName']
                 : ['name', 'type', 'nature', 'active']
 
     for (const field of required) {
@@ -143,6 +149,22 @@ export function validateAgainstModel(
       if (!isNonEmptyString(d.name)) push(errors, row, 'name', 'name is required', 'error')
       if (!isNonEmptyString(d.code)) push(errors, row, 'code', 'code is required', 'error')
       if (d.active != null && !isBoolean(d.active)) push(errors, row, 'active', 'active must be true/false', 'error')
+    } else if (model === 'parties') {
+      if (!isNonEmptyString(d.name)) push(errors, row, 'name', 'name is required', 'error')
+      if (d.type != null && !isValidEnum(d.type, new Set(['customer', 'vendor', 'both']))) {
+        push(errors, row, 'type', 'type must be customer/vendor/both', 'error')
+      }
+      if (d.active != null && !isBoolean(d.active)) push(errors, row, 'active', 'active must be true/false', 'error')
+    } else if (model === 'items') {
+      if (!isNonEmptyString(d.code)) push(errors, row, 'code', 'code is required', 'error')
+      if (!isNonEmptyString(d.name)) push(errors, row, 'name', 'name is required', 'error')
+      if (d.salePrice != null && !isNumber(d.salePrice)) push(errors, row, 'salePrice', 'salePrice must be a number', 'error')
+      if (d.active != null && !isBoolean(d.active)) push(errors, row, 'active', 'active must be true/false', 'error')
+    } else if (model === 'members') {
+      if (!isNonEmptyString(d.fullName)) push(errors, row, 'fullName', 'fullName is required', 'error')
+      if (d.status != null && !isValidEnum(d.status, new Set(['active', 'inactive']))) {
+        push(errors, row, 'status', 'status must be active/inactive', 'error')
+      }
     } else {
       // account-groups (fallback)
       if (!isValidEnum(d.type, ACCOUNT_TYPES)) push(errors, row, 'type', 'type must be asset/liability/equity/income/expense', 'error')

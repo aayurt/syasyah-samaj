@@ -8,7 +8,7 @@ import { AI_MODELS, modelDef, AIModel } from './schemas'
 import { validateAgainstModel } from './validate'
 
 describe('AI Workspace model registry', () => {
-  it('exposes the seven import models with required fields', () => {
+  it('exposes the ten import models with required fields', () => {
     expect(AI_MODELS.map((m) => m.value)).toEqual([
       'gl-accounts',
       'opening-balances',
@@ -17,6 +17,9 @@ describe('AI Workspace model registry', () => {
       'company-profile',
       'sub-companies',
       'fiscal-year',
+      'parties',
+      'items',
+      'members',
     ])
     for (const m of AI_MODELS) {
       expect(typeof m.prompt).toBe('function')
@@ -134,6 +137,33 @@ describe('validateAgainstModel', () => {
     expect(result.errors.some((e) => e.field === 'status')).toBe(true)
   })
 
+  it('parties validates name, type enum, optional active', () => {
+    const good = { docs: [{ name: 'ABC Traders', type: 'customer', active: true }] }
+    expect(validateAgainstModel(good, 'parties', ctx).valid).toBe(true)
+    const bad = { docs: [{ name: 'X', type: 'bogus' }] }
+    const result = validateAgainstModel(bad, 'parties', ctx)
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.field === 'type')).toBe(true)
+  })
+
+  it('items validates code/name, numeric salePrice', () => {
+    const good = { docs: [{ code: 'ITEM-001', name: 'Rice', unit: 'kg', salePrice: 80 }] }
+    expect(validateAgainstModel(good, 'items', ctx).valid).toBe(true)
+    const bad = { docs: [{ code: 'ITEM-001', name: 'Rice', salePrice: 'expensive' }] }
+    const result = validateAgainstModel(bad, 'items', ctx)
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.field === 'salePrice')).toBe(true)
+  })
+
+  it('members validates fullName, status enum', () => {
+    const good = { docs: [{ fullName: 'Ram Bahadur', email: 'ram@example.com', role: 'member', status: 'active' }] }
+    expect(validateAgainstModel(good, 'members', ctx).valid).toBe(true)
+    const bad = { docs: [{ fullName: 'Ram Bahadur', status: 'bogus' }] }
+    const result = validateAgainstModel(bad, 'members', ctx)
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.field === 'status')).toBe(true)
+  })
+
   it('every model accepts its valid example JSON', () => {
     const examples: Record<AIModel, Record<string, unknown>[]> = {
       'gl-accounts': [{ code: '1101', name: 'Cash', type: 'asset', class: 'cash', group: 'Bank & Cash', openingBalance: 50000, active: true }],
@@ -143,6 +173,9 @@ describe('validateAgainstModel', () => {
       'company-profile': [{ companyName: 'Syasyah Samaj', companyPan: '603774469' }],
       'sub-companies': [{ name: 'Illaka Central', code: 'ILLAKA-C', slug: 'illaka-central', active: true }],
       'fiscal-year': [{ label: '2026-27', startDate: '2026-04-01', endDate: '2027-03-31', status: 'active' }],
+      'parties': [{ name: 'ABC Traders', type: 'customer', email: 'abc@example.com', phone: '9801234567', active: true }],
+      'items': [{ code: 'ITEM-001', name: 'Rice', unit: 'kg', salePrice: 80, active: true }],
+      'members': [{ fullName: 'Ram Bahadur', email: 'ram@example.com', role: 'member', status: 'active' }],
     }
     for (const [model, docs] of Object.entries(examples)) {
       const result = validateAgainstModel({ docs }, model as AIModel, ctx)
