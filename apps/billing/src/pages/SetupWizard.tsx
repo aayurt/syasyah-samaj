@@ -1195,6 +1195,12 @@ export default function SetupWizard() {
               { key: 'rate', label: 'Rate %', type: 'number' },
               { key: 'active', label: 'Active', type: 'boolean' },
             ]}
+            seedRows={[
+              { code: 'VAT', name: 'Value Added Tax', nature: 'additive', rate: 13, active: true },
+              { code: 'TDS', name: 'Tax Deducted at Source', nature: 'withholding', rate: 1.5, active: true },
+              { code: 'GST', name: 'Goods and Services Tax', nature: 'additive', rate: 18, active: true },
+              { code: 'LUX', name: 'Luxury Tax', nature: 'additive', rate: 40, active: true },
+            ]}
             aiModel="tax-types"
             aiLabel="Import Tax Types with AI"
             tenantId={tenantId}
@@ -1474,6 +1480,7 @@ type SeedTableProps = {
   columns: SeedCol[]
   aiModel?: AIModel
   aiLabel?: string
+  seedRows?: Record<string, any>[]
   tenantId: string | undefined
   tenantQuery: { tenant?: string | number }
   setSeedDone: (updater: (prev: Record<string, boolean>) => Record<string, boolean>) => void
@@ -1482,12 +1489,14 @@ type SeedTableProps = {
 }
 
 function SeedTable({
-  collection, title, subtitle, seedKey, seedLabel, icon, columns, aiModel, aiLabel,
+  collection, title, subtitle, seedKey, seedLabel, icon, columns, aiModel, aiLabel, seedRows,
   tenantId, tenantQuery, setSeedDone, setAiOpen, setAiInitialModel,
 }: SeedTableProps) {
   const [records, setRecords] = useState<any[]>([])
   const [editRow, setEditRow] = useState<string | null>(null)
   const [rowDraft, setRowDraft] = useState<Record<string, any>>({})
+  const [seedEditRow, setSeedEditRow] = useState<string | null>(null)
+  const [seedRowDraft, setSeedRowDraft] = useState<Record<string, any>>({})
   const [busyId, setBusyId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -1562,6 +1571,156 @@ function SeedTable({
     } finally {
       setBusyId(null)
     }
+  }
+
+  const startSeedEdit = (row: any) => {
+    const draft: Record<string, any> = {}
+    for (const col of columns) {
+      if (col.type !== 'readonly') draft[col.key] = row[col.key] ?? ''
+    }
+    setSeedRowDraft(draft)
+    setSeedEditRow(String(row.id ?? row.code))
+  }
+
+  const saveSeedRow = (id: string) => {
+    const idx = (seedRows ?? []).findIndex((r) => String(r.id ?? r.code) === id)
+    if (idx === -1) return
+    const next = [...(seedRows ?? [])]
+    for (const col of columns) {
+      if (col.type !== 'readonly') next[idx][col.key] = seedRowDraft[col.key]
+    }
+    // Reassignment not possible on const prop; mutate in place for edit preview
+    for (const col of columns) {
+      if (col.type !== 'readonly') (next[idx] as any)[col.key] = seedRowDraft[col.key]
+    }
+    setSeedEditRow(null)
+    setSeedRowDraft({})
+  }
+
+  const deleteSeedRow = (id: string) => {
+    // client-side preview only; actual seed uses server defaults
+    setSeedEditRow(null)
+    setSeedRowDraft({})
+  }
+
+  const renderSeedTable = () => {
+    const data = seedRows ?? []
+    return (
+      <div className="overflow-x-auto rounded border border-slate-200">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              {columns.map((c) => (
+                <th key={c.key} className="px-3 py-2">{c.label}</th>
+              ))}
+              <th className="px-3 py-2 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row) => {
+              const editing = seedEditRow === String(row.id ?? row.code)
+              return (
+                <tr key={row.id ?? row.code} className="border-b border-slate-100 last:border-0">
+                  {columns.map((c) => {
+                    if (editing && c.type !== 'readonly') {
+                      let input: any
+                      if (c.type === 'select') {
+                        input = (
+                          <select
+                            defaultValue={String(row[c.key] ?? '')}
+                            className="w-full text-xs border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none bg-white"
+                            onChange={(e) => setSeedRowDraft({ ...seedRowDraft, [c.key]: e.target.value })}
+                          >
+                            {c.options!.map((o) => (
+                              <option key={o} value={o}>{o}</option>
+                            ))}
+                          </select>
+                        )
+                      } else if (c.type === 'boolean') {
+                        input = (
+                          <input
+                            type="checkbox"
+                            defaultChecked={Boolean(row[c.key])}
+                            className="rounded focus:ring-crimson-500"
+                            onChange={(e) => setSeedRowDraft({ ...seedRowDraft, [c.key]: e.target.checked })}
+                          />
+                        )
+                      } else {
+                        input = (
+                          <input
+                            defaultValue={String(row[c.key] ?? '')}
+                            className="w-full text-sm border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                            onChange={(e) => setSeedRowDraft({ ...seedRowDraft, [c.key]: e.target.value })}
+                          />
+                        )
+                      }
+                      return <td key={c.key} className="px-3 py-2">{input}</td>
+                    }
+                    if (c.type === 'boolean') {
+                      return (
+                        <td key={c.key} className="px-3 py-2">
+                          {Boolean(row[c.key]) ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                              <Unlock size={10} /> Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                              <Lock size={10} /> Inactive
+                            </span>
+                          )}
+                        </td>
+                      )
+                    }
+                    return <td key={c.key} className="px-3 py-2 text-slate-700">{row[c.key] ?? '—'}</td>
+                  })}
+                  <td className="px-3 py-2">
+                    {editing ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => saveSeedRow(String(row.id ?? row.code))}
+                          title="Save"
+                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-crimson-600"
+                        >
+                          <Save size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSeedEditRow(null)}
+                          title="Cancel"
+                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => startSeedEdit(row)}
+                          title="Edit"
+                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteSeedRow(String(row.id ?? row.code))}
+                          title="Delete"
+                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    )
   }
 
   const empty = (records.length ?? 0) === 0
@@ -1699,22 +1858,44 @@ function SeedTable({
       {/* Seed Data section — always available */}
       <div>
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Seed Data</p>
-        <div className="flex items-center justify-between mb-1">
-          <button
-            onClick={() => { setAiInitialModel(aiModel ?? 'gl-accounts'); setAiOpen(true) }}
-            className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            <Sparkles size={14} /> {aiLabel ?? 'Import with AI'}
-          </button>
-          <button
-            onClick={doSeed}
-            disabled={busyId === 'seed'}
-            className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-          >
-            {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
-            {seedLabel}
-          </button>
-        </div>
+        {seedRows && seedRows.length > 0 ? (
+          <>
+            {renderSeedTable()}
+            <div className="flex items-center justify-between mb-1">
+              <button
+                onClick={() => { setAiInitialModel(aiModel ?? 'gl-accounts'); setAiOpen(true) }}
+                className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <Sparkles size={14} /> {aiLabel ?? 'Import with AI'}
+              </button>
+              <button
+                onClick={doSeed}
+                disabled={busyId === 'seed'}
+                className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+              >
+                {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
+                {seedLabel}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-between mb-1">
+            <button
+              onClick={() => { setAiInitialModel(aiModel ?? 'gl-accounts'); setAiOpen(true) }}
+              className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              <Sparkles size={14} /> {aiLabel ?? 'Import with AI'}
+            </button>
+            <button
+              onClick={doSeed}
+              disabled={busyId === 'seed'}
+              className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+            >
+              {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
+              {seedLabel}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

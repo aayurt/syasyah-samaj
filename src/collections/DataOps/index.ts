@@ -215,6 +215,8 @@ const SEED_MEMBERS = [
 const SEED_TAX_TYPES = [
   { code: 'VAT', name: 'Value Added Tax', nature: 'additive', rate: 13, active: true },
   { code: 'TDS', name: 'Tax Deducted at Source', nature: 'withholding', rate: 1.5, active: true },
+  { code: 'GST', name: 'Goods and Services Tax', nature: 'additive', rate: 18, active: true },
+  { code: 'LUX', name: 'Luxury Tax', nature: 'additive', rate: 40, active: true },
 ] as const
 
 async function ensureSeedTaxTypes(payload: Payload, tenant: string): Promise<{ created: number; ids: number[] }> {
