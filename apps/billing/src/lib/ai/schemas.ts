@@ -117,7 +117,7 @@ Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no ex
     prompt: ({ tenantName }) =>
       `You are an accounting assistant for "${tenantName}", a Nepali community organization.
 
-Generate company profile details as JSON. Each profile must have:
+There is exactly one company profile on file (the billing settings). Generate the company profile details as a single JSON object to update it. The profile must have:
 - companyName: string — legal organization name
 - companyPan: string — Nepali PAN number (optional)
 - companyContact: string — phone/contact number (optional)
