@@ -567,17 +567,20 @@ export default function AIWorkspaceModal({
       }
       const session = await (window as any).LanguageModel.create()
       geminiSessionRef.current = session
-      setGemini({ status: 'ready', prompt: '', response: '', error: '' })
+      setGemini({ status: 'ready', prompt: effectivePrompt, response: '', error: '' })
+      void askBuiltInGemini(effectivePrompt)
     } catch (e) {
       setGemini({ status: 'error', prompt: '', response: '', error: e instanceof Error ? e.message : String(e) })
     }
-  }, [t])
+  }, [t, effectivePrompt])
 
-  const askBuiltInGemini = useCallback(async () => {
-    if (!geminiSessionRef.current || !gemini.prompt.trim()) return
-    setGemini((prev) => ({ ...prev, status: 'checking', response: '', error: '' }))
+  const askBuiltInGemini = useCallback(async (promptOverride?: string) => {
+    if (!geminiSessionRef.current) return
+    const text = (promptOverride ?? gemini.prompt).trim()
+    if (!text) return
+    setGemini((prev) => ({ ...prev, status: 'checking', response: '', error: '', prompt: text }))
     try {
-      const response = await geminiSessionRef.current.prompt(gemini.prompt)
+      const response = await geminiSessionRef.current.prompt(text)
       setGemini((prev) => ({ ...prev, status: 'ready', response: String(response) }))
     } catch (e) {
       setGemini((prev) => ({ ...prev, status: 'error', error: e instanceof Error ? e.message : String(e) }))
@@ -914,7 +917,7 @@ export default function AIWorkspaceModal({
                       />
                       <div className="mt-2 flex items-center gap-2">
                         <button
-                          onClick={askBuiltInGemini}
+                          onClick={() => askBuiltInGemini()}
                           disabled={gemini.status !== 'ready'}
                           className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
