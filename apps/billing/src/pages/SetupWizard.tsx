@@ -1304,7 +1304,14 @@ export default function SetupWizard() {
           </button>
 
           <div className="flex items-center gap-2">
-            {/* Optional steps: offer Skip and the primary action */}
+            {step.key.startsWith('seed-') && !seedDone[step.key] && (
+              <button
+                onClick={() => { setSeedDone((p) => ({ ...p, [step.key]: true })) }}
+                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-500 hover:bg-slate-100"
+              >
+                Skip <ArrowRight size={15} />
+              </button>
+            )}
             {step.key === 'openings' && (
               <button
                 onClick={finish}
@@ -1542,7 +1549,15 @@ function SeedTable({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center justify-between mb-1">
+        {aiModel && (
+          <button
+            onClick={() => { setAiInitialModel(aiModel); setAiOpen(true) }}
+            className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            <Sparkles size={14} /> {aiLabel}
+          </button>
+        )}
         <button
           onClick={doSeed}
           disabled={busyId === 'seed'}
@@ -1551,14 +1566,6 @@ function SeedTable({
           {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
           {seedLabel}
         </button>
-        {aiModel && (
-          <button
-            onClick={() => { setAiInitialModel(aiModel); setAiOpen(true) }}
-            className="mt-3 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            <Sparkles size={14} /> {aiLabel}
-          </button>
-        )}
       </div>
 
       {empty ? (
@@ -1680,12 +1687,6 @@ function SeedTable({
           </table>
         </div>
       )}
-      <button
-        onClick={() => { setSeedDone((p) => ({ ...p, [seedKey]: true })) }}
-        className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-500 hover:bg-slate-100"
-      >
-        <ArrowLeft size={15} /> Skip
-      </button>
     </div>
   )
 }
