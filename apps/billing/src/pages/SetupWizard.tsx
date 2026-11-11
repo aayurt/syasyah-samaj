@@ -1874,47 +1874,28 @@ function SeedTable({
       {/* Seed Data section — only when current data is empty */}
       {empty ? (
         <div>
-          {seedRows && seedRows.length > 0 && (<p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Seed Data</p>)}
-          {seedRows && seedRows.length > 0 ? (
+          {seedRows && seedRows.length > 0 && (
             <>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Seed Data</p>
               {renderSeedTable()}
-              <div className="flex items-center justify-between mb-1 mt-1">
-                <button
-                  onClick={() => { setAiInitialModel(aiModel ?? 'gl-accounts'); setAiOpen(true) }}
-                  className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  <Sparkles size={14} /> {aiLabel ?? 'Import with AI'}
-                </button>
-                <button
-                  onClick={doSeed}
-                  disabled={busyId === 'seed'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
-                  {seedLabel}
-                </button>
-              </div>
             </>
-          ) : (
-            <div className="flex items-center justify-between mb-1 mt-1">
-              <button
-                onClick={() => { setAiInitialModel(aiModel ?? 'gl-accounts'); setAiOpen(true) }}
-                className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-              >
-                <Sparkles size={14} /> {aiLabel ?? 'Import with AI'}
-              </button>
-              {
-                seedRows && seedRows.length === 0 &&
-                <button
-                  onClick={doSeed}
-                  disabled={busyId === 'seed'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
-                  {seedLabel}
-                </button>}
-            </div>
           )}
+          <div className="flex items-center justify-between mb-1 mt-1">
+            <button
+              onClick={() => { setAiInitialModel(aiModel ?? 'gl-accounts'); setAiOpen(true) }}
+              className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              <Sparkles size={14} /> {aiLabel ?? 'Import with AI'}
+            </button>
+            <button
+              onClick={doSeed}
+              disabled={busyId === 'seed'}
+              className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
+            >
+              {busyId === 'seed' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
+              {seedLabel}
+            </button>
+          </div>
         </div>
       ) : null}
     </div>
