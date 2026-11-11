@@ -105,6 +105,9 @@ export function AnimatedSidebar({
     return email.charAt(0).toUpperCase()
   }, [userEmail])
 
+  const { session } = useOfflineSession()
+  const userRole = session?.user?.role
+
   const handleSignOut = async () => {
     await authClient.signOut()
     window.location.href = '/admin/login'
@@ -432,9 +435,18 @@ export function AnimatedSidebar({
           {/* User Email & Role */}
           {!collapsed && (
             <div className="grid flex-1 text-left leading-tight truncate">
-              <span className="truncate text-xs font-semibold text-slate-800">
-                {userEmail?.split('@')[0] || 'User'}
-              </span>
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="truncate text-xs font-semibold text-slate-800">
+                  {userEmail?.split('@')[0] || 'User'}
+                </span>
+                {userRole && (
+                  <span
+                    className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-600"
+                  >
+                    {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                  </span>
+                )}
+              </div>
               <span className="truncate text-[10px] text-slate-400 font-mono">
                 {userEmail || 'authenticated'}
               </span>
