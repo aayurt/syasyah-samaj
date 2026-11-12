@@ -10,7 +10,7 @@ import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
 import { useT } from '../../lib/i18n'
 import SearchBox from '../../components/SearchBox'
-import { DOC_TYPE_LABELS, effectiveAmount, type Document, type Party } from '../../lib/types'
+import { DOC_TYPE_LABELS, baseCurrencyOf, effectiveAmount, toBaseCurrency, type BillingSettings, type Currency, type Document, type Party } from '../../lib/types'
 
 interface PartyDoc extends Document {
   partyName?: string
@@ -26,6 +26,7 @@ export default function PartyStatement() {
   const [parties, setParties] = useState<Party[]>([])
   const [selectedParty, setSelectedParty] = useState(searchParams.get('party') || '')
   const [docs, setDocs] = useState<PartyDoc[]>([])
+  const [base, setBase] = useState<Currency>('NPR')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
@@ -46,6 +47,8 @@ export default function PartyStatement() {
         depth: 1, sort: 'date', ...tenantQuery,
         where: JSON.stringify({ party: { equals: Number(selectedParty) } }),
       })
+      const s = await api<BillingSettings>('/globals/billing-settings', { query: { depth: 1 } }).catch(() => ({} as BillingSettings))
+      setBase(baseCurrencyOf(s))
       setDocs(res.docs.map((d) => ({ ...d, partyName: parties.find((p) => p.id === d.party)?.name || '' })))
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load party statement')
@@ -77,6 +80,8 @@ export default function PartyStatement() {
   const party = parties.find((p) => String(p.id) === selectedParty)
   const totalDebit = docs.filter((d) => ['sales-invoice', 'debit-note'].includes(d.docType)).reduce((s, d) => s + effectiveAmount(d), 0)
   const totalCredit = docs.filter((d) => ['purchase-invoice', 'credit-note', 'receipt-voucher', 'payment-voucher'].includes(d.docType)).reduce((s, d) => s + effectiveAmount(d), 0)
+  const totalDebitBase = docs.filter((d) => ['sales-invoice', 'debit-note'].includes(d.docType)).reduce((s, d) => s + toBaseCurrency(effectiveAmount(d), d, base), 0)
+  const totalCreditBase = docs.filter((d) => ['purchase-invoice', 'credit-note', 'receipt-voucher', 'payment-voucher'].includes(d.docType)).reduce((s, d) => s + toBaseCurrency(effectiveAmount(d), d, base), 0)
 
   const csv = () => downloadCsv(`${party?.name || 'party'}-statement.csv`,
     ['Date', 'Type', 'Number', 'Narration', 'Amount', 'Running Balance'],
@@ -124,16 +129,19 @@ export default function PartyStatement() {
             <div className="rounded-lg border border-slate-200 bg-white p-4">
               <div className="text-xs uppercase tracking-wide text-slate-500">Total Debit</div>
               <div className="mt-1 font-mono text-lg font-semibold text-amber-700">{fmt(totalDebit)}</div>
+              <div className="text-[10px] text-slate-400">{fmt(totalDebitBase)} base</div>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-4">
               <div className="text-xs uppercase tracking-wide text-slate-500">Total Credit</div>
               <div className="mt-1 font-mono text-lg font-semibold text-amber-700">{fmt(totalCredit)}</div>
+              <div className="text-[10px] text-slate-400">{fmt(totalCreditBase)} base</div>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-4">
               <div className="text-xs uppercase tracking-wide text-slate-500">Balance</div>
               <div className={`mt-1 font-mono text-lg font-semibold ${(running[running.length - 1]?.runningBalance || 0) >= 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
                 {fmt(running[running.length - 1]?.runningBalance || 0)}
               </div>
+              <div className="text-[10px] text-slate-400">{fmt(totalDebitBase - totalCreditBase)} base</div>
             </div>
           </div>
 

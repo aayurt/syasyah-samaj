@@ -47,6 +47,8 @@ import {
   DOC_TYPE_LABELS,
   type Account,
   type BillingSettings,
+  type Currency,
+  CURRENCIES,
   type DocType,
   type Document,
   type Item,
@@ -344,6 +346,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   }
 
   const [date, setDate] = useState(todayAD())
+  const [currency, setCurrency] = useState<Currency>('NPR')
+  const [exchangeRate, setExchangeRate] = useState<number | null>(null)
   const [party, setParty] = useState('')
   const [partySearch, setPartySearch] = useState('')
   const [narration, setNarration] = useState('')
@@ -467,6 +471,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
         setDocType(d.docType); setInvoicePrefix(DOC_PREFIXES[d.docType] || 'INV')
         setDate(d.date?.slice(0, 10) || todayAD())
         setNarration(d.narration || '')
+        setCurrency((d.currency || 'NPR') as Currency)
+        setExchangeRate(d.exchangeRate ?? null)
         setTaxRate(String(d.taxRate ?? 0))
         setPaymentMethod(d.paymentMethod || 'bank')
         const idOf = (v: unknown): string => v && typeof v === 'object' ? String((v as { id: unknown }).id) : String(v ?? '')
@@ -748,6 +754,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       party: party ? Number(party) : undefined, status: 'draft',
       number: finalNumber || undefined,
       ...(tenantId ? { tenant: tenantId } : {}),
+      ...(currency && currency !== 'NPR' ? { currency } : {}),
+      ...(exchangeRate != null && exchangeRate > 0 ? { exchangeRate } : {}),
     }
     if (isItem) {
       base.lines = lines.map((l) => ({
@@ -1181,6 +1189,39 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
               onChange={setDate}
             />
           </div>
+        </div>
+
+        {/* Currency / Exchange Rate */}
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              {t('vouchers.currencyLabel', 'Currency')}
+            </label>
+            <select
+              value={currency}
+              onChange={(e) => { setCurrency(e.target.value as Currency); if (e.target.value === 'NPR') setExchangeRate(null) }}
+              className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+          {currency !== 'NPR' && (
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                {t('vouchers.exchangeRateLabel', 'Exchange Rate')}
+              </label>
+              <input
+                type="number"
+                step="0.0001"
+                value={exchangeRate ?? ''}
+                onChange={(e) => setExchangeRate(Number(e.target.value) || null)}
+                placeholder="1.0000"
+                className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
+              />
+            </div>
+          )}
         </div>
 
       </div>

@@ -50,8 +50,6 @@ import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
 import { exportInvoicePdf, isTemporaryReceipt } from '../lib/pdf'
 import PrintVoucher from '../components/PrintVoucher'
-import VoucherForm from './VoucherForm'
-
 interface DocTypeMeta {
   value: DocType
   label: string
@@ -292,7 +290,7 @@ export default function Vouchers() {
             ? String((v as { id: unknown }).id)
             : String(v ?? '')
         resumedSeqRef.current = seq
-        setActiveTab('new')
+        navigate('/vouchers/new')
         setViewDoc(null)
         setMenuFor(null)
         setError('')
@@ -898,7 +896,7 @@ export default function Vouchers() {
             type="button"
             role="tab"
             aria-selected={activeTab === 'new'}
-            onClick={() => setActiveTab('new')}
+            onClick={() => navigate('/vouchers/new')}
             className={`rounded-md px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all ${
               activeTab === 'new'
                 ? 'bg-white text-slate-900 shadow-sm'
@@ -939,20 +937,6 @@ export default function Vouchers() {
         <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
         </p>
-      )}
-
-      {/* Entry form */}
-      {activeTab === 'new' && (
-        <div className="mt-4">
-          <VoucherForm
-            mode="create"
-            embedded
-            onSuccess={() => {
-              setActiveTab('all')
-              load()
-            }}
-          />
-        </div>
       )}
 
       {/* Filters & Table */}

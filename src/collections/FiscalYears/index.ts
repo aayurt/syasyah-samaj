@@ -4,9 +4,12 @@ import {
   scopedRead,
   scopedUpdate,
 } from '@/access/tenantScoped'
+import { isBillingUser } from '@/access/tenantScoped'
 import type { CollectionConfig } from 'payload'
 import { assignTenant } from '@/utilities/tenantScope'
 import { extractID } from '@/utilities/extractID'
+import { sumPostedByAccount } from '@/utilities/journalSums'
+import { round2, toNum } from '@/utilities/journalValidation'
 import { adYearLabel } from './bsYear'
 
 /**
@@ -185,6 +188,155 @@ export const FiscalYears: CollectionConfig = {
       },
     ],
   },
+  endpoints: [
+    {
+      // POST /api/fiscal-years/:id/close — close an open year and carry each
+      // balance-sheet account's year-end balance forward as an opening
+      // balance of the next year. Income/expense accounts are closed to zero.
+      path: '/:id/close',
+      method: 'post',
+      handler: async (req) => {
+        if (!isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = Number((req as any).params.id)
+        const fy = await req.payload.findByID({
+          collection: 'fiscal-years',
+          id,
+          depth: 0,
+          overrideAccess: true,
+        })
+        if (!fy) {
+          return Response.json({ error: 'Fiscal year not found.' }, { status: 404 })
+        }
+        if (fy.status === 'closed') {
+          return Response.json({ error: 'This fiscal year is already closed.' }, { status: 400 })
+        }
+        const tenantId = typeof fy.tenant === 'object' ? fy.tenant.id : fy.tenant
+
+        // The next period must exist to receive the carried balances.
+        const dayAfter = new Date(new Date(fy.endDate).getTime() + 86_400_000)
+          .toISOString()
+          .slice(0, 10)
+        const nextRes = await req.payload.find({
+          collection: 'fiscal-years',
+          where: {
+            and: [
+              { tenant: { equals: tenantId } },
+              { startDate: { equals: dayAfter } },
+            ],
+          },
+          limit: 1,
+          depth: 0,
+        })
+        const nextYear = nextRes.docs?.[0] as any
+        if (!nextYear) {
+          return Response.json(
+            {
+              error: `Create the next fiscal year first — it must start on ${dayAfter} (the day after ${fy.label || ''} ends).`,
+            },
+            { status: 400 },
+          )
+        }
+
+        // Year-end position per account: opening balance for the closed year
+        // (falling back to the account's one-time opening balance) plus
+        // posted movements inside the period.
+        const sums = await sumPostedByAccount(req.payload, {
+          tenant: { equals: tenantId },
+          date: { greater_than_equal: fy.startDate, less_than_equal: fy.endDate },
+        })
+        const obRes = await req.payload.find({
+          collection: 'opening-balances',
+          where: {
+            and: [
+              { fiscalYear: { equals: id } },
+              { tenant: { equals: tenantId } },
+            ],
+          },
+          limit: 1000,
+          depth: 0,
+          overrideAccess: true,
+        })
+        const openingByAccount = new Map(
+          (obRes.docs as any[]).map((d) => [Number(d.account), toNum(d.amount)]),
+        )
+
+        const acctRes = await req.payload.find({
+          collection: 'gl-accounts',
+          where: { tenant: { equals: tenantId } },
+          limit: 1000,
+          depth: 0,
+        })
+        const accounts = acctRes.docs as any[]
+
+        const carry: { account: number; amount: number }[] = []
+        for (const a of accounts) {
+          // Nominal accounts are closed to zero — they start the new year empty.
+          if (a.type === 'income' || a.type === 'expense') continue
+          const s = sums.get(Number(a.id)) || { debit: 0, credit: 0 }
+          // amount is debit-positive for every account type (universal
+          // convention: liability/equity credit balances are negative).
+          const balance = round2(
+            (openingByAccount.get(Number(a.id)) ?? toNum(a.openingBalance)) +
+              s.debit - s.credit,
+          )
+          if (Math.abs(balance) >= 0.01) {
+            carry.push({ account: Number(a.id), amount: balance })
+          }
+        }
+
+        // Replace the target year's opening balances (re-close is idempotent).
+        const existing = await req.payload.find({
+          collection: 'opening-balances',
+          where: {
+            and: [
+              { fiscalYear: { equals: nextYear.id } },
+              { tenant: { equals: tenantId } },
+            ],
+          },
+          limit: 1000,
+          depth: 0,
+          overrideAccess: true,
+        })
+        for (const doc of existing.docs as any[]) {
+          await req.payload.delete({
+            collection: 'opening-balances',
+            id: doc.id,
+            overrideAccess: true,
+          })
+        }
+        let saved = 0
+        for (const c of carry) {
+          await req.payload.create({
+            collection: 'opening-balances',
+            data: {
+              account: c.account,
+              fiscalYear: nextYear.id,
+              amount: c.amount,
+              tenant: tenantId,
+            } as any,
+            overrideAccess: true,
+          })
+          saved++
+        }
+
+        await req.payload.update({
+          collection: 'fiscal-years',
+          id,
+          data: { status: 'closed' },
+          overrideAccess: true,
+        })
+
+        return Response.json({
+          message: `Year closed. ${saved} opening balance(s) carried forward to “${nextYear.label || nextYear.id}”.`,
+          closed: { id: fy.id, label: fy.label, status: 'closed' },
+          targetYear: { id: nextYear.id, label: nextYear.label },
+          carriedForward: saved,
+        })
+      },
+    },
+  ],
   fields: [
     {
       name: 'label',

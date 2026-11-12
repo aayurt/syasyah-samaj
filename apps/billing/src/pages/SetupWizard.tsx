@@ -432,10 +432,22 @@ export default function SetupWizard() {
       .catch((e) => pushToast('error', 'Failed to set working year', e instanceof Error ? e.message : String(e)))
   }
 
-  const fyClose = (id: string) => {
-    api(`/fiscal-years/${id}`, { method: 'PATCH', body: { status: 'closed' } })
-      .then(() => { void refreshYears(); pushToast('success', 'Year closed') })
-      .catch((e) => pushToast('error', 'Failed to close year', e instanceof Error ? e.message : String(e)))
+  const fyClose = async (id: string) => {
+    const year = (years ?? []).find((y) => String(y.id) === id)
+    if (!year) return
+    if (
+      !window.confirm(
+        `Close fiscal year “${year.label || id}”? Posting in this period will be locked and balance-sheet balances will carry forward to the next year as opening balances (income/expense are zeroed out).`,
+      )
+    )
+      return
+    try {
+      await api(`/fiscal-years/${id}/close`, { method: 'POST', skipToast: true })
+      await refreshYears()
+      pushToast('success', 'Year closed', 'Posting in this period is now locked.')
+    } catch (e) {
+      pushToast('error', 'Failed to close year', e instanceof Error ? e.message : String(e))
+    }
   }
 
   const fyOpen = (id: string) => {

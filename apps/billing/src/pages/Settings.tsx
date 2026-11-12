@@ -37,7 +37,8 @@ import ImportPreviewModal from '../components/ImportPreviewModal'
 import { parseImportFile } from '../lib/importExport'
 import { useTenant } from '../lib/tenant'
 import { pushToast } from '../lib/toast'
-import type { Account, AccountGroup, AccountType, BillingSettings, FiscalYear } from '../lib/types'
+import { CURRENCIES } from '../lib/types'
+import type { Account, AccountGroup, AccountType, BillingSettings, Currency, FiscalYear } from '../lib/types'
 import { useLang, useT } from '../lib/i18n'
 import { useTooltips } from '../hooks/useTooltips'
 import NepaliDateInput from '../components/NepaliDateInput'
@@ -339,14 +340,16 @@ export default function Settings() {
   const [companyEmail, setCompanyEmail] = useState('')
   const [companyAddress, setCompanyAddress] = useState('')
   const [companyLogo, setCompanyLogo] = useState('')
-  const savedCompany = useRef({ name: '', pan: '', contact: '', email: '', address: '', logo: '' })
+  const [companyCurrency, setCompanyCurrency] = useState<Currency>('NPR')
+  const savedCompany = useRef<{ name: string; pan: string; contact: string; email: string; address: string; logo: string; currency: Currency }>({ name: '', pan: '', contact: '', email: '', address: '', logo: '', currency: 'NPR' })
   const companyDirty =
     companyName !== savedCompany.current.name ||
     companyPan !== savedCompany.current.pan ||
     companyContact !== savedCompany.current.contact ||
     companyEmail !== savedCompany.current.email ||
     companyAddress !== savedCompany.current.address ||
-    companyLogo !== savedCompany.current.logo
+    companyLogo !== savedCompany.current.logo ||
+    companyCurrency !== savedCompany.current.currency
   const [companySaved, setCompanySaved] = useState(false)
 
 
@@ -588,13 +591,15 @@ export default function Settings() {
       const ce = res.companyEmail || ''
       const ca = res.companyAddress || ''
       const cl = res.companyLogo || ''
+      const ccy = (res.defaultCurrency === 'NPR' || res.defaultCurrency === 'USD') ? res.defaultCurrency : 'NPR'
       setCompanyName(cn)
       setCompanyPan(cp)
       setCompanyContact(cc)
       setCompanyEmail(ce)
       setCompanyAddress(ca)
       setCompanyLogo(cl)
-      savedCompany.current = { name: cn, pan: cp, contact: cc, email: ce, address: ca, logo: cl }
+      setCompanyCurrency(ccy)
+      savedCompany.current = { name: cn, pan: cp, contact: cc, email: ce, address: ca, logo: cl, currency: ccy }
 
       const py = res.payrollEnabled !== false
       const br = res.bankReconciliationEnabled || false
@@ -726,7 +731,7 @@ export default function Settings() {
   }
 
   const persistCompany = () => {
-    const body = { companyName, companyPan, companyContact, companyEmail, companyAddress, companyLogo }
+    const body = { companyName, companyPan, companyContact, companyEmail, companyAddress, companyLogo, defaultCurrency: companyCurrency }
     try {
       const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
       localStorage.setItem(
@@ -743,6 +748,7 @@ export default function Settings() {
       email: companyEmail,
       address: companyAddress,
       logo: companyLogo,
+      currency: companyCurrency,
     }
     setCompanySaved(true)
     setTimeout(() => setCompanySaved(false), 2000)
@@ -758,6 +764,7 @@ export default function Settings() {
     setCompanyEmail(s.email)
     setCompanyAddress(s.address)
     setCompanyLogo(s.logo)
+    setCompanyCurrency(s.currency)
   }
 
   // ── Fiscal year actions ──
@@ -1388,6 +1395,18 @@ export default function Settings() {
               placeholder="e.g. Syasyah Samaj"
               className={inputCls}
             />
+          </div>
+          <div>
+            <label className="text-sm text-slate-600">{t('settings.defaultCurrency')}</label>
+            <select
+              value={companyCurrency}
+              onChange={(e) => setCompanyCurrency(e.target.value as Currency)}
+              className={inputCls}
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>{c.label}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="text-sm text-slate-600">{t('settings.panNumber')}</label>

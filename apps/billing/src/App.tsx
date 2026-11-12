@@ -45,6 +45,7 @@ import TrialBalance from './pages/TrialBalance'
 import Vouchers from './pages/Vouchers'
 import Posting from './pages/Posting'
 import VoucherForm from './pages/VoucherForm'
+import VoucherStepper from './pages/VoucherStepper'
 import Parties from './pages/Parties'
 import Aging from './pages/Aging'
 import Items from './pages/Items'
@@ -416,8 +417,7 @@ function Shell({ email }: { email: string }) {
             <Route path="/opening-balances" element={<SetupOpeningBalances />} />
             <Route path="/transaction-entry" element={<Vouchers />} />
             <Route path="/vouchers" element={<Vouchers />} />
-            <Route path="/vouchers/new" element={<VoucherForm mode="create" />} />
-            <Route path="/vouchers/new/:docType" element={<VoucherForm mode="create" />} />
+            <Route path="/vouchers/new/:docType?" element={<VoucherStepper mode="create" />} />
             <Route path="/vouchers/edit/:id" element={<VoucherForm mode="edit" />} />
             <Route path="/parties" element={<Parties />} />
             <Route path="/journal" element={<Journal />} />

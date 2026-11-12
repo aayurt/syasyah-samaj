@@ -2,6 +2,27 @@ export type AccountType = 'asset' | 'liability' | 'equity' | 'income' | 'expense
 export type AccountClass = 'cash' | 'bank' | 'other'
 export type EntryStatus = 'draft' | 'posted' | 'void'
 export type DocumentStatus = 'draft' | 'posted' | 'void'
+export type Currency = 'NPR' | 'USD'
+
+export const CURRENCIES: { code: Currency; label: string }[] = [
+  { code: 'NPR', label: 'NPR (Nepali Rupee)' },
+  { code: 'USD', label: 'USD (US Dollar)' },
+]
+
+/** Base currency of the tenant — falls back to NPR when unset. */
+export function baseCurrencyOf(settings: { defaultCurrency?: Currency } | null | undefined): Currency {
+  const c = settings?.defaultCurrency
+  return (c === 'NPR' || c === 'USD') ? c : 'NPR'
+}
+
+/** Convert a document-local amount to base currency using the document's exchange rate.
+ *  ponytail: ceiling — rate source is the doc only; no rate table/history. Add when
+ *  server stores exchange rates per currency pair. */
+export function toBaseCurrency(amount: number, doc: { currency?: Currency; exchangeRate?: number } | null | undefined, base: Currency): number {
+  const rate = doc?.exchangeRate == null ? 1 : Number(doc.exchangeRate)
+  if (!doc?.currency || doc.currency === base || !rate || !Number.isFinite(rate)) return amount
+  return amount * rate
+}
 
 export type DocType =
   | 'sales-quote'
@@ -57,6 +78,7 @@ export interface Account {
   openingBalance?: number
   active?: boolean
   allowManualPosting?: boolean
+  currency?: Currency
   tenant?: number | null
 }
 
@@ -195,6 +217,10 @@ export interface Document {
     voidedBy?: string
   }>
   voidedAmount?: number
+  /** Document currency (NPR | USD). Defaults to tenant base currency. */
+  currency?: Currency
+  /** Exchange rate: 1 unit of `currency` = N base units. Only meaningful when currency !== base. */
+  exchangeRate?: number
 }
 
 
@@ -380,6 +406,7 @@ export interface BillingSettings {
   companyAddress?: string
   companyLogo?: string
   defAccountOrder?: string[]
+  defaultCurrency?: Currency
 }
 
 /** Number series for document numbering. Backed by the doc-sequences collection. */

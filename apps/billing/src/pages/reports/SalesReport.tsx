@@ -11,8 +11,8 @@ import DataStatus from '../../components/DataStatus'
 import { useT } from '../../lib/i18n'
 import SearchBox from '../../components/SearchBox'
 import { StatusPill } from '../Dashboard'
-import type { Document, Party } from '../../lib/types'
-import { effectiveAmount } from '../../lib/types'
+import type { BillingSettings, Currency, Document, Party } from '../../lib/types'
+import { baseCurrencyOf, effectiveAmount, toBaseCurrency } from '../../lib/types'
 import NepaliDateInput from '../../components/NepaliDateInput'
 
 type StatusFilter = 'all' | 'draft' | 'posted' | 'void'
@@ -92,6 +92,7 @@ export default function SalesReport() {
   const [creditNotes, setCreditNotes] = useState<Document[]>([])
   const [receipts, setReceipts] = useState<Document[]>([])
   const [parties, setParties] = useState<Party[]>([])
+  const [base, setBase] = useState<Currency>('NPR')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [from, setFrom] = useState('')
@@ -112,9 +113,10 @@ export default function SalesReport() {
       } else if (to) {
         q.where = JSON.stringify({ date: { less_than_equal: to + 'T23:59:59' } })
       }
-      const [docs, p] = await Promise.all([
+      const [docs, p, s] = await Promise.all([
         list<Document>('documents', q),
         list<Party>('parties', { depth: 0, sort: 'name', ...tenantQuery }),
+        api<BillingSettings>('/globals/billing-settings', { query: { depth: 1 } }).catch(() => ({} as BillingSettings)),
       ])
       // Also fetch receipts in the same date range for payment matching
       const rQuery: Record<string, string | number> = { sort: 'date', depth: 0, ...tenantQuery }
@@ -133,6 +135,7 @@ export default function SalesReport() {
       setCreditNotes(docs.docs.filter((d) => d.docType === 'credit-note'))
       setReceipts(rDocs.docs)
       setParties(p.docs)
+      setBase(baseCurrencyOf(s))
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load sales report')
     } finally { setLoading(false) }
@@ -163,6 +166,9 @@ export default function SalesReport() {
   const totalSales = invoices.reduce((s, d) => s + effectiveAmount(d), 0)
   const totalReceived = invoices.reduce((s, d) => s + (paymentMap.get(d.id) || 0), 0)
   const totalUnpaid = totalSales - totalReceived
+  const totalSalesBase = invoices.reduce((s, d) => s + toBaseCurrency(effectiveAmount(d), d, base), 0)
+  const totalReceivedBase = invoices.reduce((s, d) => s + toBaseCurrency(paymentMap.get(d.id) || 0, d, base), 0)
+  const totalUnpaidBase = totalSalesBase - totalReceivedBase
 
   const drillTo = (type: string) => `/vouchers?type=${type}${from ? `&from=${from}` : ''}${to ? `&to=${to}` : ''}`
   const kpis = [
@@ -281,6 +287,12 @@ export default function SalesReport() {
                     <td className="px-4 py-2 text-right font-mono font-semibold text-slate-900">{fmt(totalSales)}</td>
                     <td className="px-4 py-2 text-right font-mono font-semibold text-emerald-700">{fmt(totalReceived)}</td>
                     <td className="px-4 py-2 text-right font-mono font-semibold text-red-600">{fmt(totalUnpaid)}</td>
+                  </tr>
+                  <tr className="border-t border-slate-200 bg-slate-50">
+                    <td colSpan={4} className="px-4 py-2 text-xs font-semibold uppercase text-slate-600">{t('reports.totalBase', 'Total (base currency)')}</td>
+                    <td className="px-4 py-2 text-right font-mono font-semibold text-slate-900">{fmt(totalSalesBase)}</td>
+                    <td className="px-4 py-2 text-right font-mono font-semibold text-emerald-700">{fmt(totalReceivedBase)}</td>
+                    <td className="px-4 py-2 text-right font-mono font-semibold text-red-600">{fmt(totalUnpaidBase)}</td>
                   </tr>
                 </tfoot>
               )}

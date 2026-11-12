@@ -15,7 +15,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useT } from '../lib/i18n'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
-import type { Account, AccountGroup, AccountType, OpeningBalance } from '../lib/types'
+import { Account, AccountGroup, AccountType, Currency, CURRENCIES, OpeningBalance } from '../lib/types'
 
 const TYPES: AccountType[] = ['asset', 'liability', 'equity', 'income', 'expense']
 const TYPE_LABELS: Record<string, string> = {
@@ -34,6 +34,7 @@ const emptyForm = {
   group: '',
   description: '',
   parent: '',
+  currency: 'NPR' as Currency,
 }
 
 export default function Accounts() {
@@ -106,6 +107,7 @@ export default function Accounts() {
       group: a.group ? String(typeof a.group === 'object' ? (a.group as AccountGroup).id : a.group) : '',
       description: a.description || '',
       parent: p ? String(p) : '',
+      currency: a.currency || 'NPR',
     })
     setEditing(a.id)
     setShowForm(true)
@@ -128,6 +130,7 @@ export default function Accounts() {
         type: form.type,
         class: form.class,
         group: form.group ? Number(form.group) : undefined,
+        currency: form.currency || undefined,
         ...(form.parent ? { parent: Number(form.parent) } : {}),
         ...(tenantId ? { tenant: tenantId } : {}),
       }
@@ -379,6 +382,20 @@ export default function Accounts() {
                 <option value="other">{t('accounts.classOther', 'Other')}</option>
                 <option value="cash">{t('accounts.classCash', 'Cash')}</option>
                 <option value="bank">{t('accounts.classBank', 'Bank')}</option>
+              </select>
+            </label>
+            <label className="text-sm text-slate-700">
+              {t('accounts.currency', 'Currency')}
+              <select
+                value={form.currency}
+                onChange={(e) => setForm({ ...form, currency: e.target.value as Currency })}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="text-sm text-slate-700">

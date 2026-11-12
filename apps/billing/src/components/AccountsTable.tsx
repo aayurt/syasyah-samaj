@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { Account, AccountGroup, AccountType } from '../lib/types'
 import ActionMenu from './ActionMenu'
 import { Pencil, Trash2, ChevronRight, ChevronDown, Folder, FileText, Plus } from 'lucide-react'
+import { useT } from '../lib/i18n'
 
 type AccountsTableProps = {
   accounts: Account[]
@@ -42,6 +43,7 @@ export default function AccountsTable({
 }: AccountsTableProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
+  const t = useT()
 
   const toggleGroupCollapse = (groupId: number) => {
     setCollapsedGroups((prev) => {
@@ -157,6 +159,7 @@ export default function AccountsTable({
                   <th className="w-24 px-4 py-2">Code</th>
                   <th className="px-4 py-2">Account Heading / Subheading</th>
                   <th className="w-28 px-4 py-2">Class</th>
+                  <th className="w-20 px-4 py-2">{t('accounts.currency', 'Currency')}</th>
                   <th className="w-24 px-4 py-2">Description</th>
                   <th className="w-28 px-4 py-2">Parent</th>
                   <th className="w-36 px-4 py-2 text-right">Opening (FY)</th>
@@ -241,6 +244,9 @@ export default function AccountsTable({
                                 {a.class || 'other'}
                               </td>
                               <td className="px-4 py-2 text-xs text-slate-500">
+                                {a.currency || 'NPR'}
+                              </td>
+                              <td className="px-4 py-2 text-xs text-slate-500">
                                 {a.description || '—'}
                               </td>
                               <td className="px-4 py-2 text-xs text-slate-500">{parentName(a, accounts)}</td>
@@ -285,6 +291,9 @@ export default function AccountsTable({
                       </td>
                       <td className="px-4 py-2 text-xs text-slate-500 capitalize">
                         {a.class || 'other'}
+                      </td>
+                      <td className="px-4 py-2 text-xs text-slate-500">
+                        {a.currency || 'NPR'}
                       </td>
                       <td className="px-4 py-2 text-xs text-slate-500">
                         {a.description || '—'}
