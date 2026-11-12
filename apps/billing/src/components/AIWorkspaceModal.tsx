@@ -71,6 +71,8 @@ function fieldInputs(model: AIModel): string[] {
       return ['fullName', 'email', 'role', 'status']
     case 'parties':
       return ['name', 'type', 'email', 'phone']
+    case 'items':
+      return ['code', 'name', 'unit', 'salePrice', 'active']
     default:
       return ['name']
   }
@@ -204,6 +206,13 @@ function exampleJson(model: AIModel): string {
         docs: [
           { name: 'Example Customer', type: 'customer', email: 'customer@example.com', phone: '9841000001' },
           { name: 'Example Vendor', type: 'vendor', email: 'vendor@example.com', phone: '9841000002' },
+        ],
+      }, null, 2)
+    case 'items':
+      return JSON.stringify({
+        docs: [
+          { code: 'ITEM-001', name: 'Rice 25kg', unit: 'kg', salePrice: 1200, active: true },
+          { code: 'ITEM-002', name: 'Lentils 1kg', unit: 'kg', salePrice: 180, active: true },
         ],
       }, null, 2)
     default:
