@@ -533,7 +533,7 @@ describe('executeImport', () => {
     const records = [{ doc: { name: 'New' }, action: 'create' as const }]
     const result = await executeImport('test', records)
     expect(result.created).toBe(1)
-    expect(mockApi).toHaveBeenCalledWith('/test', { method: 'POST', body: { name: 'New' } })
+    expect(mockApi).toHaveBeenCalledWith('/test', { method: 'POST', body: { name: 'New' }, immediate: true, skipToast: true })
   })
 
   it('updates existing records via PATCH', async () => {
@@ -541,7 +541,7 @@ describe('executeImport', () => {
     const records = [{ doc: { id: 1, name: 'Updated' }, action: 'update' as const }]
     const result = await executeImport('test', records)
     expect(result.updated).toBe(1)
-    expect(mockApi).toHaveBeenCalledWith('/test/1', { method: 'PATCH', body: { name: 'Updated' } })
+    expect(mockApi).toHaveBeenCalledWith('/test/1', { method: 'PATCH', body: { name: 'Updated' }, immediate: true, skipToast: true })
   })
 
   it('skips when action is skip', async () => {

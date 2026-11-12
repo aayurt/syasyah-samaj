@@ -1363,7 +1363,7 @@ export async function executeImport<T extends Record<string, unknown>>(
         if (errors.length > 0) {
           result.errors.push(...errors)
         } else {
-          await api(`/${collection}`, { method: 'POST', body })
+          await api(`/${collection}`, { method: 'POST', body, immediate: true, skipToast: true })
           result.created++
         }
       } else if (action === 'update') {
@@ -1375,7 +1375,7 @@ export async function executeImport<T extends Record<string, unknown>>(
           if (errors.length > 0) {
             result.errors.push(...errors)
           } else {
-            await api(`/${collection}/${id}`, { method: 'PATCH', body })
+            await api(`/${collection}/${id}`, { method: 'PATCH', body, immediate: true, skipToast: true })
             result.updated++
           }
         }

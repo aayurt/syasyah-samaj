@@ -68,7 +68,7 @@ function fieldInputs(model: AIModel): string[] {
     case 'fiscal-year':
       return ['label', 'startDate', 'endDate', 'status']
     case 'members':
-      return ['fullName', 'role', 'status']
+      return ['fullName', 'email', 'role', 'status']
     default:
       return ['name']
   }
@@ -186,8 +186,8 @@ function exampleJson(model: AIModel): string {
     case 'members':
       return JSON.stringify({
         docs: [
-          { fullName: 'Karma Shrestha', role: 'Chairman', status: 'active' },
-          { fullName: 'Pema Shrestha', role: 'Vice-Chairman', status: 'active' },
+          { fullName: 'Karma Shrestha', email: 'karma.shrestha@syasyahsamaj.com', role: 'Chairman', status: 'active' },
+          { fullName: 'Pema Shrestha', email: 'pema.shrestha@syasyahsamaj.com', role: 'Vice-Chairman', status: 'active' },
         ],
       }, null, 2)
     default:

@@ -62,6 +62,9 @@ interface ApiOptions extends Omit<RequestInit, 'body'> {
    * atomic server-side transactions (e.g. cross-illaka transfers) where
    * queuing a partial replay would be wrong. */
   immediate?: boolean
+  /** Suppress the per-write crudToast (used by bulk import to avoid
+   * one toast per record). */
+  skipToast?: boolean
 }
 
 /** Collections that are global/org-wide and do not possess a `tenant` field. */
@@ -400,7 +403,7 @@ export async function api<T = unknown>(
         // best-effort
       }
     }
-    if (method !== 'GET') {
+    if (method !== 'GET' && !options.skipToast) {
       crudToast(method, path)
       // Update globals cache with fresh data (merge to preserve local-only fields)
       if (path === '/globals/billing-settings') {

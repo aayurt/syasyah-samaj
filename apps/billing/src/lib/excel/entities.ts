@@ -252,6 +252,17 @@ const REGISTRY: EntityExcelConfig[] = [
     // phoneNumber, bloodGroup / appliedDateBs are nested groups.
     mapForApi: (doc) => {
       const out: Record<string, unknown> = { ...doc }
+      // Ensure email exists (required by Members collection). Generate from
+      // fullName when missing so AI-imported members without an email still
+      // create successfully; users can correct it later in the Members UI.
+      if (!out.email && out.fullName) {
+        const slug = String(out.fullName)
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, '.')
+          .replace(/^\.|\.$/g, '')
+        out.email = `${slug}@syasyahsamaj.com`
+      }
       if ('phone' in out) {
         out.phoneNumber = out.phone
         delete out.phone
