@@ -29,6 +29,7 @@ import {
   PanelLeftOpen,
   Scale,
   Settings as SettingsIcon,
+  Sparkles,
   Users,
   Wallet,
   RefreshCw,
@@ -87,6 +88,7 @@ import { usePrewarmMasters } from './lib/prewarm'
 import type { BillingSettings } from './lib/types'
 import DataManagement from './pages/DataManagement'
 import SetupWizard from './pages/SetupWizard'
+import AIPage from './pages/AI'
 
 type NavItem = { to: string; label: string; labelKey?: string; icon: LucideIcon; end?: boolean; feature?: string; disabled?: boolean }
 
@@ -141,6 +143,7 @@ const navGroups: { title?: string; titleKey?: string; items: NavItem[] }[] = [
       { to: '/audit', label: 'Audit Log', labelKey: 'nav.auditLog', icon: FileText },
       { to: '/data-management', label: 'Data Management', labelKey: 'nav.dataManagement', icon: Database },
       { to: '/approvals', label: 'Approvals', labelKey: 'nav.approvals', icon: BadgeCheck, disabled: true },
+      { to: '/ai', label: 'AI Import', labelKey: 'nav.ai', icon: Sparkles },
     ],
   },
   {
@@ -458,6 +461,7 @@ function Shell({ email }: { email: string }) {
             <Route path="/settings" element={<Settings />} />
             <Route path="/settings/:section" element={<Settings />} />
             <Route path="/setup" element={<SetupWizard />} />
+            <Route path="/ai" element={<AIPage />} />
             <Route path="/data-management" element={<DataManagement />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
