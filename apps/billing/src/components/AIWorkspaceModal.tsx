@@ -69,6 +69,8 @@ function fieldInputs(model: AIModel): string[] {
       return ['label', 'startDate', 'endDate', 'status']
     case 'members':
       return ['fullName', 'email', 'role', 'status']
+    case 'parties':
+      return ['name', 'type', 'email', 'phone']
     default:
       return ['name']
   }
@@ -91,6 +93,13 @@ function enumOptions(model: AIModel, field: string): { label: string; value: str
     return [
       { label: 'Active', value: 'active' },
       { label: 'Inactive', value: 'inactive' },
+    ]
+  }
+  if (model === 'parties' && field === 'type') {
+    return [
+      { label: 'Customer', value: 'customer' },
+      { label: 'Vendor', value: 'vendor' },
+      { label: 'Both', value: 'both' },
     ]
   }
   if (field === 'type') {
@@ -188,6 +197,13 @@ function exampleJson(model: AIModel): string {
         docs: [
           { fullName: 'Karma Shrestha', email: 'karma.shrestha@syasyahsamaj.com', role: 'moderator', status: 'active' },
           { fullName: 'Pema Shrestha', email: 'pema.shrestha@syasyahsamaj.com', role: 'member', status: 'active' },
+        ],
+      }, null, 2)
+    case 'parties':
+      return JSON.stringify({
+        docs: [
+          { name: 'Example Customer', type: 'customer', email: 'customer@example.com', phone: '9841000001' },
+          { name: 'Example Vendor', type: 'vendor', email: 'vendor@example.com', phone: '9841000002' },
         ],
       }, null, 2)
     default:

@@ -174,7 +174,6 @@ Generate parties (customers and vendors) as JSON. Each party must have:
 - type: one of "customer", "vendor", "both"
 - email: string — email address (optional)
 - phone: string — phone number (optional)
-- active: boolean — whether active (default true)
 
 Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no explanation.`,
   },
