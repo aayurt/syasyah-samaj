@@ -41,7 +41,8 @@ export default function SetupOpeningBalances() {
 
   const [accounts, setAccounts] = useState<Account[]>([])
   const [accountsLoaded, setAccountsLoaded] = useState(false)
-  const [balances, setBalances] = useState<Record<number, string>>({})
+  const [debits, setDebits] = useState<Record<number, string>>({})
+  const [credits, setCredits] = useState<Record<number, string>>({})
   const [errors, setErrors] = useState<Record<number, boolean>>({})
   const [q, setQ] = useState('')
   const [saving, setSaving] = useState(false)
@@ -70,23 +71,27 @@ export default function SetupOpeningBalances() {
   // Load the existing opening balances for the selected fiscal year.
   const loadBalances = useCallback(async () => {
     if (!selectedYearId) {
-      setBalances({})
+      setDebits({})
+      setCredits({})
       return
     }
     try {
       const res = await api<{ docs: OpeningBalance[] }>('/opening-balances/for-year', {
         query: { fiscalYear: selectedYearId, ...tenantQuery },
       })
-      const map: Record<number, string> = {}
+      const dMap: Record<number, string> = {}
+      const cMap: Record<number, string> = {}
       const ids: Record<number, number> = {}
       for (const b of res.docs || []) {
         const acctId = typeof b.account === 'object' ? b.account.id : b.account
         const amount = Number(b.amount || 0)
-        map[acctId] = Number.isFinite(amount) ? String(amount) : ''
         ids[acctId] = b.id
+        if (amount > 0) dMap[acctId] = String(amount)
+        else if (amount < 0) cMap[acctId] = String(Math.abs(amount))
       }
       existingIds.current = ids
-      setBalances(map)
+      setDebits(dMap)
+      setCredits(cMap)
       setErrors({})
     } catch {
       /* offline — keep cached */
@@ -101,8 +106,12 @@ export default function SetupOpeningBalances() {
     loadBalances()
   }, [loadBalances, cacheVersion])
 
-  const setAmount = (accountId: number, raw: string) => {
-    setBalances((prev) => ({ ...prev, [accountId]: raw }))
+  const setAmount = (accountId: number, field: 'debit' | 'credit', raw: string) => {
+    if (field === 'debit') {
+      setDebits((prev) => ({ ...prev, [accountId]: raw }))
+    } else {
+      setCredits((prev) => ({ ...prev, [accountId]: raw }))
+    }
     setErrors((prev) => {
       const next = { ...prev }
       const v = Number(raw)
@@ -125,18 +134,27 @@ export default function SetupOpeningBalances() {
     )
   }, [accounts, q])
 
-  const enteredCount = Object.keys(balances).length
-  // Consider a year "set" when at least one account has a non-zero / filled value.
-  const filledCount = Object.values(balances).filter((v) => v !== '' && Number(v) !== 0).length
+  const enteredCount = Object.keys(debits).length + Object.keys(credits).length
+  const filledCount = Object.keys(debits).length + Object.keys(credits).length
+
+  // Trial-balance totals (Manager.io style: debits must equal credits)
+  const totalDebit = Object.values(debits).reduce((sum, v) => sum + Number(v || 0), 0)
+  const totalCredit = Object.values(credits).reduce((sum, v) => sum + Number(v || 0), 0)
+  const balanceDiff = totalDebit - totalCredit
 
   const save = async () => {
     if (!selectedYearId) return
     const bad = Object.keys(errors).length > 0
     if (bad) return
+    // Trial balance must balance: debits = credits
+    if (balanceDiff !== 0) {
+      pushToast('error', `Trial balance not balanced: debits ${fmt(totalDebit)} ≠ credits ${fmt(totalCredit)} (diff ${fmt(Math.abs(balanceDiff))})`)
+      return
+    }
 
     // Pre-validate all account headings exist in the current Chart of Accounts before saving
-    for (const accountIdStr of Object.keys(balances)) {
-      const accountId = Number(accountIdStr)
+    const allAccountIds = new Set([...Object.keys(debits), ...Object.keys(credits)].map(Number))
+    for (const accountId of allAccountIds) {
       const exists = accounts.some((a) => a.id === accountId)
       if (!exists) {
         const errorMsg = `Account heading (ID: ${accountId}) was not found in Chart of Accounts. Please create the account heading before importing opening balances. The operation has been cancelled.`
@@ -148,23 +166,27 @@ export default function SetupOpeningBalances() {
     setSaving(true)
     try {
       const tenantBody = tenantId ? { tenant: tenantId } : {}
-      // Records whose value was cleared to 0/blank should be removed.
-      for (const [accountIdStr, raw] of Object.entries(balances)) {
-        const recordId = existingIds.current[Number(accountIdStr)]
-        const zero = raw === '' || Number(raw) === 0
-        if (zero && recordId) {
-          await api(`/opening-balances/${recordId}`, { method: 'DELETE' })
-          delete existingIds.current[Number(accountIdStr)]
+      // Remove cleared records first
+      for (const accountIdStr of Object.keys(existingIds.current)) {
+        const accountId = Number(accountIdStr)
+        const hasDebit = debits[accountId] && Number(debits[accountId]) !== 0
+        const hasCredit = credits[accountId] && Number(credits[accountId]) !== 0
+        if (!hasDebit && !hasCredit) {
+          await api(`/opening-balances/${existingIds.current[accountId]}`, { method: 'DELETE' })
+          delete existingIds.current[accountId]
         }
       }
-      // Upsert each entered balance for this fiscal year.
-      for (const [accountIdStr, raw] of Object.entries(balances)) {
-        if (raw === '' || Number(raw) === 0) continue
+      // Upsert each entered balance: net = debit - credit (signed)
+      for (const accountIdStr of [...Object.keys(debits), ...Object.keys(credits)]) {
         const accountId = Number(accountIdStr)
+        const debit = Number(debits[accountId] || 0)
+        const credit = Number(credits[accountId] || 0)
+        const net = debit - credit
+        if (net === 0) continue
         const body = {
           account: accountId,
           fiscalYear: Number(selectedYearId),
-          amount: Number(raw),
+          amount: net,
           ...tenantBody,
         }
         const recordId = existingIds.current[accountId]
@@ -293,13 +315,15 @@ export default function SetupOpeningBalances() {
                     <th className="px-4 py-2">{t('items.code', 'Code')}</th>
                     <th className="px-4 py-2">{t('items.name', 'Name')}</th>
                     <th className="px-4 py-2">Group</th>
-                    <th className="px-4 py-2 text-right">{t('openingBalances.title', 'Opening balance')}</th>
+                    <th className="px-4 py-2 text-right">Debit</th>
+                    <th className="px-4 py-2 text-right">Credit</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((a) => {
                     const invalid = !!errors[a.id]
-                    const value = balances[a.id] ?? ''
+                    const debitValue = debits[a.id] ?? ''
+                    const creditValue = credits[a.id] ?? ''
                     return (
                       <tr key={a.id} className="border-b border-slate-50">
                         <td className="px-4 py-2 font-mono text-slate-500">{a.code || '—'}</td>
@@ -310,9 +334,24 @@ export default function SetupOpeningBalances() {
                             type="number"
                             step="0.01"
                             min="0"
-                            value={value}
+                            value={debitValue}
                             placeholder="0.00"
-                            onChange={(e) => setAmount(a.id, e.target.value)}
+                            onChange={(e) => setAmount(a.id, 'debit', e.target.value)}
+                            className={`ml-auto block w-40 rounded border px-3 py-1.5 text-right font-mono text-sm outline-none focus:border-amber-500 ${
+                              invalid
+                                ? 'border-red-300 bg-red-50 text-red-700'
+                                : 'border-slate-300 text-slate-700 focus:border-slate-500'
+                            }`}
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={creditValue}
+                            placeholder="0.00"
+                            onChange={(e) => setAmount(a.id, 'credit', e.target.value)}
                             className={`ml-auto block w-40 rounded border px-3 py-1.5 text-right font-mono text-sm outline-none focus:border-amber-500 ${
                               invalid
                                 ? 'border-red-300 bg-red-50 text-red-700'
@@ -336,11 +375,16 @@ export default function SetupOpeningBalances() {
         )}
       </div>
 
-      <div className="sticky bottom-4 mt-6 flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-100/80 py-3 backdrop-blur">
-        <span className="text-xs text-slate-500">{enteredCount} entered</span>
+      <div className="sticky bottom-4 mt-6 flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-100/80 py-3 backdrop-blur">
+        <div className="flex flex-col items-start gap-1">
+          <span className="text-xs text-slate-500">{enteredCount} entered</span>
+          <span className={`text-xs font-medium ${balanceDiff === 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+            Debits {fmt(totalDebit)} · Credits {fmt(totalCredit)} · Diff {fmt(Math.abs(balanceDiff))}
+          </span>
+        </div>
         <button
           onClick={save}
-          disabled={saving || !selectedYearId || Object.keys(errors).length > 0}
+          disabled={saving || !selectedYearId || Object.keys(errors).length > 0 || balanceDiff !== 0}
           className="flex items-center gap-1.5 rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-40"
         >
           <Save size={14} /> {saving ? t('msg.saving', 'Saving…') : t('openingBalances.save', 'Save Opening Balances')}

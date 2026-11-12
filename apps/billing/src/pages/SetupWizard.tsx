@@ -444,11 +444,15 @@ export default function SetupWizard() {
       .catch((e) => pushToast('error', 'Failed to open year', e instanceof Error ? e.message : String(e)))
   }
 
-  const fyDelete = (id: string) => {
+  const fyDelete = async (id: string) => {
     if (!window.confirm('Delete this fiscal year? This cannot be undone.')) return
-    api(`/fiscal-years/${id}`, { method: 'DELETE' })
-      .then(() => { void refreshYears(); pushToast('success', 'Year deleted') })
-      .catch((e) => pushToast('error', 'Failed to delete year', e instanceof Error ? e.message : String(e)))
+    try {
+      await api(`/fiscal-years/${id}`, { method: 'DELETE' })
+      await refreshYears()
+      pushToast('success', 'Year deleted')
+    } catch (e) {
+      pushToast('error', 'Failed to delete year', e instanceof Error ? e.message : String(e))
+    }
   }
 
   const fyRowSave = async (id: string) => {

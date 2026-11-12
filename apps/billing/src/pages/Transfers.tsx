@@ -8,6 +8,9 @@ import { todayAD } from '../lib/nepaliDate'
 import { useTenant } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 import NepaliDateInput from '../components/NepaliDateInput'
+import { type SortState, useSortSearch } from '../lib/useSortSearch'
+import SortableTh from '../components/SortableTh'
+import SearchBox from '../components/SearchBox'
 
 type Account = {
   id: number
@@ -114,6 +117,13 @@ export default function Transfers() {
   }, [])
 
   useEffect(() => { loadTransfers() }, [loadTransfers])
+
+  // ── Sort / filter for transfers table ──
+  const { query, setQuery, sort, toggleSort, visible } = useSortSearch<TransferGroup>(groups, {
+    searchable: (g) => `${g.ref} ${g.legs[0]?.narration || ''}`,
+    valueOf: (g, key) => (key === 'date' ? g.date : g.ref),
+    defaultSort: { key: 'date', dir: 'desc' },
+  })
 
   const tenantLabel = useMemo(() => {
     const m = new Map<string, string>()
@@ -286,27 +296,30 @@ export default function Transfers() {
 
       {/* Recent transfers */}
       <div className="rounded-lg border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 px-4 py-3 text-sm text-slate-500">
-          {t('transfers.title', 'Recent transfers')}{loading ? '' : ` (${groups.length})`}
+        <div className="border-b border-slate-200 px-4 py-3 flex items-center justify-between text-sm text-slate-500">
+          <div className="flex items-center gap-2">
+            {t('transfers.title', 'Recent transfers')}{loading ? '' : ` (${visible.length})`}
+          </div>
+          <SearchBox value="" onChange={setQuery} placeholder={t('common.search', 'Search ref, route…')} />
         </div>
         {loading && groups.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-slate-400">Loading…</p>
-        ) : groups.length === 0 ? (
+        ) : visible.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-slate-400">{t('transfers.noTransfers', 'No transfers yet.')}</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
               <tr>
-                <th className="px-4 py-3">Ref</th>
-                <th className="px-4 py-3">{t('common.date', 'Date')}</th>
-                <th className="px-4 py-3">Route</th>
+                <SortableTh label={t('common.ref', 'Ref')} sortKey="ref" sort={sort} onSort={toggleSort} />
+                <SortableTh label={t('common.date', 'Date')} sortKey="date" sort={sort} onSort={toggleSort} />
+                <th className="px-4 py-3">{t('common.route', 'Route')}</th>
                 <th className="px-4 py-3">{t('journal.columnNarration', 'Narration')}</th>
                 <th className="px-4 py-3">{t('common.status', 'Status')}</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {groups.map((g) => {
+              {visible.map((g) => {
                 const voided = g.legs.some((l) => l.narration?.includes('[VOID]'))
                 return (
                   <tr key={g.ref} className="hover:bg-slate-50">

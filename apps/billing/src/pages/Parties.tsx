@@ -44,6 +44,7 @@ export default function Parties() {
   const [parties, setParties] = useState<Party[]>([])
   const [error, setError] = useState('')
   const [form, setForm] = useState(emptyForm)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
@@ -105,10 +106,36 @@ export default function Parties() {
     setShowForm(true)
   }
 
+  const validateForm = (): boolean => {
+    const errs: Record<string, string> = {}
+    if (!form.name.trim()) errs.name = t('parties.nameRequired', 'Name is required')
+    if (!form.type) errs.type = 'Type is required'
+    // Conditional AR/AP mandatory by party type
+    if (form.type === 'customer' && !form.receivableAccount)
+      errs.receivableAccount = t('parties.arRequired', 'AR account is required for customers')
+    if (form.type === 'vendor' && !form.payableAccount)
+      errs.payableAccount = t('parties.apRequired', 'AP account is required for vendors')
+    if (form.type === 'both' && (!form.receivableAccount || !form.payableAccount))
+      errs.receivableAccount = errs.payableAccount = t('parties.bothRequired', 'Both AR and AP accounts are required')
+    // Non-zero opening balance needs the matching control account
+    const ob = Number(form.openingBalance || 0)
+    if (ob !== 0) {
+      if (form.type === 'customer' && !form.receivableAccount)
+        errs.receivableAccount = t('parties.arRequired', 'AR account required when opening balance is set')
+      if (form.type === 'vendor' && !form.payableAccount)
+        errs.payableAccount = t('parties.apRequired', 'AP account required when opening balance is set')
+      if (form.type === 'both' && (!form.receivableAccount || !form.payableAccount))
+        errs.receivableAccount = errs.payableAccount = t('parties.bothRequired', 'Both AR and AP accounts required when opening balance is set')
+    }
+    setFormErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true)
     setError('')
+    if (!validateForm()) return
+    setSaving(true)
     try {
       const body = {
         type: form.type,
@@ -265,8 +292,11 @@ export default function Parties() {
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                className={`mt-1 w-full rounded border px-3 py-2 text-sm outline-none focus:border-slate-500 ${
+                  formErrors.name ? 'border-red-300 bg-red-50 text-red-700' : 'border-slate-300 text-slate-700 focus:border-slate-500'
+                }`}
               />
+              {formErrors.name && <span className="mt-1 text-xs text-red-600">{formErrors.name}</span>}
             </label>
             <label className="text-sm text-slate-700">
               {t('common.type', 'Type')}
@@ -326,7 +356,9 @@ export default function Parties() {
               <select
                 value={form.receivableAccount}
                 onChange={(e) => setForm({ ...form, receivableAccount: e.target.value })}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                className={`mt-1 w-full rounded border px-3 py-2 text-sm outline-none focus:border-slate-500 ${
+                  formErrors.receivableAccount ? 'border-red-300 bg-red-50 text-red-700' : 'border-slate-300 text-slate-700 focus:border-slate-500'
+                }`}
               >
                 <option value="">{t('parties.defaultAr', 'Default (global AR)')}</option>
                 {accounts.map((a) => (
@@ -335,13 +367,16 @@ export default function Parties() {
                   </option>
                 ))}
               </select>
+              {formErrors.receivableAccount && <span className="mt-1 text-xs text-red-600">{formErrors.receivableAccount}</span>}
             </label>
             <label className="text-sm text-slate-700">
               {t('parties.apAccount', 'AP account (optional)')}
               <select
                 value={form.payableAccount}
                 onChange={(e) => setForm({ ...form, payableAccount: e.target.value })}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                className={`mt-1 w-full rounded border px-3 py-2 text-sm outline-none focus:border-slate-500 ${
+                  formErrors.payableAccount ? 'border-red-300 bg-red-50 text-red-700' : 'border-slate-300 text-slate-700 focus:border-slate-500'
+                }`}
               >
                 <option value="">{t('parties.defaultAp', 'Default (global AP)')}</option>
                 {accounts.map((a) => (
@@ -350,6 +385,7 @@ export default function Parties() {
                   </option>
                 ))}
               </select>
+              {formErrors.payableAccount && <span className="mt-1 text-xs text-red-600">{formErrors.payableAccount}</span>}
             </label>
             <label className="col-span-2 text-sm text-slate-700 md:col-span-3">
               {t('parties.address', 'Address')}

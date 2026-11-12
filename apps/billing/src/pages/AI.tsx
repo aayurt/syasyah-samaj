@@ -184,15 +184,18 @@ export default function AIPage() {
     try {
       // Single-record / non-entity writes through existing endpoints.
       if (model === 'company-profile') {
-        const errs: string[] = []
-        for (const row of preview) {
-          try {
-            await api('/globals/billing-settings', { method: 'POST', body: row.doc })
-          } catch (e) {
-            errs.push(e instanceof Error ? e.message : String(e))
-          }
+        // Billing settings globals is a single record — import only the first row.
+        const row = preview[0]
+        if (!row) {
+          setResult({ created: 0, updated: 0, skipped: 0, errors: ['No company-profile row to import'] })
+          return
         }
-        setResult({ created: preview.length - errs.length, updated: 0, skipped: 0, errors: errs })
+        try {
+          await api('/globals/billing-settings', { method: 'POST', body: row.doc })
+          setResult({ created: 1, updated: 0, skipped: 0, errors: [] })
+        } catch (e) {
+          setResult({ created: 0, updated: 0, skipped: 0, errors: [e instanceof Error ? e.message : String(e)] })
+        }
       } else if (model === 'sub-companies') {
         const errs: string[] = []
         let created = 0

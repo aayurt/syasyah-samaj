@@ -110,6 +110,28 @@ export const Parties: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeValidate: [assignTenant],
+    beforeValidate: [
+      assignTenant,
+      // Conditional mandatory: customer→AR, vendor→AP, both→both.
+      // Non-zero opening balance requires the matching control account(s).
+      async ({ data, operation }) => {
+        if (operation !== 'create' && operation !== 'update') return data
+        if (!data) return data
+        const d = data as Record<string, unknown>
+        const errors: string[] = []
+        const type = d.type as string | undefined
+        const receivable = d.receivableAccount
+        const payable = d.payableAccount
+        const opening = Number(d.openingBalance || 0)
+        const hasAR = !!receivable
+        const hasAP = !!payable
+        const needsAR = type === 'customer' || type === 'both' || opening !== 0
+        const needsAP = type === 'vendor' || type === 'both' || opening !== 0
+        if (needsAR && !hasAR) errors.push('receivableAccount: AR account is required for this party type / opening balance')
+        if (needsAP && !hasAP) errors.push('payableAccount: AP account is required for this party type / opening balance')
+        if (errors.length) throw new Error(errors.join('; '))
+        return data
+      },
+    ],
   },
 }

@@ -36,14 +36,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/68</span>
+                <span class='fraction'>0/70</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/147</span>
+                <span class='fraction'>0/149</span>
             </div>
         
             
@@ -57,7 +57,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/60</span>
+                <span class='fraction'>0/62</span>
             </div>
         
             
@@ -559,7 +559,19 @@
 <a name='L483'></a><a href='#L483'>483</a>
 <a name='L484'></a><a href='#L484'>484</a>
 <a name='L485'></a><a href='#L485'>485</a>
-<a name='L486'></a><a href='#L486'>486</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L486'></a><a href='#L486'>486</a>
+<a name='L487'></a><a href='#L487'>487</a>
+<a name='L488'></a><a href='#L488'>488</a>
+<a name='L489'></a><a href='#L489'>489</a>
+<a name='L490'></a><a href='#L490'>490</a>
+<a name='L491'></a><a href='#L491'>491</a>
+<a name='L492'></a><a href='#L492'>492</a>
+<a name='L493'></a><a href='#L493'>493</a>
+<a name='L494'></a><a href='#L494'>494</a>
+<a name='L495'></a><a href='#L495'>495</a>
+<a name='L496'></a><a href='#L496'>496</a>
+<a name='L497'></a><a href='#L497'>497</a>
+<a name='L498'></a><a href='#L498'>498</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -668,6 +680,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -981,6 +996,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1150,6 +1174,9 @@ export function <span class="fstat-no" title="function not covered" >AnimatedSid
     const email = <span class="cstat-no" title="statement not covered" >userEmail || 'Admin'</span>
 <span class="cstat-no" title="statement not covered" >    return email.charAt(0).toUpperCase()</span>
   }, [userEmail])
+&nbsp;
+  const { session <span class="cstat-no" title="statement not covered" >} = useOfflineSession()</span>
+  const userRole = <span class="cstat-no" title="statement not covered" >session?.user?.role</span>
 &nbsp;
   const handleSignOut = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async () =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >    await authClient.signOut()</span>
@@ -1478,9 +1505,18 @@ export function <span class="fstat-no" title="function not covered" >AnimatedSid
           {/* User Email &amp; Role */}
           {!collapsed &amp;&amp; (
             &lt;div className="grid flex-1 text-left leading-tight truncate"&gt;
-              &lt;span className="truncate text-xs font-semibold text-slate-800"&gt;
-                {userEmail?.split('@')[0] || 'User'}
-              &lt;/span&gt;
+              &lt;div className="flex items-center gap-1.5 truncate"&gt;
+                &lt;span className="truncate text-xs font-semibold text-slate-800"&gt;
+                  {userEmail?.split('@')[0] || 'User'}
+                &lt;/span&gt;
+                {userRole &amp;&amp; (
+                  &lt;span
+                    className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-600"
+                  &gt;
+                    {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                  &lt;/span&gt;
+                )}
+              &lt;/div&gt;
               &lt;span className="truncate text-[10px] text-slate-400 font-mono"&gt;
                 {userEmail || 'authenticated'}
               &lt;/span&gt;
@@ -1536,7 +1572,7 @@ export function <span class="fstat-no" title="function not covered" >AnimatedSid
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-11-11T02:20:36.418Z
+                at 2026-11-12T17:59:37.776Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

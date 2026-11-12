@@ -106,7 +106,7 @@ export default function ExportModal({
       onClick={onClose}
     >
       <div
-        className="anim-modal-in w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-2xl"
+        className="anim-modal-in w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-2xl overflow-y-auto max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
