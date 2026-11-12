@@ -1395,21 +1395,37 @@ export default function SetupWizard() {
           )}
           {step.key === 'defaults' && (
             <div className="space-y-3">
-              {CORE_DEFAULTS.map((d) => (
-                <div key={d.key} className="flex items-center justify-between gap-4">
-                  <label className="w-48 shrink-0 text-sm text-slate-600">{d.label}</label>
-                  <div className="flex-1">
-                    <AccountSelect
-                      accounts={accounts}
-                      value={defaults[d.key] || ''}
-                      onChange={(id) => setDefaults({ ...defaults, [d.key]: id })}
-                    />
-                  </div>
+              {accounts.length === 0 ? (
+                <div className="rounded border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-sm text-amber-700">
+                    No accounts yet — seed the Chart of Accounts first, then map defaults here.
+                  </p>
+                  <button
+                    onClick={() => setStepIdx((i) => Math.max(i - 1, 0))}
+                    className="mt-2 inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
+                  >
+                    <ArrowLeft size={13} /> Back to Chart of Accounts
+                  </button>
                 </div>
-              ))}
-              <p className="text-xs text-slate-400">
-                The posting engine resolves every voucher leg through these accounts.
-              </p>
+              ) : (
+                <>
+                  {CORE_DEFAULTS.map((d) => (
+                    <div key={d.key} className="flex items-center justify-between gap-4">
+                      <label className="w-48 shrink-0 text-sm text-slate-600">{d.label}</label>
+                      <div className="flex-1">
+                        <AccountSelect
+                          accounts={accounts}
+                          value={defaults[d.key] || ''}
+                          onChange={(id) => setDefaults({ ...defaults, [d.key]: id })}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-xs text-slate-400">
+                    The posting engine resolves every voucher leg through these accounts.
+                  </p>
+                </>
+              )}
             </div>
           )}
 

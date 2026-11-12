@@ -67,6 +67,8 @@ function fieldInputs(model: AIModel): string[] {
       return ['name', 'code', 'slug', 'active']
     case 'fiscal-year':
       return ['label', 'startDate', 'endDate', 'status']
+    case 'members':
+      return ['fullName', 'role', 'status']
     default:
       return ['name']
   }
@@ -80,6 +82,12 @@ function enumOptions(model: AIModel, field: string): { label: string; value: str
     ]
   }
   if (model === 'fiscal-year' && field === 'status') {
+    return [
+      { label: 'Active', value: 'active' },
+      { label: 'Inactive', value: 'inactive' },
+    ]
+  }
+  if (model === 'members' && field === 'status') {
     return [
       { label: 'Active', value: 'active' },
       { label: 'Inactive', value: 'inactive' },
@@ -174,6 +182,13 @@ function exampleJson(model: AIModel): string {
     case 'fiscal-year':
       return JSON.stringify({
         docs: [{ label: '2026-27', startDate: '2026-04-01', endDate: '2027-03-31', status: 'active' }],
+      }, null, 2)
+    case 'members':
+      return JSON.stringify({
+        docs: [
+          { fullName: 'Karma Shrestha', role: 'Chairman', status: 'active' },
+          { fullName: 'Pema Shrestha', role: 'Vice-Chairman', status: 'active' },
+        ],
       }, null, 2)
     default:
       return JSON.stringify({ docs: [{ name: 'Bank Accounts', type: 'asset', nature: 'debit', active: true }] }, null, 2)
@@ -626,6 +641,8 @@ export default function AIWorkspaceModal({
         return String(doc.taxName ?? doc.name ?? '')
       case 'account-groups':
         return String(doc.groupName ?? doc.name ?? '')
+      case 'members':
+        return String(doc.fullName ?? doc.name ?? '')
       case 'opening-balances':
         return String(doc.accountCode ?? doc.code ?? '')
       default:
