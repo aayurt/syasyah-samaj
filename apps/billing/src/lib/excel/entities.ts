@@ -252,9 +252,11 @@ const REGISTRY: EntityExcelConfig[] = [
     // phoneNumber, bloodGroup / appliedDateBs are nested groups.
     mapForApi: (doc) => {
       const out: Record<string, unknown> = { ...doc }
-      // Ensure email exists (required by Members collection). Generate from
-      // fullName when missing so AI-imported members without an email still
-      // create successfully; users can correct it later in the Members UI.
+      // role is a Payload select: admin | moderator | member | vip.
+      const validRoles = ['admin', 'moderator', 'member', 'vip']
+      if (!out.role || !validRoles.includes(String(out.role))) {
+        out.role = 'member'
+      }
       if (!out.email && out.fullName) {
         const slug = String(out.fullName)
           .toLowerCase()

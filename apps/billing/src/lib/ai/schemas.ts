@@ -206,7 +206,7 @@ Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no ex
 Generate members as JSON. Each member must have:
 - fullName: string — member full name
 - email: string — email address (optional)
-- role: string — member role; default "user" if not stated
+- role: string — member role; one of "admin", "moderator", "member", "vip" (default "member")
 - status: one of "active", "inactive"
 
 Output ONLY a JSON object: { "docs": [ {...} ] }. No markdown code fences, no explanation.`,

@@ -186,8 +186,8 @@ function exampleJson(model: AIModel): string {
     case 'members':
       return JSON.stringify({
         docs: [
-          { fullName: 'Karma Shrestha', email: 'karma.shrestha@syasyahsamaj.com', role: 'Chairman', status: 'active' },
-          { fullName: 'Pema Shrestha', email: 'pema.shrestha@syasyahsamaj.com', role: 'Vice-Chairman', status: 'active' },
+          { fullName: 'Karma Shrestha', email: 'karma.shrestha@syasyahsamaj.com', role: 'moderator', status: 'active' },
+          { fullName: 'Pema Shrestha', email: 'pema.shrestha@syasyahsamaj.com', role: 'member', status: 'active' },
         ],
       }, null, 2)
     default:
