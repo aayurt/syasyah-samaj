@@ -25,16 +25,6 @@ export default function AccountSelect({ accounts, value, onChange, placeholder }
 
   const selected = accounts.find((a) => String(a.id) === String(value))
 
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
-
   // Focus search on open
   useEffect(() => {
     if (open) {

@@ -100,7 +100,7 @@ const navGroups: { title?: string; titleKey?: string; items: NavItem[] }[] = [
     title: 'Bookkeeping',
     titleKey: 'nav.bookkeeping',
     items: [
-      { to: '/transaction-entry', label: 'All Transactions', labelKey: 'nav.allTransactions', icon: FileText },
+      { to: '/vouchers/new', label: 'All Transactions', labelKey: 'nav.allTransactions', icon: FileText },
       { to: '/transfers', label: 'Transfers', labelKey: 'nav.transfers', icon: ArrowLeftRight },
       { to: '/posting', label: 'Posting', labelKey: 'nav.posting', icon: FileCheck2 },
       { to: '/daybooks', label: 'Daybook', labelKey: 'nav.daybook', icon: NotebookText },
@@ -468,7 +468,7 @@ function Shell({ email }: { email: string }) {
             <Route path="/" element={<Dashboard />} />
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/opening-balances" element={<ErrorBoundary><SetupOpeningBalances /></ErrorBoundary>} />
-            <Route path="/transaction-entry" element={<Vouchers />} />
+            <Route path="/transaction-entry" element={<Navigate to="/vouchers/new" replace />} />
             <Route path="/vouchers" element={<Vouchers />} />
             <Route path="/vouchers/new/:docType?" element={<VoucherStepper mode="create" />} />
             <Route path="/vouchers/edit/:id" element={<ErrorBoundary><VoucherForm mode="edit" /></ErrorBoundary>} />

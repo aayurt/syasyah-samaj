@@ -205,6 +205,22 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
 
   const postVoucher = useCallback(async () => {
     setError('')
+    if (!date) {
+      setError(t('vouchers.dateRequired', 'Date is required'))
+      return
+    }
+    if (partyRequired && !partyId) {
+      setError(t('vouchers.partyRequired', 'Party is required'))
+      return
+    }
+    if (isJournal && jLines.some((l) => l.account == null)) {
+      setError(t('vouchers.accountRequired', 'Account is required for each line'))
+      return
+    }
+    if (isContra && (!fromAccount || !toAccount || contraAmount <= 0)) {
+      setError(t('vouchers.contraRequired', 'From account, to account, and amount are required'))
+      return
+    }
     const hasLines = isJournal
       ? jLines.some((l) => l.account != null && (l.debit || 0) > 0 || (l.credit || 0) > 0)
       : isContra
@@ -306,7 +322,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                   return (
                     <button
                       key={dt.value}
-                      onClick={() => setDocType(dt.value)}
+                      onClick={() => { setDocType(dt.value); navigate(`/vouchers/new/${dt.value}`) }}
                       className={`h-40 rounded-xl border flex flex-col items-center justify-center gap-2 text-left transition-all ${active
                         ? 'border-crimson-600 bg-crimson-50/40 shadow-[0_0_0_3px_rgba(185,28,28,0.08)]'
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
