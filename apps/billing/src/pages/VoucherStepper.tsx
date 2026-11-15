@@ -8,7 +8,7 @@ import { api, fmt } from '../lib/api'
 import { useT } from '../lib/i18n'
 import { CURRENCIES, DOC_TYPE_LABELS, type Account, type Currency, type DocType, type Party } from '../lib/types'
 import { useCachedList } from '../lib/useCachedList'
-import { useTenantQuery } from '../lib/tenant'
+import { useTenant, useTenantQuery } from '../lib/tenant'
 import { todayAD } from '../lib/nepaliDate'
 import { toBaseCurrency } from '../lib/types'
 
@@ -56,6 +56,8 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
   const { docType: routeDocType } = useParams<{ docType?: string }>()
   const t = useT()
   const tenantQuery = useTenantQuery()
+  const { tenantId, tenants } = useTenant()
+  const activeTenantName = tenants.find((t) => t.id === tenantId)?.name
   const { docs: parties } = useCachedList<Party>('parties', { sort: 'name', ...tenantQuery })
   const { docs: accounts } = useCachedList<Account>('gl-accounts', { sort: 'name', ...tenantQuery })
 
@@ -251,429 +253,392 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
   const numCls = inputCls + ' font-mono'
 
   return (
-    <div className="w-full pb-28">
-      <div className="flex items-center justify-between py-4">
-        <button onClick={() => navigate('/vouchers')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Back">
-          <ArrowLeft size={18} />
-        </button>
-        <h1 className="text-lg font-semibold text-slate-900">{t('vouchers.newTransaction', 'New Transaction')}</h1>
-      </div>
-
-      {error && (
-        <p className="mt-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
-      {draftId && lastSaved && !error && (
-        <p className="mt-2 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 flex items-center gap-2">
-          <span className="text-[10px]">●</span>
-          {t('vouchers.draftSaved', 'Draft saved')} · {lastSaved}
-        </p>
-      )}
-
-      {/* Stepper header */}
-      <div className="mt-4 flex items-center gap-2 px-1">
-        {[1, 2, 3].map((n) => (
-          <React.Fragment key={n}>
-            <div className="flex flex-col items-center gap-1">
-              <span className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold ${
-                n === step ? 'border-crimson-600 bg-crimson-50 text-crimson-700'
-                  : 'border-slate-200 text-slate-400'
-              }`}>{n}</span>
-              <span className="text-[10px] font-medium text-slate-500">{stepLabel(n)}</span>
-            </div>
-            {n < 3 && <div className="h-px w-4 bg-slate-200 shrink-0" />}
-          </React.Fragment>
-        ))}
-      </div>
-
-      {/* ── Step 1: voucher details ── */}
-      {step === 1 && (
-        <section className="mt-6 space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-slate-700">{t('vouchers.docType', 'Voucher type')}</label>
-            <select
-              value={docType}
-              onChange={(e) => setDocType(e.target.value as DocType)}
-              className={selectCls}
-            >
-              <option value="">{t('vouchers.select', '— select —')}</option>
-              {STEPS.map((dt) => (
-                <option key={dt.value} value={dt.value}>
-                  {t(`vouchers.${dt.labelKey}`, DOC_TYPE_LABELS[dt.value])}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {partyRequired && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700">{t('vouchers.columnParty', 'Party')}</label>
-              <select
-                value={String(partyId ?? '')}
-                onChange={(e) => setPartyId(e.target.value ? Number(e.target.value) : null)}
-                className={selectCls}
-              >
-                <option value="">{t('vouchers.select', '— select —')}</option>
-                {parties.map((p) => (
-                  <option key={p.id} value={String(p.id)}>{p.name}</option>
-                ))}
-              </select>
-              {!partyId && <p className="mt-1 text-xs text-red-600">{t('vouchers.partyRequired', 'Party is required')}</p>}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700">{t('common.date', 'Date')}</label>
-            <NepaliDateInput value={date} onChange={setDate} />
-            {!date && <p className="mt-1 text-xs text-red-600">{t('vouchers.dateRequired', 'Date is required')}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700">{t('common.currency', 'Currency')}</label>
-            <select
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value as Currency)}
-              className={selectCls}
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          {currency !== 'NPR' && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700">{t('common.exchangeRate', 'Exchange rate')}</label>
-              <input
-                type="number"
-                step="any"
-                min="0"
-                value={exchangeRate ?? ''}
-                onChange={(e) => setExchangeRate(e.target.value ? parseFloat(e.target.value) : null)}
-                className={inputCls}
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700">{t('common.memo', 'Narration')}</label>
-            <textarea
-              value={narration}
-              onChange={(e) => setNarration(e.target.value)}
-              placeholder={t('vouchers.narrationPlaceholder', 'Description of the transaction…')}
-              className={inputCls}
-              rows={2}
-            />
-          </div>
-
-          <div className="flex justify-between">
-            <button onClick={goNext} disabled={saving || !step1Valid}
-              className="rounded bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-              title={!step1Valid ? (partyRequired && !partyId ? t('vouchers.partyRequired', 'Party is required')
-                : t('vouchers.dateRequired', 'Date is required')) : undefined}>
-              {t('common.next', 'Next')}
+    <div className="w-full min-h-screen bg-slate-50">
+      <div className="flex flex-col h-screen overflow-hidden">
+        {/* Header bar */}
+        <header className="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-4 shrink-0 z-20">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/vouchers')} className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors" aria-label="Back to All Transactions">
+              <ArrowLeft size={16} />
             </button>
+            <div>
+              <h1 className="text-sm font-bold text-slate-900">{t('vouchers.newTransaction', 'New Transaction')}</h1>
+              <p className="text-[11px] text-slate-500">{t('vouchers.draftVoucher', 'Draft voucher')} · {activeTenantName || ''}</p>
+            </div>
           </div>
-        </section>
-      )}
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold border-slate-200 text-slate-600 bg-slate-50`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+              {t('vouchers.statusDraft', 'Draft')}
+            </span>
+          </div>
+        </header>
 
-      {/* ── Step 2: lines ── */}
-      {step === 2 && (
-        <section className="mt-6 space-y-4">
-          {isJournal && (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border-collapse">
-                  <thead>
-                    <tr className="border-b text-xs uppercase text-slate-500">
-                      <th className="text-left px-3 py-2">{t('common.account', 'Account')}</th>
-                      <th className="text-right px-3 py-2">{t('common.debit', 'Debit')}</th>
-                      <th className="text-right px-3 py-2">{t('common.credit', 'Credit')}</th>
-                      <th className="text-left px-3 py-2">{t('common.memo', 'Memo')}</th>
-                      <th className="text-center px-3 py-2 w-10" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {jLines.map((l, i) => (
-                      <tr key={i} className="border-b border-slate-100">
-                        <td className="px-3 py-2">
-                          <AccountSelect
-                            accounts={accounts}
-                            value={l.account ?? ''}
-                            onChange={(id) => setJLine(i, { account: Number(id) })}
-                          />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input type="number" min="0" step="0.01" value={l.debit}
-                            onChange={(e) => setJLine(i, { debit: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-right outline-none focus:border-crimson-500" />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input type="number" min="0" step="0.01" value={l.credit}
-                            onChange={(e) => setJLine(i, { credit: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-right outline-none focus:border-crimson-500" />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input value={l.memo}
-                            onChange={(e) => setJLine(i, { memo: e.target.value })}
-                            className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-crimson-500" />
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <button type="button" onClick={() => removeJLine(i)} disabled={jLines.length === 1}
-                            className="rounded p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-40" aria-label="Remove line">×</button>
-                        </td>
-                      </tr>
+        {/* Workspace: left panel (details) + right panel (lines) */}
+        <div className="flex-1 overflow-hidden flex">
+          {/* Left panel: voucher details */}
+          <aside className="w-80 border-r border-slate-200 bg-white flex flex-col shrink-0">
+            <div className="p-4 border-b border-slate-100">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Dr / Cr</span>
+              </div>
+              <div className="grid gap-2 text-sm font-mono">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 text-xs uppercase">{t('common.debit', 'Debit')}</span>
+                  <span className="text-slate-700 font-bold">{fmt(debitTotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 text-xs uppercase">{t('common.credit', 'Credit')}</span>
+                  <span className="text-slate-700 font-bold">{fmt(creditTotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 text-xs uppercase">{t('vouchers.difference', 'Difference')}</span>
+                  <span className={`font-bold ${Math.abs(debitTotal - creditTotal) < 0.0051 ? 'text-emerald-700' : 'text-crimson-600'}`}>
+                    {Math.abs(debitTotal - creditTotal) < 0.0051 ? t('vouchers.balanced', '✓ balanced') : fmt(Math.abs(debitTotal - creditTotal))}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Doc type selector */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  {t('vouchers.docType', 'Voucher type')}
+                </label>
+                <div className="space-y-1.5">
+                  {STEPS.map((dt) => {
+                    const active = docType === dt.value
+                    return (
+                      <button
+                        key={dt.value}
+                        onClick={() => setDocType(dt.value)}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left ${
+                          active
+                            ? 'bg-crimson-50 text-crimson-700 font-semibold border border-crimson-200'
+                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900'
+                        }`}
+                      >
+                        <span className="shrink-0 text-crimson-500">{dt.value === 'journal-voucher' ? '📒' : dt.value === 'contra' ? '🔄' : dt.value.startsWith('sales') ? '🧾' : dt.value.startsWith('purchase') ? '📥' : dt.value === 'payment-voucher' ? '💸' : dt.value === 'receipt-voucher' ? '💰' : '📄'}</span>
+                        <span className="truncate">{t(`vouchers.${dt.labelKey}`, DOC_TYPE_LABELS[dt.value])}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {partyRequired && (
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                    {t('vouchers.columnParty', 'Party')}
+                  </label>
+                  <select
+                    value={String(partyId ?? '')}
+                    onChange={(e) => setPartyId(e.target.value ? Number(e.target.value) : null)}
+                    className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-crimson-500"
+                  >
+                    <option value="">{t('vouchers.select', '— select —')}</option>
+                    {parties.map((p) => (
+                      <option key={p.id} value={String(p.id)}>{p.name}</option>
                     ))}
-                  </tbody>
-                </table>
+                  </select>
+                  {!partyId && <p className="mt-1 text-xs text-red-600">{t('vouchers.partyRequired', 'Party is required')}</p>}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  {t('common.date', 'Date')}
+                </label>
+                <NepaliDateInput value={date} onChange={setDate} />
+                {!date && <p className="mt-1 text-xs text-red-600">{t('vouchers.dateRequired', 'Date is required')}</p>}
               </div>
-              <button type="button" onClick={addJLine} className="text-sm text-slate-600 underline underline-offset-4 hover:text-crimson-600">
-                + {t('vouchers.addLine', '+ Add line')}
+
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  {t('common.currency', 'Currency')}
+                </label>
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value as Currency)}
+                  className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-crimson-500"
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+              {currency !== 'NPR' && (
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                    {t('common.exchangeRate', 'Exchange rate')}
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={exchangeRate ?? ''}
+                    onChange={(e) => setExchangeRate(e.target.value ? parseFloat(e.target.value) : null)}
+                    className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-right outline-none focus:border-crimson-500"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  {t('common.memo', 'Narration')}
+                </label>
+                <textarea
+                  value={narration}
+                  onChange={(e) => setNarration(e.target.value)}
+                  placeholder={t('vouchers.narrationPlaceholder', 'Description of the transaction…')}
+                  className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-crimson-500"
+                  rows={2}
+                />
+              </div>
+
+              {/* Preview card */}
+              <div className="border border-slate-100 rounded-lg p-3 bg-slate-50/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Preview</span>
+                </div>
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 text-xs uppercase">{t('vouchers.tabNewTransaction', 'Voucher type')}</span>
+                    <span className="text-slate-700 font-medium">{t(`vouchers.${STEPS.find((d) => d.value === docType)?.labelKey ?? ''}`, DOC_TYPE_LABELS[docType])}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 text-xs uppercase">{t('vouchers.columnParty', 'Party')}</span>
+                    <span className="text-slate-700">{party?.name ?? '—'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 text-xs uppercase">{t('common.date', 'Date')}</span>
+                    <span className="text-slate-700 font-mono">{date}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 text-xs uppercase">{t('common.currency', 'Currency')}</span>
+                    <span className="text-slate-700 font-mono">{currency}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* Right panel: lines (always visible) */}
+          <main className="flex-1 overflow-y-auto bg-slate-50 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                {t('vouchers.newTransaction', 'New Transaction')}
+              </h2>
+              <button type="button" onClick={
+                isJournal ? addJLine : isContra ? () => {} : addILine
+              } className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                <span>+</span> {t('vouchers.addLine', 'Add line')}
               </button>
-              <div className="mt-2 flex items-end justify-between gap-2 text-sm">
-                <span className="font-mono text-right">Dr {fmt(debitTotal)}</span>
-                <span className="font-mono text-right">Cr {fmt(creditTotal)}</span>
-                <span className={`text-xs font-medium ${
-                  Math.abs(debitTotal - creditTotal) < 0.0051 ? 'text-emerald-700' : 'text-crimson-600'
-                }`}>
-                  {Math.abs(debitTotal - creditTotal) < 0.0051 ? t('vouchers.balanced', '✓ balanced')
-                    : t('vouchers.difference', 'Difference') + ': ' + fmt(Math.abs(debitTotal - creditTotal))}
-                </span>
+            </div>
+
+            {error && (
+              <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+            )}
+            {draftId && lastSaved && !error && (
+              <div className="mb-4 flex items-center gap-2 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <span className="text-[10px]">●</span>
+                {t('vouchers.draftSaved', 'Draft saved')} · {lastSaved}
               </div>
-            </>
             )}
 
-          {isContra && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700">{t('vouchers.fromAccount', 'From account (credited)')}</label>
-                <AccountSelect accounts={accounts} value={String(fromAccount ?? '')}
-                  onChange={(id) => setFromAccount(Number(id))} placeholder={t('vouchers.selectAccount', '— select account —')} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">{t('vouchers.toAccount', 'To account (debited)')}</label>
-                <AccountSelect accounts={accounts} value={String(toAccount ?? '')}
-                  onChange={(id) => setToAccount(Number(id))} placeholder={t('vouchers.selectAccount', '— select account —')} />
-              </div>
-              <div className="flex items-end">
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.amount', 'Amount')}</label>
-                <input type="number" min="0" step="0.01" value={contraAmount}
-                  onChange={(e) => setContraAmount(Math.max(0, Number(e.target.value) || 0))}
-                  className={numCls} />
-              </div>
-            </div>
-          )}
-
-          {!isJournal && !isContra && (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border-collapse">
-                  <thead>
-                    <tr className="border-b text-xs uppercase text-slate-500">
-                      <th className="text-left px-3 py-2">{t('common.description', 'Description')}</th>
-                      <th className="text-right px-3 py-2">{t('vouchers.qty', 'Qty')}</th>
-                      <th className="text-right px-3 py-2">{t('vouchers.rate', 'Rate')}</th>
-                      <th className="text-right px-3 py-2">{t('common.amount', 'Amount')}</th>
-                      <th className="text-center px-3 py-2 w-10" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {iLines.map((l, i) => (
-                      <tr key={i} className="border-b border-slate-100">
-                        <td className="px-3 py-2">
-                          <input value={l.description}
-                            onChange={(e) => setILine(i, { description: e.target.value })}
-                            className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-crimson-500" />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input type="number" min="0" step="any" value={l.qty}
-                            onChange={(e) => setILine(i, { qty: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-right outline-none focus:border-crimson-500" />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input type="number" min="0" step="0.01" value={l.rate}
-                            onChange={(e) => setILine(i, { rate: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-right outline-none focus:border-crimson-500" />
-                        </td>
-                        <td className="px-3 py-2">
-                          <span className="block rounded border border-slate-300 bg-white px-2 py-1 text-sm text-right font-mono">
-                            {fmt(l.amount)}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <button type="button" onClick={() => removeILine(i)} disabled={iLines.length === 1}
-                            className="rounded p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-40" aria-label="Remove line">×</button>
-                        </td>
+            {isJournal ? (
+              <>
+                <div className="overflow-x-auto border rounded-lg">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b text-[10px] uppercase text-slate-500">
+                        <th className="text-left px-3 py-2.5">{t('common.account', 'Account')}</th>
+                        <th className="text-right px-3 py-2.5">{t('common.debit', 'Debit')}</th>
+                        <th className="text-right px-3 py-2.5">{t('common.credit', 'Credit')}</th>
+                        <th className="text-left px-3 py-2.5">{t('common.memo', 'Memo')}</th>
+                        <th className="text-center px-3 py-2.5 w-10" />
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {jLines.map((l, i) => (
+                        <tr key={i} className="border-b border-slate-100 bg-white">
+                          <td className="px-3 py-2">
+                            <AccountSelect
+                              accounts={accounts}
+                              value={l.account ?? ''}
+                              onChange={(id) => setJLine(i, { account: Number(id) })}
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input type="number" min="0" step="0.01" value={l.debit}
+                              onChange={(e) => setJLine(i, { debit: Math.max(0, Number(e.target.value) || 0) })}
+                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs text-right outline-none focus:border-crimson-500" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input type="number" min="0" step="0.01" value={l.credit}
+                              onChange={(e) => setJLine(i, { credit: Math.max(0, Number(e.target.value) || 0) })}
+                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs text-right outline-none focus:border-crimson-500" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input value={l.memo}
+                              onChange={(e) => setJLine(i, { memo: e.target.value })}
+                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs outline-none focus:border-crimson-500" />
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <button type="button" onClick={() => removeJLine(i)} disabled={jLines.length === 1}
+                              className="rounded p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-40" aria-label="Remove line">×</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <button type="button" onClick={addJLine} className="text-xs font-semibold text-slate-600 underline underline-offset-4 hover:text-crimson-600">
+                  + {t('vouchers.addLine', 'Add line')}
+                </button>
+                <div className="mt-2 flex items-end justify-between gap-2 text-xs">
+                  <span className="font-mono text-right">Dr {fmt(debitTotal)}</span>
+                  <span className="font-mono text-right">Cr {fmt(creditTotal)}</span>
+                  <span className={`font-medium ${Math.abs(debitTotal - creditTotal) < 0.0051 ? 'text-emerald-700' : 'text-crimson-600'}`}>
+                    {Math.abs(debitTotal - creditTotal) < 0.0051 ? t('vouchers.balanced', '✓ balanced')
+                      : t('vouchers.difference', 'Difference') + ': ' + fmt(Math.abs(debitTotal - creditTotal))}
+                  </span>
+                </div>
+              </>
+            ) : isContra ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      {t('vouchers.fromAccount', 'From account (credited)')}
+                    </label>
+                    <AccountSelect accounts={accounts} value={String(fromAccount ?? '')}
+                      onChange={(id) => setFromAccount(Number(id))} placeholder={t('vouchers.selectAccount', '— select account —')} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      {t('vouchers.toAccount', 'To account (debited)')}
+                    </label>
+                    <AccountSelect accounts={accounts} value={String(toAccount ?? '')}
+                      onChange={(id) => setToAccount(Number(id))} placeholder={t('vouchers.selectAccount', '— select account —')} />
+                  </div>
+                  <div className="flex items-end">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      {t('common.amount', 'Amount')}
+                    </label>
+                    <input type="number" min="0" step="0.01" value={contraAmount}
+                      onChange={(e) => setContraAmount(Math.max(0, Number(e.target.value) || 0))}
+                      className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-right font-mono outline-none focus:border-crimson-500" />
+                  </div>
+                </div>
+                <div className="mt-2 flex justify-end text-xs">
+                  <span className="font-mono text-right font-medium">Transfer {fmt(contraAmount)}</span>
+                </div>
               </div>
-              <button type="button" onClick={addILine} className="text-sm text-slate-600 underline underline-offset-4 hover:text-crimson-600">
-                + {t('vouchers.addLine', '+ Add line')}
-              </button>
-              <div className="mt-2 flex justify-end text-sm">
-                <span className="font-mono text-right font-medium">Total {fmt(itemTotal)}</span>
-              </div>
-            </>
+            ) : (
+              <>
+                <div className="overflow-x-auto border rounded-lg">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b text-[10px] uppercase text-slate-500">
+                        <th className="text-left px-3 py-2.5">{t('common.description', 'Description')}</th>
+                        <th className="text-right px-3 py-2.5">{t('vouchers.qty', 'Qty')}</th>
+                        <th className="text-right px-3 py-2.5">{t('vouchers.rate', 'Rate')}</th>
+                        <th className="text-right px-3 py-2.5">{t('common.amount', 'Amount')}</th>
+                        <th className="text-center px-3 py-2.5 w-10" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {iLines.map((l, i) => (
+                        <tr key={i} className="border-b border-slate-100 bg-white">
+                          <td className="px-3 py-2">
+                            <input value={l.description}
+                              onChange={(e) => setILine(i, { description: e.target.value })}
+                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs outline-none focus:border-crimson-500" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input type="number" min="0" step="any" value={l.qty}
+                              onChange={(e) => setILine(i, { qty: Math.max(0, Number(e.target.value) || 0) })}
+                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs text-right outline-none focus:border-crimson-500" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input type="number" min="0" step="0.01" value={l.rate}
+                              onChange={(e) => setILine(i, { rate: Math.max(0, Number(e.target.value) || 0) })}
+                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs text-right outline-none focus:border-crimson-500" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <span className="block rounded border border-slate-300 bg-white px-2 py-1 text-xs text-right font-mono">
+                              {fmt(l.amount)}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <button type="button" onClick={() => removeILine(i)} disabled={iLines.length === 1}
+                              className="rounded p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-40" aria-label="Remove line">×</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <button type="button" onClick={addILine} className="text-xs font-semibold text-slate-600 underline underline-offset-4 hover:text-crimson-600">
+                  + {t('vouchers.addLine', 'Add line')}
+                </button>
+                <div className="mt-2 flex justify-end text-xs">
+                  <span className="font-mono text-right font-medium">Total {fmt(itemTotal)}</span>
+                </div>
+              </>
             )}
 
-          <div className="flex justify-between">
-            <button onClick={goPrev} className="rounded border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-              {t('common.back', 'Back')}
-            </button>
-            <button onClick={goNext} disabled={saving || !step2Valid}
-              className="rounded bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-              title={!step2Valid ? (isJournal ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
-                : t('vouchers.linesRequired', 'Add at least one line')) : undefined}>
-              {t('vouchers.stepReview', 'Review & post')}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* ── Step 3: review & post ── */}
-      {step === 3 && (
-        <section className="mt-6 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-xs text-slate-500">{t('vouchers.tabNewTransaction', 'Voucher type')}</p>
-              <p className="text-sm font-medium text-slate-900">
-                {t(`vouchers.${STEPS.find((d) => d.value === docType)?.labelKey ?? ''}`, DOC_TYPE_LABELS[docType])}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-slate-500">{t('vouchers.columnParty', 'Party')}</p>
-              <p className="text-sm text-slate-700">{party?.name ?? '—'}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-slate-500">{t('common.date', 'Date')}</p>
-              <p className="text-sm font-mono text-slate-700">{date}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-slate-500">{t('common.currency', 'Currency')}</p>
-              <p className="text-sm font-mono text-slate-700">{currency}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-slate-500">{t('common.memo', 'Narration')}</p>
-              <p className="text-sm text-slate-700">{narration || '—'}</p>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="border-b text-xs uppercase text-slate-500">
-                  {isJournal ? (
-                    <>
-                      <th className="text-left px-3 py-2">{t('common.account', 'Account')}</th>
-                      <th className="text-right px-3 py-2">{t('common.debit', 'Debit')}</th>
-                      <th className="text-right px-3 py-2">{t('common.credit', 'Credit')}</th>
-                      <th className="text-left px-3 py-2">{t('common.memo', 'Memo')}</th>
-                    </>
-                  ) : isContra ? (
-                    <>
-                      <th className="text-left px-3 py-2">{t('vouchers.fromAccount', 'From account (credited)')}</th>
-                      <th className="text-left px-3 py-2">{t('vouchers.toAccount', 'To account (debited)')}</th>
-                      <th className="text-right px-3 py-2">{t('common.amount', 'Amount')}</th>
-                    </>
-                  ) : (
-                    <>
-                      <th className="text-left px-3 py-2">{t('common.description', 'Description')}</th>
-                      <th className="text-right px-3 py-2">{t('vouchers.qty', 'Qty')}</th>
-                      <th className="text-right px-3 py-2">{t('vouchers.rate', 'Rate')}</th>
-                      <th className="text-right px-3 py-2">{t('common.amount', 'Amount')}</th>
-                    </>
-                    )}
-                </tr>
-              </thead>
-              <tbody>
-                {isJournal ? jLines.filter((l) => l.account != null).map((l, i) => (
-                  <tr key={i} className="border-b border-slate-100">
-                    <td className="px-3 py-2">
-                      <span className="text-slate-700">
-                        {(accounts.find((a) => a.id === l.account)?.name) || '—'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono">{fmt(l.debit)}</td>
-                    <td className="px-3 py-2 text-right font-mono">{fmt(l.credit)}</td>
-                    <td className="px-3 py-2 text-slate-500">{l.memo || '—'}</td>
-                  </tr>
-                )) : isContra ? (
-                  <tr className="border-b border-slate-100">
-                    <td className="px-3 py-2">
-                      <span className="text-slate-700">
-                        {(accounts.find((a) => a.id === fromAccount)?.name) || '—'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2">
-                      <span className="text-slate-700">
-                        {(accounts.find((a) => a.id === toAccount)?.name) || '—'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono">{fmt(contraAmount)}</td>
-                  </tr>
+            <div className="mt-6 flex items-end justify-between gap-4 border-t border-slate-200 pt-4">
+              <div className="text-right">
+                {isJournal ? (
+                  <div className="space-y-1">
+                    <div className="text-sm text-slate-600">Total debit <span className="font-mono ml-2">{fmt(debitTotal)}</span></div>
+                    <div className="text-sm text-slate-600">Total credit <span className="font-mono ml-2">{fmt(creditTotal)}</span></div>
+                  </div>
+                ) : isContra ? (
+                  <div className="text-sm text-slate-600">Transfer <span className="font-mono ml-2">{fmt(contraAmount)}</span></div>
                 ) : (
-                  iLines.filter((l) => l.description && (l.amount || 0) > 0).map((l, i) => (
-                    <tr key={i} className="border-b border-slate-100">
-                      <td className="px-3 py-2 text-slate-700">{l.description}</td>
-                      <td className="px-3 py-2 text-right">{l.qty}</td>
-                      <td className="px-3 py-2 text-right font-mono">{fmt(l.rate)}</td>
-                      <td className="px-3 py-2 text-right font-mono">{fmt(l.amount)}</td>
-                    </tr>
-                  ))
+                  <>
+                    <div className="text-sm text-slate-600">Total <span className="font-mono ml-2">{fmt(itemTotal)}</span></div>
+                    {currency !== 'NPR' && (
+                      <div className="text-sm text-slate-600">{t('reports.totalBase', 'Total (base currency)')} <span className="font-mono ml-2">{fmt(toBaseCurrency(itemTotal, { currency, exchangeRate: exchangeRate ?? undefined }, 'NPR'))}</span></div>
+                    )}
+                  </>
                 )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex items-end justify-between gap-4 border-t border-slate-200 pt-3">
-            <div className="text-right">
-              {isJournal ? (
-                <div className="space-y-1">
-                  <div className="text-sm text-slate-600">Total debit <span className="font-mono ml-2">{fmt(debitTotal)}</span></div>
-                  <div className="text-sm text-slate-600">Total credit <span className="font-mono ml-2">{fmt(creditTotal)}</span></div>
-                </div>
-              ) : isContra ? (
-                <div className="text-sm text-slate-600">Transfer <span className="font-mono ml-2">{fmt(contraAmount)}</span></div>
-              ) : (
-                <>
-                  <div className="text-sm text-slate-600">Total <span className="font-mono ml-2">{fmt(itemTotal)}</span></div>
-                  {currency !== 'NPR' && (
-                    <div className="text-sm text-slate-600">{t('reports.totalBase', 'Total (base currency)')} <span className="font-mono ml-2">{fmt(toBaseCurrency(itemTotal, { currency, exchangeRate: exchangeRate ?? undefined }, 'NPR'))}</span></div>
-                  )}
-                </>
-              )}
-
-              {isJournal && (
-                <div className={`text-xs font-medium ${Math.abs(debitTotal - creditTotal) < 0.0051 ? 'text-emerald-700' : 'text-crimson-600'}`}>
-                  {Math.abs(debitTotal - creditTotal) < 0.0051 ? t('vouchers.balanced', '✓ balanced')
-                    : t('vouchers.difference', 'Difference') + ': ' + fmt(Math.abs(debitTotal - creditTotal))}
-                </div>
-              )}
+                {isJournal && (
+                  <div className={`text-xs font-medium ${Math.abs(debitTotal - creditTotal) < 0.0051 ? 'text-emerald-700' : 'text-crimson-600'}`}>
+                    {Math.abs(debitTotal - creditTotal) < 0.0051 ? t('vouchers.balanced', '✓ balanced')
+                      : t('vouchers.difference', 'Difference') + ': ' + fmt(Math.abs(debitTotal - creditTotal))}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => { void saveDraft() }} disabled={saving}
+                  className="rounded border border-slate-300 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors">
+                  {t('vouchers.saveDraft', 'Save draft')}
+                </button>
+                {!isQuote && (
+                  <button onClick={postVoucher} disabled={saving}
+                    className="rounded bg-crimson-600 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50 transition-colors"
+                    title={!isJournal && (!iLines.some((l) => l.description && (l.amount || 0) > 0))
+                      ? t('vouchers.linesRequired', 'Add at least one line')
+                      : isJournal && Math.abs(debitTotal - creditTotal) >= 0.0051
+                        ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
+                        : undefined}>
+                    {saving
+                      ? t('vouchers.posting', 'Posting…')
+                      : isOrder
+                        ? t('vouchers.confirmOrder', 'Confirm order')
+                        : t('vouchers.post', 'Post')}
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button onClick={goPrev} className="rounded border border-slate-300 px-3.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                {t('common.back', 'Back')}
-              </button>
-              <LiquidButton variant="outline" onClick={() => { void saveDraft() }} disabled={saving}>
-                {saving ? t('common.saving', 'Saving…') : t('vouchers.saveDraft', 'Save draft')}
-              </LiquidButton>
-              {!isQuote && (
-                <LiquidButton onClick={postVoucher} disabled={saving || !step2Valid}
-                  title={!step2Valid ? (isJournal ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
-                    : t('vouchers.linesRequired', 'Add at least one line')) : undefined}>
-                  {saving
-                    ? t('vouchers.posting', 'Posting…')
-                    : isOrder
-                      ? t('vouchers.confirmOrder', 'Confirm order')
-                      : t('vouchers.post', 'Post')}
-                </LiquidButton>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
+          </main>
+        </div>
+      </div>
     </div>
-  )
+  );
 }

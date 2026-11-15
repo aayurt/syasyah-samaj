@@ -12,7 +12,7 @@ const ROUTE_KEYS: Record<string, string> = {
   accounts: 'nav.accounts',
   'opening-balances': 'nav.openingBalances',
   vouchers: 'nav.vouchers',
-  'transaction-entry': 'nav.transactionEntry',
+  'transaction-entry': 'nav.allTransactions',
   parties: 'nav.parties',
   journal: 'nav.journal',
   'trial-balance': 'nav.trialBalance',

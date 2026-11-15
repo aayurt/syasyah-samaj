@@ -100,7 +100,7 @@ const navGroups: { title?: string; titleKey?: string; items: NavItem[] }[] = [
     title: 'Bookkeeping',
     titleKey: 'nav.bookkeeping',
     items: [
-      { to: '/transaction-entry', label: 'Transaction Entry', labelKey: 'nav.transactionEntry', icon: FileText },
+      { to: '/transaction-entry', label: 'All Transactions', labelKey: 'nav.allTransactions', icon: FileText },
       { to: '/transfers', label: 'Transfers', labelKey: 'nav.transfers', icon: ArrowLeftRight },
       { to: '/posting', label: 'Posting', labelKey: 'nav.posting', icon: FileCheck2 },
       { to: '/daybooks', label: 'Daybook', labelKey: 'nav.daybook', icon: NotebookText },

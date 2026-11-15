@@ -36,7 +36,7 @@ export const ne = {
     vouchers: 'भौचरहरू',
     aging: 'उधारो विश्लेषण',
     bookkeeping: 'लेखापरिकलन',
-    transactionEntry: 'लेनदेन प्रवेश',
+    allTransactions: 'सबै लेनदेन',
     journal: 'जर्नल',
     transfers: 'हस्तान्तरण',
     posting: 'पोस्ट गर्नु',

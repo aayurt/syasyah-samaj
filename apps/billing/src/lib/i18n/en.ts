@@ -34,7 +34,7 @@ export const en = {
     vouchers: 'Vouchers',
     aging: 'Aging',
     bookkeeping: 'Bookkeeping',
-    transactionEntry: 'Transaction Entry',
+    allTransactions: 'All Transactions',
     journal: 'Journal',
     transfers: 'Transfers',
     posting: 'Posting',
