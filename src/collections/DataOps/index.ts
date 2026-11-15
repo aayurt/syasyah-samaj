@@ -824,7 +824,7 @@ export const DataOps: CollectionConfig = {
         let sequencesReset = 0
 
         try {
-          const wiped = await (req.payload as any).transaction(async (tx) => {
+          const wiped = await (req.payload as any).transaction(async (tx: any) => {
             const c: Record<string, number> = {}
             const f: Record<string, number> = {}
             for (const slug of RESET_COLLECTIONS) {
