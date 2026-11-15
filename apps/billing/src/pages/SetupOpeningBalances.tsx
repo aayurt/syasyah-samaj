@@ -206,12 +206,12 @@ export default function SetupOpeningBalances() {
   }
 
   if (yearsLoading || (!accountsLoaded && accounts.length === 0)) {
-    return <div className="mx-auto max-w-4xl"><TableSkeleton rows={8} /></div>
+    return <div className="w-full"><TableSkeleton rows={8} /></div>
   }
 
   if (accountsLoaded && accounts.length === 0) {
     return (
-      <div className="mx-auto max-w-xl text-center py-12">
+      <div className="w-full text-center py-12">
         <h1 className="text-xl font-semibold text-slate-900">{t('openingBalances.title', 'Opening Balances')}</h1>
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
           <p className="font-medium">Chart of Accounts must be configured before proceeding.</p>
@@ -232,7 +232,7 @@ export default function SetupOpeningBalances() {
 
   if (!year) {
     return (
-      <div className="mx-auto max-w-xl">
+      <div className="w-full">
         <h1 className="text-lg font-semibold text-slate-900">{t('openingBalances.title', 'Opening Balances')}</h1>
         <p className="mt-4 text-sm text-slate-500">
           {t('openingBalances.noData', 'Create a fiscal year in Settings before setting opening balances.')}
@@ -242,7 +242,7 @@ export default function SetupOpeningBalances() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button

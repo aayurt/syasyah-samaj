@@ -89,7 +89,7 @@ if [ "$RSYNC_MODE" -eq 1 ]; then
   run_local rsync -az --delete \
     --exclude='.git' --exclude='node_modules' --exclude='.next' \
     --exclude='apps/billing/node_modules' --exclude='apps/billing/dist' \
-    --exclude='apps/desktop/src-tauri/target' --exclude='.env' \
+    --exclude='apps/desktop/src-tauri/target'  --exclude='.env' --exclude='.env.local' \
     --exclude='.freebuff' --exclude='public/media' \
     "$LOCAL_PATH/" "$SERVER:$REMOTE_PATH/"
 else

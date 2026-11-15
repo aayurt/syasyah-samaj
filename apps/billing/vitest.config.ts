@@ -54,10 +54,8 @@ export default defineConfig({
       },
     },
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        maxThreads: 1,
-      },
+    forks: {
+      maxThreads: 1,
     },
     testTimeout: 10000,
     hookTimeout: 10000,

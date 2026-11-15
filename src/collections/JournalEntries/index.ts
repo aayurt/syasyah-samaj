@@ -67,7 +67,7 @@ export const JournalEntries: CollectionConfig = {
         if (to) where.date = { ...((where.date as object) || {}), less_than_equal: to }
         if (tenant) where.tenant = { equals: tenant }
 
-        const sums = await sumPostedByAccount(req.payload, where)
+        const sums = await sumPostedByAccount(req.payload, where, true)
         const ids = [...sums.keys()]
         const acctRes = ids.length
           ? await req.payload.find({
@@ -75,6 +75,7 @@ export const JournalEntries: CollectionConfig = {
               where: { id: { in: ids } },
               limit: 1000,
               depth: 0,
+              overrideAccess: true,
             })
           : { docs: [] }
         const acctById = new Map((acctRes.docs as any[]).map((a) => [a.id, a]))
@@ -238,7 +239,7 @@ export const JournalEntries: CollectionConfig = {
         if (to) where.date = { ...((where.date as object) || {}), less_than_equal: to }
         if (tenant) where.tenant = { equals: tenant }
 
-        const sums = await sumPostedByAccount(req.payload, where)
+        const sums = await sumPostedByAccount(req.payload, where, true)
         const ids = [...sums.keys()]
         const acctRes = ids.length
           ? await req.payload.find({
@@ -246,6 +247,7 @@ export const JournalEntries: CollectionConfig = {
               where: { id: { in: ids } },
               limit: 1000,
               depth: 0,
+              overrideAccess: true,
             })
           : { docs: [] }
         const acctById = new Map((acctRes.docs as any[]).map((a) => [a.id, a]))
@@ -326,7 +328,7 @@ export const JournalEntries: CollectionConfig = {
         if (to) where.date = { ...((where.date as object) || {}), less_than_equal: to }
         if (tenant) where.tenant = { equals: tenant }
 
-        const sums = await sumPostedByAccount(req.payload, where)
+        const sums = await sumPostedByAccount(req.payload, where, true)
         const ids = [...sums.keys()]
         const acctRes = ids.length
           ? await req.payload.find({
@@ -334,6 +336,7 @@ export const JournalEntries: CollectionConfig = {
               where: { id: { in: ids } },
               limit: 1000,
               depth: 0,
+              overrideAccess: true,
             })
           : { docs: [] }
         const acctById = new Map((acctRes.docs as any[]).map((a) => [a.id, a]))

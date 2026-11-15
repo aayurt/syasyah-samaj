@@ -136,7 +136,7 @@ export default function DataManagement() {
     : 0
 
   return (
-    <div className="mx-auto max-w-3xl py-4">
+    <div className="w-full py-4">
       <div className="mb-6">
         <h1 className="flex items-center gap-2 text-xl font-semibold text-slate-800">
           <Database size={20} className="text-slate-400" />

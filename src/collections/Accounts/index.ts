@@ -18,7 +18,7 @@ const forbidSelfParent = ({ data }: { data?: any }) => {
   if (data?.parent != null && data?.id != null && data.parent === data.id) {
     throw new Error('An account cannot be its own parent.')
   }
-  return true
+  return data
 }
 
 export const Accounts: CollectionConfig = {
@@ -53,11 +53,12 @@ export const Accounts: CollectionConfig = {
           limit: 1000,
           depth: 0,
           where: tenant ? { tenant: { equals: tenant } } : undefined,
+          overrideAccess: true,
         })
         const accounts = acctRes.docs as any[]
         const where: any = {}
         if (tenant) where.tenant = { equals: tenant }
-        const sums = await sumPostedByAccount(req.payload, where)
+        const sums = await sumPostedByAccount(req.payload, where, true)
         const debitNormal = (t: string) =>
           t === 'asset' || t === 'expense'
         const docs: any[] = []

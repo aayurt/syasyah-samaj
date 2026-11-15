@@ -34,7 +34,16 @@ const STEPS = [
   { value: 'membership-receipt', labelKey: 'shortLabelMembershipReceipt' },
   { value: 'donation-receipt', labelKey: 'shortLabelDonationReceipt' },
   { value: 'sales-quote', labelKey: 'shortLabelQuote' },
+  { value: 'sales-order', labelKey: 'shortLabelSalesOrder' },
+  { value: 'purchase-order', labelKey: 'shortLabelPurchaseOrder' },
 ] as const
+
+/**
+ * Order document types — confirmed, never posted. The server's /post handler
+ * rejects them outright ("Orders are status-only documents"); /confirm assigns
+ * the order number and locks it.
+ */
+const ORDER_TYPES = ['sales-order', 'purchase-order'] as const
 
 interface JLine { account: number | null; debit: number; credit: number; memo: string }
 interface ILine { description: string; qty: number; rate: number; amount: number }
@@ -68,10 +77,12 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
   const [draftId, setDraftId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [lastSaved, setLastSaved] = useState<string | null>(null)
 
   const isJournal = docType === 'journal-voucher'
   const isContra = docType === 'contra'
   const isQuote = docType === 'sales-quote'
+  const isOrder = (ORDER_TYPES as readonly string[]).includes(docType)
   const partyRequired = docType !== 'petty-cash-voucher'
   const party = useMemo(() => parties.find((p) => p.id === partyId), [parties, partyId])
 
@@ -148,23 +159,33 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
   }, [contraAmount, currency, date, docType, exchangeRate, fromAccount, isContra, isJournal, jLines, narration,
     partyId, partyRequired, tenantQuery.tenant, toAccount, iLines])
 
-  const saveDraft = useCallback(async () => {
+  /**
+   * Save the draft and return the document id. The id is returned rather than
+   * read from state so the caller always gets the fresh value — reading
+   * `draftId` straight after `await saveDraft()` would see the stale closure
+   * value on the very first save and skip the post.
+   */
+  const saveDraft = useCallback(async (): Promise<number | null> => {
     setError('')
     setSaving(true)
     try {
       const body = buildDraftBody()
       if (draftId) {
         await api(`/documents/${draftId}`, { method: 'PATCH', body, query: tenantQuery })
-      } else {
-        const created = await api<{ doc: { id: number } } | { id: number }>('/documents', {
-          method: 'POST', body, query: tenantQuery,
-        })
-        setDraftId('doc' in created ? created.doc.id : created.id)
+        return draftId
       }
+      const created = await api<{ doc: { id: number } } | { id: number }>('/documents', {
+        method: 'POST', body, query: tenantQuery,
+      })
+      const newId = 'doc' in created ? created.doc.id : created.id
+      setDraftId(newId)
+      return newId
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save draft')
+      return null
     } finally {
       setSaving(false)
+      setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
     }
   }, [buildDraftBody, draftId, tenantQuery])
 
@@ -175,17 +196,22 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
         : t('vouchers.linesRequired', 'Add at least one line'))
       return
     }
-    await saveDraft()
-    if (error || !draftId) return
+    const savedId = await saveDraft()
+    if (!savedId) return
     setSaving(true)
     try {
-      await api(`/documents/${draftId}/post`, { method: 'POST' })
+      // Orders are confirmed, not posted — the server rejects /post for them.
+      if (isOrder) {
+        await api(`/documents/${savedId}/confirm`, { method: 'POST' })
+      } else {
+        await api(`/documents/${savedId}/post`, { method: 'POST' })
+      }
       navigate('/vouchers')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Post failed')
+      setError(err instanceof Error ? err.message : (isOrder ? 'Confirm failed' : 'Post failed'))
       setSaving(false)
     }
-  }, [draftId, error, isJournal, navigate, saveDraft, step2Valid])
+  }, [isJournal, isOrder, navigate, saveDraft, step2Valid])
 
   const goNext = useCallback(async () => {
     setError('')
@@ -195,8 +221,10 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
           : t('vouchers.dateRequired', 'Date is required'))
         return
       }
-      await saveDraft()
-      if (error) return
+      // saveDraft returns null when the save failed — checking the `error`
+      // state here would read a stale value and advance anyway.
+      const savedId = await saveDraft()
+      if (!savedId) return
       setStep(2)
     } else if (step === 2) {
       if (!step2Valid) {
@@ -204,15 +232,16 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
           : t('vouchers.linesRequired', 'Add at least one line'))
         return
       }
-      await saveDraft()
-      if (error) return
+      const savedId = await saveDraft()
+      if (!savedId) return
       setStep(3)
     }
-  }, [error, isJournal, partyRequired, partyId, step, step1Valid, step2Valid, saveDraft])
+  }, [isJournal, partyRequired, partyId, step, step1Valid, step2Valid, saveDraft])
 
   const goPrev = () => { setError(''); setStep((s) => s - 1) }
 
   const stepLabel = (n: number) => {
+    if (n === 3 && isOrder) return t('vouchers.stepReviewConfirm', 'Review & confirm')
     const key = n === 1 ? 'stepDetails' : n === 2 ? 'stepLines' : 'stepReview'
     return t(`vouchers.${key}`, key === 'stepDetails' ? 'Voucher details' : key === 'stepLines' ? 'Lines' : 'Review & post')
   }
@@ -222,7 +251,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
   const numCls = inputCls + ' font-mono'
 
   return (
-    <div className="mx-auto max-w-4xl pb-28">
+    <div className="w-full pb-28">
       <div className="flex items-center justify-between py-4">
         <button onClick={() => navigate('/vouchers')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Back">
           <ArrowLeft size={18} />
@@ -232,6 +261,12 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
 
       {error && (
         <p className="mt-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
+      {draftId && lastSaved && !error && (
+        <p className="mt-2 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 flex items-center gap-2">
+          <span className="text-[10px]">●</span>
+          {t('vouchers.draftSaved', 'Draft saved')} · {lastSaved}
+        </p>
       )}
 
       {/* Stepper header */}
@@ -621,14 +656,18 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
               <button onClick={goPrev} className="rounded border border-slate-300 px-3.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
                 {t('common.back', 'Back')}
               </button>
-              <LiquidButton variant="outline" onClick={saveDraft} disabled={saving}>
+              <LiquidButton variant="outline" onClick={() => { void saveDraft() }} disabled={saving}>
                 {saving ? t('common.saving', 'Saving…') : t('vouchers.saveDraft', 'Save draft')}
               </LiquidButton>
               {!isQuote && (
                 <LiquidButton onClick={postVoucher} disabled={saving || !step2Valid}
                   title={!step2Valid ? (isJournal ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
                     : t('vouchers.linesRequired', 'Add at least one line')) : undefined}>
-                  {saving ? t('vouchers.posting', 'Posting…') : t('vouchers.post', 'Post')}
+                  {saving
+                    ? t('vouchers.posting', 'Posting…')
+                    : isOrder
+                      ? t('vouchers.confirmOrder', 'Confirm order')
+                      : t('vouchers.post', 'Post')}
                 </LiquidButton>
               )}
             </div>

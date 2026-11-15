@@ -256,7 +256,7 @@ export default function Journal() {
   })
 
   return (
-    <div className={`mx-auto max-w-5xl ${showForm ? 'pb-24' : ''}`}>
+    <div className={`w-full ${showForm ? 'pb-24' : ''}`}>
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">{t('journal.title', 'Journal')}</h1>
         <div className="flex items-center gap-2">

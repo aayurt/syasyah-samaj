@@ -13,6 +13,7 @@ import {
   ChevronUp,
   ClipboardList,
   Coins,
+  FileCheck2,
   FilePenLine,
   HandCoins,
   ListCollapse,
@@ -84,6 +85,8 @@ const emptyJLine = (): JLineDraft => ({
 
 const INVENTORY_TYPES = ['sales-invoice', 'delivery-challan', 'grn', 'purchase-invoice', 'credit-note', 'debit-note']
 const CASH_TYPES = ['payment-voucher', 'receipt-voucher']
+/** Order document types — confirmed, never posted (see the server's /post handler). */
+const ORDER_TYPES = ['sales-order', 'purchase-order']
 const fmtQty = (n: number) =>
   Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0'
 
@@ -103,6 +106,14 @@ const DOC_TYPE_META: Record<string, {
     shortLabel: 'Quote',
     category: 'sales',
   },
+  'sales-order': {
+    icon: <FileCheck2 size={20} className="shrink-0" />,
+    activeClasses: 'border-indigo-500 bg-indigo-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-indigo-700',
+    shortLabel: 'Sales Order',
+    category: 'sales',
+  },
   'sales-invoice': {
     icon: <ShoppingCart size={20} className="shrink-0" />,
     activeClasses: 'border-crimson-500 bg-crimson-50',
@@ -117,6 +128,14 @@ const DOC_TYPE_META: Record<string, {
     inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
     textClasses: 'text-blue-700',
     shortLabel: 'Purchase Invoice',
+    category: 'purchase',
+  },
+  'purchase-order': {
+    icon: <FileCheck2 size={20} className="shrink-0" />,
+    activeClasses: 'border-blue-500 bg-blue-50',
+    inactiveClasses: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+    textClasses: 'text-blue-700',
+    shortLabel: 'Purchase Order',
     category: 'purchase',
   },
   'payment-voucher': {
@@ -282,7 +301,9 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   const { formatDate } = useCalendar()
   const docTypeLabels: Record<string, string> = {
     'sales-quote': t('docType.quote', 'Quote'),
+    'sales-order': t('docType.salesOrder', 'Sales Order'),
     'sales-invoice': t('docType.salesInvoice', 'Sales Invoice'),
+    'purchase-order': t('docType.purchaseOrder', 'Purchase Order'),
     'purchase-invoice': t('docType.purchaseInvoice', 'Purchase Invoice'),
     'payment-voucher': t('docType.paymentVoucher', 'Payment'),
     'receipt-voucher': t('docType.receiptVoucher', 'Receipt'),
@@ -394,6 +415,9 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     'receipt-voucher': 'RV', 'credit-note': 'CN', 'debit-note': 'DN',
     'petty-cash-voucher': 'PC', grn: 'GRN', 'delivery-challan': 'DC',
     'journal-voucher': 'JV', contra: 'CT',
+    // Orders get their number on confirmation (server-side), matching the
+    // server's DOC_PREFIX map: SO for sales orders, PO for purchase orders.
+    'sales-order': 'SO', 'purchase-order': 'PO',
   }
   const [invoicePrefix, setInvoicePrefix] = useState(() => DOC_PREFIXES['sales-invoice'] || 'INV')
   const [numberManual, setNumberManual] = useState(false)
@@ -567,11 +591,16 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
   /* ── Derived ────────────────────────────────────────────────── */
   const meta = docTypeLabels[docType] || DOC_TYPE_LABELS[docType] || docType
-  const isItem = ['sales-quote', 'sales-invoice', 'purchase-invoice',
+  const isItem = ['sales-quote', 'sales-order', 'sales-invoice', 'purchase-order', 'purchase-invoice',
     'credit-note', 'debit-note', 'petty-cash-voucher', 'grn', 'delivery-challan'].includes(docType)
   const isContra = docType === 'contra'
   const isJournal = docType === 'journal-voucher'
   const isCash = CASH_TYPES.includes(docType)
+  // Orders (sales-order / purchase-order) are status-only documents: they
+  // never touch the ledger. The server rejects POST /documents/:id/post for
+  // them — they are confirmed with POST /documents/:id/confirm instead, which
+  // assigns the order number and locks it.
+  const isOrder = ORDER_TYPES.includes(docType)
   // Simplified cash mode: hide line/tax clutter unless the user opts into
   // "Detailed Line Items" — the default is the focused 3-field flow.
   const cashSimple = isCash && !cashDetailed
@@ -866,10 +895,21 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     }
     setSaving(true); setError('')
     try {
+      // Orders are confirmed, not posted. The server's /post handler rejects
+      // order document types outright, and /confirm assigns the order number
+      // and locks the order — which is what "post" means for an order.
+      const commit = async (docId: string | number) => {
+        if (!post || !docId) return
+        if (isOrder) {
+          await api(`/documents/${docId}/confirm`, { method: 'POST' })
+        } else {
+          await api(`/documents/${docId}/post`, { method: 'POST' })
+        }
+      }
       if (mode === 'edit' && id) {
         // Saves locally first, syncs in background.
         await api(`/documents/${id}`, { method: 'PATCH', body: buildBody(), query: tenantQuery })
-        if (post) await api(`/documents/${id}/post`, { method: 'POST' })
+        await commit(id)
       } else {
         // Saves locally first, syncs in background.
         const created = await api<Document | { doc: Document }>('/documents', {
@@ -878,9 +918,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
           query: tenantQuery,
         })
         const docId = 'doc' in created ? (created as { doc: Document }).doc.id : (created as Document).id
-        if (post && docId) {
-          await api(`/documents/${docId}/post`, { method: 'POST' })
-        }
+        await commit(docId)
       }
       if (post) {
         // Tactile confirmation: flip the button to "✓ Posted" for 1s before
@@ -901,7 +939,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
   /* ── Render ─────────────────────────────────────────────────── */
   return (
-    <div className="mx-auto max-w-5xl pb-28">
+    <div className="w-full pb-28">
       {/* ── Header ──────────────────────────────────────────── */}
       {!embedded && (
         <div className="flex items-center justify-between py-4">
@@ -2220,7 +2258,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
       {/* ── Floating Bottom Bar ─────────────────────────────── */}
       <div className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white/95 backdrop-blur px-6 py-3 print:hidden z-40">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
+        <div className="w-full flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button type="button" onClick={() => navigate('/vouchers')}
               className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
@@ -2285,11 +2323,24 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     : undefined
                 }
               >
-                {saving ? t('common.saving', 'Saving…') : docType === 'sales-quote' ? t('vouchers.saveQuote', 'Save Quote') : t('vouchers.saveDraft', 'Save draft')}
+                {saving
+                  ? t('common.saving', 'Saving…')
+                  : docType === 'sales-quote'
+                    ? t('vouchers.saveQuote', 'Save Quote')
+                    : isOrder
+                      ? t('vouchers.saveOrder', 'Save Order')
+                      : t('vouchers.saveDraft', 'Save draft')}
               </LiquidButton>
               {docType === 'sales-quote' ? (
                 <span className="hidden text-xs text-slate-400 sm:block">
                   {t('vouchers.quotesHint', "Quotes don't post — copy to an invoice when accepted")}
+                </span>
+              ) : isOrder ? (
+                <span className="hidden text-xs text-slate-400 sm:block">
+                  {t(
+                    'vouchers.ordersHint',
+                    "Orders don't touch the ledger — confirming locks the order; invoice or GRN fulfils it",
+                  )}
                 </span>
               ) : (
                 <LiquidButton

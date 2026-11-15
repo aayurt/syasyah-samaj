@@ -9,6 +9,7 @@ import { toNum } from './journalValidation'
 export async function sumPostedByAccount(
   payload: Payload,
   extraWhere?: Record<string, unknown>,
+  overrideAccess = false,
 ): Promise<Map<number, { debit: number; credit: number }>> {
   const where: any = { status: { equals: 'posted' }, ...(extraWhere || {}) }
   const res = await payload.find({
@@ -16,6 +17,7 @@ export async function sumPostedByAccount(
     where,
     limit: 1000,
     depth: 0,
+    overrideAccess,
   })
   const sums = new Map<number, { debit: number; credit: number }>()
   for (const entry of res.docs as any[]) {

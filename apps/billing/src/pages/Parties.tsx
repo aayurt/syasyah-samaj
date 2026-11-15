@@ -217,7 +217,7 @@ export default function Parties() {
   })
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">{t('parties.title', 'Parties')}</h1>
         <div className="flex items-center gap-2">

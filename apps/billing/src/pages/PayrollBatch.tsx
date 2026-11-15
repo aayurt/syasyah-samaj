@@ -168,7 +168,7 @@ export default function PayrollBatch() {
   const progress = ((stageIdx + 1) / STAGES.length) * 100
 
   return (
-    <div className="p-6 mx-auto max-w-4xl">
+    <div className="p-6 w-full">
       <h1 className="text-xl font-semibold text-slate-900 mb-2">Payroll Batch</h1>
       <p className="text-sm text-slate-500 mb-6">
         Six-stage payroll batch: generate draft → validate → calculate → release → post.

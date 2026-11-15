@@ -32,7 +32,7 @@ export default function PayrollReports() {
   useEffect(() => { load() }, [load])
 
   return (
-    <div className="p-6 mx-auto max-w-5xl">
+    <div className="p-6 w-full">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-900">
           <FileText size={20} className="mr-2 text-crimson-600" />

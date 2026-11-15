@@ -26,7 +26,9 @@ export function toBaseCurrency(amount: number, doc: { currency?: Currency; excha
 
 export type DocType =
   | 'sales-quote'
+  | 'sales-order'
   | 'sales-invoice'
+  | 'purchase-order'
   | 'purchase-invoice'
   | 'payment-voucher'
   | 'receipt-voucher'
@@ -42,7 +44,9 @@ export type DocType =
 
 export const DOC_TYPE_LABELS: Record<string, string> = {
   'sales-quote': 'Quote',
+  'sales-order': 'Sales Order',
   'sales-invoice': 'Sales Invoice',
+  'purchase-order': 'Purchase Order',
   'purchase-invoice': 'Purchase Invoice',
   'payment-voucher': 'Payment',
   'receipt-voucher': 'Receipt',
@@ -187,6 +191,12 @@ export interface Document {
   party?: number | Party | null
   narration?: string
   status: DocumentStatus
+  /**
+   * Order lifecycle — set on sales-order / purchase-order documents only.
+   * Orders are confirmed (never posted), so `status` stays 'draft' for the
+   * whole order life; `orderStatus` carries the real state.
+   */
+  orderStatus?: 'draft' | 'confirmed' | 'cancelled' | null
   postedAt?: string
   journalEntry?: number | null
   referenceTo?: number | null

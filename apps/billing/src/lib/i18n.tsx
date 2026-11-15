@@ -161,7 +161,9 @@ export function docTypeLabel(
 
 const DOC_TYPE_FALLBACK: Record<string, string> = {
   'sales-quote': 'Quote',
+  'sales-order': 'Sales Order',
   'sales-invoice': 'Sales Invoice',
+  'purchase-order': 'Purchase Order',
   'purchase-invoice': 'Purchase Invoice',
   'payment-voucher': 'Payment',
   'receipt-voucher': 'Receipt',

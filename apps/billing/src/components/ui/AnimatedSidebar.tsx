@@ -41,6 +41,12 @@ interface AnimatedSidebarProps {
   onToggleGroup: (groupTitle: string) => void
   t: (key: string, fallback?: string) => string
   userEmail?: string
+  /** When true (mobile), the sidebar slides in as an off-canvas overlay. */
+  open?: boolean
+  /** Called when the mobile open state changes. */
+  onOpenChange?: (open: boolean) => void
+  /** Extra tailwind classes applied to the aside. */
+  className?: string
 }
 
 export function AnimatedSidebar({
@@ -52,6 +58,9 @@ export function AnimatedSidebar({
   onToggleGroup,
   t,
   userEmail,
+  open = false,
+  onOpenChange,
+  className = '',
 }: AnimatedSidebarProps) {
   const { tenantId, setTenantId, tenants, isCentral } = useTenant()
 
@@ -124,7 +133,10 @@ export function AnimatedSidebar({
         stiffness: 350,
         damping: 32,
       }}
-      className="print:hidden relative z-20 flex flex-col bg-white border-r border-slate-200/90 text-slate-700 select-none shadow-xs"
+      className={`
+        print:hidden relative z-20 flex flex-col bg-white border-r border-slate-200/90 text-slate-700 select-none shadow-xs
+        ${className}
+      `}
     >
       {/* ── 1. Header: Organization / Illaka Switcher ─────────── */}
       <div ref={tenantRef} className="p-2 border-b border-slate-100 relative">

@@ -19,6 +19,7 @@ import * as migration_20260826_sales_quotes from './20260826_sales_quotes';
 import * as migration_20260903_fiscal_years from './20260903_fiscal_years';
 import * as migration_20260906_fy_date_fix from './20260906_fy_date_fix';
 import * as migration_20261011_045410___name from './20261011_045410___name';
+import * as migration_20261115_doc_sequences_order_types from './20261115_doc_sequences_order_types';
 
 export const migrations = [
   {
@@ -125,5 +126,10 @@ export const migrations = [
     up: migration_20261011_045410___name.up,
     down: migration_20261011_045410___name.down,
     name: '20261011_045410___name',
+  },
+  {
+    up: migration_20261115_doc_sequences_order_types.up,
+    down: migration_20261115_doc_sequences_order_types.down,
+    name: '20261115_doc_sequences_order_types',
   },
 ];

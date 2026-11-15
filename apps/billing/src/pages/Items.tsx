@@ -206,7 +206,7 @@ export default function Items() {
   const low = levels.filter((l) => l.belowReorder)
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">{t('items.title', 'Inventory')}</h1>
         <div className="flex items-center gap-2">

@@ -1090,6 +1090,10 @@ export interface GlAccount {
    */
   description?: string | null;
   group?: (number | null) | AccountGroup;
+  /**
+   * Parent account — creates a sub-account (parent → child) hierarchy.
+   */
+  parent?: (number | null) | GlAccount;
   type: 'asset' | 'liability' | 'equity' | 'income' | 'expense';
   /**
    * Cash/bank accounts drive the cash & bank book and reconciliation.
@@ -1443,16 +1447,23 @@ export interface DocSequence {
    * The document type this sequence applies to.
    */
   docType:
+    | 'sales-quote'
+    | 'sales-order'
     | 'sales-invoice'
+    | 'purchase-order'
     | 'purchase-invoice'
     | 'receipt-voucher'
     | 'payment-voucher'
     | 'journal-voucher'
+    | 'contra'
     | 'contra-voucher'
     | 'credit-note'
     | 'debit-note'
+    | 'petty-cash-voucher'
     | 'grn'
-    | 'delivery-challan';
+    | 'delivery-challan'
+    | 'membership-receipt'
+    | 'donation-receipt';
   /**
    * Prefix for document numbers, e.g. "SI-" for Sales Invoice, "PV-" for Payment Voucher.
    */
@@ -4672,6 +4683,7 @@ export interface GlAccountsSelect<T extends boolean = true> {
   name?: T;
   description?: T;
   group?: T;
+  parent?: T;
   type?: T;
   class?: T;
   openingBalance?: T;

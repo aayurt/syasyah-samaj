@@ -210,7 +210,7 @@ export default function Payroll({ initialTab = 'runs' }: { initialTab?: Tab } = 
   /* ── Render ─────────────────────────────────────────────────── */
 
   return (
-    <div className="p-6 mx-auto max-w-6xl">
+    <div className="p-6 w-full">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-xl font-semibold text-slate-900">
           <Banknote size={20} className="text-crimson-600" />

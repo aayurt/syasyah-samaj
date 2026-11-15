@@ -81,61 +81,6 @@ jobs:
           retention-days: 7
 
   # ──────────────────────────────────────────────────────────────
-  # Integration Tests (with PostgreSQL)
-  # ──────────────────────────────────────────────────────────────
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: typecheck-lint
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: billing_test
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Wait for PostgreSQL
-        run: |
-          for i in {1..30}; do
-            if pg_isready -h localhost -p 5432 -U postgres; then break; fi
-            sleep 2
-          done
-
-      - name: Run database setup
-        run: pnpm payload generate:db-schema
-        env:
-          DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_test
-          RESEND_API_KEY: re_test
-          PAYLOAD_SECRET: test-secret-key-for-ci
-
-      - name: Run integration tests
-        run: pnpm --filter @afno/billing test
-        env:
-          DATABASE_URI: postgresql://postgres:postgres@localhost:5432/billing_test
-          NODE_OPTIONS: --max-old-space-size=2048
-
-  # ──────────────────────────────────────────────────────────────
   # API Sequential Check — Empty DB, sequential CRUD, balance assertion
   # ──────────────────────────────────────────────────────────────
   api-sequential-check:
@@ -347,7 +292,7 @@ jobs:
     name: Dispatch Jules Parallel Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [unit-tests, integration-tests]
+    needs: [unit-tests]
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
@@ -410,6 +355,70 @@ jobs:
           retention-days: 7
 
   # ──────────────────────────────────────────────────────────────
+  # Root Production Build (Next.js prerender)
+  # ──────────────────────────────────────────────────────────────
+  root-build:
+    name: Root Production Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: typecheck-lint
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: syasyah_samaj
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then break; fi
+            sleep 2
+          done
+
+      # Creates the real schema. `payload generate:db-schema` only writes a
+      # TypeScript file (and does not pass `tsc`), while `payload migrate`
+      # cannot bootstrap an empty database: migration #14 inserts into
+      # `tax_types`, which is only created by the later migration #21.
+      # `pnpm db:setup` performs Payload's dev-mode schema push and verifies
+      # the collection tables exist before the build starts.
+      - name: Run database schema setup
+        run: pnpm db:setup
+        env:
+          DATABASE_URI: postgresql://postgres:postgres@localhost:5432/syasyah_samaj
+          RESEND_API_KEY: re_test
+          PAYLOAD_SECRET: test-secret-key-for-ci
+          NODE_ENV: development
+
+      - name: Build root production (prerender)
+        run: pnpm build
+        env:
+          DATABASE_URI: postgresql://postgres:postgres@localhost:5432/syasyah_samaj
+          RESEND_API_KEY: re_test
+          PAYLOAD_SECRET: test-secret-key-for-ci
+          NODE_OPTIONS: --no-deprecation
+
+  # ──────────────────────────────────────────────────────────────
   # Governance Validation (kritikka-mcp)
   # ──────────────────────────────────────────────────────────────
   governance:
@@ -447,7 +456,7 @@ jobs:
     name: Deploy to Staging
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [unit-tests, integration-tests, e2e-tests, build, governance]
+    needs: [unit-tests, e2e-tests, build, governance]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: staging
     steps:

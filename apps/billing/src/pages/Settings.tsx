@@ -57,16 +57,14 @@ function LanguageToggle() {
             key={l}
             type="button"
             onClick={() => setLang(l)}
-            className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors ${
-              lang === l
+            className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors ${lang === l
                 ? 'border-crimson-600 bg-crimson-50 ring-1 ring-crimson-600'
                 : 'border-slate-200 bg-white hover:bg-slate-50'
-            }`}
+              }`}
           >
             <div
-              className={`flex h-5 w-5 items-center justify-center rounded-full border ${
-                lang === l ? 'border-crimson-600 bg-crimson-600' : 'border-slate-300'
-              }`}
+              className={`flex h-5 w-5 items-center justify-center rounded-full border ${lang === l ? 'border-crimson-600 bg-crimson-600' : 'border-slate-300'
+                }`}
             >
               {lang === l && <Check size={12} className="text-white" />}
             </div>
@@ -244,7 +242,7 @@ export default function Settings() {
       .then((res) => {
         setSubCompanies(res.docs || [])
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingTenants(false))
   }, [])
 
@@ -721,7 +719,7 @@ export default function Settings() {
     setCalSaved(true)
     setTimeout(() => setCalSaved(false), 2000)
     // Fire-and-forget: sync to server in background
-    api('/globals/billing-settings', { method: 'POST', body }).catch(() => {})
+    api('/globals/billing-settings', { method: 'POST', body }).catch(() => { })
   }
 
   const cancelCalendar = () => {
@@ -753,7 +751,7 @@ export default function Settings() {
     setCompanySaved(true)
     setTimeout(() => setCompanySaved(false), 2000)
     // Fire-and-forget: sync to server in background
-    api('/globals/billing-settings', { method: 'POST', body }).catch(() => {})
+    api('/globals/billing-settings', { method: 'POST', body }).catch(() => { })
   }
 
   const cancelCompany = () => {
@@ -850,7 +848,7 @@ export default function Settings() {
         await api('/globals/billing-settings', {
           method: 'POST',
           body: { activeFiscalYear: year.id },
-        }).catch(() => {})
+        }).catch(() => { })
         selectFiscalYear(year.id)
         pushToast('success', 'Working year set', `${year.label} is now the active fiscal year.`)
         void refreshFiscalYears()
@@ -963,7 +961,7 @@ export default function Settings() {
           await api(`/fiscal-years/${otherActive.id}`, {
             method: 'PATCH',
             body: { status: 'closed' },
-          }).catch(() => {})
+          }).catch(() => { })
         }
       }
       if (fyEditing) {
@@ -973,7 +971,7 @@ export default function Settings() {
           await api('/globals/billing-settings', {
             method: 'POST',
             body: { activeFiscalYear: fyEditing },
-          }).catch(() => {})
+          }).catch(() => { })
         }
         pushToast('success', 'Fiscal year updated', fyForm.label || fyForm.startDate)
       } else {
@@ -990,7 +988,7 @@ export default function Settings() {
             await api('/globals/billing-settings', {
               method: 'POST',
               body: { activeFiscalYear: created.id },
-            }).catch(() => {})
+            }).catch(() => { })
           }
         }
       }
@@ -1029,7 +1027,7 @@ export default function Settings() {
     setFeaturesSaved(true)
     setTimeout(() => setFeaturesSaved(false), 2000)
     // Fire-and-forget: sync to server in background
-    api('/globals/billing-settings', { method: 'POST', body }).catch(() => {})
+    api('/globals/billing-settings', { method: 'POST', body }).catch(() => { })
   }
 
   const cancelFeatures = () => {
@@ -1065,7 +1063,7 @@ export default function Settings() {
     savedDefAccountOrder.current = [...defAccountOrder]
     setDefAccountsSaved(true)
     setTimeout(() => setDefAccountsSaved(false), 2000)
-    api('/globals/billing-settings', { method: 'POST', body }).catch(() => {})
+    api('/globals/billing-settings', { method: 'POST', body }).catch(() => { })
   }
 
   const cancelDefAccounts = () => {
@@ -1254,7 +1252,7 @@ export default function Settings() {
   ]
 
   return (
-    <div data-tour="settings" className="mx-auto max-w-4xl space-y-4">
+    <div data-tour="settings" className="w-full space-y-4 p-4">
       {error && (
         <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
@@ -1298,478 +1296,474 @@ export default function Settings() {
 
       {/* ── 1. Calendar ──────────────────────────────────────── */}
       {activeSection === 'calendar' && (
-      <Section
-        title={t('settings.calendar')}
-        subtitle={calSummary}
-        icon={Calendar}
-        hasChanges={calDirty}
-        saved={calSaved}
-        onSave={() => void persistCalendar()}
-        onCancel={cancelCalendar}
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <span className="text-sm text-slate-600">{t('cal.type')}</span>
-          <div className="flex gap-2">
-            {(['AD', 'BS'] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setCalendarType(t)}
-                className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ring-1 ring-inset ${
-                  calendarType === t
-                    ? 'bg-crimson-600 text-white ring-crimson-600'
-                    : 'bg-slate-100 text-slate-500 ring-slate-200 hover:bg-slate-200'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="text-sm text-slate-600">{t('cal.dateFormat')}</label>
-            <div className="mt-1">
-              <SearchSelect
-                value={dateFormat}
-                onChange={setDateFormat}
-                options={[
-                  { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
-                  { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
-                  { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
-                  { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD' },
-                  { value: 'DD MMMM YYYY', label: 'DD MMMM YYYY', sublabel: '15 Asar 2083' },
-                  { value: 'MMMM DD, YYYY', label: 'MMMM DD, YYYY' },
-                  { value: 'DD MMM YYYY', label: 'DD MMM YYYY' },
-                ]}
-              />
-            </div>
-            <div className="mt-2 rounded bg-slate-50 px-3 py-2 text-sm text-slate-700">
-              <span className="text-xs text-slate-400">{t('cal.preview')}: </span>
-              <span className="font-medium">
-                {formatDate(new Date().toISOString(), calendarType, dateFormat)}
-              </span>
+        <Section
+          title={t('settings.calendar')}
+          subtitle={calSummary}
+          icon={Calendar}
+          hasChanges={calDirty}
+          saved={calSaved}
+          onSave={() => void persistCalendar()}
+          onCancel={cancelCalendar}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-sm text-slate-600">{t('cal.type')}</span>
+            <div className="flex gap-2">
+              {(['AD', 'BS'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setCalendarType(t)}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ring-1 ring-inset ${calendarType === t
+                      ? 'bg-crimson-600 text-white ring-crimson-600'
+                      : 'bg-slate-100 text-slate-500 ring-slate-200 hover:bg-slate-200'
+                    }`}
+                >
+                  {t}
+                </button>
+              ))}
             </div>
           </div>
-          <div>
-            <label className="text-sm text-slate-600">{t('cal.timeFormat')}</label>
-            <div className="mt-1">
-              <SearchSelect
-                value={timeFormat}
-                onChange={(v) => setTimeFormat(v as '12h' | '24h')}
-                options={[
-                  { value: '12h', label: t('cal.h12'), sublabel: '1:30 PM' },
-                  { value: '24h', label: t('cal.h24'), sublabel: '13:30' },
-                ]}
-              />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="text-sm text-slate-600">{t('cal.dateFormat')}</label>
+              <div className="mt-1">
+                <SearchSelect
+                  value={dateFormat}
+                  onChange={setDateFormat}
+                  options={[
+                    { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
+                    { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
+                    { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+                    { value: 'YYYY/MM/DD', label: 'YYYY/MM/DD' },
+                    { value: 'DD MMMM YYYY', label: 'DD MMMM YYYY', sublabel: '15 Asar 2083' },
+                    { value: 'MMMM DD, YYYY', label: 'MMMM DD, YYYY' },
+                    { value: 'DD MMM YYYY', label: 'DD MMM YYYY' },
+                  ]}
+                />
+              </div>
+              <div className="mt-2 rounded bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                <span className="text-xs text-slate-400">{t('cal.preview')}: </span>
+                <span className="font-medium">
+                  {formatDate(new Date().toISOString(), calendarType, dateFormat)}
+                </span>
+              </div>
             </div>
-            <div className="mt-2 rounded bg-slate-50 px-3 py-2 text-sm text-slate-700">
-              <span className="text-xs text-slate-400">{t('cal.preview')}: </span>
-              <span className="font-medium">
-                {formatDate(new Date().toISOString(), calendarType, 'HH:mm', timeFormat)}
-              </span>
+            <div>
+              <label className="text-sm text-slate-600">{t('cal.timeFormat')}</label>
+              <div className="mt-1">
+                <SearchSelect
+                  value={timeFormat}
+                  onChange={(v) => setTimeFormat(v as '12h' | '24h')}
+                  options={[
+                    { value: '12h', label: t('cal.h12'), sublabel: '1:30 PM' },
+                    { value: '24h', label: t('cal.h24'), sublabel: '13:30' },
+                  ]}
+                />
+              </div>
+              <div className="mt-2 rounded bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                <span className="text-xs text-slate-400">{t('cal.preview')}: </span>
+                <span className="font-medium">
+                  {formatDate(new Date().toISOString(), calendarType, 'HH:mm', timeFormat)}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-      </Section>
+        </Section>
       )}
 
       {/* ── 2. Company Profile ───────────────────────────────── */}
       {activeSection === 'company' && (
-      <Section
-        title={t('settings.companyProfile')}
-        subtitle={companyName || t('hint.company')}
-        icon={Building2}
-        hasChanges={companyDirty}
-        saved={companySaved}
-        onSave={() => void persistCompany()}
-        onCancel={cancelCompany}
-      >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label className="text-sm text-slate-600">{t('settings.companyName')}</label>
-            <input
-              type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="e.g. Syasyah Samaj"
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label className="text-sm text-slate-600">{t('settings.defaultCurrency')}</label>
-            <select
-              value={companyCurrency}
-              onChange={(e) => setCompanyCurrency(e.target.value as Currency)}
-              className={inputCls}
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>{c.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm text-slate-600">{t('settings.panNumber')}</label>
-            <input
-              type="text"
-              value={companyPan}
-              onChange={(e) => setCompanyPan(e.target.value)}
-              placeholder="e.g. 123456789"
-              className={`${inputCls} font-mono`}
-            />
-          </div>
-          <div>
-            <label className="text-sm text-slate-600">{t('settings.contactNumber')}</label>
-            <input
-              type="tel"
-              value={companyContact}
-              onChange={(e) => setCompanyContact(e.target.value)}
-              placeholder="e.g. +977-1-4567890"
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label className="text-sm text-slate-600">{t('common.email')}</label>
-            <input
-              type="email"
-              value={companyEmail}
-              onChange={(e) => setCompanyEmail(e.target.value)}
-              placeholder="e.g. info@syasyahsamaj.com"
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label className="text-sm text-slate-600">{t('settings.logoUrl')}</label>
-            <input
-              type="text"
-              value={companyLogo}
-              onChange={(e) => setCompanyLogo(e.target.value)}
-              placeholder="https://example.com/logo.png"
-              className={inputCls}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="text-sm text-slate-600">{t('settings.address')}</label>
-            <textarea
-              value={companyAddress}
-              onChange={(e) => setCompanyAddress(e.target.value)}
-              rows={2}
-              placeholder="Registered address"
-              className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-            />
-          </div>
-        </div>
-        {companyLogo && (
-          <div className="mt-3 flex items-center gap-3">
-            <span className="text-xs text-slate-400">{t('cal.preview')}:</span>
-            <img
-              src={companyLogo}
-              alt="Logo"
-              className="h-10 w-auto rounded border border-slate-200 bg-white object-contain p-1"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-            />
-          </div>
-        )}
-
-        {/* ── Sub-Companies / Ilakas Section ── */}
-        <div className="mt-8 border-t border-slate-200 pt-6">
-          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <Section
+          title={t('settings.companyProfile')}
+          subtitle={companyName || t('hint.company')}
+          icon={Building2}
+          hasChanges={companyDirty}
+          saved={companySaved}
+          onSave={() => void persistCompany()}
+          onCancel={cancelCompany}
+        >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="text-sm text-slate-600">{t('settings.companyName')}</label>
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="e.g. Syasyah Samaj"
+                className={inputCls}
+              />
+            </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-800">Sub-Companies / Ilakas</h3>
-              <p className="text-xs text-slate-500">
-                Manage branch units, branches and community ilakas under this organization. Requires admin access.
-              </p>
-            </div>
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={openCreateTenant}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors w-fit"
+              <label className="text-sm text-slate-600">{t('settings.defaultCurrency')}</label>
+              <select
+                value={companyCurrency}
+                onChange={(e) => setCompanyCurrency(e.target.value as Currency)}
+                className={inputCls}
               >
-                <Plus size={14} />
-                <span>Add Sub-Company</span>
-              </button>
-            )}
-          </div>
-
-          {loadingTenants ? (
-            <div className="py-6 text-center text-sm text-slate-400">Loading sub-companies…</div>
-          ) : subCompanies.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-              No sub-companies or ilakas configured yet.
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
+              </select>
             </div>
-          ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th className="px-4 py-3">Code</th>
-                    <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Type</th>
-                    <th className="px-4 py-3">Contact</th>
-                    <th className="px-4 py-3">Status</th>
-                    {isAdmin && <th className="px-4 py-3 text-right">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {subCompanies.map((tc) => (
-                    <tr key={tc.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-700">
-                        {tc.code || '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-slate-900">{tc.name}</div>
-                        <div className="text-xs text-slate-400 font-mono">/{tc.slug}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
-                          tc.type === 'central'
-                            ? 'bg-purple-100 text-purple-700'
-                            : 'bg-blue-100 text-blue-700'
-                        }`}>
-                          {tc.type === 'central' ? 'Central' : 'Ilaka'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-600">
-                        {tc.contactInfo?.phone && <div>📞 {tc.contactInfo.phone}</div>}
-                        {tc.contactInfo?.email && <div className="text-slate-400">✉️ {tc.contactInfo.email}</div>}
-                        {!tc.contactInfo?.phone && !tc.contactInfo?.email && <span className="text-slate-400">—</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                          tc.active !== false
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-slate-100 text-slate-500'
-                        }`}>
-                          {tc.active !== false ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      {isAdmin && (
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => openEditTenant(tc)}
-                            className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-                            title="Edit Sub-Company"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div>
+              <label className="text-sm text-slate-600">{t('settings.panNumber')}</label>
+              <input
+                type="text"
+                value={companyPan}
+                onChange={(e) => setCompanyPan(e.target.value)}
+                placeholder="e.g. 123456789"
+                className={`${inputCls} font-mono`}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-slate-600">{t('settings.contactNumber')}</label>
+              <input
+                type="tel"
+                value={companyContact}
+                onChange={(e) => setCompanyContact(e.target.value)}
+                placeholder="e.g. +977-1-4567890"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-slate-600">{t('common.email')}</label>
+              <input
+                type="email"
+                value={companyEmail}
+                onChange={(e) => setCompanyEmail(e.target.value)}
+                placeholder="e.g. info@syasyahsamaj.com"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-slate-600">{t('settings.logoUrl')}</label>
+              <input
+                type="text"
+                value={companyLogo}
+                onChange={(e) => setCompanyLogo(e.target.value)}
+                placeholder="https://example.com/logo.png"
+                className={inputCls}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-sm text-slate-600">{t('settings.address')}</label>
+              <textarea
+                value={companyAddress}
+                onChange={(e) => setCompanyAddress(e.target.value)}
+                rows={2}
+                placeholder="Registered address"
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+              />
+            </div>
+          </div>
+          {companyLogo && (
+            <div className="mt-3 flex items-center gap-3">
+              <span className="text-xs text-slate-400">{t('cal.preview')}:</span>
+              <img
+                src={companyLogo}
+                alt="Logo"
+                className="h-10 w-auto rounded border border-slate-200 bg-white object-contain p-1"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
             </div>
           )}
-        </div>
-      </Section>
+
+          {/* ── Sub-Companies / Ilakas Section ── */}
+          <div className="mt-8 border-t border-slate-200 pt-6">
+            <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h3 className="text-base font-semibold text-slate-800">Sub-Companies / Ilakas</h3>
+                <p className="text-xs text-slate-500">
+                  Manage branch units, branches and community ilakas under this organization. Requires admin access.
+                </p>
+              </div>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={openCreateTenant}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors w-fit"
+                >
+                  <Plus size={14} />
+                  <span>Add Sub-Company</span>
+                </button>
+              )}
+            </div>
+
+            {loadingTenants ? (
+              <div className="py-6 text-center text-sm text-slate-400">Loading sub-companies…</div>
+            ) : subCompanies.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+                No sub-companies or ilakas configured yet.
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3">Code</th>
+                      <th className="px-4 py-3">Name</th>
+                      <th className="px-4 py-3">Type</th>
+                      <th className="px-4 py-3">Contact</th>
+                      <th className="px-4 py-3">Status</th>
+                      {isAdmin && <th className="px-4 py-3 text-right">Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {subCompanies.map((tc) => (
+                      <tr key={tc.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-700">
+                          {tc.code || '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-slate-900">{tc.name}</div>
+                          <div className="text-xs text-slate-400 font-mono">/{tc.slug}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${tc.type === 'central'
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'bg-blue-100 text-blue-700'
+                            }`}>
+                            {tc.type === 'central' ? 'Central' : 'Ilaka'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-600">
+                          {tc.contactInfo?.phone && <div>📞 {tc.contactInfo.phone}</div>}
+                          {tc.contactInfo?.email && <div className="text-slate-400">✉️ {tc.contactInfo.email}</div>}
+                          {!tc.contactInfo?.phone && !tc.contactInfo?.email && <span className="text-slate-400">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${tc.active !== false
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-slate-100 text-slate-500'
+                            }`}>
+                            {tc.active !== false ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        {isAdmin && (
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => openEditTenant(tc)}
+                              className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                              title="Edit Sub-Company"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </Section>
       )}
 
       {/* ── 3. Fiscal Settings ───────────────────────────────── */}
       {activeSection === 'fiscal' && (
-      <Section
-        title={t('settings.fiscalSettings')}
-        subtitle={
-          selectedFiscalYear
-            ? `${t('fy.workingYear')}: ${selectedFiscalYear.label || selectedFiscalYear.startDate}${selectedFiscalYear.status === 'closed' ? ` (${t('hint.fyStatusClosed')})` : ''}`
-            : t('hint.fiscalYears')
-        }
-        icon={Wallet}
-      >
-        <div className="p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-700">{t('settings.fiscalYears')}</p>
-              <p className="text-xs text-slate-400">
-                Active years are editable · Closed years are read-only · The working year drives transaction numbering.
-              </p>
+        <Section
+          title={t('settings.fiscalSettings')}
+          subtitle={
+            selectedFiscalYear
+              ? `${t('fy.workingYear')}: ${selectedFiscalYear.label || selectedFiscalYear.startDate}${selectedFiscalYear.status === 'closed' ? ` (${t('hint.fyStatusClosed')})` : ''}`
+              : t('hint.fiscalYears')
+          }
+          icon={Wallet}
+        >
+          <div className="p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-700">{t('settings.fiscalYears')}</p>
+                <p className="text-xs text-slate-400">
+                  Active years are editable · Closed years are read-only · The working year drives transaction numbering.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={openFyModal}
+                className="flex items-center gap-1.5 rounded-md bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
+              >
+                <Plus size={14} /> {t('settings.addYear')}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={openFyModal}
-              className="flex items-center gap-1.5 rounded-md bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
-            >
-              <Plus size={14} /> {t('settings.addYear')}
-            </button>
-          </div>
 
-          {fiscalLoading ? (
-            <div className="py-6 text-center text-sm text-slate-400">{t('hint.loadingFiscal')}</div>
-          ) : fiscalYears.length === 0 ? (
-            <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
-              No fiscal years defined. Click <span className="font-medium">Add Year</span> to create the first period.
-            </div>
-          ) : (
-            <div className="overflow-x-auto rounded border border-slate-200">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="px-3 py-2">{t('settings.working')}</th>
-                    <th className="px-3 py-2">{t('settings.label')}</th>
-                    <th className="px-3 py-2">{t('settings.start')}</th>
-                    <th className="px-3 py-2">{t('settings.end')}</th>
-                    <th className="px-3 py-2">{t('common.status')}</th>
-                    <th className="px-3 py-2 text-right">{t('settings.actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fiscalYears.map((y) => {
-                    const isSelected = selectedFiscalYear?.id === y.id
-                    const isActiveFlag = y.isActive || (activeFiscalYear?.id === y.id && !isSelected)
-                    return (
-                      <tr
-                        key={y.id}
-                        className={`border-b border-slate-100 last:border-0 ${isSelected ? 'bg-crimson-50/60' : ''}`}
-                      >
-                        <td className="px-3 py-2">
-                          {y.status === 'closed' ? (
-                            <span
-                              title={t("settings.closedTooltip")}
-                              className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-300"
-                            >
-                              <Check size={12} />
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              title={t("settings.setWorkingYear")}
-                              onClick={() => fySetActive(y)}
-                              className={`flex h-5 w-5 items-center justify-center rounded-full border ${
-                                isActiveFlag
-                                  ? 'border-crimson-600 bg-crimson-600 text-white'
-                                  : 'border-slate-300 text-transparent hover:border-crimson-400'
-                              }`}
-                            >
-                              <Check size={12} />
-                            </button>
-                          )}
-                        </td>
-                        {fyEditRow === y.id ? (
+            {fiscalLoading ? (
+              <div className="py-6 text-center text-sm text-slate-400">{t('hint.loadingFiscal')}</div>
+            ) : fiscalYears.length === 0 ? (
+              <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
+                No fiscal years defined. Click <span className="font-medium">Add Year</span> to create the first period.
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded border border-slate-200">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                      <th className="px-3 py-2">{t('settings.working')}</th>
+                      <th className="px-3 py-2">{t('settings.label')}</th>
+                      <th className="px-3 py-2">{t('settings.start')}</th>
+                      <th className="px-3 py-2">{t('settings.end')}</th>
+                      <th className="px-3 py-2">{t('common.status')}</th>
+                      <th className="px-3 py-2 text-right">{t('settings.actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fiscalYears.map((y) => {
+                      const isSelected = selectedFiscalYear?.id === y.id
+                      const isActiveFlag = y.isActive || (activeFiscalYear?.id === y.id && !isSelected)
+                      return (
+                        <tr
+                          key={y.id}
+                          className={`border-b border-slate-100 last:border-0 ${isSelected ? 'bg-crimson-50/60' : ''}`}
+                        >
                           <td className="px-3 py-2">
-                            <input
-                              defaultValue={fyRowDraft.label || y.label || ''}
-                              className="w-full text-sm font-medium border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
-                              onChange={(e) => setFyRowDraft({ ...fyRowDraft, label: e.target.value })}
-                              autoFocus
-                            />
+                            {y.status === 'closed' ? (
+                              <span
+                                title={t("settings.closedTooltip")}
+                                className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-300"
+                              >
+                                <Check size={12} />
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                title={t("settings.setWorkingYear")}
+                                onClick={() => fySetActive(y)}
+                                className={`flex h-5 w-5 items-center justify-center rounded-full border ${isActiveFlag
+                                    ? 'border-crimson-600 bg-crimson-600 text-white'
+                                    : 'border-slate-300 text-transparent hover:border-crimson-400'
+                                  }`}
+                              >
+                                <Check size={12} />
+                              </button>
+                            )}
                           </td>
-                        ) : (
-                          <td className="px-3 py-2 font-medium text-slate-800">{y.label || `FY ${y.startDate}`}</td>
-                        )}
-                        {fyEditRow === y.id ? (
-                          <td className="px-3 py-2">
-                            <input
-                              type="date"
-                              defaultValue={fyRowDraft.startDate || String(y.startDate || '').slice(0, 10)}
-                              className="w-full text-xs text-slate-500 border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
-                              onChange={(e) => setFyRowDraft({ ...fyRowDraft, startDate: e.target.value })}
-                            />
-                          </td>
-                        ) : (
-                          <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.startDate || '').slice(0, 10)}</td>
-                        )}
-                        {fyEditRow === y.id ? (
-                          <td className="px-3 py-2">
-                            <input
-                              type="date"
-                              defaultValue={fyRowDraft.endDate || String(y.endDate || '').slice(0, 10)}
-                              className="w-full text-xs text-slate-500 border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
-                              onChange={(e) => setFyRowDraft({ ...fyRowDraft, endDate: e.target.value })}
-                            />
-                          </td>
-                        ) : (
-                          <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.endDate || '').slice(0, 10)}</td>
-                        )}
-                        <td className="px-3 py-2">
-                          {y.status === 'closed' ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
-                              <Lock size={10} /> {t("hint.closedLabel")}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                              <Unlock size={10} /> {t("hint.activeLabel")}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">
                           {fyEditRow === y.id ? (
-                            <div className="flex items-center justify-end gap-1">
-                              <button
-                                type="button"
-                                onClick={() => fyRowSave(y)}
-                                disabled={fySaving}
-                                title={t("settings.saveYear")}
-                                className={`rounded p-1 ${fySaving ? 'opacity-50 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100 hover:text-crimson-600'}`}
-                              >
-                                <Save size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setFyEditRow(null)}
-                                title={t("settings.cancelEdit")}
-                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
+                            <td className="px-3 py-2">
+                              <input
+                                defaultValue={fyRowDraft.label || y.label || ''}
+                                className="w-full text-sm font-medium border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                                onChange={(e) => setFyRowDraft({ ...fyRowDraft, label: e.target.value })}
+                                autoFocus
+                              />
+                            </td>
                           ) : (
-                            <div className="flex items-center justify-end gap-1">
-                              {y.status === 'closed' ? (
-                                <button
-                                  type="button"
-                                  onClick={() => fyReopen(y)}
-                                  title={t("settings.openThisYear")}
-                                  className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600"
-                                >
-                                  <Unlock size={14} />
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => fyClose(y)}
-                                  title={t("settings.closeThisYear")}
-                                  className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-amber-600"
-                                >
-                                  <Lock size={14} />
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFyRowDraft({ label: y.label || '', startDate: String(y.startDate || '').slice(0, 10), endDate: String(y.endDate || '').slice(0, 10) })
-                                  setFyEditRow(y.id)
-                                }}
-                                title={t("settings.editFiscalYear")}
-                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                              >
-                                <Pencil size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => fyDelete(y)}
-                                title={t("settings.deleteFiscalYear")}
-                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
+                            <td className="px-3 py-2 font-medium text-slate-800">{y.label || `FY ${y.startDate}`}</td>
                           )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+                          {fyEditRow === y.id ? (
+                            <td className="px-3 py-2">
+                              <input
+                                type="date"
+                                defaultValue={fyRowDraft.startDate || String(y.startDate || '').slice(0, 10)}
+                                className="w-full text-xs text-slate-500 border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                                onChange={(e) => setFyRowDraft({ ...fyRowDraft, startDate: e.target.value })}
+                              />
+                            </td>
+                          ) : (
+                            <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.startDate || '').slice(0, 10)}</td>
+                          )}
+                          {fyEditRow === y.id ? (
+                            <td className="px-3 py-2">
+                              <input
+                                type="date"
+                                defaultValue={fyRowDraft.endDate || String(y.endDate || '').slice(0, 10)}
+                                className="w-full text-xs text-slate-500 border border-slate-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-crimson-500 outline-none"
+                                onChange={(e) => setFyRowDraft({ ...fyRowDraft, endDate: e.target.value })}
+                              />
+                            </td>
+                          ) : (
+                            <td className="px-3 py-2 font-mono text-xs text-slate-500">{String(y.endDate || '').slice(0, 10)}</td>
+                          )}
+                          <td className="px-3 py-2">
+                            {y.status === 'closed' ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                                <Lock size={10} /> {t("hint.closedLabel")}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                                <Unlock size={10} /> {t("hint.activeLabel")}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            {fyEditRow === y.id ? (
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => fyRowSave(y)}
+                                  disabled={fySaving}
+                                  title={t("settings.saveYear")}
+                                  className={`rounded p-1 ${fySaving ? 'opacity-50 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100 hover:text-crimson-600'}`}
+                                >
+                                  <Save size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setFyEditRow(null)}
+                                  title={t("settings.cancelEdit")}
+                                  className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-end gap-1">
+                                {y.status === 'closed' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => fyReopen(y)}
+                                    title={t("settings.openThisYear")}
+                                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600"
+                                  >
+                                    <Unlock size={14} />
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => fyClose(y)}
+                                    title={t("settings.closeThisYear")}
+                                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-amber-600"
+                                  >
+                                    <Lock size={14} />
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFyRowDraft({ label: y.label || '', startDate: String(y.startDate || '').slice(0, 10), endDate: String(y.endDate || '').slice(0, 10) })
+                                    setFyEditRow(y.id)
+                                  }}
+                                  title={t("settings.editFiscalYear")}
+                                  className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                >
+                                  <Pencil size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => fyDelete(y)}
+                                  title={t("settings.deleteFiscalYear")}
+                                  className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-          <p className="mt-3 text-xs text-slate-400">
-            Selecting a fiscal year in the header filters the transactions, journal and reports to that period.
-            Entries dated inside a <span className="font-medium">closed</span> year are rejected on the server.
-          </p>
-        </div>
-      </Section>
+            <p className="mt-3 text-xs text-slate-400">
+              Selecting a fiscal year in the header filters the transactions, journal and reports to that period.
+              Entries dated inside a <span className="font-medium">closed</span> year are rejected on the server.
+            </p>
+          </div>
+        </Section>
       )}
 
       {/* ── Add / Edit Fiscal Year Modal ──────────────────── */}
@@ -1859,12 +1853,12 @@ export default function Settings() {
         const isWorkingYear = activeFiscalYear?.id === year.id
         const title =
           action === 'close' ? 'Close Fiscal Year' :
-          action === 'open' ? 'Open Fiscal Year' :
-          'Set as Working Year'
+            action === 'open' ? 'Open Fiscal Year' :
+              'Set as Working Year'
         const confirmLabel =
           action === 'close' ? 'Close Year' :
-          action === 'open' ? 'Open Year' :
-          'Set as Working Year'
+            action === 'open' ? 'Open Year' :
+              'Set as Working Year'
         const swapNote = swap
           ? `Only one fiscal year can be active at a time. ${action === 'open' ? `Opening ${year.label}` : `Setting ${year.label} as the working year`} will close ${swap.label}${swapIsWorking ? ' — the current working year' : ''}.`
           : null
@@ -1911,9 +1905,8 @@ export default function Settings() {
                 <button
                   type="button"
                   onClick={() => void fyConfirmGo()}
-                  className={`rounded px-4 py-2 text-sm font-medium text-white hover:opacity-90 ${
-                    action === 'close' ? 'bg-amber-600' : 'bg-crimson-600'
-                  }`}
+                  className={`rounded px-4 py-2 text-sm font-medium text-white hover:opacity-90 ${action === 'close' ? 'bg-amber-600' : 'bg-crimson-600'
+                    }`}
                 >
                   {confirmLabel}
                 </button>
@@ -1925,650 +1918,648 @@ export default function Settings() {
 
       {/* ── 4. Feature Toggles ───────────────────────────────── */}
       {activeSection === 'features' && (
-      <Section
-        title={t('settings.featureToggles', 'Feature Toggles')}
-        subtitle={
-          `${payrollEnabled ? 'Payroll ON' : 'Payroll OFF'} · ${bankRecEnabled ? 'Bank Rec ON' : 'Bank Rec OFF'}`
-        }
-        icon={ToggleLeft}
-        hasChanges={featuresDirty}
-        saved={featuresSaved}
-        onSave={() => void persistFeatures()}
-        onCancel={cancelFeatures}
-      >
-        <div className="space-y-4">
-          {/* Payroll System Toggle */}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={payrollEnabled}
-                onChange={(e) => setPayrollEnabled(e.target.checked)}
-                className="peer sr-only"
-              />
-              <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
-              <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
-            </div>
-            <div>
-              <div className="text-sm font-medium text-slate-800">{t('settings.payrollSystem', 'Payroll System')}</div>
-              <div className="text-xs text-slate-500">
-                {payrollEnabled
-                  ? t('settings.payrollEnabledHint', 'Enabled — visible in header switcher and sidebar')
-                  : t('settings.payrollDisabledHint', 'Disabled — hidden from header switcher and sidebar')}
+        <Section
+          title={t('settings.featureToggles', 'Feature Toggles')}
+          subtitle={
+            `${payrollEnabled ? 'Payroll ON' : 'Payroll OFF'} · ${bankRecEnabled ? 'Bank Rec ON' : 'Bank Rec OFF'}`
+          }
+          icon={ToggleLeft}
+          hasChanges={featuresDirty}
+          saved={featuresSaved}
+          onSave={() => void persistFeatures()}
+          onCancel={cancelFeatures}
+        >
+          <div className="space-y-4">
+            {/* Payroll System Toggle */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={payrollEnabled}
+                  onChange={(e) => setPayrollEnabled(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+                <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
               </div>
-            </div>
-          </label>
+              <div>
+                <div className="text-sm font-medium text-slate-800">{t('settings.payrollSystem', 'Payroll System')}</div>
+                <div className="text-xs text-slate-500">
+                  {payrollEnabled
+                    ? t('settings.payrollEnabledHint', 'Enabled — visible in header switcher and sidebar')
+                    : t('settings.payrollDisabledHint', 'Disabled — hidden from header switcher and sidebar')}
+                </div>
+              </div>
+            </label>
 
-          {/* Bank Reconciliation */}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={bankRecEnabled}
-                onChange={(e) => setBankRecEnabled(e.target.checked)}
-                className="peer sr-only"
-              />
-              <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
-              <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
-            </div>
-            <div>
-              <div className="text-sm text-slate-700">Bank Reconciliation</div>
-              <div className="text-xs text-slate-400">
-                {bankRecEnabled ? 'Enabled — visible in sidebar' : 'Disabled — hidden from sidebar'}
+            {/* Bank Reconciliation */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={bankRecEnabled}
+                  onChange={(e) => setBankRecEnabled(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+                <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
               </div>
-            </div>
-          </label>
+              <div>
+                <div className="text-sm text-slate-700">Bank Reconciliation</div>
+                <div className="text-xs text-slate-400">
+                  {bankRecEnabled ? 'Enabled — visible in sidebar' : 'Disabled — hidden from sidebar'}
+                </div>
+              </div>
+            </label>
 
-          {/* Simplified Invoice */}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={simplifiedInvEnabled}
-                onChange={(e) => setSimplifiedInvEnabled(e.target.checked)}
-                className="peer sr-only"
-              />
-              <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
-              <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
-            </div>
-            <div>
-              <div className="text-sm text-slate-700">Simplified Invoice (VAT Inclusive)</div>
-              <div className="text-xs text-slate-400">
-                {simplifiedInvEnabled
-                  ? `Shows VAT-inclusive for totals under Rs. ${simplifiedInvThreshold}`
-                  : 'Always show full tax breakdown'}
+            {/* Simplified Invoice */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={simplifiedInvEnabled}
+                  onChange={(e) => setSimplifiedInvEnabled(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+                <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
               </div>
-            </div>
-          </label>
-          {simplifiedInvEnabled && (
-            <div className="ml-14">
-              <label className="text-xs text-slate-500">Threshold amount (Rs.)</label>
-              <input
-                type="number"
-                min="0"
-                step="100"
-                value={simplifiedInvThreshold}
-                onChange={(e) => setSimplifiedInvThreshold(e.target.value)}
-                className="mt-1 w-32 rounded border border-slate-300 px-3 h-9 font-mono text-sm outline-none focus:border-slate-500"
-              />
-            </div>
-          )}
+              <div>
+                <div className="text-sm text-slate-700">Simplified Invoice (VAT Inclusive)</div>
+                <div className="text-xs text-slate-400">
+                  {simplifiedInvEnabled
+                    ? `Shows VAT-inclusive for totals under Rs. ${simplifiedInvThreshold}`
+                    : 'Always show full tax breakdown'}
+                </div>
+              </div>
+            </label>
+            {simplifiedInvEnabled && (
+              <div className="ml-14">
+                <label className="text-xs text-slate-500">Threshold amount (Rs.)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="100"
+                  value={simplifiedInvThreshold}
+                  onChange={(e) => setSimplifiedInvThreshold(e.target.value)}
+                  className="mt-1 w-32 rounded border border-slate-300 px-3 h-9 font-mono text-sm outline-none focus:border-slate-500"
+                />
+              </div>
+            )}
 
-          {/* Demo seed */}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={demoSeedEnabled}
-                onChange={(e) => setDemoSeedEnabled(e.target.checked)}
-                className="peer sr-only"
-              />
-              <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
-              <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
-            </div>
-            <div>
-              <div className="text-sm text-slate-700">Demo seed</div>
-              <div className="text-xs text-slate-400">
-                {demoSeedEnabled
-                  ? 'Enabled — Setup wizard & Data Management can add demo data'
-                  : 'Disabled — demo data seeding is rejected'}
+            {/* Demo seed */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={demoSeedEnabled}
+                  onChange={(e) => setDemoSeedEnabled(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+                <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
               </div>
-            </div>
-          </label>
+              <div>
+                <div className="text-sm text-slate-700">Demo seed</div>
+                <div className="text-xs text-slate-400">
+                  {demoSeedEnabled
+                    ? 'Enabled — Setup wizard & Data Management can add demo data'
+                    : 'Disabled — demo data seeding is rejected'}
+                </div>
+              </div>
+            </label>
 
-          {/* Nepali digits */}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={nepaliDigitsEnabled}
-                onChange={(e) => setNepaliDigitsEnabled(e.target.checked)}
-                className="peer sr-only"
-              />
-              <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
-              <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
-            </div>
-            <div>
-              <div className="text-sm text-slate-700">{t('settings.nepaliDigits', 'Nepali digits (०१२३)')}</div>
-              <div className="text-xs text-slate-400">
-                {nepaliDigitsEnabled
-                  ? t(
-                    'settings.nepaliDigitsHintOn',
-                    'Enabled — amounts show Devanagari digits with Indian-style grouping (११,५५,५३८)',
-                  )
-                  : t('settings.nepaliDigitsHint', 'Show amounts with Devanagari digits and Indian-style grouping')}
+            {/* Nepali digits */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={nepaliDigitsEnabled}
+                  onChange={(e) => setNepaliDigitsEnabled(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+                <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
               </div>
-            </div>
-          </label>
+              <div>
+                <div className="text-sm text-slate-700">{t('settings.nepaliDigits', 'Nepali digits (०१२३)')}</div>
+                <div className="text-xs text-slate-400">
+                  {nepaliDigitsEnabled
+                    ? t(
+                      'settings.nepaliDigitsHintOn',
+                      'Enabled — amounts show Devanagari digits with Indian-style grouping (११,५५,५३८)',
+                    )
+                    : t('settings.nepaliDigitsHint', 'Show amounts with Devanagari digits and Indian-style grouping')}
+                </div>
+              </div>
+            </label>
 
-          {/* Nepali amount-in-words on print */}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={nepaliWordsOnPrintEnabled}
-                onChange={(e) => setNepaliWordsOnPrintEnabled(e.target.checked)}
-                className="peer sr-only"
-              />
-              <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
-              <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
-            </div>
-            <div>
-              <div className="text-sm text-slate-700">{t('settings.nepaliWords', 'Amount in words in Nepali (on print)')}</div>
-              <div className="text-xs text-slate-400">
-                {nepaliWordsOnPrintEnabled
-                  ? t(
-                    'settings.nepaliWordsHintOn',
-                    'Enabled — voucher previews and prints show the amount in Nepali words',
-                  )
-                  : t('settings.nepaliWordsHint', 'Amount in words on voucher previews and prints stays in English')}
+            {/* Nepali amount-in-words on print */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={nepaliWordsOnPrintEnabled}
+                  onChange={(e) => setNepaliWordsOnPrintEnabled(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+                <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
               </div>
-            </div>
-          </label>
+              <div>
+                <div className="text-sm text-slate-700">{t('settings.nepaliWords', 'Amount in words in Nepali (on print)')}</div>
+                <div className="text-xs text-slate-400">
+                  {nepaliWordsOnPrintEnabled
+                    ? t(
+                      'settings.nepaliWordsHintOn',
+                      'Enabled — voucher previews and prints show the amount in Nepali words',
+                    )
+                    : t('settings.nepaliWordsHint', 'Amount in words on voucher previews and prints stays in English')}
+                </div>
+              </div>
+            </label>
 
-          {/* Tooltip toggle */}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={tooltipEnabled}
-                onChange={(e) => {
-                  setTooltipEnabled(e.target.checked)
-                  localStorage.setItem('ui-tooltips-enabled', String(e.target.checked))
-                  // Notify any TooltipsProvider listeners
-                  window.dispatchEvent(new StorageEvent('storage', { key: 'ui-tooltips-enabled' }))
-                }}
-                className="peer sr-only"
-              />
-              <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
-              <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
-            </div>
-            <div>
-              <div className="text-sm text-slate-700">{t('settings.showTooltips', 'Show tooltips')}</div>
-              <div className="text-xs text-slate-400">
-                {tooltipEnabled
-                  ? t('settings.showTooltipsHintOn', 'Enabled — hover or focus elements to see help text')
-                  : t('settings.showTooltipsHint', 'Show contextual help on hover/focus')}
+            {/* Tooltip toggle */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={tooltipEnabled}
+                  onChange={(e) => {
+                    setTooltipEnabled(e.target.checked)
+                    localStorage.setItem('ui-tooltips-enabled', String(e.target.checked))
+                    // Notify any TooltipsProvider listeners
+                    window.dispatchEvent(new StorageEvent('storage', { key: 'ui-tooltips-enabled' }))
+                  }}
+                  className="peer sr-only"
+                />
+                <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-crimson-600 transition-colors" />
+                <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
               </div>
-            </div>
-          </label>
-        </div>
-      </Section>
+              <div>
+                <div className="text-sm text-slate-700">{t('settings.showTooltips', 'Show tooltips')}</div>
+                <div className="text-xs text-slate-400">
+                  {tooltipEnabled
+                    ? t('settings.showTooltipsHintOn', 'Enabled — hover or focus elements to see help text')
+                    : t('settings.showTooltipsHint', 'Show contextual help on hover/focus')}
+                </div>
+              </div>
+            </label>
+          </div>
+        </Section>
       )}
 
       {/* ── 5. Default Account Assignments (editable) ────────── */}
       {activeSection === 'default-accounts' && (
-      <Section
-        title={t('settings.defaultAccounts', 'Default Accounts')}
-        subtitle={t('settings.accountsSubtitle', 'Map GL accounts to posting roles — drag to reorder')}
-        icon={Wallet}
-        hasChanges={defAccountsDirty}
-        saved={defAccountsSaved}
-        onSave={() => void persistDefAccounts()}
-        onCancel={cancelDefAccounts}
-      >
-        <div className="space-y-1">
-          {defAccountOrder.map((key, idx) => {
-            const f = ACCOUNT_FIELDS.find((af) => af.key === key)
-            if (!f) return null
-            const isDragging = dragIdx === idx
-            const isOver = overIdx === idx && dragIdx !== null && dragIdx !== idx
-            return (
-              <div
-                key={f.key}
-                draggable
-                onDragStart={() => onDragStart(idx)}
-                onDragOver={(e) => onDragOver(e, idx)}
-                onDragEnd={onDragEnd}
-                onDragLeave={onDragLeave}
-                className={`group flex items-center gap-2 rounded-md px-2 py-1.5 transition-all ${
-                  isDragging
-                    ? 'opacity-40 scale-[0.98] bg-crimson-50 ring-1 ring-crimson-200'
-                    : isOver
-                      ? 'bg-crimson-50 ring-1 ring-crimson-300 ring-dashed -my-0.5'
-                      : 'hover:bg-slate-50'
-                }`
-                }
-              >
-                {/* Drag handle */}
-                <div className="shrink-0 cursor-grab text-slate-300 transition-colors hover:text-slate-500 active:cursor-grabbing">
-                  <GripVertical size={14} />
-                </div>
+        <Section
+          title={t('settings.defaultAccounts', 'Default Accounts')}
+          subtitle={t('settings.accountsSubtitle', 'Map GL accounts to posting roles — drag to reorder')}
+          icon={Wallet}
+          hasChanges={defAccountsDirty}
+          saved={defAccountsSaved}
+          onSave={() => void persistDefAccounts()}
+          onCancel={cancelDefAccounts}
+        >
+          <div className="space-y-1">
+            {defAccountOrder.map((key, idx) => {
+              const f = ACCOUNT_FIELDS.find((af) => af.key === key)
+              if (!f) return null
+              const isDragging = dragIdx === idx
+              const isOver = overIdx === idx && dragIdx !== null && dragIdx !== idx
+              return (
+                <div
+                  key={f.key}
+                  draggable
+                  onDragStart={() => onDragStart(idx)}
+                  onDragOver={(e) => onDragOver(e, idx)}
+                  onDragEnd={onDragEnd}
+                  onDragLeave={onDragLeave}
+                  className={`group flex items-center gap-2 rounded-md px-2 py-1.5 transition-all ${isDragging
+                      ? 'opacity-40 scale-[0.98] bg-crimson-50 ring-1 ring-crimson-200'
+                      : isOver
+                        ? 'bg-crimson-50 ring-1 ring-crimson-300 ring-dashed -my-0.5'
+                        : 'hover:bg-slate-50'
+                    }`
+                  }
+                >
+                  {/* Drag handle */}
+                  <div className="shrink-0 cursor-grab text-slate-300 transition-colors hover:text-slate-500 active:cursor-grabbing">
+                    <GripVertical size={14} />
+                  </div>
 
-                {/* Role label */}
-                <label className="w-48 shrink-0 text-sm font-medium text-slate-600">
-                  {f.label}
-                </label>
+                  {/* Role label */}
+                  <label className="w-48 shrink-0 text-sm font-medium text-slate-600">
+                    {f.label}
+                  </label>
 
-                {/* Custom account select */}
-                <div className="flex-1">
-                  <AccountSelect
-                    accounts={coaAccounts}
-                    value={defAccounts[f.key] || ''}
-                    onChange={(v) => setDefAccounts((prev) => ({ ...prev, [f.key]: v }))}
-                  />
+                  {/* Custom account select */}
+                  <div className="flex-1">
+                    <AccountSelect
+                      accounts={coaAccounts}
+                      value={defAccounts[f.key] || ''}
+                      onChange={(v) => setDefAccounts((prev) => ({ ...prev, [f.key]: v }))}
+                    />
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
-        <p className="mt-3 text-xs text-slate-400">
-          These defaults are used when posting transactions. Missing accounts block posting until configured.
-          Drag rows to reorder posting roles.
-        </p>
-      </Section>
+              )
+            })}
+          </div>
+          <p className="mt-3 text-xs text-slate-400">
+            These defaults are used when posting transactions. Missing accounts block posting until configured.
+            Drag rows to reorder posting roles.
+          </p>
+        </Section>
       )}
 
       {/* ── 5b. Chart of Accounts ─────────────────────────────── */}
       {activeSection === 'coa' && (
-      <Section
-        title={t('settings.chartOfAccounts', 'Chart of Accounts')}
-        subtitle={t('settings.coaSummary', '{a} accounts · {g} groups').replace('{a}', String(coaAccounts.length)).replace('{g}', String(coaGroups.length))}
-        icon={FolderTree}
-      >
-        {/* Create form */}
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-xs text-slate-400">
-            {coaLoading ? 'Loading…' : `${coaAccounts.length} accounts`}
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => coaFileInputRef.current?.click()}
-              className="flex items-center gap-1 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <Upload size={12} /> {t('import.button', 'Import')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setCoaExportOpen(true)}
-              className="flex items-center gap-1 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <Download size={12} /> {t('export.button', 'Export')}
-            </button>
-            <button
-              type="button"
-              onClick={() => openCoaNew()}
-              className="flex items-center gap-1 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <Plus size={12} /> New Account
-            </button>
-          </div>
-        </div>
-
-        <input
-          ref={coaFileInputRef}
-          type="file"
-          accept=".json,.csv,.xlsx,.xls"
-          className="hidden"
-          onChange={async (e) => {
-            const file = e.target.files?.[0]
-            if (!file) return
-            try {
-              const parsed = await parseImportFile<Record<string, unknown>>(file)
-              setCoaImportData({ collection: parsed.collection, docs: parsed.docs })
-            } catch (err) {
-              pushToast('error', 'Parse failed', err instanceof Error ? err.message : String(err))
-            }
-            e.target.value = ''
-          }}
-        />
-
-        {showCoaForm && (
-          <form onSubmit={saveCoaAccount} className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div className="mb-2 text-xs font-medium text-slate-600">{coaEditingId != null ? 'Edit Account' : 'New Account'}</div>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              <input required value={coaForm.name} onChange={(e) => setCoaForm({ ...coaForm, name: e.target.value })}
-                placeholder="Account name" className="rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500" />
-              <input value={coaForm.code} onChange={(e) => setCoaForm({ ...coaForm, code: e.target.value })}
-                placeholder="Code" className="rounded border border-slate-300 px-3 py-1.5 text-sm font-mono outline-none focus:border-slate-500" />
-              <SearchSelect
-                value={coaForm.type}
-                onChange={(v) =>
-                  setCoaForm((f) => ({
-                    ...f,
-                    type: v as AccountType,
-                    // Clear the group when it no longer belongs to the type.
-                    group:
-                      f.group &&
-                      coaGroups.find((g) => g.id === Number(f.group))?.type ===
-                        v
-                        ? f.group
-                        : '',
-                  }))
-                }
-                options={[
-                  { value: 'asset', label: 'Asset' },
-                  { value: 'liability', label: 'Liability' },
-                  { value: 'equity', label: 'Equity' },
-                  { value: 'income', label: 'Income' },
-                  { value: 'expense', label: 'Expense' },
-                ]}
-              />
-              <SearchSelect
-                value={coaForm.class}
-                onChange={(v) => setCoaForm({ ...coaForm, class: v })}
-                options={[
-                  { value: 'other', label: 'Other' },
-                  { value: 'cash', label: 'Cash' },
-                  { value: 'bank', label: 'Bank' },
-                ]}
-              />
+        <Section
+          title={t('settings.chartOfAccounts', 'Chart of Accounts')}
+          subtitle={t('settings.coaSummary', '{a} accounts · {g} groups').replace('{a}', String(coaAccounts.length)).replace('{g}', String(coaGroups.length))}
+          icon={FolderTree}
+        >
+          {/* Create form */}
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-xs text-slate-400">
+              {coaLoading ? 'Loading…' : `${coaAccounts.length} accounts`}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => coaFileInputRef.current?.click()}
+                className="flex items-center gap-1 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <Upload size={12} /> {t('import.button', 'Import')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCoaExportOpen(true)}
+                className="flex items-center gap-1 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <Download size={12} /> {t('export.button', 'Export')}
+              </button>
+              <button
+                type="button"
+                onClick={() => openCoaNew()}
+                className="flex items-center gap-1 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <Plus size={12} /> New Account
+              </button>
             </div>
-            <div className="mt-2 flex items-end gap-2">
-              <div className="flex-1">
+          </div>
+
+          <input
+            ref={coaFileInputRef}
+            type="file"
+            accept=".json,.csv,.xlsx,.xls"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              try {
+                const parsed = await parseImportFile<Record<string, unknown>>(file)
+                setCoaImportData({ collection: parsed.collection, docs: parsed.docs })
+              } catch (err) {
+                pushToast('error', 'Parse failed', err instanceof Error ? err.message : String(err))
+              }
+              e.target.value = ''
+            }}
+          />
+
+          {showCoaForm && (
+            <form onSubmit={saveCoaAccount} className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-2 text-xs font-medium text-slate-600">{coaEditingId != null ? 'Edit Account' : 'New Account'}</div>
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                <input required value={coaForm.name} onChange={(e) => setCoaForm({ ...coaForm, name: e.target.value })}
+                  placeholder="Account name" className="rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500" />
+                <input value={coaForm.code} onChange={(e) => setCoaForm({ ...coaForm, code: e.target.value })}
+                  placeholder="Code" className="rounded border border-slate-300 px-3 py-1.5 text-sm font-mono outline-none focus:border-slate-500" />
                 <SearchSelect
-                  value={coaForm.group}
-                  onChange={(v) => setCoaForm({ ...coaForm, group: v })}
-                  placeholder="— no group —"
-                  options={coaGroups
-                    .filter((g) => g.type === coaForm.type)
-                    .map((g) => ({ value: g.id, label: g.name }))}
+                  value={coaForm.type}
+                  onChange={(v) =>
+                    setCoaForm((f) => ({
+                      ...f,
+                      type: v as AccountType,
+                      // Clear the group when it no longer belongs to the type.
+                      group:
+                        f.group &&
+                          coaGroups.find((g) => g.id === Number(f.group))?.type ===
+                          v
+                          ? f.group
+                          : '',
+                    }))
+                  }
+                  options={[
+                    { value: 'asset', label: 'Asset' },
+                    { value: 'liability', label: 'Liability' },
+                    { value: 'equity', label: 'Equity' },
+                    { value: 'income', label: 'Income' },
+                    { value: 'expense', label: 'Expense' },
+                  ]}
+                />
+                <SearchSelect
+                  value={coaForm.class}
+                  onChange={(v) => setCoaForm({ ...coaForm, class: v })}
+                  options={[
+                    { value: 'other', label: 'Other' },
+                    { value: 'cash', label: 'Cash' },
+                    { value: 'bank', label: 'Bank' },
+                  ]}
                 />
               </div>
-              <button type="submit" disabled={coaSaving}
-                className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
-                {coaSaving ? 'Saving…' : coaEditingId != null ? 'Save Changes' : 'Save'}</button>
-              <button type="button" onClick={() => { setCoaEditingId(null); setShowCoaForm(false) }} className="text-xs text-slate-400 hover:text-slate-700">Cancel</button>
-            </div>
-          </form>
-        )}
-
-        {/* Accounts grouped by type → nested tree */}
-        {(['asset', 'liability', 'equity', 'income', 'expense'] as AccountType[]).map((type) => {
-          const tree = coaTreeFor(type)
-          if (tree.roots.length === 0 && tree.ungrouped.length === 0) return null
-          const labels: Record<string, string> = { asset: 'Assets', liability: 'Liabilities', equity: 'Equity', income: 'Income', expense: 'Expenses' }
-          const total = tree.roots.reduce((n, r) => n + countCoaAccounts(r), 0) + tree.ungrouped.length
-
-          const renderCoaAccount = (a: Account, depth: number) => {
-            const bal = coaBalances[a.id] ?? 0
-            const isInventory = defAccounts.inventoryAccount === String(a.id)
-            return (
-              <div key={`a${a.id}`}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50"
-                style={{ paddingLeft: `${10 + depth * 22}px` }}>
-                <span className="w-24 shrink-0 truncate font-mono text-xs text-slate-400">{a.code || '—'}</span>
-                <span className="flex-1 truncate text-slate-800">{a.name}</span>
-                {isInventory && (
-                  <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-700" title="Inventory is valued at weighted-average cost (AVCO)">AVCO</span>
-                )}
-                {a.class === 'bank' && (
-                  <span className="rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-sky-600">Bank</span>
-                )}
-                {a.class === 'cash' && (
-                  <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-600">Cash</span>
-                )}
-                <span className={`hidden shrink-0 font-mono text-xs sm:inline ${bal === 0 ? 'text-slate-300' : bal < 0 ? 'text-red-600' : 'text-slate-700'}`}>
-                  {fmt(bal)}
-                </span>
-                <span className="flex shrink-0 items-center gap-0.5">
-                  <button onClick={() => openCoaEdit(a)} title="Edit"
-                    className="rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-700">
-                    <Pencil size={12} />
-                  </button>
-                  <button onClick={() => removeCoaAccount(a.id)} title="Delete"
-                    className="rounded p-1 text-slate-300 hover:bg-red-50 hover:text-red-500">
-                    <Trash2 size={12} />
-                  </button>
-                </span>
+              <div className="mt-2 flex items-end gap-2">
+                <div className="flex-1">
+                  <SearchSelect
+                    value={coaForm.group}
+                    onChange={(v) => setCoaForm({ ...coaForm, group: v })}
+                    placeholder="— no group —"
+                    options={coaGroups
+                      .filter((g) => g.type === coaForm.type)
+                      .map((g) => ({ value: g.id, label: g.name }))}
+                  />
+                </div>
+                <button type="submit" disabled={coaSaving}
+                  className="rounded bg-crimson-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
+                  {coaSaving ? 'Saving…' : coaEditingId != null ? 'Save Changes' : 'Save'}</button>
+                <button type="button" onClick={() => { setCoaEditingId(null); setShowCoaForm(false) }} className="text-xs text-slate-400 hover:text-slate-700">Cancel</button>
               </div>
-            )
-          }
+            </form>
+          )}
 
-          const renderCoaGroup = (node: CoaGroupNode, depth: number) => {
-            const hasChildren = node.accounts.length + node.children.length > 0
-            const expanded = !!coaExpanded[node.group.id]
-            const count = node.accounts.length + node.children.reduce((n, c) => n + c.accounts.length, 0)
-            return (
-              <div key={`g${node.group.id}`}>
-                <button type="button" onClick={() => hasChildren && toggleCoaGroup(node.group.id)}
-                  className={`flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-sm ${hasChildren ? 'hover:bg-slate-50' : 'cursor-default'}`}
-                  style={{ paddingLeft: `${8 + depth * 22}px` }}>
-                  {hasChildren ? (
-                    expanded
-                      ? <ChevronDown size={13} className="shrink-0 text-slate-400" />
-                      : <ChevronRight size={13} className="shrink-0 text-slate-400" />
-                  ) : (
-                    <span className="w-[13px] shrink-0" />
+          {/* Accounts grouped by type → nested tree */}
+          {(['asset', 'liability', 'equity', 'income', 'expense'] as AccountType[]).map((type) => {
+            const tree = coaTreeFor(type)
+            if (tree.roots.length === 0 && tree.ungrouped.length === 0) return null
+            const labels: Record<string, string> = { asset: 'Assets', liability: 'Liabilities', equity: 'Equity', income: 'Income', expense: 'Expenses' }
+            const total = tree.roots.reduce((n, r) => n + countCoaAccounts(r), 0) + tree.ungrouped.length
+
+            const renderCoaAccount = (a: Account, depth: number) => {
+              const bal = coaBalances[a.id] ?? 0
+              const isInventory = defAccounts.inventoryAccount === String(a.id)
+              return (
+                <div key={`a${a.id}`}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50"
+                  style={{ paddingLeft: `${10 + depth * 22}px` }}>
+                  <span className="w-24 shrink-0 truncate font-mono text-xs text-slate-400">{a.code || '—'}</span>
+                  <span className="flex-1 truncate text-slate-800">{a.name}</span>
+                  {isInventory && (
+                    <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-700" title="Inventory is valued at weighted-average cost (AVCO)">AVCO</span>
                   )}
-                  <span className="font-medium text-slate-700">{node.group.name}</span>
-                  <span className="text-xs text-slate-400">({count} account{count === 1 ? '' : 's'})</span>
-                </button>
-                {(!hasChildren || expanded) && (
-                  <div className="ml-[20px] border-l border-slate-100">
-                    {node.children.map((c) => renderCoaGroup(c, depth + 1))}
-                    {node.accounts.map((a) => renderCoaAccount(a, depth + 1))}
-                  </div>
-                )}
-              </div>
-            )
-          }
+                  {a.class === 'bank' && (
+                    <span className="rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-sky-600">Bank</span>
+                  )}
+                  {a.class === 'cash' && (
+                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-600">Cash</span>
+                  )}
+                  <span className={`hidden shrink-0 font-mono text-xs sm:inline ${bal === 0 ? 'text-slate-300' : bal < 0 ? 'text-red-600' : 'text-slate-700'}`}>
+                    {fmt(bal)}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-0.5">
+                    <button onClick={() => openCoaEdit(a)} title="Edit"
+                      className="rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-700">
+                      <Pencil size={12} />
+                    </button>
+                    <button onClick={() => removeCoaAccount(a.id)} title="Delete"
+                      className="rounded p-1 text-slate-300 hover:bg-red-50 hover:text-red-500">
+                      <Trash2 size={12} />
+                    </button>
+                  </span>
+                </div>
+              )
+            }
 
-          return (
-            <div key={type} className="mb-3">
-              <div className="mb-1 flex items-baseline gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <span>{labels[type]} <span className="text-slate-400">({total})</span></span>
-                {(() => {
-                  const typeBalance = coaAccounts
-                    .filter((x) => x.type === type)
-                    .reduce((s, x) => s + (coaBalances[x.id] || 0), 0)
-                  if (typeBalance === 0) return null
-                  return (
-                    <span className={`font-mono text-[11px] ${typeBalance < 0 ? 'text-red-500' : 'text-slate-600'}`}>
-                      {fmt(typeBalance)}
-                    </span>
-                  )
-                })()}
-              </div>
-              <div className="overflow-hidden rounded-lg border border-slate-200">
-                <div className="divide-y divide-slate-50">
-                  {tree.roots.map((n) => renderCoaGroup(n, 0))}
-                  {tree.ungrouped.length > 0 && (
-                    <div className="bg-slate-50/60">
-                      {tree.ungrouped.map((a) => renderCoaAccount(a, 1))}
+            const renderCoaGroup = (node: CoaGroupNode, depth: number) => {
+              const hasChildren = node.accounts.length + node.children.length > 0
+              const expanded = !!coaExpanded[node.group.id]
+              const count = node.accounts.length + node.children.reduce((n, c) => n + c.accounts.length, 0)
+              return (
+                <div key={`g${node.group.id}`}>
+                  <button type="button" onClick={() => hasChildren && toggleCoaGroup(node.group.id)}
+                    className={`flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-sm ${hasChildren ? 'hover:bg-slate-50' : 'cursor-default'}`}
+                    style={{ paddingLeft: `${8 + depth * 22}px` }}>
+                    {hasChildren ? (
+                      expanded
+                        ? <ChevronDown size={13} className="shrink-0 text-slate-400" />
+                        : <ChevronRight size={13} className="shrink-0 text-slate-400" />
+                    ) : (
+                      <span className="w-[13px] shrink-0" />
+                    )}
+                    <span className="font-medium text-slate-700">{node.group.name}</span>
+                    <span className="text-xs text-slate-400">({count} account{count === 1 ? '' : 's'})</span>
+                  </button>
+                  {(!hasChildren || expanded) && (
+                    <div className="ml-[20px] border-l border-slate-100">
+                      {node.children.map((c) => renderCoaGroup(c, depth + 1))}
+                      {node.accounts.map((a) => renderCoaAccount(a, depth + 1))}
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
-          )
-        })}
+              )
+            }
 
-        {coaAccounts.length === 0 && !coaLoading && (
-          <p className="py-6 text-center text-sm text-slate-400">
-            No accounts yet. Add your first account above.
-          </p>
-        )}
-      </Section>
+            return (
+              <div key={type} className="mb-3">
+                <div className="mb-1 flex items-baseline gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <span>{labels[type]} <span className="text-slate-400">({total})</span></span>
+                  {(() => {
+                    const typeBalance = coaAccounts
+                      .filter((x) => x.type === type)
+                      .reduce((s, x) => s + (coaBalances[x.id] || 0), 0)
+                    if (typeBalance === 0) return null
+                    return (
+                      <span className={`font-mono text-[11px] ${typeBalance < 0 ? 'text-red-500' : 'text-slate-600'}`}>
+                        {fmt(typeBalance)}
+                      </span>
+                    )
+                  })()}
+                </div>
+                <div className="overflow-hidden rounded-lg border border-slate-200">
+                  <div className="divide-y divide-slate-50">
+                    {tree.roots.map((n) => renderCoaGroup(n, 0))}
+                    {tree.ungrouped.length > 0 && (
+                      <div className="bg-slate-50/60">
+                        {tree.ungrouped.map((a) => renderCoaAccount(a, 1))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+
+          {coaAccounts.length === 0 && !coaLoading && (
+            <p className="py-6 text-center text-sm text-slate-400">
+              No accounts yet. Add your first account above.
+            </p>
+          )}
+        </Section>
       )}
 
       {/* ── 6. Language / भाषा ─────────────────────────────────── */}
       {activeSection === 'language' && (
-      <Section
-        title={t('lang.title', 'Language')}
-        subtitle={t('lang.subtitle', 'Choose the interface language')}
-        icon={Type}
-      >
-        <LanguageToggle />
-      </Section>
+        <Section
+          title={t('lang.title', 'Language')}
+          subtitle={t('lang.subtitle', 'Choose the interface language')}
+          icon={Type}
+        >
+          <LanguageToggle />
+        </Section>
       )}
 
       {/* ── 7. Number Series / क्रमांक शृंखला ─────────────────────── */}
       {activeSection === 'sequences' && (
-      <Section
-        title={t('settings.numberSeries', 'Number series')}
-        subtitle={sequences.length ? `${sequences.length} series` : t('settings.noSeriesYet', 'No series yet — add one below')}
-        icon={Hash}
-      >
-        {/* Add button */}
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-xs text-slate-400">
-            {sequences.length} {t('settings.seriesSummary', 'series · Prefix per document type · FY-scoped series reset each year')}
-          </span>
-          <button
-            type="button"
-            onClick={openSeriesNew}
-            className="flex items-center gap-1.5 rounded-md bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
-          >
-            <Plus size={14} /> {t('settings.addSeries', 'Add Series')}
-          </button>
-        </div>
-
-        {/* Series table */}
-        {sequences.length === 0 ? (
-          <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
-            {t('settings.noSeriesDefined', 'No number series defined yet. Click')}{' '}
-            <span className="font-medium">{t('settings.addSeries', 'Add Series')}</span>{' '}
-            {t('settings.noSeriesHint', 'to create one. Each series assigns a prefix to a document type — e.g.')}{' '}
-            <span className="font-mono">SI-</span>{' '}
-            {t('settings.forSalesInvoice', 'for Sales Invoice.')}
-          </div>
-        ) : (
-          <div className="overflow-x-auto rounded border border-slate-200">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-3 py-2">Name</th>
-                  <th className="px-3 py-2">Doc Type</th>
-                  <th className="px-3 py-2">Prefix</th>
-                  <th className="px-3 py-2">FY</th>
-                  <th className="px-3 py-2 text-right">Last #</th>
-                  <th className="px-3 py-2 text-right">Next #</th>
-                  <th className="px-3 py-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sequences.map((s) => {
-                  const next = s.lastNumber + 1
-                  return (
-                    <tr key={s.id} className="border-b border-slate-100 last:border-0">
-                      <td className="px-3 py-2 font-medium text-slate-800">{s.name}</td>
-                      <td className="px-3 py-2">
-                        <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-                          <Type size={10} />
-                          {DOC_TYPE_OPTIONS.find((o) => o.value === s.docType)?.label || s.docType}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 font-mono text-xs text-slate-600">
-                        {s.prefix || '<none>'}
-                      </td>
-                      <td className="px-3 py-2 text-slate-600">
-                        {s.fiscalYearLabel || s.fiscalYearId ? (
-                          <span className="inline-flex items-center gap-1 text-xs">
-                            <CalendarDays size={10} className="text-slate-400" />
-                            {s.fiscalYearLabel || `FY ${s.fiscalYearId}`}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-slate-400">Global</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono text-slate-800">{s.lastNumber}</td>
-                      <td className="px-3 py-2 text-right font-mono font-medium text-emerald-700">{next}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => openSeriesEdit(s)}
-                            title="Edit series"
-                            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => seriesDelete(s)}
-                            disabled={s.lastNumber > 0}
-                            title={s.lastNumber > 0 ? 'Cannot delete — documents already posted using this series.' : 'Delete series'}
-                            className={`rounded p-1 transition-colors ${
-                              s.lastNumber > 0
-                                ? 'text-slate-300 cursor-not-allowed'
-                                : 'text-slate-400 hover:bg-red-50 hover:text-red-500'
-                            }`}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Reset bar (existing functionality) */}
-        {resetKey && (
-          <div className="mt-3 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-            <span className="text-sm text-slate-700">
-              Reset <span className="font-mono font-medium">{resetKey}</span> to:
+        <Section
+          title={t('settings.numberSeries', 'Number series')}
+          subtitle={sequences.length ? `${sequences.length} series` : t('settings.noSeriesYet', 'No series yet — add one below')}
+          icon={Hash}
+        >
+          {/* Add button */}
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-xs text-slate-400">
+              {sequences.length} {t('settings.seriesSummary', 'series · Prefix per document type · FY-scoped series reset each year')}
             </span>
-            <input
-              type="number"
-              min="0"
-              value={resetValue}
-              onChange={(e) => setResetValue(e.target.value)}
-              className="w-24 rounded border border-slate-300 px-2 py-1 text-sm font-mono outline-none focus:border-slate-500"
-            />
             <button
-              onClick={async () => {
-                const val = parseInt(resetValue) || 0
-                if (!window.confirm(`Reset ${resetKey} to ${val}? The next transaction will use ${val + 1}.`)) return
-                setResetting(true)
-                try {
-                  await api(`/doc-sequences/${sequences.find((s) => s.key === resetKey)?.id}`, {
-                    method: 'PATCH',
-                    body: { lastNumber: val },
-                  })
-                  setResetKey('')
-                  await loadSequences()
-                } catch (err: unknown) {
-                  setError(err instanceof Error ? err.message : 'Failed to reset')
-                }
-                setResetting(false)
-              }}
-              disabled={resetting}
-              className="rounded bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-40"
+              type="button"
+              onClick={openSeriesNew}
+              className="flex items-center gap-1.5 rounded-md bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700"
             >
-              {resetting ? 'Saving…' : 'Confirm'}
-            </button>
-            <button
-              onClick={() => setResetKey('')}
-              className="text-xs text-slate-400 hover:text-slate-700"
-            >
-              Cancel
+              <Plus size={14} /> {t('settings.addSeries', 'Add Series')}
             </button>
           </div>
-        )}
 
-        <p className="mt-3 text-xs text-slate-400">
-          {t('settings.seriesDetermineNumbers', 'Series determine document numbers like')}{' '}
-          <span className="font-mono">{DOC_TYPE_OPTIONS[0].label}</span> →{' '}
-          <span className="font-mono">SI-2083-84-0001</span>. {t('settings.fyResetNote', 'FY-scoped series reset each fiscal year.')}{' '}
-          {t('settings.postedSeriesLock', 'Series with posted documents cannot be deleted.')}
-        </p>
-      </Section>
+          {/* Series table */}
+          {sequences.length === 0 ? (
+            <div className="rounded border border-dashed border-slate-300 py-6 text-center text-sm text-slate-400">
+              {t('settings.noSeriesDefined', 'No number series defined yet. Click')}{' '}
+              <span className="font-medium">{t('settings.addSeries', 'Add Series')}</span>{' '}
+              {t('settings.noSeriesHint', 'to create one. Each series assigns a prefix to a document type — e.g.')}{' '}
+              <span className="font-mono">SI-</span>{' '}
+              {t('settings.forSalesInvoice', 'for Sales Invoice.')}
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded border border-slate-200">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="px-3 py-2">Name</th>
+                    <th className="px-3 py-2">Doc Type</th>
+                    <th className="px-3 py-2">Prefix</th>
+                    <th className="px-3 py-2">FY</th>
+                    <th className="px-3 py-2 text-right">Last #</th>
+                    <th className="px-3 py-2 text-right">Next #</th>
+                    <th className="px-3 py-2 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sequences.map((s) => {
+                    const next = s.lastNumber + 1
+                    return (
+                      <tr key={s.id} className="border-b border-slate-100 last:border-0">
+                        <td className="px-3 py-2 font-medium text-slate-800">{s.name}</td>
+                        <td className="px-3 py-2">
+                          <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                            <Type size={10} />
+                            {DOC_TYPE_OPTIONS.find((o) => o.value === s.docType)?.label || s.docType}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 font-mono text-xs text-slate-600">
+                          {s.prefix || '<none>'}
+                        </td>
+                        <td className="px-3 py-2 text-slate-600">
+                          {s.fiscalYearLabel || s.fiscalYearId ? (
+                            <span className="inline-flex items-center gap-1 text-xs">
+                              <CalendarDays size={10} className="text-slate-400" />
+                              {s.fiscalYearLabel || `FY ${s.fiscalYearId}`}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400">Global</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono text-slate-800">{s.lastNumber}</td>
+                        <td className="px-3 py-2 text-right font-mono font-medium text-emerald-700">{next}</td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => openSeriesEdit(s)}
+                              title="Edit series"
+                              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => seriesDelete(s)}
+                              disabled={s.lastNumber > 0}
+                              title={s.lastNumber > 0 ? 'Cannot delete — documents already posted using this series.' : 'Delete series'}
+                              className={`rounded p-1 transition-colors ${s.lastNumber > 0
+                                  ? 'text-slate-300 cursor-not-allowed'
+                                  : 'text-slate-400 hover:bg-red-50 hover:text-red-500'
+                                }`}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Reset bar (existing functionality) */}
+          {resetKey && (
+            <div className="mt-3 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <span className="text-sm text-slate-700">
+                Reset <span className="font-mono font-medium">{resetKey}</span> to:
+              </span>
+              <input
+                type="number"
+                min="0"
+                value={resetValue}
+                onChange={(e) => setResetValue(e.target.value)}
+                className="w-24 rounded border border-slate-300 px-2 py-1 text-sm font-mono outline-none focus:border-slate-500"
+              />
+              <button
+                onClick={async () => {
+                  const val = parseInt(resetValue) || 0
+                  if (!window.confirm(`Reset ${resetKey} to ${val}? The next transaction will use ${val + 1}.`)) return
+                  setResetting(true)
+                  try {
+                    await api(`/doc-sequences/${sequences.find((s) => s.key === resetKey)?.id}`, {
+                      method: 'PATCH',
+                      body: { lastNumber: val },
+                    })
+                    setResetKey('')
+                    await loadSequences()
+                  } catch (err: unknown) {
+                    setError(err instanceof Error ? err.message : 'Failed to reset')
+                  }
+                  setResetting(false)
+                }}
+                disabled={resetting}
+                className="rounded bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-40"
+              >
+                {resetting ? 'Saving…' : 'Confirm'}
+              </button>
+              <button
+                onClick={() => setResetKey('')}
+                className="text-xs text-slate-400 hover:text-slate-700"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          <p className="mt-3 text-xs text-slate-400">
+            {t('settings.seriesDetermineNumbers', 'Series determine document numbers like')}{' '}
+            <span className="font-mono">{DOC_TYPE_OPTIONS[0].label}</span> →{' '}
+            <span className="font-mono">SI-2083-84-0001</span>. {t('settings.fyResetNote', 'FY-scoped series reset each fiscal year.')}{' '}
+            {t('settings.postedSeriesLock', 'Series with posted documents cannot be deleted.')}
+          </p>
+        </Section>
       )}
 
       {/* ── Add / Edit Series Modal ─────────────────────────── */}
@@ -2667,37 +2658,37 @@ export default function Settings() {
 
       {/* ── 8. Account ───────────────────────────────────────── */}
       {activeSection === 'account' && (
-      <Section
-        title="Account"
-        subtitle={t('settings.tutorialAndSignOut', 'Tutorial & sign out')}
-        icon={HelpCircle}
-      >
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              localStorage.removeItem('tour-seen')
-              window.location.reload()
-            }}
-            className="flex items-center gap-2 rounded border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
-          >
-            <HelpCircle size={14} />
-            {t('hint.showTutorial', 'Show Tutorial')}
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              await authClient.signOut()
-              await clearCachedSession()
-              navigate('/')
-            }}
-            className="flex items-center gap-2 rounded border border-red-200 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-          >
-            <LogOut size={14} />
-            Sign Out
-          </button>
-        </div>
-      </Section>
+        <Section
+          title="Account"
+          subtitle={t('settings.tutorialAndSignOut', 'Tutorial & sign out')}
+          icon={HelpCircle}
+        >
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.removeItem('tour-seen')
+                window.location.reload()
+              }}
+              className="flex items-center gap-2 rounded border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            >
+              <HelpCircle size={14} />
+              {t('hint.showTutorial', 'Show Tutorial')}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                await authClient.signOut()
+                await clearCachedSession()
+                navigate('/')
+              }}
+              className="flex items-center gap-2 rounded border border-red-200 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+            >
+              <LogOut size={14} />
+              Sign Out
+            </button>
+          </div>
+        </Section>
       )}
 
       {coaExportOpen && (

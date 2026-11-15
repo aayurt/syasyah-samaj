@@ -51,7 +51,7 @@ export const FiscalYears: CollectionConfig = {
   hooks: {
     beforeValidate: [
       assignTenant,
-      async ({ data, req, operation }) => {
+      async ({ data, req, operation, context }) => {
         const d = data as any
         if (!d) return data
 
@@ -170,7 +170,10 @@ export const FiscalYears: CollectionConfig = {
               depth: 0,
             } as any)
             const existing = (overlaps.docs as any[]).filter(
-              (fy) => String(fy.id) !== String(d.id),
+              (fy) => {
+                const currentId = d.id ?? context?.currentId
+                return String(fy.id) !== String(currentId)
+              },
             )
             if (existing.length > 0) {
               const labels = existing.map((fy) => fy.label).join(', ')
@@ -199,7 +202,7 @@ export const FiscalYears: CollectionConfig = {
         if (!isBillingUser(req.user)) {
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
-        const id = Number((req as any).params.id)
+        const id = Number(req.routeParams?.id)
         const fy = await req.payload.findByID({
           collection: 'fiscal-years',
           id,
@@ -245,7 +248,7 @@ export const FiscalYears: CollectionConfig = {
         const sums = await sumPostedByAccount(req.payload, {
           tenant: { equals: tenantId },
           date: { greater_than_equal: fy.startDate, less_than_equal: fy.endDate },
-        })
+        }, true)
         const obRes = await req.payload.find({
           collection: 'opening-balances',
           where: {
@@ -267,6 +270,7 @@ export const FiscalYears: CollectionConfig = {
           where: { tenant: { equals: tenantId } },
           limit: 1000,
           depth: 0,
+          overrideAccess: true,
         })
         const accounts = acctRes.docs as any[]
 
@@ -325,6 +329,7 @@ export const FiscalYears: CollectionConfig = {
           collection: 'fiscal-years',
           id,
           data: { status: 'closed' },
+          context: { currentId: id },
           overrideAccess: true,
         })
 

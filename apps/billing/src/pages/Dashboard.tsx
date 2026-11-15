@@ -131,6 +131,9 @@ export function StatusPill({ status }: { status: string }) {
     draft: 'bg-amber-100 text-amber-800 border-amber-200',
     posted: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     void: 'bg-red-100 text-red-800 border-red-200',
+    // Order lifecycle (orders are confirmed, never posted).
+    confirmed: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    cancelled: 'bg-red-100 text-red-800 border-red-200',
   }
   return (
     <span
@@ -209,15 +212,15 @@ export default function Dashboard() {
 
     api<TrialBalanceSummary>('/journal-entries/trial-balance', { query: { ...tenantQuery } })
       .then((tb) => { if (alive) setTrialBalance(tb) })
-      .catch(() => {})
+      .catch(() => { })
 
     api<AgingResponse>('/documents/aging', { query: { side: 'ar', ...tenantQuery } })
       .then((ar) => { if (alive) setArData(ar) })
-      .catch(() => {})
+      .catch(() => { })
 
     api<AgingResponse>('/documents/aging', { query: { side: 'ap', ...tenantQuery } })
       .then((ap) => { if (alive) setApData(ap) })
-      .catch(() => {})
+      .catch(() => { })
 
     // Trend: P&L
     setTrendLoading(true)
@@ -263,14 +266,14 @@ export default function Dashboard() {
     let alive = true
     list<{ id: number }>('tenants', { depth: 0, limit: 1 })
       .then((r) => { if (alive) setIllakaCount(r.totalDocs) })
-      .catch(() => {})
+      .catch(() => { })
     if (tenantId) {
       list<{ id: number }>('members', { depth: 0, limit: 1, ...tenantQuery })
         .then((r) => { if (alive) setMemberCount(r.totalDocs) })
-        .catch(() => {})
+        .catch(() => { })
       list<{ id: number }>('items', { depth: 0, limit: 1, ...tenantQuery })
         .then((r) => { if (alive) setItemCount(r.totalDocs) })
-        .catch(() => {})
+        .catch(() => { })
     }
     return () => { alive = false }
   }, [tenantId, tenantQuery, cacheVersion, online])
@@ -345,7 +348,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4">
+    <div className="w-full space-y-4 p-4">
       {/* ── Top Header & Title ────────────────────────────────────────── */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -491,9 +494,8 @@ export default function Dashboard() {
 
         <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
           <div
-            className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-              trialBalance?.balanced ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
-            }`}
+            className={`flex h-10 w-10 items-center justify-center rounded-lg ${trialBalance?.balanced ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
+              }`}
           >
             <TrendingDown size={18} />
           </div>
@@ -505,9 +507,8 @@ export default function Dashboard() {
               {trialBalance ? fmt(trialBalance.totals.debit) : '–'}
             </div>
             <div
-              className={`text-[11px] font-medium ${
-                trialBalance?.balanced ? 'text-emerald-600' : 'text-red-600'
-              }`}
+              className={`text-[11px] font-medium ${trialBalance?.balanced ? 'text-emerald-600' : 'text-red-600'
+                }`}
             >
               {trialBalance?.balanced
                 ? t('dashboard.balanced', '✓ balanced')
@@ -708,31 +709,28 @@ export default function Dashboard() {
                 <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs">
                   <button
                     onClick={() => setTableFilter('all')}
-                    className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
-                      tableFilter === 'all'
+                    className={`rounded-md px-2.5 py-1 font-medium transition-colors ${tableFilter === 'all'
                         ? 'bg-white text-slate-900 shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     {t('dashboard.filterAll', 'All')} ({recentEntries.length})
                   </button>
                   <button
                     onClick={() => setTableFilter('posted')}
-                    className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
-                      tableFilter === 'posted'
+                    className={`rounded-md px-2.5 py-1 font-medium transition-colors ${tableFilter === 'posted'
                         ? 'bg-white text-emerald-800 shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     {t('status.posted', 'Posted')}
                   </button>
                   <button
                     onClick={() => setTableFilter('draft')}
-                    className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
-                      tableFilter === 'draft'
+                    className={`rounded-md px-2.5 py-1 font-medium transition-colors ${tableFilter === 'draft'
                         ? 'bg-white text-amber-800 shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     {t('status.draft', 'Draft')}
                   </button>

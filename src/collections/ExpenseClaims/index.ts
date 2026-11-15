@@ -52,7 +52,9 @@ async function getSettings(payload: PayloadRequest['payload']) {
 function resolveAccount(settings: any, key: string, label: string): number {
   const id = settings?.[key]
   if (!id) throw new Error(`"${label}" account is not configured in Billing Settings.`)
-  return Number(id)
+  const num = typeof id === 'object' ? Number(id?.id) : Number(id)
+  if (!num) throw new Error(`"${label}" account is not configured in Billing Settings.`)
+  return num
 }
 
 export const ExpenseClaims: CollectionConfig = {

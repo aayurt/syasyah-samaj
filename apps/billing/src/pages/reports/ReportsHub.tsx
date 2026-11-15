@@ -101,7 +101,7 @@ export default function ReportsHub() {
   )
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">{t('reports.hubTitle', 'Browse Various Reports')}</h1>
         <SearchBox value={query} onChange={setQuery} placeholder={t('reports.hubSearchPlaceholder', 'Search reports…')} />

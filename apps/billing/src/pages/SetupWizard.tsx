@@ -541,7 +541,7 @@ export default function SetupWizard() {
   if (!isIllaka && !tenantId) {
     // Consolidated mode — no concrete tenant to set up.
     return (
-      <div className="mx-auto max-w-xl py-10">
+      <div className="w-full py-10">
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">
           <p className="font-medium">Select an ilaka (tenant) to set up</p>
           <p className="mt-1 text-amber-700">
@@ -555,7 +555,7 @@ export default function SetupWizard() {
 
   if (syncing || !settingsLoaded || yearsLoading) {
     return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center justify-center py-20 text-center">
+      <div className="w-full flex flex-col items-center justify-center py-20 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-crimson-50 text-crimson-600 shadow-sm animate-pulse">
           <Database size={26} />
         </div>
@@ -574,7 +574,7 @@ export default function SetupWizard() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl py-6">
+    <div className="w-full py-6">
       {/* Progress: numbered rail */}
       <div className="mb-8">
         <div className="text-center">

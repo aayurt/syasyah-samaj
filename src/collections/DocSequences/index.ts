@@ -14,17 +14,47 @@ import type { CollectionConfig, Access } from 'payload'
  * - [NEW]   User can create new series and assign prefix per doc type
  */
 
+/**
+ * Document types that can own a number series.
+ *
+ * This list is the source of the Postgres enum `enum_doc_sequences_doc_type`.
+ * `nextNumber()` (src/collections/Documents/index.ts) inserts the document type
+ * into `doc_sequences.doc_type` when it assigns a voucher number, so every doc
+ * type that can be numbered MUST appear here — otherwise the insert fails with
+ * `invalid input value for enum enum_doc_sequences_doc_type`.
+ *
+ * Keep this in sync with `DOC_TYPES` in src/collections/Documents/index.ts.
+ * The values are what the Documents collection uses, so they must match exactly
+ * (note `contra`, not `contra-voucher`).
+ *
+ * History of the two bugs this list has had:
+ * - The order types were missing, which made `POST /documents/:id/confirm` fail
+ *   for every sales order and purchase order.
+ * - The value was `contra-voucher` while documents use `contra`, which made
+ *   posting a contra voucher fail the same way.
+ *
+ * `contra-voucher` is kept alongside `contra` so that number series a user
+ * already created against it keep working. Documents use `contra`; the
+ * alias exists only for the series list.
+ */
 export const DOC_TYPE_OPTIONS = [
+  { label: 'Sales Quote', value: 'sales-quote' },
+  { label: 'Sales Order', value: 'sales-order' },
   { label: 'Sales Invoice', value: 'sales-invoice' },
+  { label: 'Purchase Order', value: 'purchase-order' },
   { label: 'Purchase Invoice', value: 'purchase-invoice' },
   { label: 'Receipt Voucher', value: 'receipt-voucher' },
   { label: 'Payment Voucher', value: 'payment-voucher' },
   { label: 'Journal Voucher', value: 'journal-voucher' },
-  { label: 'Contra Voucher', value: 'contra-voucher' },
+  { label: 'Contra Voucher', value: 'contra' },
+  { label: 'Contra Voucher (legacy)', value: 'contra-voucher' },
   { label: 'Credit Note', value: 'credit-note' },
   { label: 'Debit Note', value: 'debit-note' },
+  { label: 'Petty Cash Voucher', value: 'petty-cash-voucher' },
   { label: 'GRN', value: 'grn' },
   { label: 'Delivery Challan', value: 'delivery-challan' },
+  { label: 'Membership Receipt', value: 'membership-receipt' },
+  { label: 'Donation Receipt', value: 'donation-receipt' },
 ]
 
 export const DocSequences: CollectionConfig = {

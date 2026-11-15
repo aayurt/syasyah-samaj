@@ -11,6 +11,7 @@
     "dev:prod": "cross-env NODE_OPTIONS=--no-deprecation rm -rf .next && pnpm build && pnpm start",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+    "db:setup": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/db-setup.ts",
     "desktop:build": "pnpm --dir apps/desktop build",
     "desktop:build:mac": "pnpm --dir apps/desktop build:mac",
     "desktop:build:win": "pnpm --dir apps/desktop build:win",

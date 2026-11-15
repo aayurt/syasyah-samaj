@@ -203,7 +203,7 @@ export default function BankReconciliation() {
 
   /* ── Render ─────────────────────────────────────────────────── */
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button

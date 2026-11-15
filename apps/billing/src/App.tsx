@@ -60,6 +60,7 @@ import Members from './pages/Members'
 import MembershipTypes from './pages/MembershipTypes'
 import RecurringBilling from './pages/RecurringBilling'
 import ExpenseClaims from './pages/ExpenseClaims'
+import FixedAssets from './pages/FixedAssets'
 import Payroll from './pages/Payroll'
 import PayrollRegisters from './pages/PayrollRegisters'
 import PayrollSettingsPage from './pages/PayrollSettingsPage'
@@ -115,7 +116,7 @@ const navGroups: { title?: string; titleKey?: string; items: NavItem[] }[] = [
       { to: '/expense-claims', label: 'Expenses', labelKey: 'nav.expenseClaims', icon: Receipt },
       { to: '/inventory', label: 'Inventory', labelKey: 'nav.inventory', icon: Boxes },
       { to: '/bank-reconciliation', label: 'Bank Management', labelKey: 'nav.bankReconciliation', icon: Landmark, feature: 'bankReconciliationEnabled' },
-      { to: '/fixed-assets', label: 'Fixed Assets', labelKey: 'nav.fixedAssets', icon: Building2, disabled: true },
+      { to: '/fixed-assets', label: 'Fixed Assets', labelKey: 'nav.fixedAssets', icon: Building2 },
     ],
   },
   {
@@ -153,8 +154,8 @@ const navGroups: { title?: string; titleKey?: string; items: NavItem[] }[] = [
     items: [{ to: '/activity', label: 'Recent Activity', labelKey: 'nav.recentActivity', icon: History }],
   },
   { items: [{ to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: SettingsIcon }] }
-    // Payroll System removed — payroll is now a standalone module; no header or sidebar tab.
-  ]
+  // Payroll System removed — payroll is now a standalone module; no header or sidebar tab.
+]
 
 /**
  * Payroll system nav — rendered instead of the accounting nav on /payroll
@@ -207,22 +208,22 @@ function AppShell() {
     const role = (session.user as { role?: string }).role || ''
     const illakaRoles = ['illaka-chair', 'illaka-treasurer', 'illaka-secretary', 'illaka-accountant', 'illaka-member-officer', 'viewer']
     if (!illakaRoles.includes(role)) {
-    return (
-      <div className="grid h-screen place-items-center">
-        <div className="text-center">
-          <p className="text-lg font-semibold text-slate-800">{t('login.notAuthorized', 'Not authorized')}</p>
-          <p className="mt-1 text-sm text-slate-500">
-            {t('login.needAdmin', 'You need an admin account to use Billing.')}
-          </p>
-          <button
-            onClick={() => authClient.signOut()}
-            className="mt-4 text-sm text-crimson-600 hover:underline"
-          >
-            {t('login.signOut', 'Sign out')}
-          </button>
+      return (
+        <div className="grid h-screen place-items-center">
+          <div className="text-center">
+            <p className="text-lg font-semibold text-slate-800">{t('login.notAuthorized', 'Not authorized')}</p>
+            <p className="mt-1 text-sm text-slate-500">
+              {t('login.needAdmin', 'You need an admin account to use Billing.')}
+            </p>
+            <button
+              onClick={() => authClient.signOut()}
+              className="mt-4 text-sm text-crimson-600 hover:underline"
+            >
+              {t('login.signOut', 'Sign out')}
+            </button>
+          </div>
         </div>
-      </div>
-    )
+      )
     }
   }
 
@@ -251,6 +252,16 @@ function Shell({ email }: { email: string }) {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('sidebar-collapsed') === '1',
   )
+  // Mobile sidebar is off-canvas: hidden by default, slides in when opened.
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' && window.innerWidth < 768,
+  )
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
   // Per-section accordion state for the sidebar nav (persisted). Keyed by
   // group title; missing/unknown keys default to open.
   const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>(
@@ -278,6 +289,10 @@ function Shell({ email }: { email: string }) {
   // the header carries the system switcher.
   const inPayroll = location.pathname.startsWith('/payroll')
   const activeNavGroups = inPayroll ? payrollNavGroups : navGroups
+  // Close the mobile sidebar when navigating to a new page.
+  useEffect(() => {
+    setMobileSidebarOpen(false)
+  }, [location.pathname])
   useEffect(() => {
     setClosedGroups((prev) => {
       const next = { ...prev }
@@ -288,7 +303,7 @@ function Shell({ email }: { email: string }) {
           i.end
             ? location.pathname === i.to
             : location.pathname === i.to ||
-              location.pathname.startsWith(i.to + '/'),
+            location.pathname.startsWith(i.to + '/'),
         )
         if (inside && next[group.title]) {
           next[group.title] = false
@@ -301,6 +316,7 @@ function Shell({ email }: { email: string }) {
   const [tourOpen, setTourOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [features, setFeatures] = useState<Record<string, boolean>>({})
+  const [companyName, setCompanyName] = useState<string>('')
 
   // Auto-start the tutorial once per browser. The flag is only written when
   // the tour is dismissed or finished, so the StrictMode remount can't race it.
@@ -312,12 +328,15 @@ function Shell({ email }: { email: string }) {
   // Re-fetch on route change AND when Settings dispatches a change event
   const refreshFeatures = () => {
     api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
-      .then((s) => setFeatures({
-        payrollEnabled: s.payrollEnabled !== false,
-        bankReconciliationEnabled: !!s.bankReconciliationEnabled,
-        demoSeedEnabled: s.demoSeedEnabled !== false,
-      }))
-      .catch(() => {})
+      .then((s) => {
+        setFeatures({
+          payrollEnabled: s.payrollEnabled !== false,
+          bankReconciliationEnabled: !!s.bankReconciliationEnabled,
+          demoSeedEnabled: s.demoSeedEnabled !== false,
+        })
+        setCompanyName(s.companyName || '')
+      })
+      .catch(() => { })
   }
   useEffect(() => { refreshFeatures() }, [location.pathname])
   useEffect(() => {
@@ -367,6 +386,7 @@ function Shell({ email }: { email: string }) {
   return (
     <div className="flex h-screen bg-slate-100">
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      {/* Sidebar: fixed on desktop, off-canvas (absolute overlay) on mobile. */}
       <AnimatedSidebar
         collapsed={collapsed}
         onToggle={toggleSidebar}
@@ -376,14 +396,45 @@ function Shell({ email }: { email: string }) {
         onToggleGroup={toggleGroup}
         t={t}
         userEmail={email}
+        className={`
+          relative z-20
+          ${isMobile
+            ? 'fixed inset-y-0 left-0 h-screen shadow-2xl translate-x-full transition-transform duration-300 ease-in-out'
+            + (mobileSidebarOpen ? 'translate-x-0' : '')
+            : ''
+          }
+        `}
+        open={mobileSidebarOpen}
+        onOpenChange={setMobileSidebarOpen}
       />
+      {/* Mobile sidebar backdrop */}
+      {isMobile && mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 z-10 bg-black/40 backdrop-blur-sm"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
       <div className="flex flex-1 flex-col overflow-y-hidden">
         <div className="print:hidden">
           <ConnectingBanner />
         </div>
         <header className="print:hidden flex flex-wrap items-center justify-between border-b border-slate-200 bg-white px-3 py-2 md:px-6 md:py-2.5 gap-2">
           <div className="flex items-center gap-3">
+            {/* Mobile hamburger — opens the off-canvas sidebar. */}
+            <button
+              onClick={() => setMobileSidebarOpen((o) => !o)}
+              aria-label={mobileSidebarOpen ? t('sidebar.collapse', 'Collapse sidebar') : t('sidebar.expand', 'Expand sidebar')}
+              className="md:hidden flex items-center gap-1.5 rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+            >
+              {mobileSidebarOpen ? <PanelLeftClose size={18} className="text-slate-900" /> : <PanelLeftOpen size={18} className="text-slate-900" />}
+            </button>
             <Breadcrumbs />
+            {companyName && (
+              <span className="hidden md:block flex-1 max-w-[260px] truncate text-sm font-semibold text-slate-900 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200/60 ml-4">
+                {companyName}
+              </span>
+            )}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3">
             <IllakaSwitcher />
@@ -402,7 +453,9 @@ function Shell({ email }: { email: string }) {
             </button>
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-6 print:overflow-visible">
+        {/* Full-width responsive content container. Pages expand to fill; on mobile
+           the sidebar overlays so content remains usable and full-width. */}
+        <main className="flex-1 overflow-auto w-full print:overflow-visible p-4">
           <Routes>
             <Route
               path="/vouchers"
@@ -446,6 +499,7 @@ function Shell({ email }: { email: string }) {
             <Route path="/posting" element={<Posting />} />
             {features.bankReconciliationEnabled && <Route path="/bank-reconciliation" element={<BankReconciliation />} />}
             <Route path="/daybooks" element={<Daybooks />} />
+            <Route path="/fixed-assets" element={<FixedAssets />} />
             <Route path="/members" element={<Members />} />
             <Route path="/membership-types" element={<MembershipTypes />} />
             <Route path="/recurring-billing" element={<RecurringBilling />} />

@@ -526,8 +526,34 @@ async function buildPostingLines(
 ): Promise<PostingLine[]> {
   // AR/AP legs post to the party's own control account when it has one,
   // else the global defaults.
-  const arAccount = await resolveControlAccount(payload, doc, 'receivableAccount', doc.docType, 'Accounts Receivable')
-  const apAccount = await resolveControlAccount(payload, doc, 'payableAccount', doc.docType, 'Accounts Payable')
+  //
+  // These are resolved lazily: only the document types that actually post an
+  // AR or AP leg demand the account. Resolving them unconditionally made a
+  // contra voucher (cash <-> bank transfer) and a plain journal voucher
+  // impossible to post unless the organisation had configured AR and AP
+  // defaults — even though neither uses them.
+  let arAccountPromise: Promise<number> | undefined
+  let apAccountPromise: Promise<number> | undefined
+  const arAccount = (): Promise<number> => {
+    arAccountPromise ??= resolveControlAccount(
+      payload,
+      doc,
+      'receivableAccount',
+      doc.docType,
+      'Accounts Receivable',
+    )
+    return arAccountPromise
+  }
+  const apAccount = (): Promise<number> => {
+    apAccountPromise ??= resolveControlAccount(
+      payload,
+      doc,
+      'payableAccount',
+      doc.docType,
+      'Accounts Payable',
+    )
+    return apAccountPromise
+  }
   const type = doc.docType
   const net = toNum(doc.netTotal)
   const tax = toNum(doc.taxTotal)
@@ -561,7 +587,7 @@ async function buildPostingLines(
       // AR (gross) ← Revenue (net) + Output Tax; with item lines also
       // COGS (AVCO) → Inventory (AVCO), keeping the entry balanced.
       lines.push({
-        account: arAccount,
+        account: await arAccount(),
         debit: gross,
       })
       lines.push({
@@ -654,7 +680,7 @@ async function buildPostingLines(
         })
       }
       lines.push({
-        account: apAccount,
+        account: await apAccount(),
         credit: gross,
       })
       break
@@ -663,7 +689,7 @@ async function buildPostingLines(
       // TDS (withholding) is present the cash leg is net of TDS and the TDS
       // is credited to its payable ledger.
       lines.push({
-        account: apAccount,
+        account: await apAccount(),
         debit: net,
       })
       if (withheld > 0) {
@@ -708,7 +734,7 @@ async function buildPostingLines(
           })
         }
         lines.push({
-          account: arAccount,
+          account: await arAccount(),
           credit: net,
         })
       } else {
@@ -717,7 +743,7 @@ async function buildPostingLines(
           debit: gross,
         })
         lines.push({
-          account: arAccount,
+          account: await arAccount(),
           credit: gross,
         })
       }
@@ -757,7 +783,7 @@ async function buildPostingLines(
         const returnedCost = round2(stockPlan.totalCogs || 0)
         if (isPurchase) {
           lines.push({
-            account: apAccount,
+            account: await apAccount(),
             debit: gross,
           })
           // Goods returned to the supplier reverse Inventory at cost; the
@@ -783,7 +809,7 @@ async function buildPostingLines(
             debit: gross,
           })
           lines.push({
-            account: arAccount,
+            account: await arAccount(),
             credit: gross,
           })
           if (returnedCost > 0) {
@@ -809,7 +835,7 @@ async function buildPostingLines(
         debit: gross,
       })
       lines.push({
-        account: apAccount,
+        account: await apAccount(),
         credit: gross,
       })
       break
@@ -960,6 +986,7 @@ async function nextNumber(
   const fyAdYear = fiscalYearOf(dateValue, fyInfo?.startDate)
   const prefix = DOC_PREFIXES[docType] || 'DOC'
   const label = cleanFyLabel(fyInfo?.label) || String(fyAdYear)
+  const seqName = DOC_TYPES.find((o) => o.value === docType)?.label || docType
   const key =
     fyInfo?.id != null
       ? `${docType}:${fyInfo.id}:${tenantId}`
@@ -971,23 +998,23 @@ async function nextNumber(
     // exists (atomic, race-safe via the single UPSERT).
     const legacyKey = `${docType}:${fyAdYear}:${tenantId}`
     result = await pool.query(
-      `INSERT INTO doc_sequences (key, last_number, created_at, updated_at)
-       SELECT $1,
+      `INSERT INTO doc_sequences (key, name, doc_type, last_number, created_at, updated_at)
+       SELECT $1, $3, $4,
               COALESCE((SELECT last_number FROM doc_sequences WHERE key = $2), 0) + 1,
               now(), now()
        ON CONFLICT (key)
        DO UPDATE SET last_number = doc_sequences.last_number + 1, updated_at = now()
        RETURNING last_number`,
-      [key, legacyKey],
+      [key, legacyKey, seqName, docType],
     )
   } else {
     result = await pool.query(
-      `INSERT INTO doc_sequences (key, last_number, created_at, updated_at)
-       VALUES ($1, 1, now(), now())
+      `INSERT INTO doc_sequences (key, name, doc_type, last_number, created_at, updated_at)
+       VALUES ($1, $2, $3, 1, now(), now())
        ON CONFLICT (key)
        DO UPDATE SET last_number = doc_sequences.last_number + 1, updated_at = now()
        RETURNING last_number`,
-      [key],
+      [key, seqName, docType],
     )
   }
   const seq = Number(result.rows[0]?.last_number ?? 0)

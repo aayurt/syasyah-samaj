@@ -47,7 +47,7 @@ export default function PayrollSettings() {
     setSettings((prev) => ({ ...prev, [key]: value }))
 
   return (
-    <div className="p-6 mx-auto max-w-3xl">
+    <div className="p-6 w-full">
       <h1 className="text-xl font-semibold text-slate-900 mb-6">Payroll Settings</h1>
       {loading ? (
         <div className="p-8 text-center text-sm text-slate-500">Loading…</div>

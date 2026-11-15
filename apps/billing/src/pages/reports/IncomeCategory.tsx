@@ -82,7 +82,7 @@ export default function IncomeCategory() {
   })
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/reports')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><ArrowLeft size={18} /></button>

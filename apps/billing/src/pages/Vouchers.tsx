@@ -67,6 +67,8 @@ const DOC_TYPES: DocTypeMeta[] = [
   { value: 'sales-invoice', label: 'Sales Invoice', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'primary' },
   { value: 'purchase-invoice', label: 'Purchase Invoice', direction: 'inbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'primary' },
   { value: 'contra', label: 'Contra Entry', direction: 'internal', needsParty: false, cashMode: false, lineMode: 'contra', group: 'primary' },
+  { value: 'sales-order', label: 'Sales Order', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
+  { value: 'purchase-order', label: 'Purchase Order', direction: 'inbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
   { value: 'credit-note', label: 'Credit Note', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
   { value: 'debit-note', label: 'Debit Note', direction: 'outbound', needsParty: true, cashMode: false, lineMode: 'item', group: 'more' },
   { value: 'petty-cash-voucher', label: 'Petty Cash', direction: 'internal', needsParty: false, cashMode: false, lineMode: 'item', group: 'more' },
@@ -790,7 +792,7 @@ export default function Vouchers() {
   const filtered = docs.filter(
     (d) =>
       (!typeFilter || d.docType === typeFilter) &&
-      (!statusFilter || d.status === statusFilter) &&
+      (!statusFilter || effectiveStatusOf(d) === statusFilter) &&
       (!fyFrom || (d.date && d.date >= fyFrom)) &&
       (!fyTo || (d.date && d.date <= fyTo + 'T23:59:59')),
   )
@@ -802,6 +804,18 @@ export default function Vouchers() {
     const pid = Number(d.party ?? -1)
     return (pid > 0 && parties.find((p) => p.id === pid)?.name) || '—'
   }
+
+  /**
+   * Orders are confirmed, never posted, so their `status` stays 'draft' for
+   * the whole life. The real state lives in `orderStatus` — show that instead.
+   */
+  const orderStatusOf = (d: Document): string | undefined => {
+    if (d.docType !== 'sales-order' && d.docType !== 'purchase-order') return undefined
+    return d.orderStatus ?? 'draft'
+  }
+
+  /** The status a document is really in, for filtering and display. */
+  const effectiveStatusOf = (d: Document): string => orderStatusOf(d) ?? d.status
 
   /** Calculate payment status for a sales/purchase invoice from loaded docs */
   const getPaymentStatus = (inv: Document): { status: 'paid' | 'partial' | 'unpaid'; paid: number; outstanding: number } => {
@@ -887,7 +901,7 @@ export default function Vouchers() {
   })
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <div>
         <h1 className="text-lg font-semibold text-slate-900">{t('vouchers.title', 'Transactions')}</h1>
         <div className="mt-3 flex w-fit rounded-lg bg-slate-100 p-1" role="tablist" aria-label="Transaction Entry views">
@@ -953,6 +967,8 @@ export default function Vouchers() {
             { v: '', label: t('vouchers.filterAll', 'All') },
             { v: 'draft', label: t('vouchers.filterDraft', 'Draft') },
             { v: 'posted', label: t('vouchers.filterPosted', 'Posted') },
+            { v: 'confirmed', label: t('vouchers.filterConfirmed', 'Confirmed') },
+            { v: 'cancelled', label: t('vouchers.filterCancelled', 'Cancelled') },
             { v: 'void', label: t('vouchers.filterVoid', 'Void') },
           ].map((s) => (
             <button
@@ -1165,7 +1181,7 @@ export default function Vouchers() {
                         {t('status.queuedForPosting', '⏳ Queued for posting')}
                       </span>
                     )}
-                    <StatusPill status={d.status} />
+                    <StatusPill status={orderStatusOf(d) ?? d.status} />
                     {'_pendingSync' in d && (d as { _pendingSync?: boolean })._pendingSync && (
                       <span title="Pending sync to server" className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
                         <RefreshCw size={10} className="animate-spin" />

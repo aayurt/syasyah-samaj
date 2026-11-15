@@ -114,6 +114,8 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
+      max: 4,
+      idleTimeoutMillis: 30_000,
     },
   }),
   email: resendAdapter({

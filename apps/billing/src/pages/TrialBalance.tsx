@@ -117,7 +117,7 @@ export default function TrialBalance() {
     })
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">{t('trialBalance.title', 'Trial Balance')}</h1>
         <div className="print:hidden flex items-center gap-2">
