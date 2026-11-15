@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voucher Entry — Command Center (sketch)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', -apple-system, sans-serif; background: #0f172a; color: #f8fafc; line-height: 1.5; }
+.kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; border-radius: 4px; border: 1px solid #334155; background: #1e293b; color: #cbd5e1; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; padding: 0 4px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; border: 1px solid #334155; background: #1e293b; padding: 2px 10px; font-size: 11px; font-weight: 600; color: #94a3b8; }
+.type-btn { cursor: pointer; border: 1px solid #334155; background: #1e293b; transition: all .12s; color: #94a3b8; }
+.type-btn:hover { border-color: #475569; color: #e2e8f8; background: #334155; }
+.type-btn.selected { border-color: #ef4444; background: #7f1d1d; color: #fff; box-shadow: 0 0 0 2px rgba(239,68,68,.35); }
+.type-btn.selected .accent { background: #ef4444; }
+.input-field { border: 1px solid #334155; background: #0f172a; color: #f8fafc; border-radius: 8px; }
+.input-field:focus-within { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,.25); }
+.btn-primary { background: #ef4444; color: #fff; transition: background .12s; }
+.btn-primary:hover:not(:disabled) { background: #dc2626; }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; background: #334155; color: #64748b; }
+.btn-outline { border: 1px solid #334155; background: #0f172a; color: #cbd5e1; transition: all .12s; }
+.btn-outline:hover { border-color: #64748b; color: #f8fafc; }
+table { border-collapse: collapse; }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-20">
+  <div class="px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <button onclick="goBack()" class="text-slate-400 hover:text-white transition-colors" title="Back">←</button>
+      <div>
+        <h1 class="text-sm font-bold text-white tracking-tight">New voucher</h1>
+        <p class="text-[11px] text-slate-400">Type · Cmd+K · Post</p>
+      </div>
+    </div>
+    <div class="text-right">
+      <p class="text-[10px] text-slate-500 uppercase tracking-wider">Syasyah Samaj</p>
+      <p class="text-xs font-mono text-slate-400">Draft · <span id="saved">unsaved</span></p>
+    </div>
+  </div>
+</header>
+
+<!-- Step breadcrumb -->
+<div class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-[3.5rem] z-10">
+  <div class="px-6 py-3 flex items-center gap-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+    <div class="flex items-center gap-2 text-white">
+      <span class="w-5 h-5 rounded-full bg-crimson-600 flex items-center justify-center text-[10px] font-bold text-white">1</span>
+      <span>Voucher type</span>
+    </div>
+    <span class="h-3 w-px bg-slate-700 mx-2"></span>
+    <div class="flex items-center gap-2">
+      <span class="w-5 h-5 rounded-full border border-slate-600 flex items-center justify-center text-[10px] text-slate-400 font-bold">2</span>
+      <span>Entry details</span>
+    </div>
+  </div>
+</div>
+
+<main class="flex-1 overflow-hidden relative">
+  <!-- STEP 1: Voucher type -->
+  <div id="step1" class="absolute inset-0 p-6 lg:p-8 overflow-y-auto">
+    <div class="max-w-2xl mx-auto space-y-6">
+      <div class="space-y-2">
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Voucher type</label>
+        <p class="text-sm text-slate-400">Pick the transaction kind. Fields adapt after you continue.</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="typeGrid">
+        <button type="button" class="type-btn selected h-24 rounded-xl border flex flex-col items-center gap-2 p-3 text-left w-full" onclick="select(this,'journal-voucher','Journal','Dr / Cr lines')">
+          <span class="text-xl">📒</span>
+          <span class="accent w-1 h-1 rounded-full"></span>
+          <span class="text-sm font-semibold">Journal</span>
+          <span class="text-[10px] text-slate-400">Dr / Cr lines</span>
+        </button>
+        <button type="button" class="type-btn h-24 rounded-xl border flex flex-col items-center gap-2 p-3 text-left w-full" onclick="select(this,'contra','Contra','Transfer accounts')">
+          <span class="text-xl">🔄</span>
+          <span class="accent w-1 h-1 rounded-full bg-transparent"></span>
+          <span class="text-sm font-semibold">Contra</span>
+          <span class="text-[10px] text-slate-400">Transfer accounts</span>
+        </button>
+        <button type="button" class="type-btn h-24 rounded-xl border flex flex-col items-center gap-2 p-3 text-left w-full" onclick="select(this,'sales-invoice','Sales','Item lines')">
+          <span class="text-xl">🧾</span>
+          <span class="accent w-1 h-1 rounded-full bg-transparent"></span>
+          <span class="text-sm font-semibold">Sales</span>
+          <span class="text-[10px] text-slate-400">Item lines</span>
+        </button>
+        <button type="button" class="type-btn h-24 rounded-xl border flex flex-col items-center gap-2 p-3 text-left w-full" onclick="select(this,'purchase-invoice','Purchase','Item lines')">
+          <span class="text-xl">📥</span>
+          <span class="accent w-1 h-1 rounded-full bg-transparent"></span>
+          <span class="text-sm font-semibold">Purchase</span>
+          <span class="text-[10px] text-slate-400">Item lines</span>
+        </button>
+        <button type="button" class="type-btn h-24 rounded-xl border flex flex-col items-center gap-2 p-3 text-left w-full" onclick="select(this,'payment-voucher','Payment','Pay out')">
+          <span class="text-xl">💸</span>
+          <span class="accent w-1 h-1 rounded-full bg-transparent"></span>
+          <span class="text-sm font-semibold">Payment</span>
+          <span class="text-[10px] text-slate-400">Pay out</span>
+        </button>
+        <button type="button" class="type-btn h-24 rounded-xl border flex flex-col items-center gap-2 p-3 text-left w-full" onclick="select(this,'receipt-voucher','Receipt','Receive')">
+          <span class="text-xl">💰</span>
+          <span class="accent w-1 h-1 rounded-full bg-transparent"></span>
+          <span class="text-sm font-semibold">Receipt</span>
+          <span class="text-[10px] text-slate-400">Receive</span>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] text-slate-500">Use <span class="kbd">↑ ↓ → Enter</span> to navigate, <span class="kbd">→</span> to continue</span>
+        <button id="continueBtn" disabled class="btn-primary px-7 py-3 rounded-xl text-sm font-bold uppercase tracking-wider shadow-lg shadow-crimson-900/20" onclick="enterStep2()">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Entry details starting from date -->
+  <div id="step2" class="absolute inset-0 p-6 lg:p-8 hidden overflow-y-auto">
+    <div class="max-w-4xl mx-auto space-y-6">
+      <div class="flex items-center justify-between">
+        <button onclick="enterStep1()" class="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium">← Change type</button>
+        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Step 2 · Entry details</span>
+      </div>
+
+      <!-- Live balance pill -->
+      <div class="flex items-center justify-between gap-4">
+        <div class="pill">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span id="balDr" class="font-mono text-xs text-emerald-400">Dr 0.00</span>
+          <span class="w-px h-3 bg-slate-700 mx-1"></span>
+          <span id="balCr" class="font-mono text-xs text-rose-400">Cr 0.00</span>
+        </div>
+        <div class="text-right">
+          <p class="text-[10px] text-slate-500 uppercase">Status</p>
+          <p class="text-xs font-bold text-slate-200" id="balStatus">Unbalanced</p>
+        </div>
+      </div>
+
+      <div class="space-y-5">
+        <!-- Meta fields starting from date -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Date</label>
+            <div class="input-field px-3 py-3 flex items-center gap-2">
+              <span class="text-slate-500">📅</span>
+              <input type="text" value="2083-08-15" class="flex-1 border-0 bg-transparent text-sm font-mono text-white focus:ring-0 outline-none w-full" readonly>
+              <span class="text-[10px] text-slate-500">Bhadra 15</span>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Party</label>
+            <div class="input-field px-3 py-3">
+              <select class="w-full border-0 bg-transparent text-sm text-slate-300 focus:ring-0 outline-none appearance-none w-full">
+                <option value="">Select party</option>
+                <option>Kathmandu Traders Pvt. Ltd.</option>
+                <option>Himalaya Hardware</option>
+                <option>Yala Cooperative</option>
+              </select>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Currency</label>
+            <div class="input-field px-3 py-3">
+              <select class="w-full border-0 bg-transparent text-sm font-mono text-white focus:ring-0 outline-none appearance-none w-full">
+                <option>NPR</option>
+                <option>USD</option>
+                <option>INR</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Narration</label>
+          <div class="input-field px-3 py-3">
+            <textarea rows="2" class="w-full border-0 bg-transparent text-sm text-slate-300 focus:ring-0 outline-none" placeholder="Describe this transaction…"></textarea>
+          </div>
+        </div>
+
+        <!-- Lines -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">Entry lines</h2>
+            <button type="button" class="text-xs font-bold text-rose-400 hover:text-rose-300" onclick="addLine()">+ Add line <span class="kbd">A</span></button>
+          </div>
+          <div class="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-800/50 border-b border-slate-700">
+                <tr>
+                  <th class="px-5 py-4 font-semibold text-[10px] uppercase tracking-wider text-slate-500 text-left">Account</th>
+                  <th class="px-5 py-4 font-semibold text-[10px] uppercase tracking-wider text-slate-500 text-right">Debit</th>
+                  <th class="px-5 py-4 font-semibold text-[10px] uppercase tracking-wider text-slate-500 text-right">Credit</th>
+                  <th class="px-5 py-4 font-semibold text-[10px] uppercase tracking-wider text-slate-500">Memo</th>
+                  <th class="px-5 py-4 text-center"></th>
+                </tr>
+              </thead>
+              <tbody id="linesBody">
+                <tr class="border-b border-slate-700 hover:bg-slate-800/30">
+                  <td class="px-5 py-4"><input class="border-0 bg-transparent text-sm text-white font-mono focus:ring-0 outline-none w-full" value="Cash in Hand"></td>
+                  <td class="px-5 py-4 text-right"><input type="number" step="0.01" value="50000" class="border-0 bg-transparent text-sm text-right font-mono text-white focus:ring-0 outline-none w-full" oninput="computeBalance()"></td>
+                  <td class="px-5 py-4 text-right"><input type="number" step="0.01" value="" class="border-0 bg-transparent text-sm text-right font-mono text-white focus:ring-0 outline-none w-full" oninput="computeBalance()"></td>
+                  <td class="px-5 py-4"><input class="border-0 bg-transparent text-sm text-slate-300 focus:ring-0 outline-none w-full" placeholder="memo"></td>
+                  <td class="px-5 py-4 text-center"><button class="text-slate-500 hover:text-rose-400" onclick="removeLine(this)">×</button></td>
+                </tr>
+                <tr class="border-b border-slate-700 hover:bg-slate-800/30">
+                  <td class="px-5 py-4"><input class="border-0 bg-transparent text-sm text-white font-mono focus:ring-0 outline-none w-full" value="Sales Revenue"></td>
+                  <td class="px-5 py-4 text-right"><input type="number" step="0.01" value="" class="border-0 bg-transparent text-sm text-right font-mono text-white focus:ring-0 outline-none w-full" oninput="computeBalance()"></td>
+                  <td class="px-5 py-4 text-right"><input type="number" step="0.01" value="50000" class="border-0 bg-transparent text-sm text-right font-mono text-white focus:ring-0 outline-none w-full" oninput="computeBalance()"></td>
+                  <td class="px-5 py-4"><input class="border-0 bg-transparent text-sm text-slate-300 focus:ring-0 outline-none w-full" placeholder="memo"></td>
+                  <td class="px-5 py-4 text-center"><button class="text-slate-500 hover:text-rose-400" onclick="removeLine(this)">×</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8 border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="text-[10px] text-slate-500">Auto-saves <span class="text-slate-300 font-medium">every keystroke</span></div>
+        <div class="flex items-center gap-3">
+          <button class="btn-outline px-5 py-3 rounded-xl text-sm font-semibold" onclick="alert('Draft saved')">Save draft</button>
+          <button class="btn-primary px-7 py-3 rounded-xl text-sm font-bold shadow-lg shadow-crimson-900/30" onclick="alert('Posted to ledger')">Post voucher <span class="kbd">Enter</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+function select(btn,val,a,b){
+  document.querySelectorAll('.type-btn').forEach(c=>{
+    c.classList.remove('selected')
+    c.querySelector('.accent').classList.remove('bg-rose-500')
+    c.querySelector('.accent').classList.add('bg-transparent')
+  })
+  btn.classList.add('selected')
+  btn.querySelector('.accent').classList.remove('bg-transparent')
+  btn.querySelector('.accent').classList.add('bg-rose-500')
+  document.getElementById('continueBtn').disabled=false
+}
+function enterStep2(){ document.getElementById('step1').classList.add('hidden'); document.getElementById('step2').classList.remove('hidden') }
+function enterStep1(){ document.getElementById('step2').classList.add('hidden'); document.getElementById('step1').classList.remove('hidden') }
+function goBack(){ alert('Back to voucher list') }
+function addLine(){
+  const tbody=document.getElementById('linesBody'); const tr=document.createElement('tr')
+  tr.className='border-b border-slate-700 hover:bg-slate-800/30'
+  tr.innerHTML=`<td class="px-5 py-4"><input class="border-0 bg-transparent text-sm text-white font-mono focus:ring-0 outline-none w-full" placeholder="account"></td>
+  <td class="px-5 py-4 text-right"><input type="number" step="0.01" value="" class="border-0 bg-transparent text-sm text-right font-mono text-white focus:ring-0 outline-none w-full" oninput="computeBalance()"></td>
+  <td class="px-5 py-4 text-right"><input type="number" step="0.01" value="" class="border-0 bg-transparent text-sm text-right font-mono text-white focus:ring-0 outline-none w-full" oninput="computeBalance()"></td>
+  <td class="px-5 py-4"><input class="border-0 bg-transparent text-sm text-slate-300 focus:ring-0 outline-none w-full" placeholder="memo"></td>
+  <td class="px-5 py-4 text-center"><button class="text-slate-500 hover:text-rose-400" onclick="removeLine(this)">×</button></td>`
+  tbody.appendChild(tr)
+}
+function removeLine(b){ b.closest('tr').remove(); computeBalance() }
+function computeBalance(){
+  let dr=0,cr=0
+  document.querySelectorAll('#linesBody tr').forEach(tr=>{
+    dr+=parseFloat(tr.children[1].querySelector('input').value)||0
+    cr+=parseFloat(tr.children[2].querySelector('input').value)||0
+  })
+  document.getElementById('balDr').textContent='Dr '+dr.toFixed(2)
+  document.getElementById('balCr').textContent='Cr '+cr.toFixed(2)
+  const s=document.getElementById('balStatus')
+  s.textContent = Math.abs(dr-cr)<0.005?'Balanced':'Unbalanced'
+  s.className = Math.abs(dr-cr)<0.005?'text-xs font-bold text-emerald-400':'text-xs font-bold text-rose-400'
+}
+computeBalance()
+</script>
+</body>
+</html>

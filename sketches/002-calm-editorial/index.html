@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voucher Entry — Calm Editorial (sketch)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #fafafa; color: #0f172a; line-height: 1.5; }
+.step-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: 12px; font-weight: 600; }
+.type-card { cursor: pointer; border: 1px solid #e2e8f0; transition: all .15s; }
+.type-card:hover { border-color: #cbd5e1; background: #f8fafc; }
+.type-card.selected { border-color: #b91c1c; background: #fdf2f2; box-shadow: 0 0 0 3px rgba(185,28,28,.12); }
+.type-card.selected .dot { background: #b91c1c; }
+.btn-primary { background: #b91c1c; color: #fff; transition: background .15s; }
+.btn-primary:hover:not(:disabled) { background: #991b1b; }
+.btn-primary:disabled { opacity: .55; cursor: not-allowed; background: #cbd5e1; }
+.btn-ghost { background: transparent; color: #475569; border: 1px solid transparent; transition: all .15s; }
+.btn-ghost:hover { background: #f1f5f9; color: #0f172a; border-color: #e2e8f0; }
+.input-field { border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; }
+.input-field:focus-within { border-color: #b91c1c; box-shadow: 0 0 0 3px rgba(185,28,28,.1); }
+table { border-collapse: collapse; }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<header class="border-b border-slate-200 bg-white">
+  <div class="px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <button onclick="goBack()" class="text-slate-400 hover:text-slate-700 transition-colors" title="Back">←</button>
+      <div>
+        <h1 class="text-sm font-semibold text-slate-900 tracking-tight">New voucher</h1>
+        <p class="text-[11px] text-slate-500">Record a transaction in the books</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600">
+        <span class="w-1.5 h-1.5 rounded-full bg-crimson-500"></span>
+        Draft
+      </span>
+    </div>
+  </div>
+</header>
+
+<!-- Progress bar -->
+<div class="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
+  <div class="px-6 py-3 flex items-center gap-1">
+    <div class="flex-1 relative h-1">
+      <div class="absolute left-0 top-0 h-full w-full bg-slate-200 rounded-full"></div>
+      <div class="absolute left-0 top-0 h-full w-1/2 bg-crimson-600 rounded-full"></div>
+    </div>
+    <div class="flex-1 relative h-1">
+      <div class="absolute left-0 top-0 h-full w-full bg-slate-200 rounded-full"></div>
+    </div>
+  </div>
+  <div class="px-6 py-3 flex justify-between text-[11px] font-semibold uppercase tracking-wider">
+    <span class="text-crimson-700">Step 1 · Choose type</span>
+    <span class="text-slate-400">Step 2 · Entry details</span>
+  </div>
+</div>
+
+<main class="flex-1 overflow-hidden relative">
+  <!-- STEP 1 -->
+  <div id="step1" class="absolute inset-0 p-6 lg:p-10 overflow-y-auto">
+    <div class="max-w-xl mx-auto space-y-8">
+      <div class="space-y-2">
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Voucher type</label>
+        <p class="text-sm text-slate-600">Pick the kind of transaction. The fields that follow adapt to it.</p>
+      </div>
+
+      <div class="space-y-3" id="typeList">
+        <button type="button" class="type-card selected w-full rounded-xl border p-5 text-left" onclick="select(this,'journal-voucher','Journal Voucher','Debit and credit lines for any transaction')">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-2xl">📒</span>
+                <span class="dot w-2 h-2 rounded-full bg-crimson-600"></span>
+              </div>
+              <h3 class="text-sm font-semibold text-slate-900">Journal Voucher</h3>
+              <p class="text-[11px] text-slate-500">Debit and credit lines for any transaction</p>
+            </div>
+            <span class="step-badge border border-crimson-600 text-crimson-600">1</span>
+          </div>
+        </button>
+        <button type="button" class="type-card w-full rounded-xl border p-5 text-left" onclick="select(this,'contra','Contra Entry','Move funds between two accounts')">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-2xl">🔄</span>
+                <span class="dot w-2 h-2 rounded-full bg-slate-400"></span>
+              </div>
+              <h3 class="text-sm font-semibold text-slate-900">Contra Entry</h3>
+              <p class="text-[11px] text-slate-500">Move funds between two accounts</p>
+            </div>
+            <span class="step-badge border border-slate-300 text-slate-400">2</span>
+          </div>
+        </button>
+        <button type="button" class="type-card w-full rounded-xl border p-5 text-left" onclick="select(this,'sales-invoice','Sales Invoice','Bill a customer for goods/services')">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-2xl">🧾</span>
+                <span class="dot w-2 h-2 rounded-full bg-slate-400"></span>
+              </div>
+              <h3 class="text-sm font-semibold text-slate-900">Sales Invoice</h3>
+              <p class="text-[11px] text-slate-500">Bill a customer for goods/services</p>
+            </div>
+            <span class="step-badge border border-slate-300 text-slate-400">3</span>
+          </div>
+        </button>
+        <button type="button" class="type-card w-full rounded-xl border p-5 text-left" onclick="select(this,'purchase-invoice','Purchase Invoice','Record a supplier bill')">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-2xl">📥</span>
+                <span class="dot w-2 h-2 rounded-full bg-slate-400"></span>
+              </div>
+              <h3 class="text-sm font-semibold text-slate-900">Purchase Invoice</h3>
+              <p class="text-[11px] text-slate-500">Record a supplier bill</p>
+            </div>
+            <span class="step-badge border border-slate-300 text-slate-400">4</span>
+          </div>
+        </button>
+        <button type="button" class="type-card w-full rounded-xl border p-5 text-left" onclick="select(this,'payment-voucher','Payment Voucher','Pay out cash or bank')">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-2xl">💸</span>
+                <span class="dot w-2 h-2 rounded-full bg-slate-400"></span>
+              </div>
+              <h3 class="text-sm font-semibold text-slate-900">Payment Voucher</h3>
+              <p class="text-[11px] text-slate-500">Pay out cash or bank</p>
+            </div>
+            <span class="step-badge border border-slate-300 text-slate-400">5</span>
+          </div>
+        </button>
+        <button type="button" class="type-card w-full rounded-xl border p-5 text-left" onclick="select(this,'receipt-voucher','Receipt Voucher','Receive cash or bank')">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-2xl">💰</span>
+                <span class="dot w-2 h-2 rounded-full bg-slate-400"></span>
+              </div>
+              <h3 class="text-sm font-semibold text-slate-900">Receipt Voucher</h3>
+              <p class="text-[11px] text-slate-500">Receive cash or bank</p>
+            </div>
+            <span class="step-badge border border-slate-300 text-slate-400">6</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="mt-2 flex items-center justify-between">
+        <span class="text-[11px] text-slate-400">Select a voucher type to proceed</span>
+        <button id="continueBtn" class="btn-primary px-6 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider shadow-sm hover:shadow-md" disabled onclick="enterStep2()">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="step2" class="absolute inset-0 p-6 lg:p-10 hidden overflow-y-auto">
+    <div class="max-w-3xl mx-auto space-y-6">
+      <div class="flex items-center justify-between">
+        <button onclick="enterStep1()" class="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors text-sm">← Choose a different type</button>
+        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Step 2 · Entry details</span>
+      </div>
+
+      <!-- Stat card: live balance -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between gap-4">
+          <div class="space-y-1">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Balance</p>
+            <p class="text-xs font-semibold text-slate-900" id="balText">Debit 0.00 · Credit 0.00</p>
+          </div>
+          <div class="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500" id="balIcon">⚖</div>
+        </div>
+      </div>
+
+      <div class="space-y-5">
+        <!-- Meta fields starting from date -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Date (Nepali)</label>
+            <div class="input-field px-3 py-3 flex items-center gap-3">
+              <span class="text-slate-400">📅</span>
+              <input type="text" value="2083-08-15" class="flex-1 border-0 bg-transparent text-sm text-slate-900 focus:ring-0 outline-none" readonly>
+              <span class="text-[11px] text-slate-500">15 Bhadra, 2083</span>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Party</label>
+            <div class="input-field px-3 py-3">
+              <select class="w-full border-0 bg-transparent text-sm text-slate-900 focus:ring-0 outline-none appearance-none">
+                <option value="">Select a party</option>
+                <option>Kathmandu Traders Pvt. Ltd.</option>
+                <option>Himalaya Hardware</option>
+                <option>Yala Cooperative</option>
+              </select>
+            </div>
+          </div>
+          <div class="sm:col-span-2 space-y-2">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Narration</label>
+            <div class="input-field px-3 py-3">
+              <textarea rows="2" class="w-full border-0 bg-transparent text-sm text-slate-900 focus:ring-0 outline-none" placeholder="Describe this transaction…"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lines table -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">Journal lines</h2>
+            <button type="button" class="text-xs font-semibold text-crimson-600 hover:text-crimson-800" onclick="addLine()">+ Add line</button>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 border-b border-slate-100">
+                <tr>
+                  <th class="px-5 py-4 font-semibold text-[10px] uppercase tracking-wider text-slate-400 text-left">Account</th>
+                  <th class="px-5 py-4 font-semibold text-[10px] uppercase tracking-wider text-slate-400 text-right">Debit</th>
+                  <th class="px-5 py-4 font-semibold text-[10px] uppercase tracking-wider text-slate-400 text-right">Credit</th>
+                  <th class="px-5 py-4 font-semibold text-[10px] uppercase tracking-wider text-slate-400">Memo</th>
+                  <th class="px-5 py-4 text-center"></th>
+                </tr>
+              </thead>
+              <tbody id="linesBody">
+                <tr class="border-b border-slate-100 hover:bg-slate-50">
+                  <td class="px-5 py-4">
+                    <input class="border-0 bg-transparent text-sm text-slate-900 focus:ring-0 outline-none w-full" value="Cash in Hand">
+                  </td>
+                  <td class="px-5 py-4 text-right"><input type="number" step="0.01" value="50000" class="border-0 bg-transparent text-sm text-right font-mono text-slate-900 focus:ring-0 outline-none w-full" oninput="computeBalance()"></td>
+                  <td class="px-5 py-4 text-right"><input type="number" step="0.01" value="" class="border-0 bg-transparent text-sm text-right font-mono text-slate-900 focus:ring-0 outline-none w-full" oninput="computeBalance()"></td>
+                  <td class="px-5 py-4"><input class="border-0 bg-transparent text-sm text-slate-900 focus:ring-0 outline-none w-full" placeholder="memo"></td>
+                  <td class="px-5 py-4 text-center"><button class="text-slate-400 hover:text-crimson-600" onclick="removeLine(this)">−</button></td>
+                </tr>
+                <tr class="border-b border-slate-100 hover:bg-slate-50">
+                  <td class="px-5 py-4"><input class="border-0 bg-transparent text-sm text-slate-900 focus:ring-0 outline-none w-full" value="Sales Revenue"></td>
+                  <td class="px-5 py-4 text-right"><input type="number" step="0.01" value="" class="border-0 bg-transparent text-sm text-right font-mono text-slate-900 focus:ring-0 outline-none w-full" oninput="computeBalance()"></td>
+                  <td class="px-5 py-4 text-right"><input type="number" step="0.01" value="50000" class="border-0 bg-transparent text-sm text-right font-mono text-slate-900 focus:ring-0 outline-none w-full" oninput="computeBalance()"></td>
+                  <td class="px-5 py-4"><input class="border-0 bg-transparent text-sm text-slate-900 focus:ring-0 outline-none w-full" placeholder="memo"></td>
+                  <td class="px-5 py-4 text-center"><button class="text-slate-400 hover:text-crimson-600" onclick="removeLine(this)">−</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8 border-t border-slate-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="text-[11px] text-slate-500">Draft saved <span class="text-slate-900 font-medium">just now</span></div>
+        <div class="flex items-center gap-3">
+          <button class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold text-slate-700 border border-slate-200" onclick="alert('Draft saved')">Save draft</button>
+          <button class="btn-primary px-7 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md" onclick="alert('Posted to ledger')">Post voucher</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+function select(btn, val, label, desc){
+  document.querySelectorAll('.type-card').forEach(c=>{
+    c.classList.remove('selected')
+    c.querySelector('.dot').classList.remove('bg-crimson-600')
+    c.querySelector('.dot').classList.add('bg-slate-400')
+    c.querySelector('.step-badge').classList.replace('border-crimson-600','border-slate-300')
+    c.querySelector('.step-badge').classList.replace('text-crimson-600','text-slate-400')
+  })
+  btn.classList.add('selected')
+  btn.querySelector('.dot').classList.remove('bg-slate-400')
+  btn.querySelector('.dot').classList.add('bg-crimson-600')
+  btn.querySelector('.step-badge').classList.replace('border-slate-300','border-crimson-600')
+  btn.querySelector('.step-badge').classList.replace('text-slate-400','text-crimson-600')
+  document.getElementById('continueBtn').disabled = false
+}
+function enterStep2(){ document.getElementById('step1').classList.add('hidden'); document.getElementById('step2').classList.remove('hidden') }
+function enterStep1(){ document.getElementById('step2').classList.add('hidden'); document.getElementById('step1').classList.remove('hidden') }
+function goBack(){ alert('Back to voucher list') }
+function addLine(){
+  const tbody = document.getElementById('linesBody')
+  const tr = document.createElement('tr')
+  tr.className = 'border-b border-slate-100 hover:bg-slate-50'
+  tr.innerHTML = `
+    <td class="px-5 py-4"><input class="border-0 bg-transparent text-sm text-slate-900 focus:ring-0 outline-none w-full" placeholder="account"></td>
+    <td class="px-5 py-4 text-right"><input type="number" step="0.01" value="" class="border-0 bg-transparent text-sm text-right font-mono text-slate-900 focus:ring-0 outline-none w-full" oninput="computeBalance()"></td>
+    <td class="px-5 py-4 text-right"><input type="number" step="0.01" value="" class="border-0 bg-transparent text-sm text-right font-mono text-slate-900 focus:ring-0 outline-none w-full" oninput="computeBalance()"></td>
+    <td class="px-5 py-4"><input class="border-0 bg-transparent text-sm text-slate-900 focus:ring-0 outline-none w-full" placeholder="memo"></td>
+    <td class="px-5 py-4 text-center"><button class="text-slate-400 hover:text-crimson-600" onclick="removeLine(this)">−</button></td>
+  `
+  tbody.appendChild(tr)
+}
+function removeLine(btn){ btn.closest('tr').remove(); computeBalance() }
+function computeBalance(){
+  let dr=0, cr=0
+  document.querySelectorAll('#linesBody tr').forEach(tr=>{
+    dr += parseFloat(tr.children[1].querySelector('input').value)||0
+    cr += parseFloat(tr.children[2].querySelector('input').value)||0
+  })
+  document.getElementById('balText').textContent = `Debit ${dr.toFixed(2)} · Credit ${cr.toFixed(2)}`
+  document.getElementById('balIcon').textContent = Math.abs(dr-cr) < 0.005 ? '✓' : '⚖'
+  document.getElementById('balIcon').className = `w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${Math.abs(dr-cr)<0.005 ? 'border-emerald-200 text-emerald-600 bg-emerald-50' : 'border-slate-200 text-slate-500'}`
+}
+computeBalance()
+</script>
+</body>
+</html>
