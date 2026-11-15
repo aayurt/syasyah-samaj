@@ -61,7 +61,6 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
   const { docs: parties } = useCachedList<Party>('parties', { sort: 'name', ...tenantQuery })
   const { docs: accounts } = useCachedList<Account>('gl-accounts', { sort: 'name', ...tenantQuery })
 
-  const [step, setStep] = useState(1)
   const defaultDocType = (routeDocType && DOC_TYPE_LABELS[routeDocType]
     ? (routeDocType as DocType)
     : 'journal-voucher')
@@ -94,13 +93,6 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
     return { debitTotal: dr, creditTotal: cr }
   }, [jLines])
   const itemTotal = useMemo(() => iLines.reduce((s, l) => s + (l.amount || 0), 0), [iLines])
-
-  const step1Valid = !!date && (!partyRequired || !!partyId)
-  const step2Valid = isJournal
-    ? jLines.some((l) => l.account != null) && Math.abs(debitTotal - creditTotal) < 0.0051
-    : isContra
-      ? !!fromAccount && !!toAccount && fromAccount !== toAccount && contraAmount > 0
-      : iLines.some((l) => l.description && (l.amount || 0) > 0)
 
   // Reset line state when the doc type changes
   useEffect(() => {
@@ -193,9 +185,18 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
 
   const postVoucher = useCallback(async () => {
     setError('')
-    if (!step2Valid) {
-      setError(isJournal ? t('vouchers.unbalanced', 'Debits and credits must match')
-        : t('vouchers.linesRequired', 'Add at least one line'))
+    const balanced = Math.abs(debitTotal - creditTotal) < 0.0051
+    const hasLines = isJournal
+      ? jLines.some((l) => l.account != null && (l.debit || 0) > 0 || (l.credit || 0) > 0)
+      : isContra
+        ? !!fromAccount && !!toAccount && fromAccount !== toAccount && contraAmount > 0
+        : iLines.some((l) => l.description && (l.amount || 0) > 0)
+    if (!hasLines) {
+      setError(t('vouchers.linesRequired', 'Add at least one line'))
+      return
+    }
+    if (isJournal && !balanced) {
+      setError(t('vouchers.unbalanced', 'Debits and credits must match'))
       return
     }
     const savedId = await saveDraft()
@@ -213,40 +214,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
       setError(err instanceof Error ? err.message : (isOrder ? 'Confirm failed' : 'Post failed'))
       setSaving(false)
     }
-  }, [isJournal, isOrder, navigate, saveDraft, step2Valid])
-
-  const goNext = useCallback(async () => {
-    setError('')
-    if (step === 1) {
-      if (!step1Valid) {
-        setError(partyRequired && !partyId ? t('vouchers.partyRequired', 'Party is required')
-          : t('vouchers.dateRequired', 'Date is required'))
-        return
-      }
-      // saveDraft returns null when the save failed — checking the `error`
-      // state here would read a stale value and advance anyway.
-      const savedId = await saveDraft()
-      if (!savedId) return
-      setStep(2)
-    } else if (step === 2) {
-      if (!step2Valid) {
-        setError(isJournal ? t('vouchers.unbalanced', 'Debits and credits must match')
-          : t('vouchers.linesRequired', 'Add at least one line'))
-        return
-      }
-      const savedId = await saveDraft()
-      if (!savedId) return
-      setStep(3)
-    }
-  }, [isJournal, partyRequired, partyId, step, step1Valid, step2Valid, saveDraft])
-
-  const goPrev = () => { setError(''); setStep((s) => s - 1) }
-
-  const stepLabel = (n: number) => {
-    if (n === 3 && isOrder) return t('vouchers.stepReviewConfirm', 'Review & confirm')
-    const key = n === 1 ? 'stepDetails' : n === 2 ? 'stepLines' : 'stepReview'
-    return t(`vouchers.${key}`, key === 'stepDetails' ? 'Voucher details' : key === 'stepLines' ? 'Lines' : 'Review & post')
-  }
+  }, [isJournal, isOrder, navigate, saveDraft, debitTotal, creditTotal, jLines, fromAccount, toAccount, contraAmount, iLines])
 
   const selectCls = 'mt-1 block w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-crimson-500'
   const inputCls = 'mt-1 block w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-crimson-500 text-right'
