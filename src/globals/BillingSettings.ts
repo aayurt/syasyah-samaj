@@ -271,6 +271,21 @@ export const BillingSettings: GlobalConfig = {
           admin: { description: 'Cost of goods sold (delivery challans).' },
         },
         {
+          name: 'cogsAccounts',
+          type: 'array',
+          fields: [
+            {
+              name: 'account',
+              type: 'relationship',
+              relationTo: 'gl-accounts',
+            },
+          ],
+          admin: {
+            description:
+              'COGS accounts (P&L bucket). Falls back to cogsAccount when empty.',
+          },
+        },
+        {
           name: 'interIllakaClearingAccount',
           type: 'relationship',
           relationTo: 'gl-accounts',

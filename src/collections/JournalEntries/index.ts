@@ -255,6 +255,12 @@ export const JournalEntries: CollectionConfig = {
         const cogsAccountId = settings?.cogsAccount
           ? Number(typeof settings.cogsAccount === 'object' ? settings.cogsAccount.id : settings.cogsAccount)
           : null
+        const cogsIds = new Set<number>()
+        ;(settings?.cogsAccounts || []).forEach((r: any) => {
+          const aid = r?.account
+          if (aid) cogsIds.add(Number(typeof aid === 'object' ? aid.id : aid))
+        })
+        if (cogsAccountId) cogsIds.add(cogsAccountId)
 
         const income: any[] = []
         const cogsRows: any[] = []
@@ -262,17 +268,18 @@ export const JournalEntries: CollectionConfig = {
         for (const [id, s] of sums) {
           const a = acctById.get(id)
           if (!a) continue
+          const creditNormal = a.normalBalance === 'credit'
           if (a.type === 'income') {
             income.push({
               account: { id, code: a.code, name: a.name },
-              amount: round2(s.credit - s.debit),
+              amount: round2(creditNormal ? s.credit - s.debit : s.debit - s.credit),
             })
           } else if (a.type === 'expense') {
             const entry = {
               account: { id, code: a.code, name: a.name },
-              amount: round2(s.debit - s.credit),
+              amount: round2(creditNormal ? s.credit - s.debit : s.debit - s.credit),
             }
-            if (cogsAccountId && id === cogsAccountId) {
+            if (cogsIds.has(id)) {
               cogsRows.push(entry)
             } else {
               otherExpense.push(entry)
@@ -350,16 +357,17 @@ export const JournalEntries: CollectionConfig = {
           const a = acctById.get(id)
           if (!a) continue
           const item = { account: { id, code: a.code, name: a.name } }
+          const creditNormal = a.normalBalance === 'credit'
           if (a.type === 'asset') {
-            assets.push({ ...item, balance: round2(s.debit - s.credit) })
+            assets.push({ ...item, balance: round2(creditNormal ? s.credit - s.debit : s.debit - s.credit) })
           } else if (a.type === 'liability') {
-            liabilities.push({ ...item, balance: round2(s.credit - s.debit) })
+            liabilities.push({ ...item, balance: round2(creditNormal ? s.credit - s.debit : s.debit - s.credit) })
           } else if (a.type === 'equity') {
-            equity.push({ ...item, balance: round2(s.credit - s.debit) })
+            equity.push({ ...item, balance: round2(creditNormal ? s.credit - s.debit : s.debit - s.credit) })
           } else if (a.type === 'income') {
-            incomeTotal += s.credit - s.debit
+            incomeTotal += creditNormal ? s.credit - s.debit : s.debit - s.credit
           } else if (a.type === 'expense') {
-            expenseTotal += s.debit - s.credit
+            expenseTotal += creditNormal ? s.credit - s.debit : s.debit - s.credit
           }
         }
         const netProfit = round2(incomeTotal - expenseTotal)

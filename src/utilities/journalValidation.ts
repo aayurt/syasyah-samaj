@@ -13,7 +13,10 @@ export function toNum(v: unknown): number {
 }
 
 export function round2(v: number): number {
-  return Math.round((v + Number.EPSILON) * 100) / 100
+  // Robust 2-decimal rounding for currency. Number.EPSILON before multiply
+  // drifts at half-cent boundaries; scale to integer cents instead.
+  const cents = Math.round((v + Number.EPSILON) * 100)
+  return cents / 100
 }
 
 /**

@@ -165,50 +165,57 @@ export const Accounts: CollectionConfig = {
 
           // Default accounts grouped by type
           const defaults = [
-            // Assets
-            { code: '1001', name: 'Cash on Hand', type: 'asset', class: 'cash', group: 'Cash & Cash Equivalents' },
-            { code: '1002', name: 'Petty Cash', type: 'asset', class: 'cash', group: 'Cash & Cash Equivalents' },
-            { code: '1101', name: 'Bank Account', type: 'asset', class: 'bank', group: 'Bank Accounts' },
-            { code: '1201', name: 'Accounts Receivable', type: 'asset', class: 'other', group: 'Accounts Receivable' },
-            { code: '1301', name: 'Inventory', type: 'asset', class: 'other', group: 'Inventory' },
-            { code: '1401', name: 'Prepaid Expenses', type: 'asset', class: 'other', group: 'Prepaid Expenses' },
-            { code: '1501', name: 'Fixed Assets', type: 'asset', class: 'other', group: 'Fixed Asset Cost' },
-            { code: '1502', name: 'Accumulated Depreciation', type: 'asset', class: 'other', group: 'Accumulated Depreciation' },
+            // Assets (debit normal)
+            { code: '1001', name: 'Cash on Hand', type: 'asset', class: 'cash', group: 'Cash & Cash Equivalents', normalBalance: 'debit' },
+            { code: '1002', name: 'Petty Cash', type: 'asset', class: 'cash', group: 'Cash & Cash Equivalents', normalBalance: 'debit' },
+            { code: '1101', name: 'Bank Account', type: 'asset', class: 'bank', group: 'Bank Accounts', normalBalance: 'debit' },
+            { code: '1201', name: 'Accounts Receivable', type: 'asset', class: 'other', group: 'Accounts Receivable', normalBalance: 'debit' },
+            { code: '1301', name: 'Inventory', type: 'asset', class: 'other', group: 'Inventory', normalBalance: 'debit' },
+            { code: '1401', name: 'Prepaid Expenses', type: 'asset', class: 'other', group: 'Prepaid Expenses', normalBalance: 'debit' },
+            { code: '1501', name: 'Fixed Assets', type: 'asset', class: 'other', group: 'Fixed Asset Cost', normalBalance: 'debit' },
+            { code: '1502', name: 'Accumulated Depreciation', type: 'asset', class: 'other', group: 'Accumulated Depreciation', parentCode: '1501', normalBalance: 'credit' },
 
-            // Liabilities
-            { code: '2001', name: 'Accounts Payable', type: 'liability', class: 'other', group: 'Accounts Payable' },
-            { code: '2101', name: 'VAT Payable', type: 'liability', class: 'other', group: 'Tax Liabilities' },
-            { code: '2201', name: 'Accrued Expenses', type: 'liability', class: 'other', group: 'Accrued Expenses' },
-            { code: '2301', name: 'Long-term Loan', type: 'liability', class: 'other', group: 'Long-term Liabilities' },
+            // Liabilities (credit normal)
+            { code: '2001', name: 'Accounts Payable', type: 'liability', class: 'other', group: 'Accounts Payable', normalBalance: 'credit' },
+            { code: '2101', name: 'VAT Payable', type: 'liability', class: 'other', group: 'Tax Liabilities', normalBalance: 'credit' },
+            { code: '2201', name: 'Accrued Expenses', type: 'liability', class: 'other', group: 'Accrued Expenses', normalBalance: 'credit' },
+            { code: '2301', name: 'Long-term Loan', type: 'liability', class: 'other', group: 'Long-term Liabilities', normalBalance: 'credit' },
 
-            // Equity
-            { code: '3001', name: 'Capital', type: 'equity', class: 'other', group: 'Capital' },
-            { code: '3101', name: 'Retained Earnings', type: 'equity', class: 'other', group: 'Retained Earnings' },
+            // Equity (credit normal)
+            { code: '3001', name: 'Capital', type: 'equity', class: 'other', group: 'Capital', normalBalance: 'credit' },
+            { code: '3101', name: 'Retained Earnings', type: 'equity', class: 'other', group: 'Retained Earnings', normalBalance: 'credit' },
 
-            // Income
-            { code: '4001', name: 'Sales Revenue', type: 'income', class: 'other', group: 'Sales Revenue' },
-            { code: '4101', name: 'Service Income', type: 'income', class: 'other', group: 'Service Income' },
-            { code: '4201', name: 'Other Income', type: 'income', class: 'other', group: 'Other Income' },
-            { code: '4301', name: 'Membership Fee Income', type: 'income', class: 'other', group: 'Membership Fee Income' },
-            { code: '4401', name: 'Donation Income', type: 'income', class: 'other', group: 'Donation Income' },
+            // Income (credit normal)
+            { code: '4001', name: 'Sales Revenue', type: 'income', class: 'other', group: 'Sales Revenue', normalBalance: 'credit' },
+            { code: '4101', name: 'Service Income', type: 'income', class: 'other', group: 'Service Income', normalBalance: 'credit' },
+            { code: '4201', name: 'Other Income', type: 'income', class: 'other', group: 'Other Income', normalBalance: 'credit' },
+            { code: '4301', name: 'Membership Fee Income', type: 'income', class: 'other', group: 'Membership Fee Income', normalBalance: 'credit' },
+            { code: '4401', name: 'Donation Income', type: 'income', class: 'other', group: 'Donation Income', normalBalance: 'credit' },
 
-            // Expenses
-            { code: '5001', name: 'Cost of Goods Sold', type: 'expense', class: 'other', group: 'Cost of Goods Sold' },
-            { code: '5101', name: 'Salary & Wages', type: 'expense', class: 'other', group: 'Salary & Wages' },
-            { code: '5201', name: 'Rent', type: 'expense', class: 'other', group: 'Rent' },
-            { code: '5301', name: 'Utilities', type: 'expense', class: 'other', group: 'Utilities' },
-            { code: '5401', name: 'Office Supplies', type: 'expense', class: 'other', group: 'Office Supplies' },
-            { code: '5501', name: 'Depreciation', type: 'expense', class: 'other', group: 'Depreciation' },
-            { code: '5601', name: 'Other Expenses', type: 'expense', class: 'other', group: 'Other Expenses' },
-            { code: '5701', name: 'Sales Returns', type: 'expense', class: 'other', group: 'Other Expenses' },
+            // Expenses (debit normal); Sales Returns is contra (credit normal)
+            { code: '5001', name: 'Cost of Goods Sold', type: 'expense', class: 'other', group: 'Cost of Goods Sold', normalBalance: 'debit' },
+            { code: '5101', name: 'Salary & Wages', type: 'expense', class: 'other', group: 'Salary & Wages', normalBalance: 'debit' },
+            { code: '5201', name: 'Rent', type: 'expense', class: 'other', group: 'Rent', normalBalance: 'debit' },
+            { code: '5301', name: 'Utilities', type: 'expense', class: 'other', group: 'Utilities', normalBalance: 'debit' },
+            { code: '5401', name: 'Office Supplies', type: 'expense', class: 'other', group: 'Office Supplies', normalBalance: 'debit' },
+            { code: '5501', name: 'Depreciation', type: 'expense', class: 'other', group: 'Depreciation', normalBalance: 'debit' },
+            { code: '5601', name: 'Other Expenses', type: 'expense', class: 'other', group: 'Other Expenses', normalBalance: 'debit' },
+            { code: '5701', name: 'Sales Returns', type: 'expense', class: 'other', group: 'Other Expenses', normalBalance: 'credit' },
           ]
 
+          const createdByCode = new Map<string, any>()
           let created = 0
           let skipped = 0
           for (const acct of defaults) {
+            // Unique code within tenant (defense in depth alongside the hook).
             const existing = await req.payload.find({
               collection: 'gl-accounts',
-              where: { code: { equals: acct.code } },
+              where: {
+                and: [
+                  { code: { equals: acct.code } },
+                  { tenant: { equals: tenant } },
+                ],
+              },
               limit: 1,
               depth: 0,
               overrideAccess: true,
@@ -217,28 +224,46 @@ export const Accounts: CollectionConfig = {
               skipped++
               continue
             }
-            // Find the group
+
+            // Resolve group by exact name — never seed an orphan account.
             const groupRes = await req.payload.find({
               collection: 'account-groups',
-              where: { code: { equals: acct.group.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') } },
+              where: { name: { equals: acct.group } },
               limit: 1,
               depth: 0,
               overrideAccess: true,
             })
-            await req.payload.create({
+            const group = groupRes.docs[0] as any
+            if (!group) {
+              throw new Error(
+                `Account group "${acct.group}" not found — seed account groups first.`,
+              )
+            }
+
+            // Resolve parent account by code (created earlier in this run).
+            let parentId: number | null = null
+            if (acct.parentCode) {
+              const p = createdByCode.get(acct.parentCode)
+              if (p) parentId = Number(p.id)
+            }
+
+            const createdAcct = await req.payload.create({
               collection: 'gl-accounts',
               data: {
                 code: acct.code,
                 name: acct.name,
                 type: acct.type,
                 class: acct.class,
-                group: (groupRes.docs[0] as any)?.id || null,
+                group: group.id,
+                parent: parentId,
+                normalBalance: acct.normalBalance,
                 openingBalance: 0,
                 active: true,
                 tenant,
               } as any,
               overrideAccess: true,
             })
+            createdByCode.set(acct.code, createdAcct)
             created++
           }
 
