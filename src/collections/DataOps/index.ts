@@ -4,6 +4,7 @@ import {
   isIllakaUser,
   resolveScopedTenant,
 } from '@/access/tenantScoped'
+import { isAdmin } from '@/access/admin'
 import type { CollectionConfig, Payload, PayloadRequest } from 'payload'
 import type { User } from '@/payload-types'
 import { getBillingSettings } from '@/utilities/billingSettings'
@@ -24,6 +25,13 @@ import { round2, toNum } from '@/utilities/journalValidation'
  *                                that land in the Posting queue. Only runs
  *                                while billing-settings.demoSeedEnabled.
  *
+ * POST /api/data-ops/reset   — full tenant reset: deletes transaction rows,
+ *                              then masters (chart of accounts, account groups,
+ *                              opening balances, parties, items, fiscal years),
+ *                              keeping users, tenants/ilakas, members, tax types,
+ *                              settings and the audit log. Admin-only, idempotent,
+ *                              and blocked on production unless DATA_RESET_ENABLED.
+ *
  * Both are server-synchronous (never queued to the client outbox), scoped to
  * exactly one tenant, and recorded in the audit log with the counts.
  */
@@ -38,6 +46,33 @@ const WIPE_COLLECTIONS = [
   'opening-balances',
   'fixed-assets',
 ] as const
+
+/** Every business collection a full reset deletes — transaction rows first,
+ * then masters — so foreign-key constraints never leave orphans. Kept:
+ * users, tenants/ilakas, members, tax types, settings, audit log. */
+export const RESET_COLLECTIONS = [
+  'journal-entries', // references documents → wiped first
+  'documents', // invoices, bills, receipts, payments
+  'stock-movements', // references items/parties
+  'bank-statements',
+  'expense-claims',
+  'recurring-schedules',
+  'opening-balances', // references gl-accounts → wiped before accounts
+  'fixed-assets',
+  'gl-accounts', // chart of accounts → wiped before account groups
+  'account-groups',
+  'parties', // customers / suppliers
+  'items', // products & services
+  'fiscal-years',
+] as const
+
+/** Pending resets keyed by Idempotency-Key so a double submit returns the same result. */
+const pendingResets = new Map<
+  string,
+  { status: 'in-flight' } | { status: 'done'; response: Response }
+>()
+
+const RESET_IDEMPOTENCY_TTL_MS = 5 * 60 * 1000
 
 /** Destructive actions need a real operator — viewers and plain users are out. */
 function canRunDataOps(user: User | null | undefined): boolean {
@@ -734,6 +769,102 @@ export const DataOps: CollectionConfig = {
           drafts,
           epoch,
         })
+      },
+    },
+    {
+      path: '/reset',
+      method: 'post',
+      handler: async (req) => {
+        if (!isAdmin({ req })) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const body = await readBody(req)
+        const key =
+          (req.headers.get('Idempotency-Key') as string) ||
+          String(body?.requestId || '')
+        if (key) {
+          const cached = pendingResets.get(key)
+          if (cached) {
+            if (cached.status === 'done') return cached.response
+            return Response.json(
+              { error: 'A reset with this request id is already in progress.' },
+              { status: 409 },
+            )
+          }
+          pendingResets.set(key, { status: 'in-flight' })
+        }
+
+        // Production guard: full resets are off by default on production and
+        // need both the DATA_RESET_ENABLED flag and an explicit body opt-in.
+        if (
+          process.env.NODE_ENV === 'production' &&
+          (process.env.DATA_RESET_ENABLED !== 'true' ||
+            body?.allowProductionReset !== true)
+        ) {
+          return Response.json(
+            {
+              error:
+                'Full reset is disabled on production. Enable DATA_RESET_ENABLED on a designated test instance and retry with allowProductionReset: true.',
+            },
+            { status: 403 },
+          )
+        }
+
+        const explicit = (body?.tenant as string) || null
+        const tenant = targetTenant(req, explicit)
+        if (!tenant) {
+          return Response.json(
+            { error: 'A tenant (ilaka) is required. Central users must pass an explicit tenant.' },
+            { status: 400 },
+          )
+        }
+
+        let counts: Record<string, number> = {}
+        let failures: Record<string, number> = {}
+        let sequencesReset = 0
+
+        try {
+          const wiped = await req.payload.transaction(async (tx) => {
+            const c: Record<string, number> = {}
+            const f: Record<string, number> = {}
+            for (const slug of RESET_COLLECTIONS) {
+              const r = await wipeCollection(tx, slug, tenant)
+              c[slug] = r.deleted
+              f[slug] = r.errors
+            }
+            const s = await resetSequences(tx, tenant)
+            return { counts: c, failures: f, sequencesReset: s }
+          })
+          counts = wiped.counts
+          failures = wiped.failures
+          sequencesReset = wiped.sequencesReset
+        } catch (err) {
+          return Response.json(
+            { error: err instanceof Error ? err.message : 'Reset failed' },
+            { status: 500 },
+          )
+        }
+
+        const epoch = await bumpEpoch(req.payload)
+        await writeAudit(req.payload, req, tenant, 'reset', {
+          counts,
+          failures,
+          sequencesReset,
+        }, epoch)
+
+        const response = Response.json({
+          ok: true,
+          tenant,
+          counts,
+          failures,
+          sequencesReset,
+          epoch,
+        })
+        if (key) {
+          pendingResets.set(key, { status: 'done', response })
+          setTimeout(() => pendingResets.delete(key), RESET_IDEMPOTENCY_TTL_MS)
+        }
+        return response
       },
     },
   ],

@@ -7,7 +7,7 @@ vi.mock('./api', () => ({
 }))
 
 import { api, getEngine } from './api'
-import { runSeedDemo, runSeedSelective } from './dataOps'
+import { runSeedDemo, runSeedSelective, runReset } from './dataOps'
 
 const mockedApi = vi.mocked(api)
 
@@ -52,5 +52,34 @@ describe('runSeedSelective', () => {
 describe('getEngine wiring', () => {
   it('returns the engine used by invalidateCollections', () => {
     expect(getEngine()).toEqual({ invalidate })
+  })
+})
+
+describe('runReset', () => {
+  it('posts reset and invalidates business caches on success', async () => {
+    mockedApi.mockResolvedValue({
+      ok: true,
+      tenant: 't1',
+      counts: { documents: 12, 'gl-accounts': 25 },
+      failures: {},
+      sequencesReset: 3,
+      epoch: 7,
+    })
+    const res = await runReset('t1')
+    expect(mockedApi).toHaveBeenCalledWith('/data-ops/reset', {
+      method: 'POST',
+      immediate: true,
+      body: { tenant: 't1' },
+    })
+    expect(res).toMatchObject({ ok: true, tenant: 't1', epoch: 7 })
+    expect(res.counts).toEqual({ documents: 12, 'gl-accounts': 25 })
+    expect(invalidate).toHaveBeenCalled()
+  })
+
+  it('passes server errors through without throwing', async () => {
+    mockedApi.mockResolvedValue({ ok: false, error: 'Unauthorized' })
+    const res = await runReset('t1')
+    expect(res.ok).toBe(false)
+    expect(res.error).toContain('Unauthorized')
   })
 })

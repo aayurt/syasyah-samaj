@@ -55,6 +55,25 @@ export const SEED_KEYS: { key: SeedKey; label: string; blurb: string }[] = [
   { key: 'fiscalYears', label: 'Fiscal years', blurb: 'A default working year (2083-84) when none exists yet.' },
 ]
 
+/** Every business collection a full reset deletes — transaction rows first,
+ * then masters — so foreign-key constraints never leave orphans. Kept:
+ * users, tenants/ilakas, members, tax types, settings, audit log. */
+export const RESET_COLLECTIONS = [
+  'journal-entries',
+  'documents',
+  'stock-movements',
+  'bank-statements',
+  'expense-claims',
+  'recurring-schedules',
+  'opening-balances',
+  'fixed-assets',
+  'gl-accounts',
+  'account-groups',
+  'parties',
+  'items',
+  'fiscal-years',
+] as const
+
 const EPOCH_KEY = 'billing.dataEpoch'
 
 /** Drop the local cache for the given collections (engine bumps cacheVersion too).
@@ -81,6 +100,10 @@ export interface CleanupResult {
   error?: string
 }
 
+/** Full tenant reset mirrors the cleanup shape: counts per collection,
+ * failures, sequence resets, epoch bump. */
+export type ResetResult = CleanupResult
+
 /** Wipe one tenant's transaction-level data. Returns the deleted counts. */
 export async function runCleanup(tenant: string): Promise<CleanupResult> {
   const res = await api<CleanupResult>('/data-ops/cleanup', {
@@ -90,6 +113,21 @@ export async function runCleanup(tenant: string): Promise<CleanupResult> {
   })
   if (res?.ok) {
     await invalidateCollections(DATA_COLLECTIONS, tenant)
+    localStorage.setItem(EPOCH_KEY, String(res.epoch ?? 0))
+  }
+  return res
+}
+
+/** Full tenant reset: deletes transaction rows then masters. Users, tenants,
+ * settings and the audit log are preserved. */
+export async function runReset(tenant: string): Promise<ResetResult> {
+  const res = await api<ResetResult>('/data-ops/reset', {
+    method: 'POST',
+    immediate: true,
+    body: { tenant },
+  })
+  if (res?.ok) {
+    await invalidateCollections([...RESET_COLLECTIONS, 'doc-sequences'], tenant)
     localStorage.setItem(EPOCH_KEY, String(res.epoch ?? 0))
   }
   return res

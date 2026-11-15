@@ -10,7 +10,14 @@ import {
   Trash2,
 } from 'lucide-react'
 import { api } from '../lib/api'
-import { DATA_COLLECTIONS, runCleanup, runSeedDemo } from '../lib/dataOps'
+import {
+  DATA_COLLECTIONS,
+  RESET_COLLECTIONS,
+  runCleanup,
+  runReset,
+  runSeedDemo,
+} from '../lib/dataOps'
+import { isAdminUser, useOfflineSession } from '../lib/auth'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
@@ -57,7 +64,32 @@ const KEPT = [
   'Settings & audit log',
 ]
 
+const RESET_LABELS: Record<string, string> = {
+  'journal-entries': 'Journal entries',
+  documents: 'Vouchers (transactions)',
+  'stock-movements': 'Stock movements',
+  'bank-statements': 'Bank statements',
+  'expense-claims': 'Expense claims',
+  'recurring-schedules': 'Recurring billing',
+  'opening-balances': 'Opening balances',
+  'fixed-assets': 'Fixed assets',
+  'gl-accounts': 'Chart of accounts',
+  'account-groups': 'Account groups',
+  parties: 'Customers & suppliers',
+  items: 'Products & services',
+  'fiscal-years': 'Fiscal years',
+}
+
+const RESET_KEPT = [
+  'Users & roles',
+  'Settings & audit log',
+  'Ilakas / Tenants',
+  'Members & membership types',
+  'Tax types',
+]
+
 const TYPED_CONFIRMATION = 'DELETE ALL TRANSACTIONS'
+const TYPED_RESET_CONFIRMATION = 'RESET ALL DATA'
 
 export default function DataManagement() {
   const navigate = useNavigate()
@@ -74,7 +106,16 @@ export default function DataManagement() {
 
   const [seeding, setSeeding] = useState(false)
   const [seedResult, setSeedResult] = useState<{ chart?: { groups: number; accounts: number }; partyCount?: number; draftCount?: number } | null>(null)
+  const [resetConfirmText, setResetConfirmText] = useState('')
+  const [resetting, setResetting] = useState(false)
+  const [resetResult, setResetResult] = useState<{
+    counts: Record<string, number>
+    failures: Record<string, number>
+    sequencesReset?: number
+    epoch?: number
+  } | null>(null)
   const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[] } | null>(null)
+  const { session } = useOfflineSession()
 
   useEffect(() => {
     api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
@@ -84,6 +125,8 @@ export default function DataManagement() {
 
   const demoEnabled = settingsLoaded && settings?.demoSeedEnabled !== false
   const confirmOk = confirmText.trim() === TYPED_CONFIRMATION
+  const resetOk = resetConfirmText.trim() === TYPED_RESET_CONFIRMATION
+  const isAdmin = isAdminUser(session?.user?.role)
 
   const doCleanup = async () => {
     if (!tenantId) {
@@ -106,6 +149,38 @@ export default function DataManagement() {
       pushToast('error', 'Cleanup failed', e instanceof Error ? e.message : 'Unknown error')
     } finally {
       setCleaning(false)
+    }
+  }
+
+  const doReset = async () => {
+    if (!tenantId) {
+      pushToast('error', 'Select a tenant first', 'Choose the ilaka from the header switcher before resetting.')
+      return
+    }
+    if (!resetOk) {
+      pushToast('error', 'Confirmation text required', `Type “${TYPED_RESET_CONFIRMATION}” exactly.`)
+      return
+    }
+    if (!isAdmin) {
+      pushToast('error', 'Admin only', 'Reset Application Data is restricted to administrators.')
+      return
+    }
+    setResetting(true)
+    setResetResult(null)
+    try {
+      const res = await runReset(tenantId)
+      if (res?.error) {
+        pushToast('error', 'Reset failed', res.error)
+      } else {
+        const total = Object.values(res.counts || {}).reduce((a, b) => a + b, 0)
+        setResetResult({ counts: res.counts || {}, failures: res.failures || {}, sequencesReset: res.sequencesReset, epoch: res.epoch })
+        pushToast('success', 'Reset complete', `${total} record(s) deleted · voucher counters reset`)
+        setResetConfirmText('')
+      }
+    } catch (e) {
+      pushToast('error', 'Reset failed', e instanceof Error ? e.message : 'Unknown error')
+    } finally {
+      setResetting(false)
     }
   }
 
@@ -243,6 +318,128 @@ export default function DataManagement() {
         )}
       </section>
 
+      {/* ── Reset ─────────────────────────────────────────────── */}
+      {isAdmin && (
+        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="rounded-lg bg-amber-50 p-3 text-amber-600">
+              <AlertTriangle size={20} />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-base font-semibold text-slate-800">
+                {t('dataManagement.reset', 'Reset Application Data')}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {t(
+                  'dataManagement.resetDesc',
+                  'Delete every business record for this tenant: vouchers, journal entries, chart of accounts, parties, items, fiscal years and more. User accounts, settings, ilakas, tax types and the audit log are kept.',
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                {t('dataManagement.resetRemoves', 'Removes')}
+              </p>
+              <ul className="mt-2 space-y-1">
+                {RESET_COLLECTIONS.map((c) => (
+                  <li key={c} className="flex items-center gap-2 text-sm text-slate-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                    {RESET_LABELS[c] || c}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500">
+                {t('dataManagement.resetKeeps', 'Keeps')}
+              </p>
+              <ul className="mt-2 space-y-1">
+                {RESET_KEPT.map((k) => (
+                  <li key={k} className="flex items-center gap-2 text-sm text-emerald-700">
+                    <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
+                    {k}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {!tenantId && (
+            <div className="mt-4 flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <AlertTriangle size={15} />
+              {isCentral
+                ? 'Select the tenant to reset from the header switcher.'
+                : 'Your tenant is auto-selected.'}
+            </div>
+          )}
+
+          {import.meta.env.PROD && (
+            <div className="mt-4 flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <AlertTriangle size={15} />
+              {t('dataManagement.resetProdWarning', 'Production reset is blocked unless DATA_RESET_ENABLED is set on this instance.')}
+            </div>
+          )}
+
+          <div className="mt-5 rounded-lg border border-red-100 bg-red-50/50 p-5">
+            <label className="flex items-center gap-2 text-sm font-medium text-red-700">
+              <AlertTriangle size={15} />
+              Type <span className="font-mono font-semibold">{TYPED_RESET_CONFIRMATION}</span> to confirm
+            </label>
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                value={resetConfirmText}
+                onChange={(e) => setResetConfirmText(e.target.value)}
+                placeholder={TYPED_RESET_CONFIRMATION}
+                className="h-10 flex-1 rounded border border-slate-300 px-3 font-mono text-sm outline-none focus:border-red-400"
+              />
+              <button
+                onClick={() => void doReset()}
+                disabled={!tenantId || !resetOk || resetting || !isAdmin}
+                className="inline-flex items-center gap-2 rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {resetting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                {resetting
+                  ? t('msg.saving', 'Resetting…')
+                  : t('dataManagement.reset', 'Reset Application Data')}
+              </button>
+              {!isAdmin && (
+                <span className="text-xs text-slate-400">Admin only</span>
+              )}
+            </div>
+          </div>
+
+          {resetResult && (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-5 text-sm">
+              <p className="font-medium text-slate-700">
+                Reset complete ·
+                {Object.values(resetResult.counts).reduce((a, b) => a + b, 0)} record(s) deleted ·
+                voucher counters reset
+              </p>
+              <div className="mt-2 grid gap-x-8 gap-y-1 sm:grid-cols-2">
+                {RESET_COLLECTIONS.map((c) => {
+                  const n = resetResult.counts[c] ?? 0
+                  const f = resetResult.failures[c] ?? 0
+                  if (n === 0 && f === 0) return null
+                  return (
+                    <div key={c} className="flex justify-between text-xs text-slate-500">
+                      <span>{RESET_LABELS[c] || c}</span>
+                      <span>
+                        {n} deleted{f > 0 ? `, ${f} failed` : ''}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="mt-2 text-xs text-slate-400">
+                The setup wizard restarts on the next load: chart of accounts and fiscal year are cleared. Users, settings, ilakas, tax types, members and the audit log were not touched.
+              </p>
+            </div>
+          )}
+        </section>
+      )}
       {/* ── Demo seed ───────────────────────────────────────────── */}
       <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
