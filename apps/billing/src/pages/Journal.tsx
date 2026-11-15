@@ -456,11 +456,10 @@ export default function Journal() {
                     {fmt(totals.credit)}
                   </td>
                   <td
-                    className={`py-2 pl-4 text-xs font-medium ${
-                      Math.abs(totals.diff) < 0.001
+                    className={`py-2 pl-4 text-xs font-medium ${Math.abs(totals.diff) < 0.001
                         ? 'text-emerald-600'
                         : 'text-red-600'
-                    }`}
+                      }`}
                   >
                     {Math.abs(totals.diff) < 0.001
                       ? t('vouchers.balanced', '✓ balanced')
@@ -480,7 +479,7 @@ export default function Journal() {
               }
               className="text-xs font-medium text-slate-500 hover:text-slate-800"
             >
-              {t('vouchers.addLine', '+ Add line')}
+              {t('vouchers.addLine', 'Add line')}
             </button>
           </div>
 
@@ -521,116 +520,115 @@ export default function Journal() {
         <TableSkeleton />
       ) : (
         <>
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs uppercase tracking-wide text-slate-500">
-            {t('common.filter', 'Filter')}
-          </span>
-          {['', 'draft', 'posted', 'void'].map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilter(s)}
-              className={`rounded px-2.5 py-1 text-xs font-medium ${
-                filter === s
-                  ? 'bg-crimson-600 text-white'
-                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {s === '' ? t('common.all', 'All') : s === 'draft' ? t('status.draft', 'Draft') : s === 'posted' ? t('status.posted', 'Posted') : s === 'void' ? t('status.void', 'Void') : s}
-          </button>
-          ))}
-        </div>
-        <SearchBox
-          value={query}
-          onChange={setQuery}
-          placeholder={t('journal.searchPlaceholder', 'Search narration…')}
-        />
-      </div>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-wide text-slate-500">
+                {t('common.filter', 'Filter')}
+              </span>
+              {['', 'draft', 'posted', 'void'].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setFilter(s)}
+                  className={`rounded px-2.5 py-1 text-xs font-medium ${filter === s
+                      ? 'bg-crimson-600 text-white'
+                      : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
+                    }`}
+                >
+                  {s === '' ? t('common.all', 'All') : s === 'draft' ? t('status.draft', 'Draft') : s === 'posted' ? t('status.posted', 'Posted') : s === 'void' ? t('status.void', 'Void') : s}
+                </button>
+              ))}
+            </div>
+            <SearchBox
+              value={query}
+              onChange={setQuery}
+              placeholder={t('journal.searchPlaceholder', 'Search narration…')}
+            />
+          </div>
 
-      <div className="mt-3 rounded-lg border border-slate-200 bg-white">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <SortableTh label={t('journal.columnNumber', 'Number')} sortKey="docNumber" sort={sort} onSort={toggleSort} />
-              <SortableTh label={t('journal.columnDate', 'Date')} sortKey="date" sort={sort} onSort={toggleSort} />
-              <SortableTh label={t('journal.columnNarration', 'Narration')} sortKey="narration" sort={sort} onSort={toggleSort} />
-              <SortableTh label={t('journal.columnDebit', 'Debit')} sortKey="debit" sort={sort} onSort={toggleSort} />
-              <SortableTh label={t('journal.columnCredit', 'Credit')} sortKey="credit" sort={sort} onSort={toggleSort} />
-              <SortableTh label={t('journal.columnStatus', 'Status')} sortKey="status" sort={sort} onSort={toggleSort} />
-              <th className="px-4 py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
-                  {t('journal.noEntries', 'No journal entries yet.')}
-                </td>
-              </tr>
-            )}
-            {visible.map((e) => {
-              // Guard against stale cached rows that lack the `lines` array
-              // (e.g. ledger rows cached before the read-cache was scoped to
-              // plain collection lists) — render zeros instead of crashing.
-              const lines = Array.isArray(e.lines) ? e.lines : []
-              const debit = lines.reduce(
-                (s, l) => s + (Number(l.debit) || 0),
-                0,
-              )
-              const credit = lines.reduce(
-                (s, l) => s + (Number(l.credit) || 0),
-                0,
-              )
-              return (
-                <tr key={e.id} className="border-b border-slate-50">
-                  <td className="px-4 py-2 font-mono text-xs text-slate-500">
-                    {entryNumber(e) ? (
-                      <button
-                        type="button"
-                        onClick={() => openVoucher(entryDocId(e))}
-                        className="text-blue-600 hover:underline"
-                        title="Open source transaction"
-                      >
-                        {entryNumber(e)}
-                      </button>
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="px-4 py-2 text-slate-600">
-                    {formatDate(e.date)}
-                  </td>
-                  <td className="px-4 py-2 text-slate-800">
-                    {e.narration || '—'}
-                  </td>
-                  <td className="px-4 py-2 font-mono text-slate-700">
-                    {fmt(debit)}
-                  </td>
-                  <td className="px-4 py-2 font-mono text-slate-700">
-                    {fmt(credit)}
-                  </td>
-                  <td className="px-4 py-2">
-                    <StatusPill status={e.status} />
-                  </td>
-                  <td className="px-4 py-2 text-right">
-                    {e.status === 'posted' && (
-                      <ActionMenu
-                        items={[
-                          {
-                            label: t('status.void', 'Void'),
-                            danger: true,
-                            onClick: () => voidEntry(e.id),
-                          },
-                        ]}
-                      />
-                    )}
-                  </td>
+          <div className="mt-3 rounded-lg border border-slate-200 bg-white">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <SortableTh label={t('journal.columnNumber', 'Number')} sortKey="docNumber" sort={sort} onSort={toggleSort} />
+                  <SortableTh label={t('journal.columnDate', 'Date')} sortKey="date" sort={sort} onSort={toggleSort} />
+                  <SortableTh label={t('journal.columnNarration', 'Narration')} sortKey="narration" sort={sort} onSort={toggleSort} />
+                  <SortableTh label={t('journal.columnDebit', 'Debit')} sortKey="debit" sort={sort} onSort={toggleSort} />
+                  <SortableTh label={t('journal.columnCredit', 'Credit')} sortKey="credit" sort={sort} onSort={toggleSort} />
+                  <SortableTh label={t('journal.columnStatus', 'Status')} sortKey="status" sort={sort} onSort={toggleSort} />
+                  <th className="px-4 py-2"></th>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {visible.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
+                      {t('journal.noEntries', 'No journal entries yet.')}
+                    </td>
+                  </tr>
+                )}
+                {visible.map((e) => {
+                  // Guard against stale cached rows that lack the `lines` array
+                  // (e.g. ledger rows cached before the read-cache was scoped to
+                  // plain collection lists) — render zeros instead of crashing.
+                  const lines = Array.isArray(e.lines) ? e.lines : []
+                  const debit = lines.reduce(
+                    (s, l) => s + (Number(l.debit) || 0),
+                    0,
+                  )
+                  const credit = lines.reduce(
+                    (s, l) => s + (Number(l.credit) || 0),
+                    0,
+                  )
+                  return (
+                    <tr key={e.id} className="border-b border-slate-50">
+                      <td className="px-4 py-2 font-mono text-xs text-slate-500">
+                        {entryNumber(e) ? (
+                          <button
+                            type="button"
+                            onClick={() => openVoucher(entryDocId(e))}
+                            className="text-blue-600 hover:underline"
+                            title="Open source transaction"
+                          >
+                            {entryNumber(e)}
+                          </button>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-slate-600">
+                        {formatDate(e.date)}
+                      </td>
+                      <td className="px-4 py-2 text-slate-800">
+                        {e.narration || '—'}
+                      </td>
+                      <td className="px-4 py-2 font-mono text-slate-700">
+                        {fmt(debit)}
+                      </td>
+                      <td className="px-4 py-2 font-mono text-slate-700">
+                        {fmt(credit)}
+                      </td>
+                      <td className="px-4 py-2">
+                        <StatusPill status={e.status} />
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        {e.status === 'posted' && (
+                          <ActionMenu
+                            items={[
+                              {
+                                label: t('status.void', 'Void'),
+                                danger: true,
+                                onClick: () => voidEntry(e.id),
+                              },
+                            ]}
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
 

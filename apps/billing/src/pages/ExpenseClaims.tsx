@@ -53,8 +53,8 @@ export default function ExpenseClaims() {
   const [parties, setParties] = useState<Party[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
   useEffect(() => {
-    api<{ docs: Party[] }>('/parties', { query: { limit: 500, sort: 'name', ...tenantQuery } }).then((r) => setParties(r.docs || [])).catch(() => {})
-    api<{ docs: Account[] }>('/accounts', { query: { limit: 500, sort: 'name', ...tenantQuery } }).then((r) => setAccounts(r.docs || [])).catch(() => {})
+    api<{ docs: Party[] }>('/parties', { query: { limit: 500, sort: 'name', ...tenantQuery } }).then((r) => setParties(r.docs || [])).catch(() => { })
+    api<{ docs: Account[] }>('/accounts', { query: { limit: 500, sort: 'name', ...tenantQuery } }).then((r) => setAccounts(r.docs || [])).catch(() => { })
   }, [tenantQuery])
 
   const partyName = useMemo(() => {
@@ -203,9 +203,8 @@ export default function ExpenseClaims() {
       <div className="flex flex-wrap gap-2">
         {['all', 'draft', 'submitted', 'approved', 'rejected', 'reimbursed', 'billable'].map((f) => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
-              filter === f ? 'bg-crimson-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
-            }`}>
+            className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${filter === f ? 'bg-crimson-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
+              }`}>
             {filterLabelMap[f] ?? f}{f === 'billable' && billableCount > 0 ? ` (${billableCount})` : ''}
           </button>
         ))}
@@ -250,7 +249,7 @@ export default function ExpenseClaims() {
           <div className="mt-3">
             <div className="mb-1 flex items-center justify-between">
               <label className="text-xs font-medium text-slate-500">{t('expenseClaims.title', 'Expense Lines')}</label>
-              <button type="button" onClick={addLine} className="text-xs text-crimson-600 hover:underline">{t('vouchers.addLine', '+ Add line')}</button>
+              <button type="button" onClick={addLine} className="text-xs text-crimson-600 hover:underline">{t('vouchers.addLine', 'Add line')}</button>
             </div>
             <div className="space-y-2">
               {lines.map((line, i) => (

@@ -66,7 +66,7 @@ export default function RecurringBilling() {
   useEffect(() => {
     api<{ docs: Party[] }>('/parties', { query: { limit: 500, sort: 'name', ...tenantQuery } })
       .then((r) => setParties(r.docs || []))
-      .catch(() => {})
+      .catch(() => { })
   }, [tenantQuery])
 
   // ── Create form ────────────────────────────────────────────────
@@ -269,7 +269,7 @@ export default function RecurringBilling() {
             <div className="mb-1 flex items-center justify-between">
               <label className="text-xs font-medium text-slate-500">{t('recurringBilling.title', 'Template Lines')}</label>
               <button type="button" onClick={addLine}
-                className="text-xs text-crimson-600 hover:underline">{t('vouchers.addLine', '+ Add line')}</button>
+                className="text-xs text-crimson-600 hover:underline">{t('vouchers.addLine', 'Add line')}</button>
             </div>
             <div className="space-y-2">
               {lines.map((line, i) => (

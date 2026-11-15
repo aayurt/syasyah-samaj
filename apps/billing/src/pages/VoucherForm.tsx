@@ -334,7 +334,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     let alive = true
     api<{ docs: StockLevel[] }>('/items/stock-levels', { query: { ...tenantQuery } })
       .then((l) => { if (alive) setLevels(l.docs) })
-      .catch(() => {})
+      .catch(() => { })
     return () => { alive = false }
   }, [tenantId, cacheVersion])
   const levelFor = (itemId: string) =>
@@ -483,67 +483,67 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
         })
         setNepaliWordsOnPrint(!!s.nepaliWordsOnPrintEnabled)
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   /* ── Load existing doc for edit ─────────────────────────────── */
   useEffect(() => {
     if (mode !== 'edit' || !id) return
-    ;(async () => {
-      try {
-        const d = await api<Document>(`/documents/${id}`, { query: { depth: 1, ...tenantQuery } })
-        setDocType(d.docType); setInvoicePrefix(DOC_PREFIXES[d.docType] || 'INV')
-        setDate(d.date?.slice(0, 10) || todayAD())
-        setNarration(d.narration || '')
-        setCurrency((d.currency || 'NPR') as Currency)
-        setExchangeRate(d.exchangeRate ?? null)
-        setTaxRate(String(d.taxRate ?? 0))
-        setPaymentMethod(d.paymentMethod || 'bank')
-        const idOf = (v: unknown): string => v && typeof v === 'object' ? String((v as { id: unknown }).id) : String(v ?? '')
-        setParty(idOf(d.party))
-        setBankAccount(idOf(d.bankAccount))
-        setCashAccountId(idOf(d.bankAccount))
-        setFromAccount(idOf(d.fromAccount))
-        setToAccount(idOf(d.toAccount))
-        setContraAmount(d.grossTotal !== undefined ? String(d.grossTotal) : '')
-        if (d.lines?.length) {
-          setLines(d.lines.map((l) => {
-            const matchedTax = (d.taxLines || []).find((tl) => Number(tl.rate) === Number(l.taxRate))
-            return {
-              key: crypto.randomUUID(), id: l.id, item: idOf(l.item),
-              description: l.description || '', unit: l.unit || '', qty: l.qty != null ? String(l.qty) : '',
-              rate: l.rate != null ? String(l.rate) : '',
-              taxType: matchedTax ? String(matchedTax.taxType) : '',
-              taxRate: l.taxRate != null ? String(l.taxRate) : '',
-              amount: l.amount != null ? String(l.amount) : '',
-              discountPct: '', discountAmt: '',
-            }
-          }))
-        }
-        if (CASH_TYPES.includes(d.docType) && ((d.lines?.length || 0) > 1 || (d.taxLines?.length || 0) > 0)) {
-          setCashDetailed(true)
-        }
-        if (d.journalLines?.length) {
-          setJournalLines(d.journalLines.map((l) => ({
-            key: crypto.randomUUID(), id: l.id, account: idOf(l.account),
-            debit: l.debit != null ? String(l.debit) : '', credit: l.credit != null ? String(l.credit) : '',
-            memo: l.memo || '',
-          })))
-        }
-        if (d.taxLines?.length) {
-          const wh = d.taxLines.find((tl) => tl.nature === 'withholding')
-          if (wh) {
-            setTdsEnabled(true); setTdsTypeId(idOf(wh.taxType)); setTdsAmountManual('')
+      ; (async () => {
+        try {
+          const d = await api<Document>(`/documents/${id}`, { query: { depth: 1, ...tenantQuery } })
+          setDocType(d.docType); setInvoicePrefix(DOC_PREFIXES[d.docType] || 'INV')
+          setDate(d.date?.slice(0, 10) || todayAD())
+          setNarration(d.narration || '')
+          setCurrency((d.currency || 'NPR') as Currency)
+          setExchangeRate(d.exchangeRate ?? null)
+          setTaxRate(String(d.taxRate ?? 0))
+          setPaymentMethod(d.paymentMethod || 'bank')
+          const idOf = (v: unknown): string => v && typeof v === 'object' ? String((v as { id: unknown }).id) : String(v ?? '')
+          setParty(idOf(d.party))
+          setBankAccount(idOf(d.bankAccount))
+          setCashAccountId(idOf(d.bankAccount))
+          setFromAccount(idOf(d.fromAccount))
+          setToAccount(idOf(d.toAccount))
+          setContraAmount(d.grossTotal !== undefined ? String(d.grossTotal) : '')
+          if (d.lines?.length) {
+            setLines(d.lines.map((l) => {
+              const matchedTax = (d.taxLines || []).find((tl) => Number(tl.rate) === Number(l.taxRate))
+              return {
+                key: crypto.randomUUID(), id: l.id, item: idOf(l.item),
+                description: l.description || '', unit: l.unit || '', qty: l.qty != null ? String(l.qty) : '',
+                rate: l.rate != null ? String(l.rate) : '',
+                taxType: matchedTax ? String(matchedTax.taxType) : '',
+                taxRate: l.taxRate != null ? String(l.taxRate) : '',
+                amount: l.amount != null ? String(l.amount) : '',
+                discountPct: '', discountAmt: '',
+              }
+            }))
           }
-          setTaxLines(d.taxLines.filter((tl) => tl.nature !== 'withholding').map((tl) => ({
-            key: crypto.randomUUID(), id: tl.id, taxType: idOf(tl.taxType),
-            nature: tl.nature || 'additive', rate: tl.rate != null ? String(tl.rate) : '',
-          })))
-          if (taxLines.filter((tl) => tl.nature === 'additive').length > 0) setTaxSectionOpen(true)
-          if (wh) setTdsSectionOpen(true)
-        }
-      } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to load transaction') }
-    })()
+          if (CASH_TYPES.includes(d.docType) && ((d.lines?.length || 0) > 1 || (d.taxLines?.length || 0) > 0)) {
+            setCashDetailed(true)
+          }
+          if (d.journalLines?.length) {
+            setJournalLines(d.journalLines.map((l) => ({
+              key: crypto.randomUUID(), id: l.id, account: idOf(l.account),
+              debit: l.debit != null ? String(l.debit) : '', credit: l.credit != null ? String(l.credit) : '',
+              memo: l.memo || '',
+            })))
+          }
+          if (d.taxLines?.length) {
+            const wh = d.taxLines.find((tl) => tl.nature === 'withholding')
+            if (wh) {
+              setTdsEnabled(true); setTdsTypeId(idOf(wh.taxType)); setTdsAmountManual('')
+            }
+            setTaxLines(d.taxLines.filter((tl) => tl.nature !== 'withholding').map((tl) => ({
+              key: crypto.randomUUID(), id: tl.id, taxType: idOf(tl.taxType),
+              nature: tl.nature || 'additive', rate: tl.rate != null ? String(tl.rate) : '',
+            })))
+            if (taxLines.filter((tl) => tl.nature === 'additive').length > 0) setTaxSectionOpen(true)
+            if (wh) setTdsSectionOpen(true)
+          }
+        } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to load transaction') }
+      })()
   }, [mode, id, tenantId])
 
   // Keyboard grid nav: Enter in the last column appends a row and focuses its
@@ -713,12 +713,12 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   const effectiveBillingTotal = isItem
     ? lineCalculations.subTotal + lineCalculations.totalTax
     : isContra
-    ? contraTotal
-    : isCash
-    ? grandTotal
-    : isJournal
-    ? jTotals.debit
-    : grandTotal
+      ? contraTotal
+      : isCash
+        ? grandTotal
+        : isJournal
+          ? jTotals.debit
+          : grandTotal
 
   const hasPositiveTotal = effectiveBillingTotal > 0
 
@@ -788,12 +788,12 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     }
     if (isItem) {
       base.lines = lines.map((l) => ({
-      ...(l.id ? { id: l.id } : {}),
-      item: l.item ? Number(l.item) : undefined, description: l.description, unit: l.unit || undefined,
-      qty: l.qty !== '' ? Number(l.qty) : undefined,
-      rate: l.rate !== '' ? Number(l.rate) : undefined,
-      taxRate: l.taxRate !== '' ? Number(l.taxRate) : undefined,
-      amount: l.amount !== '' ? Number(l.amount) : undefined,
+        ...(l.id ? { id: l.id } : {}),
+        item: l.item ? Number(l.item) : undefined, description: l.description, unit: l.unit || undefined,
+        qty: l.qty !== '' ? Number(l.qty) : undefined,
+        rate: l.rate !== '' ? Number(l.rate) : undefined,
+        taxRate: l.taxRate !== '' ? Number(l.taxRate) : undefined,
+        amount: l.amount !== '' ? Number(l.amount) : undefined,
       }))
       base.taxRate = parseFloat(taxRate) || 0
       if (globalDiscountEnabled && globalDiscountAmount > 0) {
@@ -1080,11 +1080,10 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                               key={dt}
                               type="button"
                               onClick={() => updateDocType(typeId)}
-                              className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all ${
-                                active
+                              className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all ${active
                                   ? `${m.activeClasses} ring-2 ring-crimson-600/20 shadow-sm ${m.textClasses} font-semibold`
                                   : `${m.inactiveClasses} text-slate-700 font-medium`
-                              }`}
+                                }`}
                             >
                               <span className={active ? m.textClasses : 'text-slate-500'}>
                                 {m.icon}
@@ -1113,884 +1112,944 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       ) : (
         <>
 
-      {/* ── Required Field Checklist ────────────────────────── */}
-      <div className="mt-3 rounded-lg border border-slate-200 bg-white px-5 py-3">
-        <RequiredChecklist items={requiredFields} />
-      </div>
+          {/* ── Required Field Checklist ────────────────────────── */}
+          <div className="mt-3 rounded-lg border border-slate-200 bg-white px-5 py-3">
+            <RequiredChecklist items={requiredFields} />
+          </div>
 
-      {/* ── Top Row: Party / Invoice No / Date ──────────────── */}
-      <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-          {/* Party */}
-          {/* Party — hidden in simple cash mode (the cash panel has its own) */}
-          {(isItem || isCash) && !cashSimple && (
-            <div ref={partyRef} className="relative">
-              <label className="text-sm font-medium text-slate-700">
-                {t('vouchers.partyLabel', 'Party')}{' '}
-                {docType !== 'petty-cash-voucher' && (
-                  <span className="text-red-500">*</span>
-                )}
-              </label>
-              <div className="relative mt-1">
-                <input
-                  type="text"
-                  value={showPartyDropdown ? partySearch : (selectedParty?.name || partySearch)}
-                  onChange={(e) => { setPartySearch(e.target.value); setShowPartyDropdown(true); setParty('') }}
-                  onFocus={() => { setShowPartyDropdown(true); setPartySearch('') }}
-                  placeholder={t('vouchers.searchParty', 'Search for party')}
-                  className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 pr-8 text-sm outline-none focus:border-slate-500"
-                />
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-[11px] h-4 w-4 text-slate-400" />
-              </div>
-              {showPartyDropdown && (
-                <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-                  {filteredParties.length === 0 && <div className="px-3 py-2 text-sm text-slate-400">No parties found</div>}
-                  <button type="button" onClick={() => { setShowPartyPopup(true); setShowPartyDropdown(false) }}
-                    className="w-full border-t border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
-                    {t('vouchers.addNewParty', '+ Add new party')}
-                  </button>
-                  {filteredParties.map((p) => (
+          {/* ── Top Row: Party / Invoice No / Date ──────────────── */}
+          <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+              {/* Party */}
+              {/* Party — hidden in simple cash mode (the cash panel has its own) */}
+              {(isItem || isCash) && !cashSimple && (
+                <div ref={partyRef} className="relative">
+                  <label className="text-sm font-medium text-slate-700">
+                    {t('vouchers.partyLabel', 'Party')}{' '}
+                    {docType !== 'petty-cash-voucher' && (
+                      <span className="text-red-500">*</span>
+                    )}
+                  </label>
+                  <div className="relative mt-1">
+                    <input
+                      type="text"
+                      value={showPartyDropdown ? partySearch : (selectedParty?.name || partySearch)}
+                      onChange={(e) => { setPartySearch(e.target.value); setShowPartyDropdown(true); setParty('') }}
+                      onFocus={() => { setShowPartyDropdown(true); setPartySearch('') }}
+                      placeholder={t('vouchers.searchParty', 'Search for party')}
+                      className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 pr-8 text-sm outline-none focus:border-slate-500"
+                    />
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-[11px] h-4 w-4 text-slate-400" />
+                  </div>
+                  {showPartyDropdown && (
+                    <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                      {filteredParties.length === 0 && <div className="px-3 py-2 text-sm text-slate-400">No parties found</div>}
+                      <button type="button" onClick={() => { setShowPartyPopup(true); setShowPartyDropdown(false) }}
+                        className="w-full border-t border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
+                        {t('vouchers.addNewParty', '+ Add new party')}
+                      </button>
+                      {filteredParties.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => { setParty(String(p.id)); setPartySearch(p.name); setShowPartyDropdown(false) }}
+                          className={`flex w-full flex-col gap-0.5 px-3 py-2 text-left hover:bg-slate-50 ${String(p.id) === party ? 'bg-crimson-50' : ''}`}
+                        >
+                          <span className="flex w-full items-center justify-between gap-2 text-sm">
+                            <span className={`truncate font-medium ${String(p.id) === party ? 'text-crimson-700' : 'text-slate-800'}`}>{p.name}</span>
+                            <span className="shrink-0 text-xs text-slate-400">{p.type}</span>
+                          </span>
+                          {(p.phone || partyLocality(p)) && (
+                            <span className="flex w-full flex-wrap items-center gap-1.5">
+                              {p.phone && (
+                                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">📞 {p.phone}</span>
+                              )}
+                              {partyLocality(p) && (
+                                <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-700">📍 {partyLocality(p)}</span>
+                              )}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Invoice No */}
+              <div>
+                <label className="text-sm font-medium text-slate-700">{t('vouchers.invoiceNo', 'Invoice No')}</label>
+                <div className="mt-1 grid grid-cols-[auto_1fr] gap-2">
+                  <input
+                    type="text"
+                    value={invoicePrefix}
+                    onChange={(e) => setInvoicePrefix(e.target.value.toUpperCase())}
+                    className="w-20 rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-center font-mono text-sm font-semibold uppercase outline-none focus:border-slate-500"
+                    maxLength={8}
+                    placeholder={t('vouchers.prefixLabel', 'Prefix')}
+                  />
+                  <div className="flex items-center gap-2">
+                    {numberManual ? (
+                      <input
+                        type="text"
+                        value={manualNumber}
+                        onChange={(e) => setManualNumber(e.target.value)}
+                        placeholder={t('vouchers.typeInvoiceNumber', 'Type invoice number')}
+                        className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm font-mono outline-none focus:border-slate-500"
+                      />
+                    ) : (
+                      <div className="flex-1 rounded border border-slate-200 bg-slate-50 px-3 min-h-[40px] py-2.5 font-mono text-sm text-slate-600">
+                        {nextNumberPreview || `${invoicePrefix}-...`}
+                      </div>
+                    )}
                     <button
-                      key={p.id}
                       type="button"
-                      onClick={() => { setParty(String(p.id)); setPartySearch(p.name); setShowPartyDropdown(false) }}
-                      className={`flex w-full flex-col gap-0.5 px-3 py-2 text-left hover:bg-slate-50 ${String(p.id) === party ? 'bg-crimson-50' : ''}`}
+                      onClick={() => { setNumberManual((m) => !m); setManualNumber('') }}
+                      className={`shrink-0 rounded px-2 min-h-[40px] py-2.5 text-xs font-medium transition-colors ${numberManual
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                        }`}
                     >
-                      <span className="flex w-full items-center justify-between gap-2 text-sm">
-                        <span className={`truncate font-medium ${String(p.id) === party ? 'text-crimson-700' : 'text-slate-800'}`}>{p.name}</span>
-                        <span className="shrink-0 text-xs text-slate-400">{p.type}</span>
-                      </span>
-                      {(p.phone || partyLocality(p)) && (
-                        <span className="flex w-full flex-wrap items-center gap-1.5">
-                          {p.phone && (
-                            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">📞 {p.phone}</span>
-                          )}
-                          {partyLocality(p) && (
-                            <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-700">📍 {partyLocality(p)}</span>
-                          )}
-                        </span>
-                      )}
+                      {numberManual ? t('vouchers.manualLabel', 'Manual') : t('vouchers.autoLabel', 'Auto')}
                     </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Date */}
+              <div className="sm:col-span-2">
+                <NepaliDateInput
+                  label="Date"
+                  required
+                  value={date}
+                  onChange={setDate}
+                />
+              </div>
+            </div>
+
+            {/* Currency / Exchange Rate */}
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  {t('vouchers.currencyLabel', 'Currency')}
+                </label>
+                <select
+                  value={currency}
+                  onChange={(e) => { setCurrency(e.target.value as Currency); if (e.target.value === 'NPR') setExchangeRate(null) }}
+                  className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.label}</option>
                   ))}
+                </select>
+              </div>
+              {currency !== 'NPR' && (
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    {t('vouchers.exchangeRateLabel', 'Exchange Rate')}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={exchangeRate ?? ''}
+                    onChange={(e) => setExchangeRate(Number(e.target.value) || null)}
+                    placeholder="1.0000"
+                    className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
+                  />
                 </div>
               )}
             </div>
-          )}
 
-          {/* Invoice No */}
-          <div>
-            <label className="text-sm font-medium text-slate-700">{t('vouchers.invoiceNo', 'Invoice No')}</label>
-            <div className="mt-1 grid grid-cols-[auto_1fr] gap-2">
-              <input
-                type="text"
-                value={invoicePrefix}
-                onChange={(e) => setInvoicePrefix(e.target.value.toUpperCase())}
-                className="w-20 rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-center font-mono text-sm font-semibold uppercase outline-none focus:border-slate-500"
-                maxLength={8}
-                placeholder={t('vouchers.prefixLabel', 'Prefix')}
-              />
-              <div className="flex items-center gap-2">
-                {numberManual ? (
-                  <input
-                    type="text"
-                    value={manualNumber}
-                    onChange={(e) => setManualNumber(e.target.value)}
-                    placeholder={t('vouchers.typeInvoiceNumber', 'Type invoice number')}
-                    className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm font-mono outline-none focus:border-slate-500"
-                  />
-                ) : (
-                  <div className="flex-1 rounded border border-slate-200 bg-slate-50 px-3 min-h-[40px] py-2.5 font-mono text-sm text-slate-600">
-                    {nextNumberPreview || `${invoicePrefix}-...`}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => { setNumberManual((m) => !m); setManualNumber('') }}
-                  className={`shrink-0 rounded px-2 min-h-[40px] py-2.5 text-xs font-medium transition-colors ${
-                    numberManual
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                  }`}
-                >
-                  {numberManual ? t('vouchers.manualLabel', 'Manual') : t('vouchers.autoLabel', 'Auto')}
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* Date */}
-          <div className="sm:col-span-2">
-            <NepaliDateInput
-              label="Date"
-              required
-              value={date}
-              onChange={setDate}
-            />
-          </div>
-        </div>
-
-        {/* Currency / Exchange Rate */}
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <label className="text-sm font-medium text-slate-700">
-              {t('vouchers.currencyLabel', 'Currency')}
-            </label>
-            <select
-              value={currency}
-              onChange={(e) => { setCurrency(e.target.value as Currency); if (e.target.value === 'NPR') setExchangeRate(null) }}
-              className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>{c.label}</option>
-              ))}
-            </select>
-          </div>
-          {currency !== 'NPR' && (
-            <div>
-              <label className="text-sm font-medium text-slate-700">
-                {t('vouchers.exchangeRateLabel', 'Exchange Rate')}
-              </label>
-              <input
-                type="number"
-                step="0.0001"
-                value={exchangeRate ?? ''}
-                onChange={(e) => setExchangeRate(Number(e.target.value) || null)}
-                placeholder="1.0000"
-                className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
-              />
-            </div>
-          )}
-        </div>
-
-      </div>
-
-      {/* ── Item Lines Table ────────────────────────────────── */}
-      {isItem && (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="w-10 px-2 py-3 text-center">#</th>
-                <th className="min-w-[180px] px-3 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
-                <th className="w-20 px-2 py-3 text-right">{t('vouchers.qty', 'Qty')}</th>
-                <th className="w-24 px-2 py-3 text-right">{t('vouchers.rate', 'Rate')}</th>
-                <th className="w-24 px-2 py-3 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <span>{t('vouchers.discount', 'Discount')}</span>
-                    <button type="button" onClick={toggleDiscountMode}
-                      className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100">
-                      {discountMode === 'pct' ? 'Rs.' : '%'}
-                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                    </button>
-                  </div>
-                </th>
-                <th className="w-24 px-2 py-3 text-right">{t('common.amount', 'Amount')}</th>
-                <th className="w-28 px-2 py-3 text-left">{t('vouchers.taxCode', 'Tax Code')}</th>
-                <th className="w-16 px-2 py-3 text-right">{t('vouchers.taxRate', 'Tax %')}</th>
-                <th className="w-20 px-2 py-3 text-right">{t('vouchers.taxAmount', 'Tax Amt')}</th>
-                <th className="w-24 px-2 py-3 text-right">{t('common.total', 'Total')}</th>
-                <th className="w-8 px-2 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((l, i) => {
-                const calc = lineCalculations.lines[i] || {
-                  base: 0,
-                  finalAmt: 0,
-                  lineTaxRate: 0,
-                  lineTaxAmt: 0,
-                  lineTotal: 0,
-                }
-                const finalAmt = calc.finalAmt
-                // Cost / margin hint for inventory lines.
-                const lv = l.item ? levelFor(l.item) : undefined
-                const lineQty = parseFloat(l.qty) || 0
-                const lineCost = lv ? lv.avgCost : 0
-                const isPurchaseLine = docType === 'purchase-invoice' || docType === 'grn'
-                const isReturnLine = docType === 'credit-note'
-                const estCostTotal = lineCost > 0 ? lineQty * lineCost : 0
-                const estProfit = finalAmt - estCostTotal
-                const marginPct = finalAmt > 0 ? (estProfit / finalAmt) * 100 : 0
-                return (
-                  <tr key={l.key} className="anim-enter-row border-b border-slate-50">
-                    <td className="px-2 py-2 text-center text-slate-400">{i + 1}</td>
-                    <td className="px-2 py-2">
-                      {isInventory ? (
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={itemSearchRow === l.key ? itemSearchText : (items.find((it) => String(it.id) === l.item)?.name || '')}
-                            onChange={(e) => {
-                              setItemSearchRow(l.key); setItemSearchText(e.target.value)
-                              setLine(l.key, { item: '', description: e.target.value })
-                            }}
-                            onFocus={() => { setItemSearchRow(l.key); setItemSearchText('') }}
-                            onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                            data-grid-cell={`${i}:0`}
-                            placeholder={t('vouchers.enterItemName', 'Enter Item name')}
-                            className="w-full rounded border border-slate-200 px-2 min-h-[38px] py-2 text-sm outline-none focus:border-slate-500"
-                          />
-                          {itemSearchRow === l.key && (
-                            <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
-                              <button type="button" onClick={() => { setNewItemTargetLine(l.key); setShowItemPopup(true); setItemSearchRow(null) }}
-                                className="w-full border-b border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
-                                {t('vouchers.addNewItem', '+ Add new item')}
-                              </button>
-                              {itemSearchText && items.filter((it) => it.name.toLowerCase().includes(itemSearchText.toLowerCase())).slice(0, 5).map((it) => (
-                                <button key={it.id} type="button" onClick={() => {
-                                  const selectedUnit = items.find((it) => String(it.id) === l.item)?.unit
-                                  setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || ''), unit: selectedUnit || '' })
-                                  setItemSearchRow(null); setItemSearchText('')
-                                }} className="block w-full px-2 py-1.5 text-left text-sm hover:bg-slate-50">
-                                  {it.code ? `${it.code} · ` : ''}{it.name}
-                                </button>
-                              ))}
-                              {!itemSearchText && items.slice(0, 5).map((it) => (
-                                <button key={it.id} type="button" onClick={() => {
-                                  const selectedUnit = items.find((it) => String(it.id) === l.item)?.unit
-                                  setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || ''), unit: selectedUnit || '' })
-                                  setItemSearchRow(null); setItemSearchText('')
-                                }} className="block w-full px-2 py-1.5 text-left text-sm hover:bg-slate-50">
-                                  {it.code ? `${it.code} · ` : ''}{it.name}
-                                </button>
-                              ))}
+          {/* ── Item Lines Table ────────────────────────────────── */}
+          {isItem && (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="w-10 px-2 py-3 text-center">#</th>
+                    <th className="min-w-[180px] px-3 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
+                    <th className="w-20 px-2 py-3 text-right">{t('vouchers.qty', 'Qty')}</th>
+                    <th className="w-24 px-2 py-3 text-right">{t('vouchers.rate', 'Rate')}</th>
+                    <th className="w-24 px-2 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <span>{t('vouchers.discount', 'Discount')}</span>
+                        <button type="button" onClick={toggleDiscountMode}
+                          className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100">
+                          {discountMode === 'pct' ? 'Rs.' : '%'}
+                          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                        </button>
+                      </div>
+                    </th>
+                    <th className="w-24 px-2 py-3 text-right">{t('common.amount', 'Amount')}</th>
+                    <th className="w-28 px-2 py-3 text-left">{t('vouchers.taxCode', 'Tax Code')}</th>
+                    <th className="w-16 px-2 py-3 text-right">{t('vouchers.taxRate', 'Tax %')}</th>
+                    <th className="w-20 px-2 py-3 text-right">{t('vouchers.taxAmount', 'Tax Amt')}</th>
+                    <th className="w-24 px-2 py-3 text-right">{t('common.total', 'Total')}</th>
+                    <th className="w-8 px-2 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lines.map((l, i) => {
+                    const calc = lineCalculations.lines[i] || {
+                      base: 0,
+                      finalAmt: 0,
+                      lineTaxRate: 0,
+                      lineTaxAmt: 0,
+                      lineTotal: 0,
+                    }
+                    const finalAmt = calc.finalAmt
+                    // Cost / margin hint for inventory lines.
+                    const lv = l.item ? levelFor(l.item) : undefined
+                    const lineQty = parseFloat(l.qty) || 0
+                    const lineCost = lv ? lv.avgCost : 0
+                    const isPurchaseLine = docType === 'purchase-invoice' || docType === 'grn'
+                    const isReturnLine = docType === 'credit-note'
+                    const estCostTotal = lineCost > 0 ? lineQty * lineCost : 0
+                    const estProfit = finalAmt - estCostTotal
+                    const marginPct = finalAmt > 0 ? (estProfit / finalAmt) * 100 : 0
+                    return (
+                      <tr key={l.key} className="anim-enter-row border-b border-slate-50">
+                        <td className="px-2 py-2 text-center text-slate-400">{i + 1}</td>
+                        <td className="px-2 py-2">
+                          {isInventory ? (
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={itemSearchRow === l.key ? itemSearchText : (items.find((it) => String(it.id) === l.item)?.name || '')}
+                                onChange={(e) => {
+                                  setItemSearchRow(l.key); setItemSearchText(e.target.value)
+                                  setLine(l.key, { item: '', description: e.target.value })
+                                }}
+                                onFocus={() => { setItemSearchRow(l.key); setItemSearchText('') }}
+                                onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
+                                data-grid-cell={`${i}:0`}
+                                placeholder={t('vouchers.enterItemName', 'Enter Item name')}
+                                className="w-full rounded border border-slate-200 px-2 min-h-[38px] py-2 text-sm outline-none focus:border-slate-500"
+                              />
+                              {itemSearchRow === l.key && (
+                                <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
+                                  <button type="button" onClick={() => { setNewItemTargetLine(l.key); setShowItemPopup(true); setItemSearchRow(null) }}
+                                    className="w-full border-b border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
+                                    {t('vouchers.addNewItem', '+ Add new item')}
+                                  </button>
+                                  {itemSearchText && items.filter((it) => it.name.toLowerCase().includes(itemSearchText.toLowerCase())).slice(0, 5).map((it) => (
+                                    <button key={it.id} type="button" onClick={() => {
+                                      const selectedUnit = items.find((it) => String(it.id) === l.item)?.unit
+                                      setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || ''), unit: selectedUnit || '' })
+                                      setItemSearchRow(null); setItemSearchText('')
+                                    }} className="block w-full px-2 py-1.5 text-left text-sm hover:bg-slate-50">
+                                      {it.code ? `${it.code} · ` : ''}{it.name}
+                                    </button>
+                                  ))}
+                                  {!itemSearchText && items.slice(0, 5).map((it) => (
+                                    <button key={it.id} type="button" onClick={() => {
+                                      const selectedUnit = items.find((it) => String(it.id) === l.item)?.unit
+                                      setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || ''), unit: selectedUnit || '' })
+                                      setItemSearchRow(null); setItemSearchText('')
+                                    }} className="block w-full px-2 py-1.5 text-left text-sm hover:bg-slate-50">
+                                      {it.code ? `${it.code} · ` : ''}{it.name}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <input
+                              type="text" value={l.description}
+                              onChange={(e) => setLine(l.key, { description: e.target.value })}
+                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
+                              data-grid-cell={`${i}:0`}
+                              placeholder={t('vouchers.enterItemName', 'Enter Item name')}
+                              className="w-full rounded border border-slate-200 px-2 min-h-[38px] py-2 text-sm outline-none focus:border-slate-500"
+                            />
+                          )}
+                          {lv && (
+                            <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
+                              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">
+                                {t('vouchers.onHand', 'on hand')} {fmtQty(lv.onHand)}
+                              </span>
+                              {isPurchaseLine ? (
+                                <span className="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-blue-700">
+                                  {t('vouchers.inventoryAt', '→ Inventory @')} {fmt(lv.avgCost)}
+                                </span>
+                              ) : isReturnLine ? (
+                                <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700">
+                                  {t('vouchers.restockAt', 'restock @')} {fmt(lv.avgCost)}
+                                </span>
+                              ) : (
+                                <>
+                                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">
+                                    {t('vouchers.costLabel', 'cost')} {lineQty > 0 ? fmt(estCostTotal) : '—'}
+                                  </span>
+                                  {lineQty > 0 && lv.onHand >= 0 && (
+                                    <span className={`rounded px-1.5 py-0.5 font-medium ${estProfit >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                                      {estProfit >= 0 ? '+' : ''}{fmt(estProfit)} ({marginPct.toFixed(1)}%)
+                                    </span>
+                                  )}
+                                </>
+                              )}
                             </div>
                           )}
-                        </div>
+                        </td>
+                        <td className="px-1 py-2">
+                          <input type="number" min="0" step="any" value={l.qty}
+                            onChange={(e) => setLine(l.key, { qty: e.target.value })}
+                            onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 1, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
+                            data-grid-cell={`${i}:1`}
+                            className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                        </td>
+                        <td className="px-1 py-2">
+                          <input type="number" min="0" step="0.01" value={l.rate}
+                            onChange={(e) => setLine(l.key, { rate: e.target.value })}
+                            onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { rate: r }) }}
+                            onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 2, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
+                            data-grid-cell={`${i}:2`}
+                            className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                        </td>
+                        <td className="px-1 py-2">
+                          <div className="flex items-center">
+                            {discountMode === 'pct' ? (
+                              <>
+                                <input type="number" min="0" max="100" step="0.01" value={l.discountPct}
+                                  onChange={(e) => setLine(l.key, { discountPct: e.target.value, discountAmt: '' })}
+                                  onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountPct: r, discountAmt: '' }) }}
+                                  onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
+                                  data-grid-cell={`${i}:3`}
+                                  className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                                <span className="ml-0.5 text-xs text-slate-400">%</span>
+                              </>
+                            ) : (
+                              <>
+                                <input type="number" min="0" step="0.01" value={l.discountAmt}
+                                  onChange={(e) => setLine(l.key, { discountAmt: e.target.value, discountPct: '' })}
+                                  onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountAmt: r, discountPct: '' }) }}
+                                  onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
+                                  data-grid-cell={`${i}:3`}
+                                  className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                              </>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-2 py-2 text-right font-mono font-medium text-slate-800">
+                          {fmt(calc.finalAmt)}
+                        </td>
+                        <td className="px-1 py-2">
+                          <select
+                            value={l.taxType || ''}
+                            onChange={(e) => {
+                              const selectedTax = taxTypes.find((tx) => String(tx.id) === e.target.value)
+                              setLine(l.key, {
+                                taxType: e.target.value,
+                                taxRate: selectedTax ? String(selectedTax.rate) : l.taxRate,
+                              })
+                            }}
+                            className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-xs outline-none focus:border-slate-500 bg-white"
+                          >
+                            <option value="">{t('vouchers.noTax', 'None')}</option>
+                            {taxTypes.filter((tx) => tx.nature === 'additive' && tx.active !== false).map((tx) => (
+                              <option key={tx.id} value={tx.id}>{tx.code || tx.name} ({tx.rate}%)</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-1 py-2 text-right">
+                          <input type="number" min="0" step="0.01" value={l.taxRate}
+                            onChange={(e) => setLine(l.key, { taxRate: e.target.value })}
+                            onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { taxRate: r }) }}
+                            onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 4, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
+                            data-grid-cell={`${i}:4`}
+                            className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                        </td>
+                        <td className="px-2 py-2 text-right font-mono text-xs text-slate-600">
+                          {fmt(calc.lineTaxAmt)}
+                        </td>
+                        <td className="px-2 py-2 text-right font-mono font-semibold text-slate-900">
+                          {fmt(calc.lineTotal)}
+                        </td>
+                        <td className="px-1 py-2 text-center">
+                          <button type="button" onClick={() => removeLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-slate-200 bg-slate-50">
+                    <td colSpan={5} className="px-4 py-3 text-right text-sm font-medium text-slate-600">{t('vouchers.subTotal', 'Sub Total')}</td>
+                    <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineTotals)}</td>
+                    <td colSpan={2}></td>
+                    <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineCalculations.totalTax)}</td>
+                    <td className="px-2 py-3 text-right font-mono font-bold text-slate-900">{fmt(lineTotals + lineCalculations.totalTax)}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+              <div className="border-t border-slate-100 px-4 py-2">
+                <button type="button" onClick={() => setLines((ls) => [...ls, emptyLine()])}
+                  className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700">
+                  <Plus size={14} /> {t('vouchers.addItem', 'Add Item')}
+                </button>
+              </div>
+
+              {/* ── Discount / Tax / TDS toggles ──────────────── */}
+              <div className="border-t border-slate-100 px-4 py-3 space-y-0">
+                {/* Discount */}
+                <div className="flex items-center justify-between py-2.5">
+                  <button type="button" onClick={() => setGlobalDiscountEnabled((e) => !e)}
+                    className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                    <div className={`relative h-6 w-10 rounded-full transition-colors ${globalDiscountEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                      <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${globalDiscountEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                    </div>
+                    {t('vouchers.discountOnTotal', 'Discount on Total')}
+                  </button>
+                  {globalDiscountEnabled && globalDiscountAmount > 0 && (
+                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
+                      −{fmt(globalDiscountAmount)}
+                    </span>
+                  )}
+                </div>
+                {globalDiscountEnabled && (
+                  <div className="flex items-center gap-3 pb-3">
+                    <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                      <button type="button" onClick={() => { setGlobalDiscountMode('pct'); setGlobalDiscountValue('') }}
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${globalDiscountMode === 'pct' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                        %
+                      </button>
+                      <button type="button" onClick={() => { setGlobalDiscountMode('amt'); setGlobalDiscountValue('') }}
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${globalDiscountMode === 'amt' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                        Rs.
+                      </button>
+                    </div>
+                    <div className="relative flex-1 max-w-[180px]">
+                      {globalDiscountMode === 'pct' ? (
+                        <>
+                          <input type="number" min="0" max="100" step="0.01" value={globalDiscountValue}
+                            onChange={(e) => setGlobalDiscountValue(e.target.value)}
+                            placeholder="0"
+                            className="w-full rounded border border-slate-300 px-3 h-9 pr-8 font-mono text-sm outline-none focus:border-slate-500" />
+                          <span className="pointer-events-none absolute right-2.5 top-[7px] text-xs text-slate-400">%</span>
+                        </>
                       ) : (
-                        <input
-                          type="text" value={l.description}
-                          onChange={(e) => setLine(l.key, { description: e.target.value })}
-                          onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                          data-grid-cell={`${i}:0`}
-                          placeholder={t('vouchers.enterItemName', 'Enter Item name')}
-                          className="w-full rounded border border-slate-200 px-2 min-h-[38px] py-2 text-sm outline-none focus:border-slate-500"
-                        />
+                        <>
+                          <span className="pointer-events-none absolute left-2.5 top-[7px] text-xs text-slate-400">Rs.</span>
+                          <input type="number" min="0" step="0.01" value={globalDiscountValue}
+                            onChange={(e) => setGlobalDiscountValue(e.target.value)}
+                            placeholder="0"
+                            className="w-full rounded border border-slate-300 pl-8 h-9 font-mono text-sm outline-none focus:border-slate-500" />
+                        </>
                       )}
-                      {lv && (
-                        <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">
-                            {t('vouchers.onHand', 'on hand')} {fmtQty(lv.onHand)}
-                          </span>
-                          {isPurchaseLine ? (
-                            <span className="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-blue-700">
-                              {t('vouchers.inventoryAt', '→ Inventory @')} {fmt(lv.avgCost)}
-                            </span>
-                          ) : isReturnLine ? (
-                            <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700">
-                              {t('vouchers.restockAt', 'restock @')} {fmt(lv.avgCost)}
-                            </span>
-                          ) : (
-                            <>
-                              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">
-                                {t('vouchers.costLabel', 'cost')} {lineQty > 0 ? fmt(estCostTotal) : '—'}
-                              </span>
-                              {lineQty > 0 && lv.onHand >= 0 && (
-                                <span className={`rounded px-1.5 py-0.5 font-medium ${estProfit >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-                                  {estProfit >= 0 ? '+' : ''}{fmt(estProfit)} ({marginPct.toFixed(1)}%)
-                                </span>
-                              )}
-                            </>
-                          )}
+                    </div>
+                    <span className="text-xs text-slate-400">
+                      = {fmt(globalDiscountMode === 'pct' ? lineTotals * ((parseFloat(globalDiscountValue) || 0) / 100) : parseFloat(globalDiscountValue) || 0)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Tax */}
+                <div className="flex items-center justify-between py-2.5">
+                  <button type="button" onClick={() => setTaxSectionOpen((o) => !o)}
+                    className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                    <div className={`relative h-6 w-10 rounded-full transition-colors ${taxSectionOpen ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                      <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${taxSectionOpen ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                    </div>
+                    {t('vouchers.taxVatGst', 'Tax (VAT / GST)')}
+                  </button>
+                  {taxSectionOpen && vatTotal > 0 && (
+                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
+                      {fmt(vatTotal)}
+                    </span>
+                  )}
+                </div>
+                {taxSectionOpen && (
+                  <div className="pb-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-500">{t('vouchers.additiveTaxes', 'Additive taxes')}</span>
+                      <button type="button" onClick={() => setTaxLines((ts) => [...ts, { key: crypto.randomUUID(), taxType: '', nature: 'additive' as TaxNature, rate: '' }])}
+                        className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700">
+                        <Plus size={12} /> {t('vouchers.addTax', '+ Add Tax Line')}
+                      </button>
+                    </div>
+                    {taxLines.filter((tl) => tl.nature === 'additive').map((tl) => {
+                      const txType = taxTypes.find((t) => String(t.id) === tl.taxType)
+                      const rate = txType ? Number(txType.rate) || parseFloat(tl.rate) || 0 : parseFloat(tl.rate) || 0
+                      const taxAmt = (lineTotals * rate) / 100
+                      return (
+                        <div key={tl.key} className="flex items-center gap-2">
+                          <select value={tl.taxType}
+                            onChange={(e) => {
+                              const selected = taxTypes.find((t) => String(t.id) === e.target.value)
+                              setTaxLines((ts) => ts.map((t) => t.key === tl.key ? { ...t, taxType: e.target.value, rate: selected ? String(selected.rate) : t.rate } : t))
+                            }}
+                            className="flex-1 rounded border border-slate-300 px-2 h-9 text-sm outline-none focus:border-slate-500">
+                            <option value="">{t('vouchers.selectTaxType', 'Select tax type')}</option>
+                            {taxTypes.filter((t) => t.nature === 'additive' && t.active !== false)
+                              .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
+                          </select>
+                          <span className="w-12 text-right font-mono text-xs text-slate-500">{rate}%</span>
+                          <span className="w-20 text-right font-mono text-xs font-medium text-slate-700">{fmt(taxAmt)}</span>
+                          <button type="button" onClick={() => setTaxLines((ts) => ts.filter((t) => t.key !== tl.key))}
+                            className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
                         </div>
-                      )}
-                    </td>
-                    <td className="px-1 py-2">
-                      <input type="number" min="0" step="any" value={l.qty}
-                        onChange={(e) => setLine(l.key, { qty: e.target.value })}
-                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 1, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
-                        data-grid-cell={`${i}:1`}
-                        className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                    </td>
-                    <td className="px-1 py-2">
-                      <input type="number" min="0" step="0.01" value={l.rate}
-                        onChange={(e) => setLine(l.key, { rate: e.target.value })}
-                        onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { rate: r }) }}
-                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 2, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
-                        data-grid-cell={`${i}:2`}
-                        className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                    </td>
-                    <td className="px-1 py-2">
-                      <div className="flex items-center">
-                        {discountMode === 'pct' ? (
+                      )
+                    })}
+                    {vatTotal > 0 && (
+                      <div className="flex justify-end border-t border-slate-100 pt-2 text-xs">
+                        <span className="text-slate-500">{t('vouchers.totalTaxLabel', 'Total Tax:')} </span>
+                        <span className="ml-2 font-mono font-medium text-slate-700">{fmt(vatTotal)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* TDS */}
+                <div className="flex items-center justify-between py-2.5">
+                  <button type="button" onClick={() => setTdsEnabled((e) => !e)}
+                    className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                    <div className={`relative h-6 w-10 rounded-full transition-colors ${tdsEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                      <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${tdsEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                    </div>
+                    {t('vouchers.tdsFullLabel', 'TDS (Tax Deducted at Source)')}
+                  </button>
+                  {tdsEnabled && tdsAmount > 0 && (
+                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
+                      {fmt(tdsAmount)}
+                    </span>
+                  )}
+                </div>
+                {tdsEnabled && (
+                  <div className="space-y-3 pb-3">
+                    {/* TDS Type selector */}
+                    <div className="flex items-center gap-3">
+                      <select value={tdsTypeId}
+                        onChange={(e) => { setTdsTypeId(e.target.value); setTdsAmountManual('') }}
+                        className="h-9 flex-1 rounded border border-slate-300 px-2 text-sm outline-none focus:border-slate-500">
+                        <option value="">{t('vouchers.selectTdsType', 'Select TDS type')}</option>
+                        {taxTypes.filter((t) => t.nature === 'withholding' && t.active !== false)
+                          .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
+                      </select>
+                    </div>
+                    {/* %/Rs toggle + input */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                        <button type="button" onClick={() => setTdsAmountManual('')}
+                          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${!tdsAmountManual ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                          %
+                        </button>
+                        <button type="button" onClick={() => setTdsAmountManual(String(tdsAutoAmount.toFixed(2)))}
+                          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${tdsAmountManual ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                          Rs.
+                        </button>
+                      </div>
+                      <div className="relative flex-1 max-w-[180px]">
+                        {!tdsAmountManual ? (
                           <>
-                            <input type="number" min="0" max="100" step="0.01" value={l.discountPct}
-                              onChange={(e) => setLine(l.key, { discountPct: e.target.value, discountAmt: '' })}
-                              onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountPct: r, discountAmt: '' }) }}
-                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
-                              data-grid-cell={`${i}:3`}
-                              className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                            <span className="ml-0.5 text-xs text-slate-400">%</span>
+                            <input type="number" min="0" max="100" step="0.01"
+                              value={tdsRate || ''}
+                              onChange={(e) => {
+                                const val = e.target.value
+                                if (val === '') {
+                                  setTdsTypeId('')
+                                } else {
+                                  // Find or create a matching tax type
+                                  const existing = taxTypes.find((t) => t.nature === 'withholding' && Number(t.rate) === parseFloat(val))
+                                  if (existing) setTdsTypeId(String(existing.id))
+                                }
+                              }}
+                              placeholder="0"
+                              className="w-full rounded border border-slate-300 px-3 h-9 pr-8 font-mono text-sm outline-none focus:border-slate-500" />
+                            <span className="pointer-events-none absolute right-2.5 top-[7px] text-xs text-slate-400">%</span>
                           </>
                         ) : (
                           <>
-                            <input type="number" min="0" step="0.01" value={l.discountAmt}
-                              onChange={(e) => setLine(l.key, { discountAmt: e.target.value, discountPct: '' })}
-                              onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountAmt: r, discountPct: '' }) }}
-                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
-                              data-grid-cell={`${i}:3`}
-                              className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                            <span className="pointer-events-none absolute left-2.5 top-[7px] text-xs text-slate-400">Rs.</span>
+                            <input type="number" min="0" step="0.01"
+                              value={tdsAmountManual}
+                              onChange={(e) => setTdsAmountManual(e.target.value)}
+                              onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setTdsAmountManual(r) }}
+                              placeholder="0"
+                              className="w-full rounded border border-slate-300 pl-8 h-9 font-mono text-sm outline-none focus:border-slate-500" />
                           </>
                         )}
                       </div>
-                    </td>
-                    <td className="px-2 py-2 text-right font-mono font-medium text-slate-800">
-                      {fmt(calc.finalAmt)}
-                    </td>
-                    <td className="px-1 py-2">
-                      <select
-                        value={l.taxType || ''}
-                        onChange={(e) => {
-                          const selectedTax = taxTypes.find((tx) => String(tx.id) === e.target.value)
-                          setLine(l.key, {
-                            taxType: e.target.value,
-                            taxRate: selectedTax ? String(selectedTax.rate) : l.taxRate,
-                          })
-                        }}
-                        className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-xs outline-none focus:border-slate-500 bg-white"
-                      >
-                        <option value="">{t('vouchers.noTax', 'None')}</option>
-                        {taxTypes.filter((tx) => tx.nature === 'additive' && tx.active !== false).map((tx) => (
-                          <option key={tx.id} value={tx.id}>{tx.code || tx.name} ({tx.rate}%)</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-1 py-2 text-right">
-                      <input type="number" min="0" step="0.01" value={l.taxRate}
-                        onChange={(e) => setLine(l.key, { taxRate: e.target.value })}
-                        onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { taxRate: r }) }}
-                        onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 4, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
-                        data-grid-cell={`${i}:4`}
-                        className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                    </td>
-                    <td className="px-2 py-2 text-right font-mono text-xs text-slate-600">
-                      {fmt(calc.lineTaxAmt)}
-                    </td>
-                    <td className="px-2 py-2 text-right font-mono font-semibold text-slate-900">
-                      {fmt(calc.lineTotal)}
-                    </td>
-                    <td className="px-1 py-2 text-center">
-                      <button type="button" onClick={() => removeLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="border-t border-slate-200 bg-slate-50">
-                <td colSpan={5} className="px-4 py-3 text-right text-sm font-medium text-slate-600">{t('vouchers.subTotal', 'Sub Total')}</td>
-                <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineTotals)}</td>
-                <td colSpan={2}></td>
-                <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineCalculations.totalTax)}</td>
-                <td className="px-2 py-3 text-right font-mono font-bold text-slate-900">{fmt(lineTotals + lineCalculations.totalTax)}</td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
-          <div className="border-t border-slate-100 px-4 py-2">
-            <button type="button" onClick={() => setLines((ls) => [...ls, emptyLine()])}
-              className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700">
-              <Plus size={14} /> {t('vouchers.addItem', 'Add Item')}
-            </button>
-          </div>
-
-          {/* ── Discount / Tax / TDS toggles ──────────────── */}
-          <div className="border-t border-slate-100 px-4 py-3 space-y-0">
-            {/* Discount */}
-            <div className="flex items-center justify-between py-2.5">
-              <button type="button" onClick={() => setGlobalDiscountEnabled((e) => !e)}
-                className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                <div className={`relative h-6 w-10 rounded-full transition-colors ${globalDiscountEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                  <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${globalDiscountEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                </div>
-                {t('vouchers.discountOnTotal', 'Discount on Total')}
-              </button>
-              {globalDiscountEnabled && globalDiscountAmount > 0 && (
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
-                  −{fmt(globalDiscountAmount)}
-                </span>
-              )}
-            </div>
-            {globalDiscountEnabled && (
-              <div className="flex items-center gap-3 pb-3">
-                <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-                  <button type="button" onClick={() => { setGlobalDiscountMode('pct'); setGlobalDiscountValue('') }}
-                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${globalDiscountMode === 'pct' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                    %
-                  </button>
-                  <button type="button" onClick={() => { setGlobalDiscountMode('amt'); setGlobalDiscountValue('') }}
-                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${globalDiscountMode === 'amt' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                    Rs.
-                  </button>
-                </div>
-                <div className="relative flex-1 max-w-[180px]">
-                  {globalDiscountMode === 'pct' ? (
-                    <>
-                      <input type="number" min="0" max="100" step="0.01" value={globalDiscountValue}
-                        onChange={(e) => setGlobalDiscountValue(e.target.value)}
-                        placeholder="0"
-                        className="w-full rounded border border-slate-300 px-3 h-9 pr-8 font-mono text-sm outline-none focus:border-slate-500" />
-                      <span className="pointer-events-none absolute right-2.5 top-[7px] text-xs text-slate-400">%</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="pointer-events-none absolute left-2.5 top-[7px] text-xs text-slate-400">Rs.</span>
-                      <input type="number" min="0" step="0.01" value={globalDiscountValue}
-                        onChange={(e) => setGlobalDiscountValue(e.target.value)}
-                        placeholder="0"
-                        className="w-full rounded border border-slate-300 pl-8 h-9 font-mono text-sm outline-none focus:border-slate-500" />
-                    </>
-                  )}
-                </div>
-                <span className="text-xs text-slate-400">
-                  = {fmt(globalDiscountMode === 'pct' ? lineTotals * ((parseFloat(globalDiscountValue) || 0) / 100) : parseFloat(globalDiscountValue) || 0)}
-                </span>
-              </div>
-            )}
-
-            {/* Tax */}
-            <div className="flex items-center justify-between py-2.5">
-              <button type="button" onClick={() => setTaxSectionOpen((o) => !o)}
-                className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                <div className={`relative h-6 w-10 rounded-full transition-colors ${taxSectionOpen ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                  <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${taxSectionOpen ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                </div>
-                {t('vouchers.taxVatGst', 'Tax (VAT / GST)')}
-              </button>
-              {taxSectionOpen && vatTotal > 0 && (
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
-                  {fmt(vatTotal)}
-                </span>
-              )}
-            </div>
-            {taxSectionOpen && (
-              <div className="pb-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">{t('vouchers.additiveTaxes', 'Additive taxes')}</span>
-                  <button type="button" onClick={() => setTaxLines((ts) => [...ts, { key: crypto.randomUUID(), taxType: '', nature: 'additive' as TaxNature, rate: '' }])}
-                    className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700">
-                    <Plus size={12} /> {t('vouchers.addTax', '+ Add Tax Line')}
-                  </button>
-                </div>
-                {taxLines.filter((tl) => tl.nature === 'additive').map((tl) => {
-                  const txType = taxTypes.find((t) => String(t.id) === tl.taxType)
-                  const rate = txType ? Number(txType.rate) || parseFloat(tl.rate) || 0 : parseFloat(tl.rate) || 0
-                  const taxAmt = (lineTotals * rate) / 100
-                  return (
-                    <div key={tl.key} className="flex items-center gap-2">
-                      <select value={tl.taxType}
-                        onChange={(e) => {
-                          const selected = taxTypes.find((t) => String(t.id) === e.target.value)
-                          setTaxLines((ts) => ts.map((t) => t.key === tl.key ? { ...t, taxType: e.target.value, rate: selected ? String(selected.rate) : t.rate } : t))
-                        }}
-                        className="flex-1 rounded border border-slate-300 px-2 h-9 text-sm outline-none focus:border-slate-500">
-                        <option value="">{t('vouchers.selectTaxType', 'Select tax type')}</option>
-                        {taxTypes.filter((t) => t.nature === 'additive' && t.active !== false)
-                          .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
-                      </select>
-                      <span className="w-12 text-right font-mono text-xs text-slate-500">{rate}%</span>
-                      <span className="w-20 text-right font-mono text-xs font-medium text-slate-700">{fmt(taxAmt)}</span>
-                      <button type="button" onClick={() => setTaxLines((ts) => ts.filter((t) => t.key !== tl.key))}
-                        className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                      <span className="text-xs text-slate-400">
+                        = {fmt(tdsAmount)}
+                      </span>
                     </div>
-                  )
-                })}
-                {vatTotal > 0 && (
-                  <div className="flex justify-end border-t border-slate-100 pt-2 text-xs">
-                    <span className="text-slate-500">{t('vouchers.totalTaxLabel', 'Total Tax:')} </span>
-                    <span className="ml-2 font-mono font-medium text-slate-700">{fmt(vatTotal)}</span>
+                    {/* TDS Account (compact) */}
+                    <select value={tdsAccountId} onChange={(e) => setTdsAccountId(e.target.value)}
+                      className="h-9 w-full rounded border border-slate-300 px-2 text-sm outline-none focus:border-slate-500">
+                      <option value="">{t('vouchers.selectTdsAccount', 'Select TDS account')}</option>
+                      {accounts.filter((a) => a.type === 'liability' || a.name.toLowerCase().includes('tds') || a.name.toLowerCase().includes('withhold'))
+                        .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
                   </div>
                 )}
               </div>
-            )}
 
-            {/* TDS */}
-            <div className="flex items-center justify-between py-2.5">
-              <button type="button" onClick={() => setTdsEnabled((e) => !e)}
-                className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                <div className={`relative h-6 w-10 rounded-full transition-colors ${tdsEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                  <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${tdsEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                </div>
-                {t('vouchers.tdsFullLabel', 'TDS (Tax Deducted at Source)')}
-              </button>
-              {tdsEnabled && tdsAmount > 0 && (
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
-                  {fmt(tdsAmount)}
-                </span>
-              )}
             </div>
-            {tdsEnabled && (
-              <div className="space-y-3 pb-3">
-                {/* TDS Type selector */}
-                <div className="flex items-center gap-3">
-                  <select value={tdsTypeId}
-                    onChange={(e) => { setTdsTypeId(e.target.value); setTdsAmountManual('') }}
-                    className="h-9 flex-1 rounded border border-slate-300 px-2 text-sm outline-none focus:border-slate-500">
-                    <option value="">{t('vouchers.selectTdsType', 'Select TDS type')}</option>
-                    {taxTypes.filter((t) => t.nature === 'withholding' && t.active !== false)
-                      .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
-                  </select>
+          )}
+
+          {/* ── Item Summary Card ─────────────────────────────── */}
+          {isItem && (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white">
+              <div className="border-b border-slate-100 px-5 py-3">
+                <h3 className="text-sm font-semibold text-slate-700">{t('vouchers.itemSummary', 'Item Summary')}</h3>
+              </div>
+              <div className="px-5 py-4">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">{t('vouchers.items', 'Items')} ({lines.filter((l) => l.item || l.description).length})</span>
+                    <span className="font-mono text-slate-700">{fmt(lineTotals)}</span>
+                  </div>
+                  {globalDiscountEnabled && globalDiscountAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Discount</span>
+                      <span className="font-mono text-red-600">−{fmt(globalDiscountAmount)}</span>
+                    </div>
+                  )}
+                  {globalDiscountEnabled && globalDiscountAmount > 0 && (
+                    <div className="flex justify-between border-t border-slate-100 pt-2">
+                      <span className="text-slate-500">Taxable Amount</span>
+                      <span className="font-mono text-slate-700">{fmt(lineTotals - globalDiscountAmount)}</span>
+                    </div>
+                  )}
+                  {vatTotal > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Tax (VAT)</span>
+                      <span className="font-mono text-slate-700">+{fmt(vatTotal)}</span>
+                    </div>
+                  )}
+                  {tdsEnabled && tdsAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">TDS (Withholding)</span>
+                      <span className="font-mono text-red-600">−{fmt(tdsAmount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t-2 border-slate-300 pt-3 mt-1">
+                    <span className="text-base font-bold text-slate-900">{t('vouchers.grandTotal', 'Grand Total')}</span>
+                    <span className="font-mono text-lg font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
+                  </div>
+                  {grandTotal > 0 && (
+                    <p className="pt-2 text-sm font-medium text-slate-600 bg-slate-50 rounded px-3 py-2">
+                      In words: {amountInWordsFor(grandTotal)}
+                    </p>
+                  )}
                 </div>
-                {/* %/Rs toggle + input */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-                    <button type="button" onClick={() => setTdsAmountManual('')}
-                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${!tdsAmountManual ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                      %
-                    </button>
-                    <button type="button" onClick={() => setTdsAmountManual(String(tdsAutoAmount.toFixed(2)))}
-                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${tdsAmountManual ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                      Rs.
-                    </button>
-                  </div>
-                  <div className="relative flex-1 max-w-[180px]">
-                    {!tdsAmountManual ? (
-                      <>
-                        <input type="number" min="0" max="100" step="0.01"
-                          value={tdsRate || ''}
-                          onChange={(e) => {
-                            const val = e.target.value
-                            if (val === '') {
-                              setTdsTypeId('')
-                            } else {
-                              // Find or create a matching tax type
-                              const existing = taxTypes.find((t) => t.nature === 'withholding' && Number(t.rate) === parseFloat(val))
-                              if (existing) setTdsTypeId(String(existing.id))
-                            }
-                          }}
-                          placeholder="0"
-                          className="w-full rounded border border-slate-300 px-3 h-9 pr-8 font-mono text-sm outline-none focus:border-slate-500" />
-                        <span className="pointer-events-none absolute right-2.5 top-[7px] text-xs text-slate-400">%</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="pointer-events-none absolute left-2.5 top-[7px] text-xs text-slate-400">Rs.</span>
-                        <input type="number" min="0" step="0.01"
-                          value={tdsAmountManual}
-                          onChange={(e) => setTdsAmountManual(e.target.value)}
-                          onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setTdsAmountManual(r) }}
-                          placeholder="0"
-                          className="w-full rounded border border-slate-300 pl-8 h-9 font-mono text-sm outline-none focus:border-slate-500" />
-                      </>
-                    )}
-                  </div>
-                  <span className="text-xs text-slate-400">
-                    = {fmt(tdsAmount)}
+              </div>
+            </div>
+          )}
+
+          {/* ── Journal Lines ───────────────────────────────────── */}
+          {isJournal && (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="px-4 py-3">{t('common.account', 'Account')} <span className="text-red-500">*</span></th>
+                    <th className="w-32 px-4 py-3 text-right">{t('common.debit', 'Debit')}</th>
+                    <th className="w-32 px-4 py-3 text-right">{t('common.credit', 'Credit')}</th>
+                    <th className="px-4 py-3">{t('common.memo', 'Memo')}</th>
+                    <th className="w-10 px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {journalLines.map((l, jIdx) => (
+                    <tr key={l.key} className="anim-enter-row border-b border-slate-50">
+                      <td className="px-2 py-2">
+                        <select value={l.account} onChange={(e) => setJLine(l.key, { account: e.target.value })}
+                          onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 0, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
+                          data-grid-cell={`${jIdx}:0`}
+                          className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                          <option value="">— select —</option>
+                          {accounts.map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ''}{a.name}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-2 py-2"><input type="number" step="0.01" min="0" value={l.debit}
+                        onChange={(e) => setJLine(l.key, { debit: e.target.value, credit: '' })}
+                        onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 1, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
+                        data-grid-cell={`${jIdx}:1`}
+                        className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
+                      <td className="px-2 py-2"><input type="number" step="0.01" min="0" value={l.credit}
+                        onChange={(e) => setJLine(l.key, { credit: e.target.value, debit: '' })}
+                        onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 2, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
+                        data-grid-cell={`${jIdx}:2`}
+                        className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
+                      <td className="px-2 py-2"><input type="text" value={l.memo}
+                        onChange={(e) => setJLine(l.key, { memo: e.target.value })}
+                        onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 3, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
+                        data-grid-cell={`${jIdx}:3`}
+                        className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" /></td>
+                      <td className="px-2 py-2 text-center">
+                        <button type="button" onClick={() => removeJLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="border-t border-slate-100 px-4 py-2">
+                <button type="button" onClick={() => setJournalLines((ls) => [...ls, emptyJLine()])}
+                  className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700">
+                  <Plus size={14} /> {t('vouchers.addLine', 'Add line')}
+                </button>
+              </div>
+              <div className="flex justify-between border-t border-slate-200 px-4 py-3 text-sm font-medium">
+                <span className="text-slate-500">{t('vouchers.totals', 'Totals')}</span>
+                <div className="flex gap-8 font-mono">
+                  <span>Dr {fmt(jTotals.debit)}</span>
+                  <span>Cr {fmt(jTotals.credit)}</span>
+                  <span className={journalBalanced ? 'text-emerald-600' : 'text-red-600'}>
+                    {journalBalanced ? '✓ balanced' : `diff ${fmt(jTotals.diff)}`}
                   </span>
                 </div>
-                {/* TDS Account (compact) */}
-                <select value={tdsAccountId} onChange={(e) => setTdsAccountId(e.target.value)}
-                  className="h-9 w-full rounded border border-slate-300 px-2 text-sm outline-none focus:border-slate-500">
-                  <option value="">{t('vouchers.selectTdsAccount', 'Select TDS account')}</option>
-                  {accounts.filter((a) => a.type === 'liability' || a.name.toLowerCase().includes('tds') || a.name.toLowerCase().includes('withhold'))
-                    .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
               </div>
-            )}
-          </div>
-
-        </div>
-      )}
-
-      {/* ── Item Summary Card ─────────────────────────────── */}
-      {isItem && (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white">
-          <div className="border-b border-slate-100 px-5 py-3">
-            <h3 className="text-sm font-semibold text-slate-700">{t('vouchers.itemSummary', 'Item Summary')}</h3>
-          </div>
-          <div className="px-5 py-4">
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-500">{t('vouchers.items', 'Items')} ({lines.filter((l) => l.item || l.description).length})</span>
-                <span className="font-mono text-slate-700">{fmt(lineTotals)}</span>
-              </div>
-              {globalDiscountEnabled && globalDiscountAmount > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Discount</span>
-                  <span className="font-mono text-red-600">−{fmt(globalDiscountAmount)}</span>
-                </div>
-              )}
-              {globalDiscountEnabled && globalDiscountAmount > 0 && (
-                <div className="flex justify-between border-t border-slate-100 pt-2">
-                  <span className="text-slate-500">Taxable Amount</span>
-                  <span className="font-mono text-slate-700">{fmt(lineTotals - globalDiscountAmount)}</span>
-                </div>
-              )}
-              {vatTotal > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Tax (VAT)</span>
-                  <span className="font-mono text-slate-700">+{fmt(vatTotal)}</span>
-                </div>
-              )}
-              {tdsEnabled && tdsAmount > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-slate-500">TDS (Withholding)</span>
-                  <span className="font-mono text-red-600">−{fmt(tdsAmount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between border-t-2 border-slate-300 pt-3 mt-1">
-                <span className="text-base font-bold text-slate-900">{t('vouchers.grandTotal', 'Grand Total')}</span>
-                <span className="font-mono text-lg font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
-              </div>
-              {grandTotal > 0 && (
-                <p className="pt-2 text-sm font-medium text-slate-600 bg-slate-50 rounded px-3 py-2">
-                  In words: {amountInWordsFor(grandTotal)}
-                </p>
-              )}
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* ── Journal Lines ───────────────────────────────────── */}
-      {isJournal && (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-4 py-3">{t('common.account', 'Account')} <span className="text-red-500">*</span></th>
-                <th className="w-32 px-4 py-3 text-right">{t('common.debit', 'Debit')}</th>
-                <th className="w-32 px-4 py-3 text-right">{t('common.credit', 'Credit')}</th>
-                <th className="px-4 py-3">{t('common.memo', 'Memo')}</th>
-                <th className="w-10 px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {journalLines.map((l, jIdx) => (
-                <tr key={l.key} className="anim-enter-row border-b border-slate-50">
-                  <td className="px-2 py-2">
-                    <select value={l.account} onChange={(e) => setJLine(l.key, { account: e.target.value })}
-                      onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 0, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
-                      data-grid-cell={`${jIdx}:0`}
-                      className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
-                      <option value="">— select —</option>
-                      {accounts.map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ''}{a.name}</option>)}
-                    </select>
-                  </td>
-                  <td className="px-2 py-2"><input type="number" step="0.01" min="0" value={l.debit}
-                    onChange={(e) => setJLine(l.key, { debit: e.target.value, credit: '' })}
-                    onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 1, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
-                    data-grid-cell={`${jIdx}:1`}
-                    className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
-                  <td className="px-2 py-2"><input type="number" step="0.01" min="0" value={l.credit}
-                    onChange={(e) => setJLine(l.key, { credit: e.target.value, debit: '' })}
-                    onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 2, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
-                    data-grid-cell={`${jIdx}:2`}
-                    className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" /></td>
-                  <td className="px-2 py-2"><input type="text" value={l.memo}
-                    onChange={(e) => setJLine(l.key, { memo: e.target.value })}
-                    onKeyDown={(e) => handleGridKeyDown(e, { row: jIdx, col: 3, rows: journalLines.length, cols: 4, onAppendRow: appendJLine })}
-                    data-grid-cell={`${jIdx}:3`}
-                    className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" /></td>
-                  <td className="px-2 py-2 text-center">
-                    <button type="button" onClick={() => removeJLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="border-t border-slate-100 px-4 py-2">
-            <button type="button" onClick={() => setJournalLines((ls) => [...ls, emptyJLine()])}
-              className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700">
-              <Plus size={14} /> {t('vouchers.addLine', '+ Add line')}
-            </button>
-          </div>
-          <div className="flex justify-between border-t border-slate-200 px-4 py-3 text-sm font-medium">
-            <span className="text-slate-500">{t('vouchers.totals', 'Totals')}</span>
-            <div className="flex gap-8 font-mono">
-              <span>Dr {fmt(jTotals.debit)}</span>
-              <span>Cr {fmt(jTotals.credit)}</span>
-              <span className={journalBalanced ? 'text-emerald-600' : 'text-red-600'}>
-                {journalBalanced ? '✓ balanced' : `diff ${fmt(jTotals.diff)}`}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Contra Fields ───────────────────────────────────── */}
-      {isContra && (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <label className="text-sm text-slate-700">
-              {t('vouchers.fromAccount', 'From account (credited)')} <span className="text-red-500">*</span>
-              <select value={fromAccount} onChange={(e) => setFromAccount(e.target.value)}
-                className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
-                <option value="">— select —</option>
-                {cashBankAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            </label>
-            <label className="text-sm text-slate-700">
-              {t('vouchers.toAccount', 'To account (debited)')} <span className="text-red-500">*</span>
-              <select value={toAccount} onChange={(e) => setToAccount(e.target.value)}
-                className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
-                <option value="">— select —</option>
-                {cashBankAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            </label>
-            <label className="text-sm text-slate-700">
-              {t('common.amount', 'Amount')} <span className="text-red-500">*</span>
-              <input type="number" min="0" step="0.01" value={contraAmount}
-                onChange={(e) => setContraAmount(e.target.value)}
-                onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setContraAmount(r) }}
-                className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 font-mono text-sm outline-none focus:border-slate-500" placeholder="0.00" />
-            </label>
-          </div>
-        </div>
-      )}
-
-      {/* ── Outstanding Invoices (receipt/payment only) ────── */}
-      {(docType === 'receipt-voucher' || docType === 'payment-voucher') && party && (
-        <OutstandingInvoices
-          partyId={party}
-          docType={docType as 'receipt-voucher' | 'payment-voucher'}
-          selectedInvoiceId={linkedInvoiceId}
-          onSelect={(id, outstanding) => {
-            setLinkedInvoiceId(id)
-            // Auto-fill amount with remaining balance
-            if (id && outstanding !== undefined) {
-              const amt = String(outstanding)
-              setLines([emptyLine()])
-            }
-          }}
-        />
-      )}
-
-      {/* ── Cash Flow Panel (receipt/payment) ───────────────── */}
-      {isCash && (
-        <>
-          {/* Simplified: one tactile 3-field strip for counter cashiers */}
-          {cashSimple && (
+          {/* ── Contra Fields ───────────────────────────────────── */}
+          {isContra && (
             <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <label className="text-sm text-slate-700">
-                  {docType === 'receipt-voucher'
-                    ? t('vouchers.receivedFrom', 'Received From')
-                    : t('vouchers.paidTo', 'Paid To')}
-                  <span className="text-red-500"> *</span>
-                  <select value={party} onChange={(e) => {
-                    const pid = e.target.value
-                    setParty(pid)
-                    const found = parties.find((x) => String(x.id) === pid)
-                    setPartySearch(found?.name || '')
-                  }}
+                  {t('vouchers.fromAccount', 'From account (credited)')} <span className="text-red-500">*</span>
+                  <select value={fromAccount} onChange={(e) => setFromAccount(e.target.value)}
                     className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
-                    <option value="">— {t('vouchers.selectParty', 'select party')} —</option>
-                    {parties.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
+                    <option value="">— select —</option>
+                    {cashBankAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </label>
+                <label className="text-sm text-slate-700">
+                  {t('vouchers.toAccount', 'To account (debited)')} <span className="text-red-500">*</span>
+                  <select value={toAccount} onChange={(e) => setToAccount(e.target.value)}
+                    className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                    <option value="">— select —</option>
+                    {cashBankAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
                 </label>
                 <label className="text-sm text-slate-700">
                   {t('common.amount', 'Amount')} <span className="text-red-500">*</span>
-                  <div className="relative mt-1">
-                    <span className="pointer-events-none absolute left-3 top-[13px] text-sm text-slate-400">Rs.</span>
-                    <input ref={cashAmountRef} type="text" inputMode="decimal"
-                      value={lines[0]?.amount || ''}
-                      onChange={(e) => {
-                        const val = e.target.value
-                        setLines((prev) => {
-                          if (prev.length === 0) {
-                            return [{ ...emptyLine(), item: '', description: docType === 'receipt-voucher' ? 'Receipt' : 'Payment', qty: '1', rate: val, amount: val, discountPct: '', discountAmt: '' }]
-                          }
-                          return [{ ...prev[0], amount: val, rate: val }]
-                        })
+                  <input type="number" min="0" step="0.01" value={contraAmount}
+                    onChange={(e) => setContraAmount(e.target.value)}
+                    onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setContraAmount(r) }}
+                    className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 font-mono text-sm outline-none focus:border-slate-500" placeholder="0.00" />
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* ── Outstanding Invoices (receipt/payment only) ────── */}
+          {(docType === 'receipt-voucher' || docType === 'payment-voucher') && party && (
+            <OutstandingInvoices
+              partyId={party}
+              docType={docType as 'receipt-voucher' | 'payment-voucher'}
+              selectedInvoiceId={linkedInvoiceId}
+              onSelect={(id, outstanding) => {
+                setLinkedInvoiceId(id)
+                // Auto-fill amount with remaining balance
+                if (id && outstanding !== undefined) {
+                  const amt = String(outstanding)
+                  setLines([emptyLine()])
+                }
+              }}
+            />
+          )}
+
+          {/* ── Cash Flow Panel (receipt/payment) ───────────────── */}
+          {isCash && (
+            <>
+              {/* Simplified: one tactile 3-field strip for counter cashiers */}
+              {cashSimple && (
+                <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <label className="text-sm text-slate-700">
+                      {docType === 'receipt-voucher'
+                        ? t('vouchers.receivedFrom', 'Received From')
+                        : t('vouchers.paidTo', 'Paid To')}
+                      <span className="text-red-500"> *</span>
+                      <select value={party} onChange={(e) => {
+                        const pid = e.target.value
+                        setParty(pid)
+                        const found = parties.find((x) => String(x.id) === pid)
+                        setPartySearch(found?.name || '')
                       }}
-                      onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) { setLines((prev) => prev.length ? [{ ...prev[0], amount: r, rate: r }] : prev) } }}
-                      placeholder="0.00"
-                      className="w-full rounded border border-slate-300 pl-10 pr-3 min-h-[40px] py-2.5 font-mono text-base font-semibold outline-none focus:border-slate-500" />
+                        className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                        <option value="">— {t('vouchers.selectParty', 'select party')} —</option>
+                        {parties.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
+                      </select>
+                    </label>
+                    <label className="text-sm text-slate-700">
+                      {t('common.amount', 'Amount')} <span className="text-red-500">*</span>
+                      <div className="relative mt-1">
+                        <span className="pointer-events-none absolute left-3 top-[13px] text-sm text-slate-400">Rs.</span>
+                        <input ref={cashAmountRef} type="text" inputMode="decimal"
+                          value={lines[0]?.amount || ''}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setLines((prev) => {
+                              if (prev.length === 0) {
+                                return [{ ...emptyLine(), item: '', description: docType === 'receipt-voucher' ? 'Receipt' : 'Payment', qty: '1', rate: val, amount: val, discountPct: '', discountAmt: '' }]
+                              }
+                              return [{ ...prev[0], amount: val, rate: val }]
+                            })
+                          }}
+                          onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) { setLines((prev) => prev.length ? [{ ...prev[0], amount: r, rate: r }] : prev) } }}
+                          placeholder="0.00"
+                          className="w-full rounded border border-slate-300 pl-10 pr-3 min-h-[40px] py-2.5 font-mono text-base font-semibold outline-none focus:border-slate-500" />
+                      </div>
+                    </label>
+                    <label className="text-sm text-slate-700">
+                      {t('vouchers.cashOrBankAccount', 'Cash / Bank Account')}
+                      <select value={cashAccountId} onChange={(e) => {
+                        const acctId = e.target.value
+                        setCashAccountId(acctId)
+                        const acct = accounts.find((a) => String(a.id) === acctId)
+                        const cls = acct?.class
+                        setPaymentMethod(cls === 'bank' ? 'bank' : 'cash')
+                        if (cls === 'bank') setBankAccount(acctId)
+                      }}
+                        className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                        <option value="">{paymentMethod === 'bank' ? t('vouchers.defaultBankAccount', '— default bank —') : t('vouchers.cashInHandOption', 'Cash in hand')}</option>
+                        {cashBankAccounts.map((a) => <option key={a.id} value={String(a.id)}>{a.name}</option>)}
+                      </select>
+                    </label>
                   </div>
-                </label>
-                <label className="text-sm text-slate-700">
-                  {t('vouchers.cashOrBankAccount', 'Cash / Bank Account')}
-                  <select value={cashAccountId} onChange={(e) => {
-                    const acctId = e.target.value
-                    setCashAccountId(acctId)
-                    const acct = accounts.find((a) => String(a.id) === acctId)
-                    const cls = acct?.class
-                    setPaymentMethod(cls === 'bank' ? 'bank' : 'cash')
-                    if (cls === 'bank') setBankAccount(acctId)
-                  }}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
-      <option value="">{paymentMethod === 'bank' ? t('vouchers.defaultBankAccount', '— default bank —') : t('vouchers.cashInHandOption', 'Cash in hand')}</option>
-                    {cashBankAccounts.map((a) => <option key={a.id} value={String(a.id)}>{a.name}</option>)}
-                  </select>
-                </label>
-              </div>
-              <div className="mt-3 flex items-center justify-between">
-                <button type="button" onClick={() => setCashDetailed(true)}
-                  className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-700">
-                  <ListPlus size={14} /> {t('vouchers.detailedLineItems', 'Detailed Line Items')}
-                </button>
-                {grandTotal > 0 && (
-                  <span className="text-sm text-slate-500">
-                    {t('vouchers.inWords', 'In words:')} <span className="font-medium text-slate-700">{amountInWordsFor(grandTotal)}</span>
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Detailed mode: full line-item table + tax/TDS for split accounting */}
-          {!cashSimple && (
-            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/60 p-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-sm font-medium text-amber-700">
-                  <ListCollapse size={14} /> {t('vouchers.detailedLineItemsMode', 'Detailed Line Items mode')}
+                  <div className="mt-3 flex items-center justify-between">
+                    <button type="button" onClick={() => setCashDetailed(true)}
+                      className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-700">
+                      <ListPlus size={14} /> {t('vouchers.detailedLineItems', 'Detailed Line Items')}
+                    </button>
+                    {grandTotal > 0 && (
+                      <span className="text-sm text-slate-500">
+                        {t('vouchers.inWords', 'In words:')} <span className="font-medium text-slate-700">{amountInWordsFor(grandTotal)}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <button type="button" onClick={() => setCashDetailed(false)}
-                  className="rounded border border-amber-300 bg-white px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100">
-                  {t('vouchers.backToSimple', '← Back to simple mode')}
-                </button>
-              </div>
-              <div className="mt-3">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-amber-200/80 text-left text-xs uppercase tracking-wide text-amber-700">
-                      <th className="w-10 px-2 py-2 text-center">#</th>
-                      <th className="px-2 py-2">{t('common.description', 'Description')}</th>
-                      <th className="w-28 px-2 py-2 text-right">{t('common.amount', 'Amount')}</th>
-                      <th className="w-10 px-2 py-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lines.map((l, i) => (
-                      <tr key={l.key} className="anim-enter-row border-b border-amber-100">
-                        <td className="px-2 py-2 text-center text-slate-400">{i + 1}</td>
-                        <td className="px-2 py-2">
-                          <input type="text" value={l.description}
-                            onChange={(e) => setLine(l.key, { description: e.target.value })}
-                            placeholder={t('vouchers.lineDescription', 'e.g. rent, salary, utility…')}
-                            className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" />
-                        </td>
-                        <td className="px-2 py-2">
-                          <input type="text" inputMode="decimal" value={l.amount}
-                            onChange={(e) => setLine(l.key, { amount: e.target.value })}
-                            onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { amount: r }) }}
-                            placeholder="0.00"
-                            className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                        </td>
-                        <td className="px-2 py-2 text-center">
-                          <button type="button" onClick={() => removeLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <button type="button" onClick={() => setLines((ls) => [...ls, emptyLine()])}
-                  className="mt-2 flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700">
-                  <Plus size={14} /> {t('vouchers.addLine', '+ Add line')}
-                </button>
-              </div>
-              <div className="mt-3 flex items-center justify-between border-t border-amber-200/80 pt-3">
-                <span className="text-sm font-medium text-slate-600">{t('vouchers.total', 'Total')}</span>
-                <span className="font-mono text-base font-bold text-slate-900">Rs. {fmt(lineTotals)}</span>
-              </div>
-            </div>
+              )}
+
+              {/* Detailed mode: full line-item table + tax/TDS for split accounting */}
+              {!cashSimple && (
+                <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/60 p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-amber-700">
+                      <ListCollapse size={14} /> {t('vouchers.detailedLineItemsMode', 'Detailed Line Items mode')}
+                    </div>
+                    <button type="button" onClick={() => setCashDetailed(false)}
+                      className="rounded border border-amber-300 bg-white px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100">
+                      {t('vouchers.backToSimple', '← Back to simple mode')}
+                    </button>
+                  </div>
+                  <div className="mt-3">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-amber-200/80 text-left text-xs uppercase tracking-wide text-amber-700">
+                          <th className="w-10 px-2 py-2 text-center">#</th>
+                          <th className="px-2 py-2">{t('common.description', 'Description')}</th>
+                          <th className="w-28 px-2 py-2 text-right">{t('common.amount', 'Amount')}</th>
+                          <th className="w-10 px-2 py-2"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {lines.map((l, i) => (
+                          <tr key={l.key} className="anim-enter-row border-b border-amber-100">
+                            <td className="px-2 py-2 text-center text-slate-400">{i + 1}</td>
+                            <td className="px-2 py-2">
+                              <input type="text" value={l.description}
+                                onChange={(e) => setLine(l.key, { description: e.target.value })}
+                                placeholder={t('vouchers.lineDescription', 'e.g. rent, salary, utility…')}
+                                className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" />
+                            </td>
+                            <td className="px-2 py-2">
+                              <input type="text" inputMode="decimal" value={l.amount}
+                                onChange={(e) => setLine(l.key, { amount: e.target.value })}
+                                onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { amount: r }) }}
+                                placeholder="0.00"
+                                className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
+                            </td>
+                            <td className="px-2 py-2 text-center">
+                              <button type="button" onClick={() => removeLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <button type="button" onClick={() => setLines((ls) => [...ls, emptyLine()])}
+                      className="mt-2 flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700">
+                      <Plus size={14} /> {t('vouchers.addLine', 'Add line')}
+                    </button>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between border-t border-amber-200/80 pt-3">
+                    <span className="text-sm font-medium text-slate-600">{t('vouchers.total', 'Total')}</span>
+                    <span className="font-mono text-base font-bold text-slate-900">Rs. {fmt(lineTotals)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Cash/Bank account strip for detailed mode (kept out of the table) */}
+              {!cashSimple && (
+                <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <label className="text-sm text-slate-700">
+                      {t('vouchers.paymentMethod', 'Payment Method')}
+                      <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                        <option value="bank">Bank</option><option value="cash">Cash</option>
+                      </select>
+                    </label>
+                    <label className="text-sm text-slate-700">
+                      {t('vouchers.cashOrBankAccount', 'Cash / Bank Account')}
+                      <select value={cashAccountId} onChange={(e) => {
+                        const acctId = e.target.value
+                        setCashAccountId(acctId)
+                        const acct = accounts.find((a) => String(a.id) === acctId)
+                        const cls = acct?.class
+                        setPaymentMethod(cls === 'bank' ? 'bank' : 'cash')
+                        if (cls === 'bank') setBankAccount(acctId)
+                      }}
+                        className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                        <option value="">{paymentMethod === 'bank' ? t('vouchers.defaultBankAccount', '— default bank —') : t('vouchers.cashInHandOption', 'Cash in hand')}</option>
+                        {cashBankAccounts.map((a) => <option key={a.id} value={String(a.id)}>{a.name}</option>)}
+                      </select>
+                    </label>
+                    <label className="text-sm text-slate-700">
+                      {t('vouchers.taxVatGst', 'Tax (VAT / GST)')}
+                      <div className="mt-1 flex gap-2">
+                        <select value={taxLines[0]?.taxType || ''}
+                          onChange={(e) => {
+                            const selected = taxTypes.find((tx) => String(tx.id) === e.target.value)
+                            setTaxLines((ts) => {
+                              const rest = ts.filter((tx) => tx.nature === 'withholding')
+                              const next: TaxLineDraft[] = e.target.value
+                                ? [{ key: crypto.randomUUID(), taxType: e.target.value, nature: 'additive' as TaxNature, rate: selected ? String(selected.rate) : '' }]
+                                : []
+                              return [...next, ...rest]
+                            })
+                          }}
+                          className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                          <option value="">{t('vouchers.noTax', '— no tax —')}</option>
+                          {taxTypes.filter((tx) => tx.nature === 'additive' && tx.active !== false)
+                            .map((tx) => <option key={tx.id} value={String(tx.id)}>{tx.name} ({tx.rate}%)</option>)}
+                        </select>
+                        {vatTotal > 0 && (
+                          <span className="flex items-center rounded border border-slate-200 bg-slate-50 px-2 font-mono text-xs text-slate-600">+{fmt(vatTotal)}</span>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          {/* Cash/Bank account strip for detailed mode (kept out of the table) */}
-          {!cashSimple && (
-            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {/* ── Payment Fields (collapsible for cash types) ─────── */}
+          {isCash && !cashSimple && (
+            <CollapsibleSection
+              title={t('vouchers.paymentDetails', 'Payment Details')}
+              open={paymentSectionOpen}
+              onToggle={() => setPaymentSectionOpen((o) => !o)}
+              badge={paymentMethod ? `${paymentMethod === 'bank' ? 'Bank' : 'Cash'}` : undefined}
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="text-sm text-slate-700">
                   {t('vouchers.paymentMethod', 'Payment Method')}
                   <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}
@@ -1998,382 +2057,320 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     <option value="bank">Bank</option><option value="cash">Cash</option>
                   </select>
                 </label>
-                <label className="text-sm text-slate-700">
-                  {t('vouchers.cashOrBankAccount', 'Cash / Bank Account')}
-                  <select value={cashAccountId} onChange={(e) => {
-                    const acctId = e.target.value
-                    setCashAccountId(acctId)
-                    const acct = accounts.find((a) => String(a.id) === acctId)
-                    const cls = acct?.class
-                    setPaymentMethod(cls === 'bank' ? 'bank' : 'cash')
-                    if (cls === 'bank') setBankAccount(acctId)
-                  }}
-                    className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
-      <option value="">{paymentMethod === 'bank' ? t('vouchers.defaultBankAccount', '— default bank —') : t('vouchers.cashInHandOption', 'Cash in hand')}</option>
-                    {cashBankAccounts.map((a) => <option key={a.id} value={String(a.id)}>{a.name}</option>)}
-                  </select>
-                </label>
-                <label className="text-sm text-slate-700">
-                  {t('vouchers.taxVatGst', 'Tax (VAT / GST)')}
-                  <div className="mt-1 flex gap-2">
-                    <select value={taxLines[0]?.taxType || ''}
-                      onChange={(e) => {
-                        const selected = taxTypes.find((tx) => String(tx.id) === e.target.value)
-                        setTaxLines((ts) => {
-                          const rest = ts.filter((tx) => tx.nature === 'withholding')
-                          const next: TaxLineDraft[] = e.target.value
-                            ? [{ key: crypto.randomUUID(), taxType: e.target.value, nature: 'additive' as TaxNature, rate: selected ? String(selected.rate) : '' }]
-                            : []
-                          return [...next, ...rest]
-                        })
-                      }}
-                      className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
-                      <option value="">{t('vouchers.noTax', '— no tax —')}</option>
-                      {taxTypes.filter((tx) => tx.nature === 'additive' && tx.active !== false)
-                        .map((tx) => <option key={tx.id} value={String(tx.id)}>{tx.name} ({tx.rate}%)</option>)}
+                {paymentMethod === 'bank' && (
+                  <label className="text-sm text-slate-700">
+                    {t('vouchers.bankAccountLabel', 'Bank Account')}
+                    <select value={bankAccount} onChange={(e) => setBankAccount(e.target.value)}
+                      className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
+                      <option value="">— default —</option>
+                      {bankAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                     </select>
-                    {vatTotal > 0 && (
-                      <span className="flex items-center rounded border border-slate-200 bg-slate-50 px-2 font-mono text-xs text-slate-600">+{fmt(vatTotal)}</span>
-                    )}
-                  </div>
-                </label>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ── Payment Fields (collapsible for cash types) ─────── */}
-      {isCash && !cashSimple && (
-        <CollapsibleSection
-          title={t('vouchers.paymentDetails', 'Payment Details')}
-          open={paymentSectionOpen}
-          onToggle={() => setPaymentSectionOpen((o) => !o)}
-          badge={paymentMethod ? `${paymentMethod === 'bank' ? 'Bank' : 'Cash'}` : undefined}
-        >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="text-sm text-slate-700">
-              {t('vouchers.paymentMethod', 'Payment Method')}
-              <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}
-                className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
-                <option value="bank">Bank</option><option value="cash">Cash</option>
-              </select>
-            </label>
-            {paymentMethod === 'bank' && (
-              <label className="text-sm text-slate-700">
-                {t('vouchers.bankAccountLabel', 'Bank Account')}
-                <select value={bankAccount} onChange={(e) => setBankAccount(e.target.value)}
-                  className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
-                  <option value="">— default —</option>
-                  {bankAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
-              </label>
-            )}
-          </div>
-        </CollapsibleSection>
-      )}
-
-      {/* ── Notes (collapsible) ─────────────────────────────── */}
-      <div className="mt-4">
-        <CollapsibleSection
-          title={t('vouchers.notesRemarks', 'Notes / Remarks')}
-          open={notesSectionOpen}
-          onToggle={() => setNotesSectionOpen((o) => !o)}
-        >
-          <textarea rows={4} value={narration} onChange={(e) => setNarration(e.target.value)}
-            placeholder={t('vouchers.notePlaceholder', 'Enter note or description...')}
-            className="w-full resize-none rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" />
-        </CollapsibleSection>
-      </div>
-
-      {/* ── Attach Images ───────────────────────────────────── */}
-      <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
-        <label className="text-sm font-medium text-slate-700">{t('vouchers.attachImages', 'Attach Images')}</label>
-        <div className="mt-2 flex items-center gap-3">
-          <button type="button"
-            className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-500">
-            <Camera size={24} />
-          </button>
-          <span className="text-xs text-slate-400">{t('vouchers.uploadHint', 'Upload receipts, invoices, or supporting documents')}</span>
-        </div>
-      </div>
-
-      {/* ── Invoice Preview ──────────────────────────────────── */}
-      <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
-        {/* Header */}
-        {(() => {
-          const isSimplified = simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold
-          return (
-            <div className="border-b border-slate-200 bg-slate-50 px-6 py-4 text-center">
-              <h1 className="text-lg font-bold tracking-tight text-slate-900">{t('sidebar.orgName', 'स्यस्यः धुकू')}</h1>
-              <p className="text-[10px] uppercase tracking-widest text-slate-400">
-                {isSimplified ? 'Tax Invoice (VAT Inclusive)' : 'Tax Invoice / Transaction'}
-              </p>
-            </div>
-          )
-        })()}
-
-        {/* Info bar */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-3">
-          <div>
-            <span className="text-sm font-bold text-slate-900">{meta}</span>
-            <span className="ml-2 font-mono text-xs text-slate-500">{invoicePrefix}-{manualNumber || '...'}</span>
-          </div>
-          <div className="text-right">
-            <span className="text-sm text-slate-600">{formatDate(date)}</span>
-          </div>
-        </div>
-
-        {/* Party */}
-        {(isItem || isCash) && (
-          <div className="border-b border-slate-200 px-6 py-3">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{t('vouchers.billTo', 'Bill To')}</span>
-            <p className="mt-0.5 text-sm font-semibold text-slate-900">{selectedParty?.name || partySearch || '—'}</p>
-          </div>
-        )}
-
-        {/* Items table */}
-        {isItem && lines.some((l) => l.item || l.description) && (
-          <div className="px-6 py-4">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-slate-200 text-left text-[10px] uppercase tracking-wide text-slate-400">
-                  <th className="w-8 py-2">#</th>
-                  <th className="py-2">{t('vouchers.item', 'Item')}</th>
-                  <th className="w-16 py-2 text-right">{t('vouchers.qty', 'Qty')}</th>
-                  <th className="w-24 py-2 text-right">{t('vouchers.rate', 'Rate')}</th>
-                  <th className="w-28 py-2 text-right">{t('common.amount', 'Amount')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lines.filter((l) => l.item || l.description).map((l, i) => {
-                  const base = l.amount !== '' ? parseFloat(l.amount) || 0 : (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
-                  const discPct = parseFloat(l.discountPct) || 0
-                  const discAmt = parseFloat(l.discountAmt) || 0
-                  const afterPct = discPct > 0 ? base * (1 - discPct / 100) : base
-                  const finalAmt = afterPct - discAmt
-                  return (
-                    <tr key={l.key} className="border-b border-slate-50">
-                      <td className="py-2 text-center text-slate-400">{i + 1}</td>
-                      <td className="py-2 font-medium text-slate-800">{l.description || '—'}</td>
-                      <td className="py-2 text-right font-mono text-slate-600">{l.qty || '—'}</td>
-                      <td className="py-2 text-right font-mono text-slate-600">{l.rate ? fmt(parseFloat(l.rate)) : '—'}</td>
-                      <td className="py-2 text-right font-mono font-medium text-slate-800">{fmt(Math.max(finalAmt, 0))}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Journal lines */}
-        {isJournal && journalLines.some((l) => l.account) && (
-          <div className="px-6 py-4">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-slate-200 text-left text-[10px] uppercase tracking-wide text-slate-400">
-                  <th className="py-2">{t('common.account', 'Account')}</th>
-                  <th className="w-28 py-2 text-right">{t('common.debit', 'Debit')}</th>
-                  <th className="w-28 py-2 text-right">{t('common.credit', 'Credit')}</th>
-                  <th className="py-2">{t('common.memo', 'Memo')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {journalLines.filter((l) => l.account).map((l) => {
-                  const a = accounts.find((x) => String(x.id) === l.account)
-                  return (
-                    <tr key={l.key} className="border-b border-slate-50">
-                      <td className="py-2 text-slate-700">{a ? `${a.code ? a.code + ' · ' : ''}${a.name}` : '—'}</td>
-                      <td className="py-2 text-right font-mono text-slate-800">{l.debit ? fmt(parseFloat(l.debit)) : ''}</td>
-                      <td className="py-2 text-right font-mono text-slate-800">{l.credit ? fmt(parseFloat(l.credit)) : ''}</td>
-                      <td className="py-2 text-slate-500">{l.memo || ''}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Summary */}
-        {(() => {
-          const isSimplified = simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold
-          return (
-            <div className="border-t border-slate-200 px-6 py-4">
-              {isSimplified ? (
-                /* ── Simplified: VAT Inclusive ────────────── */
-                <div className="text-center">
-                  <div className="text-sm text-slate-500">{t('vouchers.totalAmountVatInclusive', 'Total Amount (VAT Inclusive)')}</div>
-                  <div className="mt-1 font-mono text-2xl font-bold text-slate-900">Rs. {fmt(grandTotal)}</div>
-                  <p className="mt-2 text-sm font-medium text-slate-600">
-                    {t('vouchers.inWords', 'In words:')} {amountInWordsFor(grandTotal)}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">{t('vouchers.includesAllTaxes', 'Includes all applicable taxes')}</p>
-                </div>
-              ) : (
-                /* ── Full breakdown ──────────────────────── */
-                <div className="ml-auto w-64 space-y-1.5 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">{t('vouchers.subTotal', 'Sub Total')}</span>
-                    <span className="font-mono text-slate-700">{fmt(isContra ? contraTotal : lineTotals)}</span>
-                  </div>
-                  {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Discount</span>
-                      <span className="font-mono text-red-600">−{fmt(globalDiscountAmount)}</span>
-                    </div>
-                  )}
-                  {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
-                    <div className="flex justify-between border-t border-slate-200 pt-1.5">
-                      <span className="text-slate-500">Taxable Amount</span>
-                      <span className="font-mono text-slate-700">{fmt(lineTotals - globalDiscountAmount)}</span>
-                    </div>
-                  )}
-                  {vatTotal > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">{t('vouchers.tax', 'Tax')}</span>
-                      <span className="font-mono text-slate-700">+{fmt(vatTotal)}</span>
-                    </div>
-                  )}
-                  {tdsEnabled && tdsAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">TDS</span>
-                      <span className="font-mono text-red-600">−{fmt(tdsAmount)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between border-t-2 border-slate-300 pt-2 text-base">
-                    <span className="font-bold text-slate-900">{t('vouchers.total', 'Total')}</span>
-                    <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
-                  </div>
-                  <p className="pt-2 text-sm font-medium text-slate-600">
-                    In words: {amountInWordsFor(grandTotal)}
-                  </p>
-                </div>
-              )}
-            </div>
-          )
-        })()}
-      </div>
-
-      {/* ── Floating Bottom Bar ─────────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white/95 backdrop-blur px-6 py-3 print:hidden z-40">
-        <div className="w-full flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <button type="button" onClick={() => navigate('/vouchers')}
-              className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
-              {t('common.cancel', 'Cancel')}
-            </button>
-            {/* Total summary */}
-            {!isJournal && (
-              <div className="hidden sm:block text-sm text-slate-500">
-                {t('vouchers.total', 'Total')}: <span className="font-mono font-semibold text-slate-800">Rs. {fmt(grandTotal)}</span>
-                <span className="ml-3 text-xs text-slate-400">
-                  ({fmt(lineTotals)}
-                  {globalDiscountAmount > 0 && <> − Disc {fmt(globalDiscountAmount)}</>}
-                  {vatTotal > 0 && <> + Tax {fmt(vatTotal)}</>}
-                  {tdsEnabled && tdsAmount > 0 && <> − TDS {fmt(tdsAmount)}</>}
-                  )
-                </span>
-              </div>
-            )}
-            {isJournal && (
-              <div className="hidden sm:flex items-center gap-3 text-sm">
-                <span className="font-mono text-slate-500">
-                  Dr <span className="font-semibold text-slate-800">{fmt(jTotals.debit)}</span>
-                </span>
-                <span className="font-mono text-slate-500">
-                  Cr <span className="font-semibold text-slate-800">{fmt(jTotals.credit)}</span>
-                </span>
-                {journalBalanced ? (
-                  <span
-                    className={`rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ${
-                      journalSnap ? 'animate-balance-snap' : ''
-                    }`}
-                  >
-                    ✓ {t('vouchers.balanced', 'balanced')}
-                  </span>
-                ) : (
-                  <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
-                    {t('vouchers.difference', 'difference')} {fmt(jTotals.diff)}
-                  </span>
+                  </label>
                 )}
               </div>
-            )}
+            </CollapsibleSection>
+          )}
+
+          {/* ── Notes (collapsible) ─────────────────────────────── */}
+          <div className="mt-4">
+            <CollapsibleSection
+              title={t('vouchers.notesRemarks', 'Notes / Remarks')}
+              open={notesSectionOpen}
+              onToggle={() => setNotesSectionOpen((o) => !o)}
+            >
+              <textarea rows={4} value={narration} onChange={(e) => setNarration(e.target.value)}
+                placeholder={t('vouchers.notePlaceholder', 'Enter note or description...')}
+                className="w-full resize-none rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" />
+            </CollapsibleSection>
           </div>
-          <div className="flex items-center gap-3">
-            {setupBlocked && (
-              <span className="hidden max-w-[260px] text-xs text-amber-600 lg:block">
-                Finish setup first ({setup.missingCount} step{setup.missingCount === 1 ? '' : 's'} left) to
-                post — see the checklist on the Dashboard. Drafts still save.
-              </span>
-            )}
-            <div className="flex gap-2">
-              <LiquidButton
-                type="button"
-                variant="outline"
-                size="md"
-                onClick={() => submit(false)}
-                disabled={saving || (isJournal && !journalBalanced) || !hasPositiveTotal}
-                title={
-                  !hasPositiveTotal
-                    ? 'Total amount must be greater than 0'
-                    : isJournal && !journalBalanced
-                    ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
-                    : undefined
-                }
-              >
-                {saving
-                  ? t('common.saving', 'Saving…')
-                  : docType === 'sales-quote'
-                    ? t('vouchers.saveQuote', 'Save Quote')
-                    : isOrder
-                      ? t('vouchers.saveOrder', 'Save Order')
-                      : t('vouchers.saveDraft', 'Save draft')}
-              </LiquidButton>
-              {docType === 'sales-quote' ? (
-                <span className="hidden text-xs text-slate-400 sm:block">
-                  {t('vouchers.quotesHint', "Quotes don't post — copy to an invoice when accepted")}
-                </span>
-              ) : isOrder ? (
-                <span className="hidden text-xs text-slate-400 sm:block">
-                  {t(
-                    'vouchers.ordersHint',
-                    "Orders don't touch the ledger — confirming locks the order; invoice or GRN fulfils it",
-                  )}
-                </span>
-              ) : (
-                <LiquidButton
-                  type="button"
-                  variant="primary"
-                  size="md"
-                  onClick={() => submit(true)}
-                  disabled={saving || !allRequiredFilled || !hasPositiveTotal || setupBlocked || (isJournal && !journalBalanced)}
-                  title={
-                    !hasPositiveTotal
-                      ? 'Total amount must be greater than 0'
-                      : isJournal && !journalBalanced
-                      ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
-                      : setupBlocked
-                      ? `Finish setup first (${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} left) — see the checklist on the Dashboard`
-                      : !allRequiredFilled
-                        ? 'Fill all required fields first'
-                        : undefined
-                  }
-                  className={
-                    posted
-                      ? 'anim-posted !bg-emerald-600 !border-emerald-600 shadow-md'
-                      : '!bg-emerald-600 hover:!bg-emerald-700 !border-emerald-600'
-                  }
-                >
-                  {posted ? <span className="inline-flex items-center gap-1.5">✓ Posted</span> : saving ? t('vouchers.posting', 'Posting…') : t('vouchers.savePost', 'Save & post')}
-                </LiquidButton>
-              )}
+
+          {/* ── Attach Images ───────────────────────────────────── */}
+          <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+            <label className="text-sm font-medium text-slate-700">{t('vouchers.attachImages', 'Attach Images')}</label>
+            <div className="mt-2 flex items-center gap-3">
+              <button type="button"
+                className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-500">
+                <Camera size={24} />
+              </button>
+              <span className="text-xs text-slate-400">{t('vouchers.uploadHint', 'Upload receipts, invoices, or supporting documents')}</span>
             </div>
           </div>
-        </div>
-      </div>
-      </>
+
+          {/* ── Invoice Preview ──────────────────────────────────── */}
+          <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
+            {/* Header */}
+            {(() => {
+              const isSimplified = simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold
+              return (
+                <div className="border-b border-slate-200 bg-slate-50 px-6 py-4 text-center">
+                  <h1 className="text-lg font-bold tracking-tight text-slate-900">{t('sidebar.orgName', 'स्यस्यः धुकू')}</h1>
+                  <p className="text-[10px] uppercase tracking-widest text-slate-400">
+                    {isSimplified ? 'Tax Invoice (VAT Inclusive)' : 'Tax Invoice / Transaction'}
+                  </p>
+                </div>
+              )
+            })()}
+
+            {/* Info bar */}
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-3">
+              <div>
+                <span className="text-sm font-bold text-slate-900">{meta}</span>
+                <span className="ml-2 font-mono text-xs text-slate-500">{invoicePrefix}-{manualNumber || '...'}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-sm text-slate-600">{formatDate(date)}</span>
+              </div>
+            </div>
+
+            {/* Party */}
+            {(isItem || isCash) && (
+              <div className="border-b border-slate-200 px-6 py-3">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{t('vouchers.billTo', 'Bill To')}</span>
+                <p className="mt-0.5 text-sm font-semibold text-slate-900">{selectedParty?.name || partySearch || '—'}</p>
+              </div>
+            )}
+
+            {/* Items table */}
+            {isItem && lines.some((l) => l.item || l.description) && (
+              <div className="px-6 py-4">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-slate-200 text-left text-[10px] uppercase tracking-wide text-slate-400">
+                      <th className="w-8 py-2">#</th>
+                      <th className="py-2">{t('vouchers.item', 'Item')}</th>
+                      <th className="w-16 py-2 text-right">{t('vouchers.qty', 'Qty')}</th>
+                      <th className="w-24 py-2 text-right">{t('vouchers.rate', 'Rate')}</th>
+                      <th className="w-28 py-2 text-right">{t('common.amount', 'Amount')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lines.filter((l) => l.item || l.description).map((l, i) => {
+                      const base = l.amount !== '' ? parseFloat(l.amount) || 0 : (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
+                      const discPct = parseFloat(l.discountPct) || 0
+                      const discAmt = parseFloat(l.discountAmt) || 0
+                      const afterPct = discPct > 0 ? base * (1 - discPct / 100) : base
+                      const finalAmt = afterPct - discAmt
+                      return (
+                        <tr key={l.key} className="border-b border-slate-50">
+                          <td className="py-2 text-center text-slate-400">{i + 1}</td>
+                          <td className="py-2 font-medium text-slate-800">{l.description || '—'}</td>
+                          <td className="py-2 text-right font-mono text-slate-600">{l.qty || '—'}</td>
+                          <td className="py-2 text-right font-mono text-slate-600">{l.rate ? fmt(parseFloat(l.rate)) : '—'}</td>
+                          <td className="py-2 text-right font-mono font-medium text-slate-800">{fmt(Math.max(finalAmt, 0))}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Journal lines */}
+            {isJournal && journalLines.some((l) => l.account) && (
+              <div className="px-6 py-4">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-slate-200 text-left text-[10px] uppercase tracking-wide text-slate-400">
+                      <th className="py-2">{t('common.account', 'Account')}</th>
+                      <th className="w-28 py-2 text-right">{t('common.debit', 'Debit')}</th>
+                      <th className="w-28 py-2 text-right">{t('common.credit', 'Credit')}</th>
+                      <th className="py-2">{t('common.memo', 'Memo')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {journalLines.filter((l) => l.account).map((l) => {
+                      const a = accounts.find((x) => String(x.id) === l.account)
+                      return (
+                        <tr key={l.key} className="border-b border-slate-50">
+                          <td className="py-2 text-slate-700">{a ? `${a.code ? a.code + ' · ' : ''}${a.name}` : '—'}</td>
+                          <td className="py-2 text-right font-mono text-slate-800">{l.debit ? fmt(parseFloat(l.debit)) : ''}</td>
+                          <td className="py-2 text-right font-mono text-slate-800">{l.credit ? fmt(parseFloat(l.credit)) : ''}</td>
+                          <td className="py-2 text-slate-500">{l.memo || ''}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Summary */}
+            {(() => {
+              const isSimplified = simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold
+              return (
+                <div className="border-t border-slate-200 px-6 py-4">
+                  {isSimplified ? (
+                    /* ── Simplified: VAT Inclusive ────────────── */
+                    <div className="text-center">
+                      <div className="text-sm text-slate-500">{t('vouchers.totalAmountVatInclusive', 'Total Amount (VAT Inclusive)')}</div>
+                      <div className="mt-1 font-mono text-2xl font-bold text-slate-900">Rs. {fmt(grandTotal)}</div>
+                      <p className="mt-2 text-sm font-medium text-slate-600">
+                        {t('vouchers.inWords', 'In words:')} {amountInWordsFor(grandTotal)}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">{t('vouchers.includesAllTaxes', 'Includes all applicable taxes')}</p>
+                    </div>
+                  ) : (
+                    /* ── Full breakdown ──────────────────────── */
+                    <div className="ml-auto w-64 space-y-1.5 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">{t('vouchers.subTotal', 'Sub Total')}</span>
+                        <span className="font-mono text-slate-700">{fmt(isContra ? contraTotal : lineTotals)}</span>
+                      </div>
+                      {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Discount</span>
+                          <span className="font-mono text-red-600">−{fmt(globalDiscountAmount)}</span>
+                        </div>
+                      )}
+                      {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
+                        <div className="flex justify-between border-t border-slate-200 pt-1.5">
+                          <span className="text-slate-500">Taxable Amount</span>
+                          <span className="font-mono text-slate-700">{fmt(lineTotals - globalDiscountAmount)}</span>
+                        </div>
+                      )}
+                      {vatTotal > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">{t('vouchers.tax', 'Tax')}</span>
+                          <span className="font-mono text-slate-700">+{fmt(vatTotal)}</span>
+                        </div>
+                      )}
+                      {tdsEnabled && tdsAmount > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">TDS</span>
+                          <span className="font-mono text-red-600">−{fmt(tdsAmount)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between border-t-2 border-slate-300 pt-2 text-base">
+                        <span className="font-bold text-slate-900">{t('vouchers.total', 'Total')}</span>
+                        <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
+                      </div>
+                      <p className="pt-2 text-sm font-medium text-slate-600">
+                        In words: {amountInWordsFor(grandTotal)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+          </div>
+
+          {/* ── Floating Bottom Bar ─────────────────────────────── */}
+          <div className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white/95 backdrop-blur px-6 py-3 print:hidden z-40">
+            <div className="w-full flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <button type="button" onClick={() => navigate('/vouchers')}
+                  className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+                  {t('common.cancel', 'Cancel')}
+                </button>
+                {/* Total summary */}
+                {!isJournal && (
+                  <div className="hidden sm:block text-sm text-slate-500">
+                    {t('vouchers.total', 'Total')}: <span className="font-mono font-semibold text-slate-800">Rs. {fmt(grandTotal)}</span>
+                    <span className="ml-3 text-xs text-slate-400">
+                      ({fmt(lineTotals)}
+                      {globalDiscountAmount > 0 && <> − Disc {fmt(globalDiscountAmount)}</>}
+                      {vatTotal > 0 && <> + Tax {fmt(vatTotal)}</>}
+                      {tdsEnabled && tdsAmount > 0 && <> − TDS {fmt(tdsAmount)}</>}
+                      )
+                    </span>
+                  </div>
+                )}
+                {isJournal && (
+                  <div className="hidden sm:flex items-center gap-3 text-sm">
+                    <span className="font-mono text-slate-500">
+                      Dr <span className="font-semibold text-slate-800">{fmt(jTotals.debit)}</span>
+                    </span>
+                    <span className="font-mono text-slate-500">
+                      Cr <span className="font-semibold text-slate-800">{fmt(jTotals.credit)}</span>
+                    </span>
+                    {journalBalanced ? (
+                      <span
+                        className={`rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ${journalSnap ? 'animate-balance-snap' : ''
+                          }`}
+                      >
+                        ✓ {t('vouchers.balanced', 'balanced')}
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+                        {t('vouchers.difference', 'difference')} {fmt(jTotals.diff)}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {setupBlocked && (
+                  <span className="hidden max-w-[260px] text-xs text-amber-600 lg:block">
+                    Finish setup first ({setup.missingCount} step{setup.missingCount === 1 ? '' : 's'} left) to
+                    post — see the checklist on the Dashboard. Drafts still save.
+                  </span>
+                )}
+                <div className="flex gap-2">
+                  <LiquidButton
+                    type="button"
+                    variant="outline"
+                    size="md"
+                    onClick={() => submit(false)}
+                    disabled={saving || (isJournal && !journalBalanced) || !hasPositiveTotal}
+                    title={
+                      !hasPositiveTotal
+                        ? 'Total amount must be greater than 0'
+                        : isJournal && !journalBalanced
+                          ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
+                          : undefined
+                    }
+                  >
+                    {saving
+                      ? t('common.saving', 'Saving…')
+                      : docType === 'sales-quote'
+                        ? t('vouchers.saveQuote', 'Save Quote')
+                        : isOrder
+                          ? t('vouchers.saveOrder', 'Save Order')
+                          : t('vouchers.saveDraft', 'Save draft')}
+                  </LiquidButton>
+                  {docType === 'sales-quote' ? (
+                    <span className="hidden text-xs text-slate-400 sm:block">
+                      {t('vouchers.quotesHint', "Quotes don't post — copy to an invoice when accepted")}
+                    </span>
+                  ) : isOrder ? (
+                    <span className="hidden text-xs text-slate-400 sm:block">
+                      {t(
+                        'vouchers.ordersHint',
+                        "Orders don't touch the ledger — confirming locks the order; invoice or GRN fulfils it",
+                      )}
+                    </span>
+                  ) : (
+                    <LiquidButton
+                      type="button"
+                      variant="primary"
+                      size="md"
+                      onClick={() => submit(true)}
+                      disabled={saving || !allRequiredFilled || !hasPositiveTotal || setupBlocked || (isJournal && !journalBalanced)}
+                      title={
+                        !hasPositiveTotal
+                          ? 'Total amount must be greater than 0'
+                          : isJournal && !journalBalanced
+                            ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
+                            : setupBlocked
+                              ? `Finish setup first (${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} left) — see the checklist on the Dashboard`
+                              : !allRequiredFilled
+                                ? 'Fill all required fields first'
+                                : undefined
+                      }
+                      className={
+                        posted
+                          ? 'anim-posted !bg-emerald-600 !border-emerald-600 shadow-md'
+                          : '!bg-emerald-600 hover:!bg-emerald-700 !border-emerald-600'
+                      }
+                    >
+                      {posted ? <span className="inline-flex items-center gap-1.5">✓ Posted</span> : saving ? t('vouchers.posting', 'Posting…') : t('vouchers.savePost', 'Save & post')}
+                    </LiquidButton>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* ── Add Party Popup ──────────────────────────────── */}
