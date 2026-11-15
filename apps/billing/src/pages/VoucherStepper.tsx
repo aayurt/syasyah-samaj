@@ -98,6 +98,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
     for (const l of jLines) { dr += l.debit || 0; cr += l.credit || 0 }
     return { debitTotal: dr, creditTotal: cr }
   }, [jLines])
+
   const itemTotal = useMemo(() => iLines.reduce((s, l) => s + (l.amount || 0), 0), [iLines])
   const step1Valid = true // step 1 is type only; a default type is always selected
   const balanced = Math.abs(debitTotal - creditTotal) < 0.0051
@@ -224,102 +225,122 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
   }, [isJournal, isOrder, navigate, saveDraft, balanced, jLines, fromAccount, toAccount, contraAmount, iLines])
 
   return (
-    <div className="min-h-screen bg-slate-50 font-mono">
+    <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/vouchers')}
-              className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+              className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
               aria-label="Back to All Transactions"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={16} />
             </button>
             <div>
-              <h1 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <h1 className="text-sm font-semibold text-slate-900 tracking-tight">
                 {t('vouchers.newTransaction', 'New Transaction')}
               </h1>
-              <p className="text-sm font-semibold text-slate-900">
+              <p className="text-[11px] text-slate-500">
                 {t('vouchers.createVoucher', 'Create a new accounting voucher')}
               </p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] text-slate-400">{activeTenantName || 'Syasyah Samaj · Yala'}</p>
-            <p className="text-xs font-mono text-slate-900">Draft · {lastSaved || 'unsaved'}</p>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600">
+              <span className="w-1 h-1 rounded-full bg-crimson-500" />
+              Draft
+            </span>
+            <span className="text-[11px] font-medium text-slate-600">{lastSaved || 'unsaved'}</span>
           </div>
         </div>
       </header>
 
       <div className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
-        <div className="px-6 py-3 flex items-center gap-6 text-xs font-bold uppercase tracking-wider">
-          <div className="flex items-center gap-2 text-slate-900 font-bold">
-            <span className={`w-5 h-5 rounded border flex items-center justify-center text-[10px] ${step === 1 ? 'border-slate-900 text-slate-900' : 'border-slate-300 text-slate-400'}`}>
-              1
-            </span>
-            <span>{t('vouchers.stepType', 'Voucher type')}</span>
+        <div className="px-6 py-3 flex items-center gap-2">
+          <div className="flex-1 relative h-1">
+            <div className="absolute left-0 top-0 h-full w-full bg-slate-200 rounded-full" />
+            <div className={`absolute left-0 top-0 h-full rounded-full transition-all duration-300 ${step === 1 ? 'w-1/2 bg-crimson-600' : 'w-full bg-crimson-600/30'}`} />
           </div>
-          <span className="h-3 w-full bg-slate-200 rounded-full flex-1" />
-          <div className="flex items-center gap-2 text-slate-400">
-            <span className={`w-5 h-5 rounded border flex items-center justify-center text-[10px] ${step === 2 ? 'border-slate-900 text-slate-900' : 'border-slate-300 text-slate-400'}`}>
-              2
-            </span>
-            <span>{t('vouchers.stepDetails', 'Entry details')}</span>
+          <div className="flex-1 relative h-1">
+            <div className="absolute left-0 top-0 h-full w-full bg-slate-200 rounded-full" />
+            <div className={`absolute left-0 top-0 h-full rounded-full transition-all duration-300 ${step === 2 ? 'w-full bg-crimson-600' : 'bg-crimson-600/30'}`} />
           </div>
+        </div>
+        <div className="px-6 py-2 flex justify-between text-[10px] font-semibold uppercase tracking-wider">
+          <span className={step === 1 ? 'text-crimson-700' : 'text-slate-400'}>
+            {t('vouchers.stepType', 'Step 1 · Voucher type')}
+          </span>
+          <span className={step === 2 ? 'text-crimson-700' : 'text-slate-400'}>
+            {t('vouchers.stepDetails', 'Step 2 · Entry details')}
+          </span>
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto relative">
         {step === 1 ? (
-          <div className="absolute inset-0 p-8 lg:p-12 overflow-y-auto">
-            <div className="max-w-3xl mx-auto space-y-8">
-              <div className="space-y-2">
+          <div className="p-6 lg:p-10">
+            <div className="max-w-xl mx-auto space-y-8">
+              <div className="space-y-3">
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  {t('vouchers.chooseType', 'Choose voucher type')}
+                  {t('vouchers.chooseType', 'Voucher type')}
                 </label>
                 <p className="text-sm text-slate-600">
-                  {t('vouchers.typeDetermines', 'The type determines which entry fields appear in step 2.')}
+                  {t('vouchers.typeDetermines', 'Pick the kind of transaction. The fields that follow adapt to it.')}
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="space-y-3">
                 {STEPS.map((dt) => {
                   const active = docType === dt.value
                   return (
                     <button
                       key={dt.value}
                       onClick={() => setDocType(dt.value)}
-                      className={`w-full h-20 rounded-lg border px-4 py-3 text-left text-sm font-medium flex flex-col gap-1 transition-all ${active
-                        ? 'bg-crimson-900 border-crimson-900 text-white shadow-[0_0_0_2px_rgba(153,27,27,.35)]'
-                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                      className={`w-full rounded-xl border p-4 text-left transition-all ${active
+                        ? 'border-crimson-600 bg-crimson-50/40 shadow-[0_0_0_3px_rgba(185,28,28,0.08)]'
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                       }`}
                     >
-                      <span className="text-lg">{chipIcon(dt.value)}</span>
-                      <span className="font-bold">
-                        {t(`vouchers.${dt.labelKey}`, DOC_TYPE_LABELS[dt.value])}
-                      </span>
-                      <span className="text-[10px] text-slate-500">
-                        {dt.value === 'journal-voucher' ? t('vouchers.subDrCr', 'Dr / Cr lines')
-                          : dt.value === 'contra' ? t('vouchers.subTransfer', 'Transfer accounts')
-                          : (dt.value.startsWith('sales') || dt.value.startsWith('purchase')) ? t('vouchers.subItem', 'Item lines')
-                          : dt.value === 'payment-voucher' ? t('vouchers.subPay', 'Pay out')
-                          : dt.value === 'receipt-voucher' ? t('vouchers.subReceive', 'Receive')
-                          : ''}
-                      </span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">{chipIcon(dt.value)}</span>
+                          <div>
+                            <span className={`block font-semibold ${active ? 'text-slate-900' : 'text-slate-700'}`}>
+                              {t(`vouchers.${dt.labelKey}`, DOC_TYPE_LABELS[dt.value])}
+                            </span>
+                            <span className="block text-[10px] text-slate-400">
+                              {dt.value === 'journal-voucher' ? t('vouchers.subDrCr', 'Dr / Cr lines')
+                                : dt.value === 'contra' ? t('vouchers.subTransfer', 'Transfer accounts')
+                                : (dt.value.startsWith('sales') || dt.value.startsWith('purchase')) ? t('vouchers.subItem', 'Item lines')
+                                : dt.value === 'payment-voucher' ? t('vouchers.subPay', 'Pay out')
+                                : dt.value === 'receipt-voucher' ? t('vouchers.subReceive', 'Receive')
+                                : ''}
+                            </span>
+                          </div>
+                        </div>
+                        <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[9px] font-bold ${active
+                          ? 'border-crimson-600 text-crimson-600'
+                          : 'border-slate-200 text-slate-400'
+                        }`}>
+                          {STEPS.indexOf(dt) + 1}
+                        </span>
+                      </div>
                     </button>
                   )
                 })}
               </div>
 
-              <div className="mt-8 flex items-center justify-between">
-                <span className="text-[10px] text-slate-400">{t('vouchers.pickType', 'Pick a type to continue')}</span>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-[10px] text-slate-400">
+                  {t('vouchers.pickType', 'Select a voucher type to proceed')}
+                </span>
                 <button
                   type="button"
                   onClick={goNext}
                   disabled={!step1Valid}
-                  className={`bg-crimson-900 text-white px-6 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${!step1Valid
-                    ? 'bg-slate-300 opacity-50 cursor-not-allowed'
-                    : 'hover:bg-crimson-800'
+                  className={`px-6 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider shadow-sm transition-all ${!step1Valid
+                    ? 'border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                    : 'bg-crimson-600 text-white hover:bg-crimson-700 hover:shadow-md focus:ring-2 focus:ring-crimson-600/30'
                   }`}
                 >
                   {t('vouchers.continue', 'Continue')} →
@@ -328,14 +349,14 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
             </div>
           </div>
         ) : (
-          <div className="absolute inset-0 p-8 lg:p-12 overflow-y-auto">
-            <div className="max-w-4xl mx-auto space-y-6">
+          <div className="p-6 lg:p-10">
+            <div className="max-w-3xl mx-auto space-y-6">
               <div className="flex items-center justify-between">
                 <button
                   onClick={goPrev}
-                  className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors"
+                  className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg px-2 py-1.5 transition-colors text-sm"
                 >
-                  <ArrowLeft size={14} /> {t('vouchers.changeType', 'Change type')}
+                  <ArrowLeft size={14} /> {t('vouchers.changeType', 'Choose a different type')}
                 </button>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   {t('vouchers.step2', 'Step 2 · Entry details')}
@@ -343,30 +364,25 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
               </div>
 
               {/* Live balance strip */}
-              <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between gap-4 text-xs font-mono">
-                  <div>
-                    <span className="block text-[10px] text-slate-400 uppercase">{t('common.debitTotal', 'Debit total')}</span>
-                    <span className="text-sm font-bold text-slate-900">{fmt(debitTotal)}</span>
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Balance</p>
+                    <p className="text-xs font-semibold text-slate-900">
+                      {t('common.debitTotal', 'Debit total')} {fmt(debitTotal)} · {t('common.creditTotal', 'Credit total')} {fmt(creditTotal)}
+                    </p>
                   </div>
-                  <div className="w-px h-4 bg-slate-200 mx-2" />
-                  <div>
-                    <span className="block text-[10px] text-slate-400 uppercase">{t('common.creditTotal', 'Credit total')}</span>
-                    <span className="text-sm font-bold text-slate-900">{fmt(creditTotal)}</span>
-                  </div>
-                  <div className="w-px h-4 bg-slate-200 mx-2" />
-                  <div>
-                    <span className="block text-[10px] text-slate-400 uppercase">{t('vouchers.balance', 'Balance')}</span>
-                    <span className={`text-sm font-bold ${balanced ? 'text-emerald-700' : 'text-crimson-700'}`}>
-                      {fmt(debitTotal - creditTotal)}
-                    </span>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${balanced
+                      ? 'border-emerald-200 text-emerald-600 bg-emerald-50'
+                      : 'border-slate-200 text-slate-500 bg-white'}`}>
+                    {balanced ? '✓' : '⚖'}
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left column: meta fields starting with date */}
-                <div className="lg:col-span-1 space-y-5">
+              <div className="space-y-5">
+                {/* Meta fields starting from date */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       {t('common.date', 'Date')}
@@ -383,7 +399,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                       <select
                         value={String(partyId ?? '')}
                         onChange={(e) => setPartyId(e.target.value ? Number(e.target.value) : null)}
-                        className="w-full rounded border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-600"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
                       >
                         <option value="">{t('vouchers.select', '— select —')}</option>
                         {parties.map((p) => (
@@ -401,15 +417,16 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                     <select
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value as Currency)}
-                      className="w-full rounded border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-600"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
                     >
                       {CURRENCIES.map((c) => (
                         <option key={c.code} value={c.code}>{c.label}</option>
                       ))}
                     </select>
                   </div>
+
                   {currency !== 'NPR' && (
-                    <div className="space-y-2">
+                    <div className="space-y-2 lg:col-span-2">
                       <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                         {t('common.exchangeRate', 'Exchange rate')}
                       </label>
@@ -419,12 +436,12 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                         min="0"
                         value={exchangeRate ?? ''}
                         onChange={(e) => setExchangeRate(e.target.value ? parseFloat(e.target.value) : null)}
-                        className="w-full rounded border border-slate-300 bg-white px-3 py-2.5 text-sm text-right font-mono text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-600"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
                       />
                     </div>
                   )}
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 lg:col-span-3">
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       {t('common.memo', 'Narration')}
                     </label>
@@ -432,28 +449,28 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                       value={narration}
                       onChange={(e) => setNarration(e.target.value)}
                       placeholder={t('vouchers.narrationPlaceholder', 'Transaction description…')}
-                      className="w-full rounded border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-600"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
                       rows={2}
                     />
                   </div>
                 </div>
 
-                {/* Right column: lines table */}
-                <div className="lg:col-span-2">
-                  <div className="flex items-center justify-between mb-3">
+                {/* Lines table */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
                     <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                       {t('vouchers.entryLines', 'Entry lines')}
                     </h2>
                     <button
                       type="button"
                       onClick={isJournal ? addJLine : isContra ? () => {} : addILine}
-                      className="text-xs font-bold text-crimson-900 hover:text-crimson-800 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                      className="text-xs font-semibold text-crimson-600 hover:text-crimson-800 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                       disabled={isContra}
                     >
                       <span>+</span> {t('vouchers.addLine', 'Add line')}
                     </button>
                   </div>
-                  <div className="rounded-lg border border-slate-200 bg-white overflow-hidden shadow-sm">
+                  <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
                     {isJournal ? (
                       <>
                         <div className="overflow-x-auto border-b border-slate-100">
@@ -488,17 +505,17 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                                   <td className="px-4 py-3">
                                     <input type="number" min="0" step="0.01" value={l.debit}
                                       onChange={(e) => setJLine(i, { debit: Math.max(0, Number(e.target.value) || 0) })}
-                                      className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-xs text-right text-slate-700 font-mono outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-600" />
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
                                   </td>
                                   <td className="px-4 py-3">
                                     <input type="number" min="0" step="0.01" value={l.credit}
                                       onChange={(e) => setJLine(i, { credit: Math.max(0, Number(e.target.value) || 0) })}
-                                      className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-xs text-right text-slate-700 font-mono outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-600" />
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
                                   </td>
                                   <td className="px-4 py-3">
                                     <input value={l.memo}
                                       onChange={(e) => setJLine(i, { memo: e.target.value })}
-                                      className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-600" />
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
                                   </td>
                                   <td className="px-4 py-3 text-center">
                                     <button type="button" onClick={() => removeJLine(i)} disabled={jLines.length === 1}
@@ -522,20 +539,20 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                           <button
                             type="button"
                             onClick={addJLine}
-                            className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                           >
                             <span>+</span> {t('vouchers.addLine', 'Add line')}
                           </button>
-                          <div className="flex items-end gap-3 text-xs font-mono">
+                          <div className="flex items-end gap-3 text-xs font-medium">
                             <div className="flex flex-col items-end gap-1">
-                              <span className="text-slate-500">Dr</span>
-                              <span className="text-slate-900 font-bold">{fmt(debitTotal)}</span>
+                              <span className="text-slate-500 uppercase text-[10px]">Dr</span>
+                              <span className="text-slate-900">{fmt(debitTotal)}</span>
                             </div>
                             <div className="flex flex-col items-end gap-1">
-                              <span className="text-slate-500">Cr</span>
-                              <span className="text-slate-900 font-bold">{fmt(creditTotal)}</span>
+                              <span className="text-slate-500 uppercase text-[10px]">Cr</span>
+                              <span className="text-slate-900">{fmt(creditTotal)}</span>
                             </div>
-                            <div className={`flex flex-col items-end gap-1 ${balanced ? 'text-emerald-700 font-bold' : 'text-crimson-700 font-bold'}`}>
+                            <div className={`flex flex-col items-end gap-1 ${balanced ? 'text-emerald-600' : 'text-crimson-600'}`}>
                               <span className="text-[10px] uppercase">{t('vouchers.difference', 'Difference')}</span>
                               <span>
                                 {balanced ? t('vouchers.balanced', '✓ balanced') : t('vouchers.difference', 'Difference') + ': ' + fmt(Math.abs(debitTotal - creditTotal))}
@@ -567,12 +584,12 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                             </label>
                             <input type="number" min="0" step="0.01" value={contraAmount}
                               onChange={(e) => setContraAmount(Math.max(0, Number(e.target.value) || 0))}
-                              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-right text-slate-700 font-mono outline-none focus:ring-2 focus:ring-crimson-600" />
+                              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-right text-slate-700 outline-none focus:ring-2 focus:ring-crimson-600" />
                           </div>
                         </div>
-                        <div className="mt-4 border-t border-slate-100 pt-4 flex justify-end gap-2 text-sm font-mono">
-                          <span className="text-slate-500">Transfer</span>
-                          <span className="text-slate-900 font-bold">{fmt(contraAmount)}</span>
+                        <div className="mt-4 border-t border-slate-100 pt-4 flex justify-end gap-2 text-sm font-medium">
+                          <span className="text-slate-500 uppercase text-[10px]">Transfer</span>
+                          <span className="text-slate-900">{fmt(contraAmount)}</span>
                         </div>
                       </div>
                     ) : (
@@ -602,20 +619,20 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                                   <td className="px-4 py-3">
                                     <input value={l.description}
                                       onChange={(e) => setILine(i, { description: e.target.value })}
-                                      className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-600" />
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
                                   </td>
                                   <td className="px-4 py-3">
                                     <input type="number" min="0" step="any" value={l.qty}
                                       onChange={(e) => setILine(i, { qty: Math.max(0, Number(e.target.value) || 0) })}
-                                      className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-xs text-right text-slate-700 font-mono outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-600" />
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
                                   </td>
                                   <td className="px-4 py-3">
                                     <input type="number" min="0" step="0.01" value={l.rate}
                                       onChange={(e) => setILine(i, { rate: Math.max(0, Number(e.target.value) || 0) })}
-                                      className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-xs text-right text-slate-700 font-mono outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-600" />
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
                                   </td>
                                   <td className="px-4 py-3">
-                                    <span className="block rounded border border-slate-300 bg-white px-2 py-1.5 text-xs text-right text-slate-700 font-mono">
+                                    <span className="block rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700">
                                       {fmt(l.amount)}
                                     </span>
                                   </td>
@@ -641,13 +658,13 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                           <button
                             type="button"
                             onClick={addILine}
-                            className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                           >
                             <span>+</span> {t('vouchers.addLine', 'Add line')}
                           </button>
-                          <div className="flex flex-col items-end gap-1 text-sm font-mono">
+                          <div className="flex flex-col items-end gap-1 text-sm font-medium">
                             <span className="text-slate-500 uppercase text-[10px]">Total</span>
-                            <span className="text-slate-900 font-bold">{fmt(itemTotal)}</span>
+                            <span className="text-slate-900">{fmt(itemTotal)}</span>
                           </div>
                         </div>
                       </>
@@ -672,7 +689,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                       <button
                         onClick={() => { void saveDraft() }}
                         disabled={saving}
-                        className="flex-1 sm:flex-none border border-slate-300 bg-white px-5 py-2.5 rounded-lg text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-all focus:ring-2 focus:ring-crimson-600"
+                        className="flex-1 sm:flex-none border border-slate-200 bg-white px-5 py-2.5 rounded-lg text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-all focus:ring-2 focus:ring-crimson-600"
                       >
                         {t('vouchers.saveDraft', 'Save draft')}
                       </button>
@@ -681,7 +698,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                           onClick={postVoucher}
                           disabled={saving || (!isJournal && (!iLines.some((l) => l.description && (l.amount || 0) > 0)))
                             || (isJournal && !balanced)}
-                          className={`flex-1 sm:flex-none bg-crimson-900 text-white px-6 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider shadow-sm disabled:opacity-60 disabled:pointer-events-none transition-all focus:ring-2 focus:ring-crimson-600 ${!saving ? 'hover:bg-crimson-800' : ''}`}
+                          className={`flex-1 sm:flex-none bg-crimson-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider shadow-sm disabled:opacity-60 disabled:pointer-events-none transition-all focus:ring-2 focus:ring-crimson-600 ${!saving ? 'hover:bg-crimson-700' : ''}`}
                         >
                           {saving
                             ? t('vouchers.posting', 'Posting…')
@@ -699,5 +716,5 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
         )}
       </div>
     </div>
-  );
+  )
 }
