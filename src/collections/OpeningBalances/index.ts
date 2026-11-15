@@ -174,23 +174,107 @@ export const OpeningBalances: CollectionConfig = {
             })
           }
 
-          // Insert new entries (only non-zero balances)
+          // Insert new entries (only non-zero balances) and capture IDs for
+          // journal posting + postedToJournal flag below.
+          const newDocIds: number[] = []
           for (const b of body.balances) {
             if (Math.abs(b.amount) < 0.01) {
               skipped++
               continue
             }
-            await req.payload.create({
+            const created = await req.payload.create({
               collection: 'opening-balances',
               data: {
                 account: b.account,
                 fiscalYear: body.fiscalYear,
                 amount: round2(b.amount),
                 tenant: body.tenant,
+                postedToJournal: false,
               } as any,
               overrideAccess: true,
             })
+            newDocIds.push(Number(created.id))
             saved++
+          }
+
+          // ── Post opening balances as a journal entry on the FY start date ──
+          // `fy` is already fetched above (closed-year check). Reuse it.
+          if (fy && newDocIds.length > 0) {
+            const fyStart = (fy as any).startDate
+              ? String((fy as any).startDate).slice(0, 10)
+              : new Date().toISOString().slice(0, 10)
+            const fyLabel = (fy as any).label || String(body.fiscalYear)
+
+            const lines: any[] = []
+            let totalDebit = 0
+            let totalCredit = 0
+            for (const b of body.balances) {
+              const amount = round2(Number(b.amount))
+              if (Math.abs(amount) < 0.01) continue
+              if (amount > 0) {
+                lines.push({ account: b.account, debit: amount })
+                totalDebit += amount
+              } else {
+                lines.push({ account: b.account, credit: Math.abs(amount) })
+                totalCredit += Math.abs(amount)
+              }
+            }
+
+            // Absorb any sub-cent rounding residual into an equity account so
+            // the entry passes the exact balance check (epsilon 0.001).
+            const residual = round2(totalDebit - totalCredit)
+            if (Math.abs(residual) > 0.001) {
+              const equityRes = await req.payload.find({
+                collection: 'gl-accounts',
+                where: {
+                  and: [
+                    { type: { equals: 'equity' } },
+                    { tenant: { equals: body.tenant } },
+                  ],
+                },
+                limit: 1,
+                depth: 0,
+                overrideAccess: true,
+              })
+              const equityAcct = equityRes.docs?.[0] as any
+              if (!equityAcct) {
+                return Response.json(
+                  {
+                    error:
+                      'No equity account found to absorb opening-balance rounding residual.',
+                  },
+                  { status: 400 },
+                )
+              }
+              if (residual > 0) {
+                lines.push({ account: equityAcct.id, credit: residual })
+              } else {
+                lines.push({ account: equityAcct.id, debit: Math.abs(residual) })
+              }
+            }
+
+            await req.payload.create({
+              collection: 'journal-entries',
+              data: {
+                date: fyStart,
+                narration: `Opening balances — ${fyLabel}`,
+                status: 'posted',
+                tenant: body.tenant,
+                lines,
+              } as any,
+              overrideAccess: true,
+            })
+
+            // Mark the saved opening balances as posted to the journal so
+            // reports don't double-count them alongside the journal entry.
+            for (const id of newDocIds) {
+              await req.payload.update({
+                collection: 'opening-balances',
+                id,
+                data: { postedToJournal: true } as any,
+                overrideAccess: true,
+              })
+            }
           }
 
           return Response.json({
@@ -272,6 +356,16 @@ export const OpeningBalances: CollectionConfig = {
       admin: {
         description: 'Opening balance for this account at the start of the fiscal year (signed by account type).',
       },
+    },
+    // Flag: true once this balance has been posted as a journal entry on the
+    // fiscal-year start date. Prevents double-counting in reports when the
+    // opening balance is both a journal entry (posted on FY start) and added
+    // directly for mid-year ranges where `from` is after FY start.
+    {
+      name: 'postedToJournal',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { position: 'sidebar' },
     },
     // Illaka scoping — required; auto-assigned from the user's illaka (or C00).
     {

@@ -348,6 +348,74 @@ export const JournalEntries: CollectionConfig = {
           : { docs: [] }
         const acctById = new Map((acctRes.docs as any[]).map((a) => [a.id, a]))
 
+        // ── Mid-year carryforward: add opening balances whose FY start
+        // precedes `from` (they fall outside the journal-sum range [from, to]).
+        if (from && tenant) {
+          const containingFyRes = await req.payload.find({
+            collection: 'fiscal-years',
+            where: {
+              and: [
+                { tenant: { equals: tenant } },
+                { startDate: { less_than_equal: from } },
+                { endDate: { greater_than_equal: from } },
+              ],
+            },
+            limit: 1,
+            depth: 0,
+            overrideAccess: true,
+          })
+          const containingFy = containingFyRes.docs?.[0] as any
+          if (containingFy) {
+            const fromAfterStart = new Date(from) > new Date(containingFy.startDate)
+            const obWhere: any = {
+              and: [
+                { fiscalYear: { equals: containingFy.id } },
+                { tenant: { equals: tenant } },
+              ],
+            }
+            if (fromAfterStart) {
+              // `from` is after FY start: opening balances are before `from`,
+              // so they're not in journal sums. Include posted ones.
+              obWhere.and.push({ postedToJournal: { equals: true } })
+            } else {
+              // `from` = FY start: posted opening balances are already in
+              // journal sums (posted on FY start date). Add only legacy
+              // (unposted) ones to avoid double-counting.
+              obWhere.and.push({ postedToJournal: { equals: false } })
+            }
+            const obRes = await req.payload.find({
+              collection: 'opening-balances',
+              where: obWhere,
+              limit: 1000,
+              depth: 0,
+              overrideAccess: true,
+            })
+            const newIds: number[] = []
+            for (const d of obRes.docs as any[]) {
+              const acctId = Number(d.account)
+              const amount = toNum(d.amount)
+              const s = sums.get(acctId) || { debit: 0, credit: 0 }
+              if (amount > 0) s.debit += amount
+              else s.credit += Math.abs(amount)
+              sums.set(acctId, s)
+              if (!acctById.has(acctId)) newIds.push(acctId)
+            }
+            // Fetch accounts that appear only via opening balances.
+            if (newIds.length) {
+              const extraAcctRes = await req.payload.find({
+                collection: 'gl-accounts',
+                where: { id: { in: newIds } },
+                limit: 1000,
+                depth: 0,
+                overrideAccess: true,
+              })
+              for (const a of extraAcctRes.docs as any[]) {
+                acctById.set(Number(a.id), a)
+              }
+            }
+          }
+        }
+
         const assets: any[] = []
         const liabilities: any[] = []
         const equity: any[] = []
