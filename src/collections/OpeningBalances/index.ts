@@ -25,6 +25,25 @@ import { toNum, round2 } from '@/utilities/journalValidation'
  * values, liabilities/equity/income credit-positive. A helper endpoint
  * returns the net opening balance per account for the requested fiscal year.
  */
+/**
+ * Collection-level guard: opening balances cannot be written for a closed
+ * fiscal year. Defense in depth — the save-wizard endpoint also checks this
+ * before mutating, but the hook protects any write path.
+ */
+async function rejectClosedYear({ data, req }: any): Promise<void> {
+  const fyId = data?.fiscalYear
+  if (!fyId) return
+  const fy = await req.payload.findByID({
+    collection: 'fiscal-years',
+    id: fyId,
+    depth: 0,
+    overrideAccess: true,
+  })
+  if (fy && (fy as any).status === 'closed') {
+    throw new Error('Cannot write opening balances for a closed fiscal year.')
+  }
+}
+
 export const OpeningBalances: CollectionConfig = {
   slug: 'opening-balances',
   labels: { singular: 'Opening Balance', plural: 'Opening Balances' },
@@ -264,6 +283,6 @@ export const OpeningBalances: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeValidate: [assignTenant],
+    beforeValidate: [assignTenant, rejectClosedYear],
   },
 }

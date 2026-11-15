@@ -290,6 +290,19 @@ export const FiscalYears: CollectionConfig = {
           }
         }
 
+        // A year can only close when its carried positions net to zero —
+        // otherwise the close would carry an unbalanced position forward.
+        const carryNet = round2(carry.reduce((t, c) => t + c.amount, 0))
+        if (Math.abs(carryNet) >= 0.01) {
+          return Response.json(
+            {
+              error: `Fiscal year is out of balance: carried positions net to ${carryNet.toFixed(2)}. Reconcile before closing.`,
+              carryNet,
+            },
+            { status: 400 },
+          )
+        }
+
         // Replace the target year's opening balances (re-close is idempotent).
         const existing = await req.payload.find({
           collection: 'opening-balances',

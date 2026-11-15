@@ -550,7 +550,10 @@ export const JournalEntries: CollectionConfig = {
           limit: parsePagination(searchParams).limit,
           offset: parsePagination(searchParams).offset,
           totals: { debit: totalDebit, credit: totalCredit },
-          closingBalance: running,
+          // closingBalance is only meaningful for cash-type daybooks.
+          ...(type === 'cash' || type === 'petty-cash'
+            ? { closingBalance: running }
+            : {}),
         })
       },
     },
@@ -590,7 +593,23 @@ export const JournalEntries: CollectionConfig = {
           const txn = await req.payload.db.beginTransaction()
           const txId = txn ?? undefined
           try {
-            // Leg 1: fromTenant credits their bank/account (credit side)
+            const settings = (await req.payload.findGlobal({
+              slug: 'billing-settings',
+              depth: 0,
+            })) as any
+            const clearingId = settings?.interIllakaClearingAccount
+              ? Number(
+                  typeof settings.interIllakaClearingAccount === 'object'
+                    ? settings.interIllakaClearingAccount.id
+                    : settings.interIllakaClearingAccount,
+                )
+              : null
+            if (!clearingId) {
+              throw new Error(
+                'Configure interIllakaClearingAccount in billing settings before transferring.',
+              )
+            }
+            // Leg 1: fromTenant credits its account, debits the clearing account.
             const je1 = await req.payload.create({
               collection: 'journal-entries',
               data: {
@@ -601,13 +620,13 @@ export const JournalEntries: CollectionConfig = {
                 transferRef: ref,
                 lines: [
                   { account: Number(body.fromAccount), credit: amount },
-                  { account: Number(body.toAccount), debit: amount },
+                  { account: clearingId, debit: amount },
                 ],
               } as any,
               req: { transactionID: txId, overrideAccess: true } as any,
               overrideAccess: true,
             })
-            // Leg 2: toTenant debits their bank/account (debit side)
+            // Leg 2: toTenant debits its account, credits the clearing account.
             const je2 = await req.payload.create({
               collection: 'journal-entries',
               data: {
@@ -618,7 +637,7 @@ export const JournalEntries: CollectionConfig = {
                 transferRef: ref,
                 lines: [
                   { account: Number(body.toAccount), debit: amount },
-                  { account: Number(body.fromAccount), credit: amount },
+                  { account: clearingId, credit: amount },
                 ],
               } as any,
               req: { transactionID: txId, overrideAccess: true } as any,

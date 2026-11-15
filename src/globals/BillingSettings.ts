@@ -271,6 +271,15 @@ export const BillingSettings: GlobalConfig = {
           admin: { description: 'Cost of goods sold (delivery challans).' },
         },
         {
+          name: 'interIllakaClearingAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: {
+            description:
+              'Inter-illaka transfer clearing account (balances transfer legs).',
+          },
+        },
+        {
           name: 'returnsAccount',
           type: 'relationship',
           relationTo: 'gl-accounts',

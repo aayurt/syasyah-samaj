@@ -1105,6 +1105,10 @@ export interface GlAccount {
   openingBalance?: number | null;
   active?: boolean | null;
   allowManualPosting?: boolean | null;
+  /**
+   * Normal balance direction. Contra accounts (e.g. Accumulated Depreciation) carry a credit normal balance.
+   */
+  normalBalance?: ('debit' | 'credit') | null;
   tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
@@ -4689,6 +4693,7 @@ export interface GlAccountsSelect<T extends boolean = true> {
   openingBalance?: T;
   active?: T;
   allowManualPosting?: T;
+  normalBalance?: T;
   tenant?: T;
   updatedAt?: T;
   createdAt?: T;

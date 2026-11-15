@@ -791,7 +791,9 @@ async function buildPostingLines(
           const purchasesVal = round2(Math.max(gross - returnedCost, 0))
           if (purchasesVal > 0) {
             lines.push({
-              account: resolveAccount(settings, 'returnsAccount', type, 'Purchase Returns'),
+              // Purchase returns reduce the purchase expense (credit an
+              // expense account), never an income-typed returns account.
+              account: resolveAccount(settings, 'cogsAccount', type, 'Purchase Returns'),
               credit: purchasesVal,
             })
           }
@@ -1671,71 +1673,39 @@ export const Documents: CollectionConfig = {
             )
           }
 
-          // Void always creates a CREDIT note — it reduces the balance:
-          //   Sales void: reduces AR (Dr. Returns, Cr. AR)
-          //   Purchase void: reduces AP (Dr. AP, Cr. Returns)
-          const creditNoteType = 'credit-note'
-
-          // Generate a number for the credit/debit note
-          const cnFy = await findFiscalYearForDate(req.payload, new Date(), doc.tenant)
-          const cnNumber = await nextNumber(req.payload, creditNoteType, new Date().toISOString().slice(0, 10), cnFy, doc.tenant)
-
-          // Create credit/debit note for the full amount
-          const noteLines = (doc.lines || []).map((l: any) => ({
-            description: l.description || 'Voided item',
-            item: l.item ? accId(l.item) : undefined,
-            qty: toNum(l.qty) || 1,
-            rate: toNum(l.rate) || 0,
-            amount: toNum(l.amount) || round2((toNum(l.qty) || 1) * (toNum(l.rate) || 0)),
+          // Reverse the original entry line-for-line: swap debit/credit on
+          // every leg. Nets to zero against the original entry for any doc
+          // type (invoice, payment, receipt, journal, contra, GRN), so no
+          // wrong accounts are posted regardless of document type.
+          const reversalLines = (entry.lines || []).map((l: any) => ({
+            account: l.account,
+            debit: toNum(l.credit) || undefined,
+            credit: toNum(l.debit) || undefined,
+            memo: l.memo || `Reversal of ${doc.number || doc.id}`,
           }))
 
-          const creditNote = await req.payload.create({
-            collection: 'documents',
+          const reversal = await req.payload.create({
+            collection: 'journal-entries',
             data: {
-              docType: creditNoteType,
-              number: cnNumber,
               date: new Date().toISOString().slice(0, 10),
-              party: doc.party,
+              narration: `Void reversal of ${doc.number || doc.id} — ${reason}`,
               status: 'posted',
-              narration: `${reason} — ${doc.number || doc.id}`,
-              lines: noteLines,
-              netTotal: toNum(doc.netTotal) || 0,
-              taxTotal: toNum(doc.taxTotal) || 0,
-              taxRate: Math.max(0, toNum(doc.taxRate)) || undefined,
-              taxLines: scaleTaxLines(doc, 1) || [],
-              grossTotal: toNum(doc.grossTotal) || 0,
               tenant: doc.tenant,
-              referenceTo: doc.id,
-              referenceToDocType: doc.docType,
-            },
+              lines: reversalLines,
+            } as any,
+            req: { transactionID },
             overrideAccess: true,
-            req: {
-              transactionID,
-              context: { docStatusTransition: 'post' },
-            },
-          }) as any
+          })
 
-          // Build voidedItems for all lines
-          const allLines: any[] = doc.lines || []
-          const voidedItems = allLines.map((l: any, idx: number) => ({
+          // Build voidedItems referencing the reversal entry (audit trail).
+          const voidedItems = (doc.lines || []).map((l: any, idx: number) => ({
             itemIndex: idx,
             quantity: toNum(l.qty) || 1,
             reason: reason,
-            creditNoteId: creditNote.id,
-            noteNumber: cnNumber,
+            reversalEntryId: String(reversal.id),
             voidedAt: new Date().toISOString(),
             voidedBy: req.user?.email || 'system',
           }))
-
-          // Post the credit note itself: its reversal journal entry reverses
-          // AR/AP and (for inventory vouchers) the Inventory / COGS legs at
-          // the original cost, and its stock movements restock returned goods
-          // or return them to the supplier — all atomic with the void.
-          const { stockPlan } = await createPostingArtifacts(
-            req.payload,
-            creditNote as any,
-            { transactionID },
-          )
 
           const updated = await req.payload.update({
             collection: 'documents',
@@ -1757,8 +1727,8 @@ export const Documents: CollectionConfig = {
 
           return Response.json({
             doc: updated,
-            creditNote: { id: creditNote.id, number: cnNumber, amount: toNum(doc.grossTotal) || 0 },
-            reversedMovements: stockPlan.movements.length,
+            reversal: { id: reversal.id, amount: toNum(doc.grossTotal) || 0 },
+            reversedLines: reversalLines.length,
           })
         } catch (err) {
           try {
