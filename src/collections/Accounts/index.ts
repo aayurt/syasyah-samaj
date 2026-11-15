@@ -12,12 +12,73 @@ import { sumPostedByAccount } from '@/utilities/journalSums'
 import { round2, toNum } from '@/utilities/journalValidation'
 import { paginate, parsePagination } from '@/utilities/pagination'
 
-/** Reject an account that is its own parent (defensive; cycles beyond that
- * are out of scope — ponytail: add cycle check if multi-level parenting lands). */
-const forbidSelfParent = ({ data }: { data?: any }) => {
-  if (data?.parent != null && data?.id != null && data.parent === data.id) {
+/** Validate account data: no self-parent, no parent cycle, unique code within
+ * tenant.
+ *
+ * Cycles are walked up the parent chain and bounded at 50 hops. Codes must be
+ * unique per tenant (excluding the account being edited).
+ *
+ * ponytail: posting to an account that has children is not yet rejected here;
+ * add a posting-time check (account has descendants) when headings are seeded.
+ */
+const validateAccount = async ({
+  data,
+  req,
+  originalDoc,
+}: {
+  data?: any
+  req?: any
+  originalDoc?: any
+}) => {
+  const id = data?.id ?? originalDoc?.id
+  const tenant = data?.tenant ?? originalDoc?.tenant
+
+  // An account cannot be its own parent.
+  if (data?.parent != null && id != null && data.parent === id) {
     throw new Error('An account cannot be its own parent.')
   }
+
+  // Account codes are unique within a tenant.
+  if (data?.code && req?.payload) {
+    const existing = await req.payload.find({
+      collection: 'gl-accounts',
+      where: {
+        and: [
+          { code: { equals: data.code } },
+          { tenant: { equals: tenant } },
+          ...(id ? [{ id: { not_equals: id } }] : []),
+        ],
+      },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+    if (existing.docs.length > 0) {
+      throw new Error(`Account code "${data.code}" already exists.`)
+    }
+  }
+
+  // Detect parent cycles: walk up the chain, bounded.
+  if (data?.parent && req?.payload) {
+    const seen = new Set<string | number>(id ? [id] : [])
+    let cursor = data.parent
+    let hops = 0
+    while (cursor != null && hops < 50) {
+      if (cursor === id || seen.has(cursor)) {
+        throw new Error('Circular parent relationship detected.')
+      }
+      seen.add(cursor)
+      const parent = await req.payload.findById({
+        collection: 'gl-accounts',
+        id: cursor,
+        depth: 0,
+        overrideAccess: true,
+      })
+      cursor = parent?.parent
+      hops++
+    }
+  }
+
   return data
 }
 
@@ -259,6 +320,18 @@ export const Accounts: CollectionConfig = {
       type: 'checkbox',
       defaultValue: true,
     },
+    {
+      name: 'normalBalance',
+      type: 'select',
+      defaultValue: 'debit',
+      options: [
+        { label: 'Debit', value: 'debit' },
+        { label: 'Credit', value: 'credit' },
+      ],
+      admin: {
+        description: 'Normal balance direction. Contra accounts (e.g. Accumulated Depreciation) carry a credit normal balance.',
+      },
+    },
     // Illaka scoping — required; auto-assigned from the user's illaka (or C00).
     {
       name: 'tenant',
@@ -268,6 +341,6 @@ export const Accounts: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeValidate: [assignTenant, forbidSelfParent],
+    beforeValidate: [assignTenant, validateAccount],
   },
 }
