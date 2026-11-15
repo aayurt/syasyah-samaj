@@ -33,9 +33,9 @@ export default async function TimelineSection({ locale }: { locale: Locale }) {
   return (
     <section id="timeline" className="py-16 bg-background border-t border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Section Header */}
-        <div className="max-w-3xl mx-auto text-center mb-12 space-y-3">
+        <div className="mx-auto text-center mb-12 space-y-3">
           <span className="inline-block text-xs uppercase tracking-widest text-primary font-bold bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
             {content.timeline.badge}
           </span>

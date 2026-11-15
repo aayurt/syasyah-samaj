@@ -299,7 +299,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                       className={`w-full rounded-xl border p-4 text-left transition-all ${active
                         ? 'border-crimson-600 bg-crimson-50/40 shadow-[0_0_0_3px_rgba(185,28,28,0.08)]'
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -311,17 +311,17 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                             <span className="block text-[10px] text-slate-400">
                               {dt.value === 'journal-voucher' ? t('vouchers.subDrCr', 'Dr / Cr lines')
                                 : dt.value === 'contra' ? t('vouchers.subTransfer', 'Transfer accounts')
-                                : (dt.value.startsWith('sales') || dt.value.startsWith('purchase')) ? t('vouchers.subItem', 'Item lines')
-                                : dt.value === 'payment-voucher' ? t('vouchers.subPay', 'Pay out')
-                                : dt.value === 'receipt-voucher' ? t('vouchers.subReceive', 'Receive')
-                                : ''}
+                                  : (dt.value.startsWith('sales') || dt.value.startsWith('purchase')) ? t('vouchers.subItem', 'Item lines')
+                                    : dt.value === 'payment-voucher' ? t('vouchers.subPay', 'Pay out')
+                                      : dt.value === 'receipt-voucher' ? t('vouchers.subReceive', 'Receive')
+                                        : ''}
                             </span>
                           </div>
                         </div>
                         <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[9px] font-bold ${active
                           ? 'border-crimson-600 text-crimson-600'
                           : 'border-slate-200 text-slate-400'
-                        }`}>
+                          }`}>
                           {STEPS.indexOf(dt) + 1}
                         </span>
                       </div>
@@ -341,7 +341,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                   className={`px-6 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider shadow-sm transition-all ${!step1Valid
                     ? 'border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
                     : 'bg-crimson-600 text-white hover:bg-crimson-700 hover:shadow-md focus:ring-2 focus:ring-crimson-600/30'
-                  }`}
+                    }`}
                 >
                   {t('vouchers.continue', 'Continue')} →
                 </button>
@@ -350,7 +350,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
           </div>
         ) : (
           <div className="p-6 lg:p-10">
-            <div className="max-w-3xl mx-auto space-y-6">
+            <div className="mx-auto space-y-6">
               <div className="flex items-center justify-between">
                 <button
                   onClick={goPrev}
@@ -373,8 +373,8 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                     </p>
                   </div>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${balanced
-                      ? 'border-emerald-200 text-emerald-600 bg-emerald-50'
-                      : 'border-slate-200 text-slate-500 bg-white'}`}>
+                    ? 'border-emerald-200 text-emerald-600 bg-emerald-50'
+                    : 'border-slate-200 text-slate-500 bg-white'}`}>
                     {balanced ? '✓' : '⚖'}
                   </div>
                 </div>
@@ -463,7 +463,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                     </h2>
                     <button
                       type="button"
-                      onClick={isJournal ? addJLine : isContra ? () => {} : addILine}
+                      onClick={isJournal ? addJLine : isContra ? () => { } : addILine}
                       className="text-xs font-semibold text-crimson-600 hover:text-crimson-800 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                       disabled={isContra}
                     >

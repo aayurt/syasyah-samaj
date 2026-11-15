@@ -21,7 +21,7 @@ export default async function ArchivesPage({ params: paramsPromise }: { params: 
 
   return (
     <div className="container mx-auto py-20 px-4">
-      <div className="max-w-3xl mb-16">
+      <div className="mb-16">
         <h1 className="text-5xl font-black tracking-tight mb-6">Historical Archives</h1>
         <p className="text-xl text-muted-foreground">Preserving our community heritage and history for future generations.</p>
       </div>

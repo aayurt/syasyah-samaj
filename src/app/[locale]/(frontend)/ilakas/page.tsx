@@ -58,10 +58,10 @@ export default async function IlakasPage({ params: paramsPromise }: { params: Pr
 
   return (
     <div className="pt-16 pb-24 bg-background text-foreground min-h-screen">
-      
+
       {/* Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
-        <div className="max-w-3xl mx-auto text-center space-y-4">
+        <div className="mx-auto text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
             <span>{locale === 'en' ? '24 Neighborhood Secretariats' : '२४ इलाका सचिवालय निर्देशिका'}</span>

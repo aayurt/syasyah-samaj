@@ -40,9 +40,9 @@ export default async function EldersSection({ locale = 'en' }: { locale?: Locale
   return (
     <section id="elders" className="py-16 bg-background border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-        
+
         {/* Section Header */}
-        <div className="max-w-3xl space-y-2">
+        <div className="space-y-2">
           <span className="inline-block text-xs uppercase tracking-widest text-primary font-bold bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
             {content.elders.badge}
           </span>
