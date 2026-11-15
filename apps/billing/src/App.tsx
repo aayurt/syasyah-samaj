@@ -467,38 +467,38 @@ function Shell({ email }: { email: string }) {
             />
             <Route path="/" element={<Dashboard />} />
             <Route path="/accounts" element={<Accounts />} />
-            <Route path="/opening-balances" element={<SetupOpeningBalances />} />
+            <Route path="/opening-balances" element={<ErrorBoundary><SetupOpeningBalances /></ErrorBoundary>} />
             <Route path="/transaction-entry" element={<Vouchers />} />
             <Route path="/vouchers" element={<Vouchers />} />
             <Route path="/vouchers/new/:docType?" element={<VoucherStepper mode="create" />} />
-            <Route path="/vouchers/edit/:id" element={<VoucherForm mode="edit" />} />
+            <Route path="/vouchers/edit/:id" element={<ErrorBoundary><VoucherForm mode="edit" /></ErrorBoundary>} />
             <Route path="/parties" element={<Parties />} />
             <Route path="/journal" element={<Journal />} />
-            <Route path="/trial-balance" element={<TrialBalance />} />
-            <Route path="/aging" element={<Aging />} />
+            <Route path="/trial-balance" element={<ErrorBoundary><TrialBalance /></ErrorBoundary>} />
+            <Route path="/aging" element={<ErrorBoundary><Aging /></ErrorBoundary>} />
             <Route path="/inventory" element={<Items />} />
             <Route path="/reports" element={<ReportsHub />} />
-            <Route path="/reports/sales" element={<SalesReport />} />
-            <Route path="/reports/purchase" element={<PurchaseReport />} />
-            <Route path="/reports/party-statement" element={<PartyStatement />} />
+            <Route path="/reports/sales" element={<ErrorBoundary><SalesReport /></ErrorBoundary>} />
+            <Route path="/reports/purchase" element={<ErrorBoundary><PurchaseReport /></ErrorBoundary>} />
+            <Route path="/reports/party-statement" element={<ErrorBoundary><PartyStatement /></ErrorBoundary>} />
             <Route path="/reports/low-stock" element={<LowStockSummary />} />
-            <Route path="/reports/tax-sales" element={<TaxSales />} />
-            <Route path="/reports/tax-purchase" element={<TaxPurchase />} />
-            <Route path="/reports/vat-register" element={<VatRegister />} />
-            <Route path="/reports/cash-statement" element={<CashStatement />} />
-            <Route path="/reports/bank-statement" element={<BankStatement />} />
-            <Route path="/reports/expense-category" element={<ExpenseCategory />} />
-            <Route path="/reports/income-category" element={<IncomeCategory />} />
-            <Route path="/reports/stock-quantity" element={<StockQuantity />} />
-            <Route path="/reports/inventory-valuation" element={<InventoryValuation />} />
-            <Route path="/reports/balance-sheet" element={<BalanceSheet />} />
-            <Route path="/reports/pnl" element={<ProfitLoss />} />
-            <Route path="/audit" element={<AuditLog />} />
+            <Route path="/reports/tax-sales" element={<ErrorBoundary><TaxSales /></ErrorBoundary>} />
+            <Route path="/reports/tax-purchase" element={<ErrorBoundary><TaxPurchase /></ErrorBoundary>} />
+            <Route path="/reports/vat-register" element={<ErrorBoundary><VatRegister /></ErrorBoundary>} />
+            <Route path="/reports/cash-statement" element={<ErrorBoundary><CashStatement /></ErrorBoundary>} />
+            <Route path="/reports/bank-statement" element={<ErrorBoundary><BankStatement /></ErrorBoundary>} />
+            <Route path="/reports/expense-category" element={<ErrorBoundary><ExpenseCategory /></ErrorBoundary>} />
+            <Route path="/reports/income-category" element={<ErrorBoundary><IncomeCategory /></ErrorBoundary>} />
+            <Route path="/reports/stock-quantity" element={<ErrorBoundary><StockQuantity /></ErrorBoundary>} />
+            <Route path="/reports/inventory-valuation" element={<ErrorBoundary><InventoryValuation /></ErrorBoundary>} />
+            <Route path="/reports/balance-sheet" element={<ErrorBoundary><BalanceSheet /></ErrorBoundary>} />
+            <Route path="/reports/pnl" element={<ErrorBoundary><ProfitLoss /></ErrorBoundary>} />
+            <Route path="/audit" element={<ErrorBoundary><AuditLog /></ErrorBoundary>} />
             <Route path="/activity" element={<RecentActivity />} />
             <Route path="/transfers" element={<Transfers />} />
             <Route path="/posting" element={<Posting />} />
-            {features.bankReconciliationEnabled && <Route path="/bank-reconciliation" element={<BankReconciliation />} />}
-            <Route path="/daybooks" element={<Daybooks />} />
+            {features.bankReconciliationEnabled && <Route path="/bank-reconciliation" element={<ErrorBoundary><BankReconciliation /></ErrorBoundary>} />}
+            <Route path="/daybooks" element={<ErrorBoundary><Daybooks /></ErrorBoundary>} />
             <Route path="/fixed-assets" element={<FixedAssets />} />
             <Route path="/members" element={<Members />} />
             <Route path="/membership-types" element={<MembershipTypes />} />
