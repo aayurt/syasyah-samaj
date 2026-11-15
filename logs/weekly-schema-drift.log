@@ -1,0 +1,4 @@
+═══ Weekly Schema Drift Report ═══
+
+📥 Dumping prod schema (82.165.181.153:5432 / syasha)...
+✗ Prod dump failed: spawnSync psql ENOENT
