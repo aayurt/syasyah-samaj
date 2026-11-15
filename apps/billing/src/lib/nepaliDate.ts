@@ -38,7 +38,12 @@ export function toBS(date: string | Date): { year: number; month: number; date: 
         ? new Date(date)
         : new Date(date + 'T00:00:00')
       : date
-  const nep = new NepaliDate(d)
+  let nep: { getYear: () => number; getMonth: () => number; getDate: () => number; getDay: () => number }
+  try {
+    nep = new NepaliDate(d)
+  } catch {
+    return { year: 0, month: 0, date: 0, day: 0 }
+  }
   return {
     year: nep.getYear(),
     month: nep.getMonth(),
@@ -98,6 +103,7 @@ export function formatDate(
     // NepaliDate reads local parts, so a UTC base shifts west of UTC).
     const localDate = new Date(yr, mo, dy)
     const bs = toBS(localDate)
+    if (bs.year === 0) return '—'
     const monthNames = BS_MONTHS
     const monthShort = BS_MONTHS_SHORT
     formatted = dateFormat

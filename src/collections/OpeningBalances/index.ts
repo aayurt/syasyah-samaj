@@ -203,7 +203,24 @@ export const OpeningBalances: CollectionConfig = {
             const fyStart = (fy as any).startDate
               ? String((fy as any).startDate).slice(0, 10)
               : new Date().toISOString().slice(0, 10)
+            const fyStartDate = new Date(fyStart + 'T00:00:00')
+            const fyValid =
+              !isNaN(fyStartDate.getTime()) &&
+              fyStartDate.getFullYear() >= 1900 &&
+              fyStartDate.getFullYear() <= 2100
             const fyLabel = (fy as any).label || String(body.fiscalYear)
+
+            if (!fyValid) {
+              // FY startDate is not a usable AD date (e.g. stored as BS).
+              // Skip journal posting so reports never get an unparseable date.
+              // Balances stay postedToJournal = false and can be re-posted later.
+              return Response.json({
+                message: `Opening balances saved: ${saved} accounts, ${skipped} zero-balance skipped. Journal posting skipped: invalid FY start date "${fyStart}".`,
+                saved,
+                skipped,
+                journalPosted: false,
+              })
+            }
 
             const lines: any[] = []
             let totalDebit = 0
