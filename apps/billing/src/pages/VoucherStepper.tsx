@@ -243,7 +243,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
       } else {
         await api(`/documents/${savedId}/post`, { method: 'POST' })
       }
-      navigate('/vouchers')
+      navigate('/vouchers?tab=all')
     } catch (err) {
       setError(err instanceof Error ? err.message : (isOrder ? 'Confirm failed' : 'Post failed'))
       setSaving(false)
