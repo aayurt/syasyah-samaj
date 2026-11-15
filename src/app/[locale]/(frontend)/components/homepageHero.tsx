@@ -34,8 +34,8 @@ export default async function HomepageHero({ locale: propLocale }: { locale?: Lo
     locale === 'en'
       ? ['Cultural Heritage', 'Guthi Solidarity', 'Civic Community', '24 Local Ilakas']
       : locale === 'new'
-      ? ['झीगु तजिलजि', 'गुथि मंकाः ज्या', 'दुजः सेवा', '२४ गू इलाका']
-      : ['सांस्कृतिक सम्पदा', 'गुठी ऐक्यबद्धता', 'नागरिक सेवा', '२४ इलाका सहकार्य']
+        ? ['झीगु तजिलजि', 'गुथि मंकाः ज्या', 'दुजः सेवा', '२४ गू इलाका']
+        : ['सांस्कृतिक सम्पदा', 'गुठी ऐक्यबद्धता', 'नागरिक सेवा', '२४ इलाका सहकार्य']
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-muted/50 via-background to-background pt-16 pb-12 border-b border-border">
@@ -46,10 +46,10 @@ export default async function HomepageHero({ locale: propLocale }: { locale?: Lo
       <div className="absolute inset-0 bg-[radial-gradient(hsl(var(--border))_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-60 pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
-        
+
         {/* Editorial Masthead */}
         <div className="max-w-4xl mx-auto text-center space-y-6">
-          
+
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border border-border shadow-xs hover:border-primary/50 transition-colors">
             <span className="w-2.5 h-2.5 rounded-full bg-primary animate-ping" />
             <span className="text-xs font-bold text-foreground tracking-wide">
@@ -67,7 +67,7 @@ export default async function HomepageHero({ locale: propLocale }: { locale?: Lo
             </div>
           </div>
 
-          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mx-auto">
             {content.hero.description}
           </p>
 

@@ -42,44 +42,44 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (!inputValue.trim()) return
 
     const newMessage = {
-        content: inputValue,
-        chatRoom: chatRoomId,
-        sender: currentUser.id,
+      content: inputValue,
+      chatRoom: chatRoomId,
+      sender: currentUser.id,
     }
 
     // Optimistic update
     const tempId = Math.random().toString()
     setMessages([...messages, {
-        ...newMessage,
-        id: tempId,
-        sender: currentUser,
-        createdAt: new Date().toISOString()
+      ...newMessage,
+      id: tempId,
+      sender: currentUser,
+      createdAt: new Date().toISOString()
     }])
     setInputValue('')
 
     try {
-        await fetch('/api/messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newMessage)
-        })
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMessage)
+      })
     } catch (error) {
-        console.error("Failed to send message", error)
+      console.error("Failed to send message", error)
     }
   }
 
   return (
-    <div className="flex flex-col h-[70vh] w-full max-w-2xl mx-auto border rounded-3xl overflow-hidden bg-background shadow-2xl">
+    <div className="flex flex-col h-[70vh] w-full mx-auto border rounded-3xl overflow-hidden bg-background shadow-2xl">
       <div className="p-6 border-b bg-muted/30 flex items-center gap-4">
         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <MessageCircle className="w-5 h-5 text-primary" />
+          <MessageCircle className="w-5 h-5 text-primary" />
         </div>
         <div>
-            <h3 className="font-bold">Community Chat</h3>
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                Active now
-            </span>
+          <h3 className="font-bold">Community Chat</h3>
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            Active now
+          </span>
         </div>
       </div>
 
@@ -100,23 +100,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 } as any)}
               >
                 <div className={`flex gap-3 max-w-[80%] ${isMe ? 'flex-row-reverse' : ''}`}>
-                    {!isMe && (
-                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                            <UserIcon className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                    )}
-                    <div>
-                        <div className={`px-4 py-2 rounded-2xl text-sm ${
-                            isMe
-                            ? 'bg-primary text-primary-foreground rounded-tr-none'
-                            : 'bg-card border rounded-tl-none'
-                        }`}>
-                            {msg.content}
-                        </div>
-                        <div className={`text-[10px] mt-1 text-muted-foreground ${isMe ? 'text-right' : 'text-left'}`}>
-                            {msg.sender.name || 'User'} • {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
+                  {!isMe && (
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                      <UserIcon className="w-4 h-4 text-muted-foreground" />
                     </div>
+                  )}
+                  <div>
+                    <div className={`px-4 py-2 rounded-2xl text-sm ${isMe
+                        ? 'bg-primary text-primary-foreground rounded-tr-none'
+                        : 'bg-card border rounded-tl-none'
+                      }`}>
+                      {msg.content}
+                    </div>
+                    <div className={`text-[10px] mt-1 text-muted-foreground ${isMe ? 'text-right' : 'text-left'}`}>
+                      {msg.sender.name || 'User'} • {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )
@@ -126,21 +125,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       <div className="p-4 border-t bg-background">
         <div className="flex gap-2">
-            <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Type a message..."
-                aria-label="Type a message"
-                className="flex-1 bg-muted/50 border-none rounded-full px-6 py-2 outline-none focus:ring-2 ring-primary/20 transition-all"
-            />
-            <button
-                onClick={handleSend}
-                className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
-            >
-                <Send className="w-4 h-4" />
-            </button>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="Type a message..."
+            aria-label="Type a message"
+            className="flex-1 bg-muted/50 border-none rounded-full px-6 py-2 outline-none focus:ring-2 ring-primary/20 transition-all"
+          />
+          <button
+            onClick={handleSend}
+            className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+          >
+            <Send className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>

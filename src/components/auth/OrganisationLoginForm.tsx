@@ -66,15 +66,15 @@ export default function OrganisationLoginForm() {
       buttonText: isEn ? 'Enter Member Portal →' : 'सदस्य पोर्टलमा प्रवेश गर्नुहोस् →',
       features: isEn
         ? [
-            '• Download Digital Member ID card',
-            '• Annual membership dues (levy) renewal',
-            '• Family records & emergency blood network',
-          ]
+          '• Download Digital Member ID card',
+          '• Annual membership dues (levy) renewal',
+          '• Family records & emergency blood network',
+        ]
         : [
-            '• डिजिटल परिचयपत्र डाउनलोड',
-            '• वार्षिक सदस्यता शुल्क (लेबी) नविकरण',
-            '• पारिवारिक अभिलेख र रक्तदाता सञ्जाल',
-          ],
+          '• डिजिटल परिचयपत्र डाउनलोड',
+          '• वार्षिक सदस्यता शुल्क (लेबी) नविकरण',
+          '• पारिवारिक अभिलेख र रक्तदाता सञ्जाल',
+        ],
     },
     coordinator: {
       title: isEn ? 'Ilaka Secretariat Desk' : 'इलाका सचिवालय डेस्क',
@@ -90,15 +90,15 @@ export default function OrganisationLoginForm() {
       buttonText: isEn ? 'Enter Ilaka Secretariat Desk →' : 'इलाका सचिवालय डेस्कमा प्रवेश गर्नुहोस् →',
       features: isEn
         ? [
-            '• 24 Ilaka member applications verification',
-            '• Guthi festival attendance & meeting records',
-            '• Emergency local blood donor coordination',
-          ]
+          '• 24 Ilaka member applications verification',
+          '• Guthi festival attendance & meeting records',
+          '• Emergency local blood donor coordination',
+        ]
         : [
-            '• स्थानीय २४ इलाकाका सदस्य आवेदन प्रमाणीकरण',
-            '• गुठी पर्व उपस्थिति तथा बैठक अभिलेख',
-            '• आपतकालीन स्थानीय रक्तदाता समन्वय',
-          ],
+          '• स्थानीय २४ इलाकाका सदस्य आवेदन प्रमाणीकरण',
+          '• गुठी पर्व उपस्थिति तथा बैठक अभिलेख',
+          '• आपतकालीन स्थानीय रक्तदाता समन्वय',
+        ],
     },
     accounting: {
       title: isEn ? 'Syasyah Dhuku (Accounting & Cashier)' : 'स्यस्यः धुकू (लेखा तथा क्यासियर)',
@@ -114,15 +114,15 @@ export default function OrganisationLoginForm() {
       buttonText: isEn ? 'Enter Syasyah Dhuku (/app) →' : 'स्यस्यः धुकू (/app) मा प्रवेश गर्नुहोस् →',
       features: isEn
         ? [
-            '• Daily receipts, payments & journal vouchers',
-            '• General ledger, bank reconciliation & balance',
-            '• High-speed offline cashier counter operations',
-          ]
+          '• Daily receipts, payments & journal vouchers',
+          '• General ledger, bank reconciliation & balance',
+          '• High-speed offline cashier counter operations',
+        ]
         : [
-            '• दैनिक रसिद, भुक्तानी तथा जर्नल भौचर',
-            '• लेजर खाता, बैंक समाधान र रोक्का मौज्दात',
-            '• अफलाइन क्यासियर काउन्टर सञ्चालन',
-          ],
+          '• दैनिक रसिद, भुक्तानी तथा जर्नल भौचर',
+          '• लेजर खाता, बैंक समाधान र रोक्का मौज्दात',
+          '• अफलाइन क्यासियर काउन्टर सञ्चालन',
+        ],
     },
   }
 
@@ -173,7 +173,7 @@ export default function OrganisationLoginForm() {
   return (
     <div className="w-full max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-8 font-sans transition-colors">
       {/* Top Gateway Selection Guidance */}
-      <div className="text-center max-w-xl mx-auto space-y-2">
+      <div className="text-center mx-auto space-y-2">
         <span className="inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 border border-stone-800 bg-stone-900 text-white dark:border-stone-700 dark:bg-stone-100 dark:text-stone-900 rounded">
           {content.step1Badge}
         </span>
@@ -191,20 +191,18 @@ export default function OrganisationLoginForm() {
         <button
           type="button"
           onClick={() => setActivePortal('member')}
-          className={`cursor-pointer text-left p-5 rounded-xl transition-all space-y-3 min-h-[44px] ${
-            activePortal === 'member'
+          className={`cursor-pointer text-left p-5 rounded-xl transition-all space-y-3 min-h-[44px] ${activePortal === 'member'
               ? 'border-2 border-stone-900 bg-white shadow-sm ring-1 ring-stone-900 dark:border-stone-100 dark:bg-stone-800 dark:ring-stone-100'
               : 'border border-stone-200 bg-stone-50/70 hover:border-stone-400 hover:bg-white dark:border-stone-800 dark:bg-stone-900/60 dark:hover:border-stone-700 dark:hover:bg-stone-800/80'
-          }`}
+            }`}
         >
           <div className="flex justify-between items-start">
             <span className="text-2xl">{portalMeta.member.icon}</span>
             <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                activePortal === 'member'
+              className={`text-[10px] font-bold px-2 py-0.5 rounded ${activePortal === 'member'
                   ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
                   : 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
-              }`}
+                }`}
             >
               {activePortal === 'member' ? content.selectedText : portalMeta.member.badgeTag}
             </span>
@@ -226,20 +224,18 @@ export default function OrganisationLoginForm() {
         <button
           type="button"
           onClick={() => setActivePortal('coordinator')}
-          className={`cursor-pointer text-left p-5 rounded-xl transition-all space-y-3 min-h-[44px] ${
-            activePortal === 'coordinator'
+          className={`cursor-pointer text-left p-5 rounded-xl transition-all space-y-3 min-h-[44px] ${activePortal === 'coordinator'
               ? 'border-2 border-stone-900 bg-white shadow-sm ring-1 ring-stone-900 dark:border-stone-100 dark:bg-stone-800 dark:ring-stone-100'
               : 'border border-stone-200 bg-stone-50/70 hover:border-stone-400 hover:bg-white dark:border-stone-800 dark:bg-stone-900/60 dark:hover:border-stone-700 dark:hover:bg-stone-800/80'
-          }`}
+            }`}
         >
           <div className="flex justify-between items-start">
             <span className="text-2xl">{portalMeta.coordinator.icon}</span>
             <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                activePortal === 'coordinator'
+              className={`text-[10px] font-bold px-2 py-0.5 rounded ${activePortal === 'coordinator'
                   ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
                   : 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
-              }`}
+                }`}
             >
               {activePortal === 'coordinator' ? content.selectedText : portalMeta.coordinator.badgeTag}
             </span>
@@ -261,20 +257,18 @@ export default function OrganisationLoginForm() {
         <button
           type="button"
           onClick={() => setActivePortal('accounting')}
-          className={`cursor-pointer text-left p-5 rounded-xl transition-all space-y-3 min-h-[44px] ${
-            activePortal === 'accounting'
+          className={`cursor-pointer text-left p-5 rounded-xl transition-all space-y-3 min-h-[44px] ${activePortal === 'accounting'
               ? 'border-2 border-stone-900 bg-white shadow-sm ring-1 ring-stone-900 dark:border-stone-100 dark:bg-stone-800 dark:ring-stone-100'
               : 'border border-stone-200 bg-stone-50/70 hover:border-stone-400 hover:bg-white dark:border-stone-800 dark:bg-stone-900/60 dark:hover:border-stone-700 dark:hover:bg-stone-800/80'
-          }`}
+            }`}
         >
           <div className="flex justify-between items-start">
             <span className="text-2xl">{portalMeta.accounting.icon}</span>
             <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                activePortal === 'accounting'
+              className={`text-[10px] font-bold px-2 py-0.5 rounded ${activePortal === 'accounting'
                   ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
                   : 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
-              }`}
+                }`}
             >
               {activePortal === 'accounting' ? content.selectedText : portalMeta.accounting.badgeTag}
             </span>
@@ -294,7 +288,7 @@ export default function OrganisationLoginForm() {
       </div>
 
       {/* Step 2: Contextual Authentication Form */}
-      <div className="border-2 border-stone-900 dark:border-stone-700 bg-white dark:bg-stone-900 p-6 sm:p-8 rounded-2xl max-w-xl mx-auto shadow-sm space-y-5 transition-colors">
+      <div className="border-2 border-stone-900 dark:border-stone-700 bg-white dark:bg-stone-900 p-6 sm:p-8 rounded-2xl mx-auto shadow-sm space-y-5 transition-colors">
         <div className="flex justify-between items-center pb-3 border-b border-stone-100 dark:border-stone-800">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">

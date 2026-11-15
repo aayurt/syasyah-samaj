@@ -94,7 +94,7 @@ export default function MemberViewModal({
       {/* ── Screen-only modal ─────────────────────────────── */}
       <div className="anim-fade-in fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-[5vh]">
         <div
-          className="anim-modal-in relative w-full max-w-2xl rounded-lg border border-slate-200 bg-white shadow-xl"
+          className="anim-modal-in relative w-full rounded-lg border border-slate-200 bg-white shadow-xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* ── Header bar ──────────────────────────────── */}

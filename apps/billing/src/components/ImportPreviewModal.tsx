@@ -103,7 +103,7 @@ export default function ImportPreviewModal({
 
   return (
     <div className="anim-fade-in fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-[8vh]">
-      <div className="anim-modal-in w-full max-w-2xl rounded-lg border border-slate-200 bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="anim-modal-in w-full rounded-lg border border-slate-200 bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-3">
           <h2 className="text-sm font-semibold text-slate-800">
@@ -183,11 +183,10 @@ export default function ImportPreviewModal({
                               <button
                                 key={a}
                                 onClick={() => setAction(key, a)}
-                                className={`rounded px-2 py-0.5 text-[10px] font-medium ${
-                                  action === a
+                                className={`rounded px-2 py-0.5 text-[10px] font-medium ${action === a
                                     ? a === 'skip' ? 'bg-slate-200 text-slate-700' : a === 'update' ? 'bg-amber-200 text-amber-800' : 'bg-emerald-200 text-emerald-800'
                                     : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                                }`}
+                                  }`}
                               >
                                 {a === 'skip' ? t('importPreview.skip') : a === 'update' ? t('importPreview.update') : t('importPreview.createNew')}
                               </button>

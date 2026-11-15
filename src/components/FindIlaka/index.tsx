@@ -31,7 +31,7 @@ export const FindIlaka: React.FC<{ initialIlakas: Ilaka[] }> = ({ initialIlakas 
   }, [searchTerm, initialIlakas])
 
   return (
-    <div className="relative w-full max-w-xl mx-auto z-50">
+    <div className="relative w-full mx-auto z-50">
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5 z-10" />
         <Input
@@ -46,24 +46,24 @@ export const FindIlaka: React.FC<{ initialIlakas: Ilaka[] }> = ({ initialIlakas 
       {results.length > 0 && (
         <div className="absolute top-full mt-2 w-full bg-background border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
         >
-            {results.map((ilaka) => (
-              <Link
-                key={ilaka.id}
-                href={`/ilaka/${ilaka.slug}`}
-                className="flex items-center justify-between p-4 hover:bg-muted transition-colors border-b last:border-0"
-              >
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <MapPin className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                        <div className="font-bold">{ilaka.name}</div>
-                        <div className="text-xs text-muted-foreground">{ilaka.location?.address || 'View Details'}</div>
-                    </div>
+          {results.map((ilaka) => (
+            <Link
+              key={ilaka.id}
+              href={`/ilaka/${ilaka.slug}`}
+              className="flex items-center justify-between p-4 hover:bg-muted transition-colors border-b last:border-0"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-primary" />
                 </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground" />
-              </Link>
-            ))}
+                <div>
+                  <div className="font-bold">{ilaka.name}</div>
+                  <div className="text-xs text-muted-foreground">{ilaka.location?.address || 'View Details'}</div>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
+            </Link>
+          ))}
         </div>
       )}
     </div>

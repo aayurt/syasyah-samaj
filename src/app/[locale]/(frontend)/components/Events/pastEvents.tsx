@@ -31,13 +31,13 @@ export default async function PastEvents({
                 {(title || description) && (
                     <div className="text-center mb-16">
                         {title && <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">{title}</h2>}
-                        {description && <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{description}</p>}
+                        {description && <p className="text-lg text-muted-foreground mx-auto">{description}</p>}
                     </div>
                 )}
                 {!title && !description && (
                     <div className="text-center mb-16">
                         <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">{t('home.pastEvents' as any, { count: 0 })}</h2>
-                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t('home.pastEventsDescription' as any, { count: 0 })}</p>
+                        <p className="text-lg text-muted-foreground mx-auto">{t('home.pastEventsDescription' as any, { count: 0 })}</p>
                     </div>
                 )}
 

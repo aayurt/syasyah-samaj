@@ -35,7 +35,7 @@ export default async function EventsPage({ params: paramsPromise }: { params: Pr
                 <h1 className="text-4xl md:text-5xl font-bold text-primary mb-6">
                     {t('home.UpcomingEvents')} & {t('home.pastEvents')}
                 </h1>
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                <p className="text-lg text-muted-foreground mx-auto">
                     {t('events.pageDescription')}
                 </p>
             </div>

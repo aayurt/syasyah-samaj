@@ -495,7 +495,7 @@ export default function AIWorkspaceModal({
       aria-label={t('ai.title', 'Import with AI')}
     >
       <div className="absolute inset-0 backdrop-blur-sm bg-black/40" onClick={handleClose} />
-      <div className="relative z-10 w-full max-w-2xl rounded-xl border border-slate-200 bg-white overflow-hidden flex flex-col h-[88vh] shadow-2xl">
+      <div className="relative z-10 w-full rounded-xl border border-slate-200 bg-white overflow-hidden flex flex-col h-[88vh] shadow-2xl">
         <header className="flex items-center justify-between gap-2 px-5 py-4 border-b border-slate-200 bg-white">
           <div className="flex items-center gap-2">
             <Sparkles size={18} className="text-crimson-600" />
@@ -503,19 +503,17 @@ export default function AIWorkspaceModal({
           </div>
           <div className="flex items-center gap-2">
             <span
-              className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
-                isIllaka ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-600'
-              }`}
+              className={`px-2 py-0.5 rounded text-[10px] font-medium border ${isIllaka ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-600'
+                }`}
             >
               {illakaCode || tenantId || 'All'}
               {isIllaka ? ' (illaka)' : isCentral ? ' (central)' : ''}
             </span>
             <span
-              className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
-                canWrite
+              className={`px-2 py-0.5 rounded text-[10px] font-medium border ${canWrite
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                   : 'bg-amber-50 border-amber-200 text-amber-700'
-              }`}
+                }`}
             >
               {t('ai.role', 'Role')}: {userRole ?? '—'}
               {canWrite ? ' (admin)' : ' (no write)'}
@@ -604,7 +602,7 @@ export default function AIWorkspaceModal({
         )}
 
         <main className="flex-1 overflow-y-auto p-6">
-          {/* Stepper */ }
+          {/* Stepper */}
           <div className="mb-6">
             <ol className="flex items-center gap-2 text-xs">
               {STEP_ORDER.map((s, i) => {
@@ -613,19 +611,17 @@ export default function AIWorkspaceModal({
                 return (
                   <li key={s.key} className="flex items-center gap-2">
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
-                        active
+                      className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${active
                           ? 'bg-crimson-600 border-crimson-600 text-white'
                           : done
                             ? 'bg-emerald-600 border-emerald-600 text-white'
                             : 'border-slate-300 text-slate-400'
-                      }`}
+                        }`}
                     >
                       {done ? <CheckCircle2 size={12} /> : i + 1}
                     </div>
-                    <span className={`font-medium ${
-                      active ? 'text-crimson-700' : done ? 'text-emerald-700' : 'text-slate-500'
-                    }`}>{s.label}</span>
+                    <span className={`font-medium ${active ? 'text-crimson-700' : done ? 'text-emerald-700' : 'text-slate-500'
+                      }`}>{s.label}</span>
                     {i < STEP_ORDER.length - 1 && (
                       <ArrowRight size={12} className={`shrink-0 ${done ? 'text-emerald-400' : 'text-slate-300'}`} />
                     )}
@@ -844,11 +840,10 @@ export default function AIWorkspaceModal({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <span
-                    className={`px-2 py-1 rounded text-xs font-bold ${
-                      errorCount === 0
+                    className={`px-2 py-1 rounded text-xs font-bold ${errorCount === 0
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                         : 'bg-red-50 text-red-700 border border-red-200'
-                    }`}
+                      }`}
                   >
                     {errorCount === 0
                       ? t('ai.valid', 'Valid')
@@ -899,13 +894,11 @@ export default function AIWorkspaceModal({
                               issues.map((issue, j) => (
                                 <span
                                   key={j}
-                                  className={`inline-block mb-1 rounded bg-${
-                                    issue.severity === 'error' ? 'red' : 'amber'
-                                  }-50 px-2 py-1 text-[10px] font-medium border ${
-                                    issue.severity === 'error'
+                                  className={`inline-block mb-1 rounded bg-${issue.severity === 'error' ? 'red' : 'amber'
+                                    }-50 px-2 py-1 text-[10px] font-medium border ${issue.severity === 'error'
                                       ? 'border-red-200 text-red-700'
                                       : 'border-amber-200 text-amber-700'
-                                  }`}
+                                    }`}
                                 >
                                   {issue.field}: {issue.message}
                                 </span>
@@ -1002,13 +995,11 @@ export default function AIWorkspaceModal({
                                 {issues.map((issue, j) => (
                                   <span
                                     key={j}
-                                    className={`inline-block mb-1 rounded bg-${
-                                      issue.severity === 'error' ? 'red' : 'amber'
-                                    }-50 px-2 py-1 text-[10px] font-medium border ${
-                                      issue.severity === 'error'
+                                    className={`inline-block mb-1 rounded bg-${issue.severity === 'error' ? 'red' : 'amber'
+                                      }-50 px-2 py-1 text-[10px] font-medium border ${issue.severity === 'error'
                                         ? 'border-red-200 text-red-700'
                                         : 'border-amber-200 text-amber-700'
-                                    }`}
+                                      }`}
                                   >
                                     {issue.severity === 'error' ? '✖' : '⚠'}{' '}
                                     {issue.message}

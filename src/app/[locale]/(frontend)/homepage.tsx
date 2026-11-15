@@ -71,7 +71,7 @@ export default async function HomePage({ locale: propLocale }: { locale?: string
       <section className="py-12 bg-muted/30 border-t border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
+
             {/* Left Column: Upcoming Gatherings & Festivals (7 of 12) */}
             <div className="lg:col-span-7 space-y-6">
               <UpcomingEvents showPadding={false} />
@@ -126,7 +126,7 @@ const Container = ({ children }: { children: React.ReactNode }) => (
 const SectionTitle = ({ title, subtitle }: { title: string; subtitle?: string }) => (
   <div className="mb-12 text-center space-y-2">
     <h2 className="text-3xl md:text-4xl font-serif font-black text-foreground">{title}</h2>
-    {subtitle && <p className="text-muted-foreground text-sm max-w-2xl mx-auto leading-relaxed">{subtitle}</p>}
+    {subtitle && <p className="text-muted-foreground text-sm mx-auto leading-relaxed">{subtitle}</p>}
   </div>
 )
 
@@ -170,7 +170,7 @@ const InfoCard = ({ title, text }: { title: string; text: string }) => (
 const Contact = ({ t }: { t: T }) => (
   <section id="contact" className="py-20 bg-primary text-primary-foreground">
     <Container>
-      <div className="max-w-xl mx-auto text-center space-y-4">
+      <div className="mx-auto text-center space-y-4">
         <h2 className="text-3xl sm:text-4xl font-serif font-black">{t('home.contactTitle')}</h2>
         <p className="text-primary-foreground/90 text-sm leading-relaxed">
           {t('home.contactDescription')}

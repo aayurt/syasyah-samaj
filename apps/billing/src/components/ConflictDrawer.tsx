@@ -372,7 +372,7 @@ export default function ConflictDrawer({ onClose }: { onClose: () => void }) {
       {viewEntry && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/50" />
-          <div className="relative z-10 max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-2xl">
+          <div className="relative z-10 max-h-[85vh] w-full overflow-y-auto rounded-xl bg-white shadow-2xl">
             <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
               <div>
                 <div className="text-base font-semibold text-slate-900">

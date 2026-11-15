@@ -212,7 +212,7 @@ export default function Vouchers() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [viewDoc, setViewDoc] = useState<Document | null>(null)
   const [voidDialogDoc, setVoidDialogDoc] = useState<Document | null>(null)
-  const [voidItems, setVoidItems] = useState<Array<{itemIndex: number; quantity: number; reason: string}>>([])
+  const [voidItems, setVoidItems] = useState<Array<{ itemIndex: number; quantity: number; reason: string }>>([])
   const [voidLoading, setVoidLoading] = useState(false)
   const [receiptSortAsc, setReceiptSortAsc] = useState(true)
   const [dateOpen, setDateOpen] = useState(false)
@@ -246,7 +246,7 @@ export default function Vouchers() {
           companyLogo: s.companyLogo,
         })
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   const load = async () => {
@@ -325,25 +325,25 @@ export default function Vouchers() {
           lines: isJ
             ? [emptyItemLine()]
             : ((b.lines as Record<string, unknown>[]) || []).map((l) => ({
-                key: crypto.randomUUID(),
-                id: undefined,
-                item: idOf(l.item),
-                description: (l.description as string) || '',
-                qty: l.qty !== undefined ? String(l.qty) : '',
-                rate: l.rate !== undefined ? String(l.rate) : '',
-                amount: l.amount !== undefined ? String(l.amount) : '',
-              })),
+              key: crypto.randomUUID(),
+              id: undefined,
+              item: idOf(l.item),
+              description: (l.description as string) || '',
+              qty: l.qty !== undefined ? String(l.qty) : '',
+              rate: l.rate !== undefined ? String(l.rate) : '',
+              amount: l.amount !== undefined ? String(l.amount) : '',
+            })),
           journalLines: isJ
             ? ((b.journalLines as Record<string, unknown>[]) || []).map(
-                (l) => ({
-                  key: crypto.randomUUID(),
-                  id: undefined,
-                  account: idOf(l.account),
-                  debit: l.debit !== undefined ? String(l.debit) : '',
-                  credit: l.credit !== undefined ? String(l.credit) : '',
-                  memo: (l.memo as string) || '',
-                }),
-              )
+              (l) => ({
+                key: crypto.randomUUID(),
+                id: undefined,
+                account: idOf(l.account),
+                debit: l.debit !== undefined ? String(l.debit) : '',
+                credit: l.credit !== undefined ? String(l.credit) : '',
+                memo: (l.memo as string) || '',
+              }),
+            )
             : [emptyJLine(), emptyJLine()],
         })
         // Scroll the form into view.
@@ -911,11 +911,10 @@ export default function Vouchers() {
             role="tab"
             aria-selected={activeTab === 'new'}
             onClick={() => navigate('/vouchers/new')}
-            className={`rounded-md px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all ${
-              activeTab === 'new'
+            className={`rounded-md px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all ${activeTab === 'new'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             {t('vouchers.tabNewTransaction', 'New Transaction')}
           </button>
@@ -924,11 +923,10 @@ export default function Vouchers() {
             role="tab"
             aria-selected={activeTab === 'all'}
             onClick={() => setActiveTab('all')}
-            className={`rounded-md px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all ${
-              activeTab === 'all'
+            className={`rounded-md px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all ${activeTab === 'all'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             {t('vouchers.tabAllTransactions', 'All Transactions')}
           </button>
@@ -960,367 +958,364 @@ export default function Vouchers() {
         ) : (
           <>
             {/* Filter toolbar — single row: status pills · search · type/date dropdowns */}
-      <div data-tour="voucher-filters" className="mt-4 flex flex-wrap items-center gap-2">
-        {/* Status pills */}
-        <div className="flex items-center rounded-lg border border-slate-300 bg-white p-0.5" role="group" aria-label="Filter by status">
-          {[
-            { v: '', label: t('vouchers.filterAll', 'All') },
-            { v: 'draft', label: t('vouchers.filterDraft', 'Draft') },
-            { v: 'posted', label: t('vouchers.filterPosted', 'Posted') },
-            { v: 'confirmed', label: t('vouchers.filterConfirmed', 'Confirmed') },
-            { v: 'cancelled', label: t('vouchers.filterCancelled', 'Cancelled') },
-            { v: 'void', label: t('vouchers.filterVoid', 'Void') },
-          ].map((s) => (
-            <button
-              key={s.v}
-              onClick={() => setStatusFilter(s.v)}
-              aria-pressed={statusFilter === s.v}
-              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                statusFilter === s.v
-                  ? 'bg-crimson-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+            <div data-tour="voucher-filters" className="mt-4 flex flex-wrap items-center gap-2">
+              {/* Status pills */}
+              <div className="flex items-center rounded-lg border border-slate-300 bg-white p-0.5" role="group" aria-label="Filter by status">
+                {[
+                  { v: '', label: t('vouchers.filterAll', 'All') },
+                  { v: 'draft', label: t('vouchers.filterDraft', 'Draft') },
+                  { v: 'posted', label: t('vouchers.filterPosted', 'Posted') },
+                  { v: 'confirmed', label: t('vouchers.filterConfirmed', 'Confirmed') },
+                  { v: 'cancelled', label: t('vouchers.filterCancelled', 'Cancelled') },
+                  { v: 'void', label: t('vouchers.filterVoid', 'Void') },
+                ].map((s) => (
+                  <button
+                    key={s.v}
+                    onClick={() => setStatusFilter(s.v)}
+                    aria-pressed={statusFilter === s.v}
+                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${statusFilter === s.v
+                        ? 'bg-crimson-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
 
-        {/* Search */}
-        <div className="min-w-40 flex-1 max-w-xs">
-          <SearchBox
-            value={query}
-            onChange={setQuery}
-            placeholder={t('vouchers.searchPlaceholder', 'Search number, party, narration…')}
-          />
-        </div>
-
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          {/* Type dropdown */}
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            aria-label="Filter by transaction type"
-            className="h-[34px] rounded-lg border border-slate-300 bg-white pl-2.5 pr-8 text-xs text-slate-700 outline-none focus:border-slate-500"
-          >
-            <option value="">{t('vouchers.typeAll', 'Type: All')}</option>
-            {DOC_TYPES.map((dt) => (
-              <option key={dt.value} value={dt.value}>Type: {docTypeLabel(dt.value, t, dt.label)}</option>
-            ))}
-          </select>
-
-          {/* Date range dropdown */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setDateOpen((o) => !o)}
-              aria-expanded={dateOpen}
-              className={`flex h-[34px] items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium ${
-                dateFrom || dateTo
-                  ? 'border-crimson-300 bg-crimson-50 text-crimson-700'
-                  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              <CalendarDays size={13} />
-              {dateFrom || dateTo
-                ? `${dateFrom || '…'} → ${dateTo || '…'}`
-                : 'Date'}
-              <ChevronDown size={12} className={`transition-transform ${dateOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {dateOpen && (
-              <>
-                <div className="fixed inset-0 z-30" onClick={() => setDateOpen(false)} />
-                <div className="absolute right-0 z-40 mt-1 w-64 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
-                  <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('vouchers.dateRange', 'Date range')}</div>
-                  <div className="mt-2 space-y-2">
-                    <label className="block text-xs text-slate-600">
-                      From
-                      <div className="mt-1"><NepaliDateInput compact value={dateFrom} onChange={setDateFrom} /></div>
-                    </label>
-                    <label className="block text-xs text-slate-600">
-                      To
-                      <div className="mt-1"><NepaliDateInput compact value={dateTo} onChange={setDateTo} /></div>
-                    </label>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => { setDateFrom(''); setDateTo('') }}
-                      className="text-xs font-medium text-crimson-600 hover:bg-crimson-50 rounded px-2 py-1"
-                      disabled={!dateFrom && !dateTo}
-                    >
-                      Clear
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDateOpen(false)}
-                      className="rounded bg-slate-800 px-3 py-1 text-xs font-medium text-white hover:bg-slate-700"
-                    >
-                      Done
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Result count */}
-          <span className="whitespace-nowrap text-xs text-slate-400">
-            {visible.length} of {filtered.length}
-          </span>
-        </div>
-      </div>
-
-      {/* Bulk actions bar */}
-      {selected.size > 0 && (
-        <div className="mt-3 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2">
-          <span className="text-sm font-medium text-blue-700">
-            {selected.size} {t('vouchers.selected', 'selected')}
-          </span>
-          {visible.some((d) => selected.has(d.id) && d.status === 'draft') && (
-            <button
-              onClick={bulkPost}
-              disabled={bulkLoading}
-              className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
-            >
-              {bulkLoading ? 'Posting…' : `Post ${visible.filter((d) => selected.has(d.id) && d.status === 'draft').length} Draft(s)`}
-            </button>
-          )}
-          {visible.some((d) => selected.has(d.id) && d.status === 'posted') && (
-            <button
-              onClick={bulkVoid}
-              disabled={bulkLoading}
-              className="rounded border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
-            >
-              {bulkLoading ? 'Voiding…' : `Void ${visible.filter((d) => selected.has(d.id) && d.status === 'posted').length} Posted`}
-            </button>
-          )}
-          <button
-            onClick={() => setSelected(new Set())}
-            className="ml-auto text-xs text-blue-600 hover:underline"
-          >
-            {t('vouchers.clearSelection', 'Clear selection')}
-          </button>
-        </div>
-      )}
-
-      {/* List */}
-      <div className="mt-3 rounded-lg border border-slate-200 bg-white overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="w-10 px-4 py-2">
-                <input
-                  type="checkbox"
-                  checked={visible.length > 0 && selected.size === visible.length}
-                  onChange={toggleSelectAll}
-                  className="h-4 w-4 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500"
+              {/* Search */}
+              <div className="min-w-40 flex-1 max-w-xs">
+                <SearchBox
+                  value={query}
+                  onChange={setQuery}
+                  placeholder={t('vouchers.searchPlaceholder', 'Search number, party, narration…')}
                 />
-              </th>
-              <SortableTh label={t('vouchers.columnDate', 'Date')} sortKey="date" sort={sort} onSort={toggleSort} />
-              <SortableTh label={t('vouchers.columnUpdated', 'Updated')} sortKey="updatedAt" sort={sort} onSort={toggleSort} />
-              <SortableTh label={t('vouchers.columnNumber', 'Transaction No.')} sortKey="number" sort={sort} onSort={toggleSort} />
-              <SortableTh label={t('vouchers.columnType', 'Transaction Type')} sortKey="type" sort={sort} onSort={toggleSort} />
-              <SortableTh label={t('vouchers.columnParty', 'Party')} sortKey="party" sort={sort} onSort={toggleSort} />
-              <SortableTh label={t('vouchers.columnAmount', 'Amount')} sortKey="amount" sort={sort} onSort={toggleSort} align="right" />
-              <SortableTh label={t('vouchers.columnStatus', 'Status')} sortKey="status" sort={sort} onSort={toggleSort} />
-              <th className="px-4 py-2 text-center">{t('vouchers.columnPayment', 'Payment')}</th>
-              <th className="px-4 py-2 text-center">{t('vouchers.columnVoided', 'Voided')}</th>
-              <th className="px-4 py-2 text-right">{t('vouchers.columnActions', 'Actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.length === 0 && (
-              <tr>
-                <td colSpan={11} className="px-4 py-6 text-center text-slate-400">
-                  {t('vouchers.noTransactions', 'No transactions yet.')}
-                </td>
-              </tr>
-            )}
-            {visible.map((d) => (
-              <tr key={d.id} className={`border-b border-slate-50 ${selected.has(d.id) ? 'bg-blue-50' : ''}`}>
-                <td className="px-4 py-2">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(d.id)}
-                    onChange={() => toggleSelect(d.id)}
-                    className="h-4 w-4 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500"
-                  />
-                </td>
-                <td className="px-4 py-2 text-slate-600">
-                  {formatDate(d.date)}
-                </td>
-                <td className="px-4 py-2 text-xs text-slate-400">
-                  {d.updatedAt ? formatDateTime(d.updatedAt) : '—'}
-                </td>
-                <td className="px-4 py-2 font-mono text-slate-700">
-                  {d.number || (
-                    String(d.id ?? '').startsWith('local-') ? (
-                      <span className="text-sky-600" title="Temporary local number — replaced by the official voucher number once synced">
-                        #LOCAL-{String(d.id).slice(6)}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400">— draft —</span>
-                    )
-                  )}
-                </td>
-                <td className="px-4 py-2 text-slate-600">
-                  {docTypeLabel(d.docType, t)}
-                </td>
-                <td className="px-4 py-2 text-slate-700">{partyName(d)}</td>
-                <td className="px-4 py-2 text-right font-mono text-slate-800">
-                  {fmt(effectiveAmount(d))}
-                </td>
-                <td className="px-4 py-2">
-                  <span className="inline-flex items-center gap-1.5">
-                    {String(d.id ?? '').startsWith('local-') && (
-                      <span
-                        title="Saved on this device — posted officially as soon as the device syncs"
-                        className="inline-flex items-center gap-0.5 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-700"
-                      >
-                        {t('status.queuedForPosting', '⏳ Queued for posting')}
-                      </span>
-                    )}
-                    <StatusPill status={orderStatusOf(d) ?? d.status} />
-                    {'_pendingSync' in d && (d as { _pendingSync?: boolean })._pendingSync && (
-                      <span title="Pending sync to server" className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
-                        <RefreshCw size={10} className="animate-spin" />
-                        sync
-                      </span>
-                    )}
-                  </span>
-                </td>
-                <td className="px-4 py-2 text-center">
-                  {(d.docType === 'sales-invoice' || d.docType === 'purchase-invoice') && d.status === 'posted' ? (() => {
-                    const ps = getPaymentStatus(d)
-                    return (
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        ps.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
-                        ps.status === 'partial' ? 'bg-amber-100 text-amber-700' :
-                        'bg-slate-100 text-slate-500'
-                      }`}>
-                        {ps.status === 'paid' ? 'Paid' : ps.status === 'partial' ? `Partial (${Math.round((ps.paid / (effectiveAmount(d) || 1)) * 100)}%)` : 'Unpaid'}
-                      </span>
-                    )
-                  })() : '—'}
-                </td>
-                <td className="px-4 py-2 text-center">
-                  {d.voidedItems && d.voidedItems.length > 0 ? (
-                    <span className="inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
-                      {d.voidedItems.length} item{d.voidedItems.length > 1 ? 's' : ''} voided
-                    </span>
-                  ) : d.status === 'void' ? (
-                    <span className="inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
-                      Full void
-                    </span>
-                  ) : null}
-                </td>
-                <td className="px-4 py-2 text-right">
-                  <div className="relative inline-block">
-                    <button
-                      onClick={(e) => {
-                        if (menuFor === d.id) { setMenuFor(null); return }
-                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-                        setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
-                        setMenuFor(d.id)
-                      }}
-                      className="rounded border border-slate-200 p-1 text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                      aria-label="Actions"
-                      aria-expanded={menuFor === d.id}
-                    >
-                      <MoreVertical size={14} />
-                    </button>
-                    {menuFor === d.id && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-10"
-                          onClick={() => setMenuFor(null)}
-                        />
-                        <div className="fixed z-50 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg" style={{ top: menuPos.top, right: menuPos.right }}>
+              </div>
+
+              <div className="ml-auto flex flex-wrap items-center gap-2">
+                {/* Type dropdown */}
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  aria-label="Filter by transaction type"
+                  className="h-[34px] rounded-lg border border-slate-300 bg-white pl-2.5 pr-8 text-xs text-slate-700 outline-none focus:border-slate-500"
+                >
+                  <option value="">{t('vouchers.typeAll', 'Type: All')}</option>
+                  {DOC_TYPES.map((dt) => (
+                    <option key={dt.value} value={dt.value}>Type: {docTypeLabel(dt.value, t, dt.label)}</option>
+                  ))}
+                </select>
+
+                {/* Date range dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setDateOpen((o) => !o)}
+                    aria-expanded={dateOpen}
+                    className={`flex h-[34px] items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium ${dateFrom || dateTo
+                        ? 'border-crimson-300 bg-crimson-50 text-crimson-700'
+                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                  >
+                    <CalendarDays size={13} />
+                    {dateFrom || dateTo
+                      ? `${dateFrom || '…'} → ${dateTo || '…'}`
+                      : 'Date'}
+                    <ChevronDown size={12} className={`transition-transform ${dateOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {dateOpen && (
+                    <>
+                      <div className="fixed inset-0 z-30" onClick={() => setDateOpen(false)} />
+                      <div className="absolute right-0 z-40 mt-1 w-64 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
+                        <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('vouchers.dateRange', 'Date range')}</div>
+                        <div className="mt-2 space-y-2">
+                          <label className="block text-xs text-slate-600">
+                            From
+                            <div className="mt-1"><NepaliDateInput compact value={dateFrom} onChange={setDateFrom} /></div>
+                          </label>
+                          <label className="block text-xs text-slate-600">
+                            To
+                            <div className="mt-1"><NepaliDateInput compact value={dateTo} onChange={setDateTo} /></div>
+                          </label>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between">
                           <button
-                            onClick={() => {
-                              setMenuFor(null)
-                              setViewDoc(d)
-                            }}
-                            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                            type="button"
+                            onClick={() => { setDateFrom(''); setDateTo('') }}
+                            className="text-xs font-medium text-crimson-600 hover:bg-crimson-50 rounded px-2 py-1"
+                            disabled={!dateFrom && !dateTo}
                           >
-                            <Eye size={13} />
-                            {t('vouchers.view', 'View')}
+                            Clear
                           </button>
-                          {d.status === 'draft' && (
-                            <button
-                              onClick={() => editDraft(d)}
-                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                          <button
+                            type="button"
+                            onClick={() => setDateOpen(false)}
+                            className="rounded bg-slate-800 px-3 py-1 text-xs font-medium text-white hover:bg-slate-700"
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Result count */}
+                <span className="whitespace-nowrap text-xs text-slate-400">
+                  {visible.length} of {filtered.length}
+                </span>
+              </div>
+            </div>
+
+            {/* Bulk actions bar */}
+            {selected.size > 0 && (
+              <div className="mt-3 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2">
+                <span className="text-sm font-medium text-blue-700">
+                  {selected.size} {t('vouchers.selected', 'selected')}
+                </span>
+                {visible.some((d) => selected.has(d.id) && d.status === 'draft') && (
+                  <button
+                    onClick={bulkPost}
+                    disabled={bulkLoading}
+                    className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
+                  >
+                    {bulkLoading ? 'Posting…' : `Post ${visible.filter((d) => selected.has(d.id) && d.status === 'draft').length} Draft(s)`}
+                  </button>
+                )}
+                {visible.some((d) => selected.has(d.id) && d.status === 'posted') && (
+                  <button
+                    onClick={bulkVoid}
+                    disabled={bulkLoading}
+                    className="rounded border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
+                  >
+                    {bulkLoading ? 'Voiding…' : `Void ${visible.filter((d) => selected.has(d.id) && d.status === 'posted').length} Posted`}
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelected(new Set())}
+                  className="ml-auto text-xs text-blue-600 hover:underline"
+                >
+                  {t('vouchers.clearSelection', 'Clear selection')}
+                </button>
+              </div>
+            )}
+
+            {/* List */}
+            <div className="mt-3 rounded-lg border border-slate-200 bg-white overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="w-10 px-4 py-2">
+                      <input
+                        type="checkbox"
+                        checked={visible.length > 0 && selected.size === visible.length}
+                        onChange={toggleSelectAll}
+                        className="h-4 w-4 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500"
+                      />
+                    </th>
+                    <SortableTh label={t('vouchers.columnDate', 'Date')} sortKey="date" sort={sort} onSort={toggleSort} />
+                    <SortableTh label={t('vouchers.columnUpdated', 'Updated')} sortKey="updatedAt" sort={sort} onSort={toggleSort} />
+                    <SortableTh label={t('vouchers.columnNumber', 'Transaction No.')} sortKey="number" sort={sort} onSort={toggleSort} />
+                    <SortableTh label={t('vouchers.columnType', 'Transaction Type')} sortKey="type" sort={sort} onSort={toggleSort} />
+                    <SortableTh label={t('vouchers.columnParty', 'Party')} sortKey="party" sort={sort} onSort={toggleSort} />
+                    <SortableTh label={t('vouchers.columnAmount', 'Amount')} sortKey="amount" sort={sort} onSort={toggleSort} align="right" />
+                    <SortableTh label={t('vouchers.columnStatus', 'Status')} sortKey="status" sort={sort} onSort={toggleSort} />
+                    <th className="px-4 py-2 text-center">{t('vouchers.columnPayment', 'Payment')}</th>
+                    <th className="px-4 py-2 text-center">{t('vouchers.columnVoided', 'Voided')}</th>
+                    <th className="px-4 py-2 text-right">{t('vouchers.columnActions', 'Actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.length === 0 && (
+                    <tr>
+                      <td colSpan={11} className="px-4 py-6 text-center text-slate-400">
+                        {t('vouchers.noTransactions', 'No transactions yet.')}
+                      </td>
+                    </tr>
+                  )}
+                  {visible.map((d) => (
+                    <tr key={d.id} className={`border-b border-slate-50 ${selected.has(d.id) ? 'bg-blue-50' : ''}`}>
+                      <td className="px-4 py-2">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(d.id)}
+                          onChange={() => toggleSelect(d.id)}
+                          className="h-4 w-4 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500"
+                        />
+                      </td>
+                      <td className="px-4 py-2 text-slate-600">
+                        {formatDate(d.date)}
+                      </td>
+                      <td className="px-4 py-2 text-xs text-slate-400">
+                        {d.updatedAt ? formatDateTime(d.updatedAt) : '—'}
+                      </td>
+                      <td className="px-4 py-2 font-mono text-slate-700">
+                        {d.number || (
+                          String(d.id ?? '').startsWith('local-') ? (
+                            <span className="text-sky-600" title="Temporary local number — replaced by the official voucher number once synced">
+                              #LOCAL-{String(d.id).slice(6)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">— draft —</span>
+                          )
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-slate-600">
+                        {docTypeLabel(d.docType, t)}
+                      </td>
+                      <td className="px-4 py-2 text-slate-700">{partyName(d)}</td>
+                      <td className="px-4 py-2 text-right font-mono text-slate-800">
+                        {fmt(effectiveAmount(d))}
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className="inline-flex items-center gap-1.5">
+                          {String(d.id ?? '').startsWith('local-') && (
+                            <span
+                              title="Saved on this device — posted officially as soon as the device syncs"
+                              className="inline-flex items-center gap-0.5 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-700"
                             >
-                              <Pencil size={13} />
-                              {t('vouchers.editDraft', 'Edit draft')}
-                            </button>
+                              {t('status.queuedForPosting', '⏳ Queued for posting')}
+                            </span>
                           )}
-                          {d.status === 'draft' && (
-                            <button
-                              onClick={() => {
-                                setMenuFor(null)
-                                deleteDoc(d.id)
-                              }}
-                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
-                            >
-                              <Trash2 size={13} />
-                              {t('vouchers.deleteDraft', 'Delete draft')}
-                            </button>
+                          <StatusPill status={orderStatusOf(d) ?? d.status} />
+                          {'_pendingSync' in d && (d as { _pendingSync?: boolean })._pendingSync && (
+                            <span title="Pending sync to server" className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                              <RefreshCw size={10} className="animate-spin" />
+                              sync
+                            </span>
                           )}
-                          {d.status === 'posted' && d.docType === 'sales-invoice' && (
-                            <button
-                              onClick={() => {
-                                setMenuFor(null)
-                                downloadPdf(d)
-                              }}
-                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
-                            >
-                              <Printer size={13} />
-                              {t('vouchers.exportPdf', 'Export PDF')}
-                            </button>
-                          )}
-                          {d.status === 'posted' && (
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {(d.docType === 'sales-invoice' || d.docType === 'purchase-invoice') && d.status === 'posted' ? (() => {
+                          const ps = getPaymentStatus(d)
+                          return (
+                            <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${ps.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                                ps.status === 'partial' ? 'bg-amber-100 text-amber-700' :
+                                  'bg-slate-100 text-slate-500'
+                              }`}>
+                              {ps.status === 'paid' ? 'Paid' : ps.status === 'partial' ? `Partial (${Math.round((ps.paid / (effectiveAmount(d) || 1)) * 100)}%)` : 'Unpaid'}
+                            </span>
+                          )
+                        })() : '—'}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {d.voidedItems && d.voidedItems.length > 0 ? (
+                          <span className="inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                            {d.voidedItems.length} item{d.voidedItems.length > 1 ? 's' : ''} voided
+                          </span>
+                        ) : d.status === 'void' ? (
+                          <span className="inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                            Full void
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <div className="relative inline-block">
+                          <button
+                            onClick={(e) => {
+                              if (menuFor === d.id) { setMenuFor(null); return }
+                              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                              setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+                              setMenuFor(d.id)
+                            }}
+                            className="rounded border border-slate-200 p-1 text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                            aria-label="Actions"
+                            aria-expanded={menuFor === d.id}
+                          >
+                            <MoreVertical size={14} />
+                          </button>
+                          {menuFor === d.id && (
                             <>
-                              <button
-                                onClick={() => {
-                                  setMenuFor(null)
-                                  voidDoc(d.id)
-                                }}
-                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
-                              >
-                                Void
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  setMenuFor(null)
-                                  if (!window.confirm('Reopen (unpost) this transaction? This will delete the journal entry and clear the transaction number. You can then edit and re-post it.')) return
-                                  try {
-                                    await api(`/documents/${d.id}/reopen`, { method: 'POST' })
-                                    pushToast('success', 'Transaction reopened — edit and re-post when ready')
-                                    navigate(`/vouchers/edit/${d.id}`)
-                                  } catch (err) {
-                                    pushToast('error', 'Reopen failed', err instanceof Error ? err.message : String(err))
-                                  }
-                                }}
-                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-amber-600 hover:bg-amber-50"
-                              >
-                                Reopen
-                              </button>
+                              <div
+                                className="fixed inset-0 z-10"
+                                onClick={() => setMenuFor(null)}
+                              />
+                              <div className="fixed z-50 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg" style={{ top: menuPos.top, right: menuPos.right }}>
+                                <button
+                                  onClick={() => {
+                                    setMenuFor(null)
+                                    setViewDoc(d)
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                  <Eye size={13} />
+                                  {t('vouchers.view', 'View')}
+                                </button>
+                                {d.status === 'draft' && (
+                                  <button
+                                    onClick={() => editDraft(d)}
+                                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                  >
+                                    <Pencil size={13} />
+                                    {t('vouchers.editDraft', 'Edit draft')}
+                                  </button>
+                                )}
+                                {d.status === 'draft' && (
+                                  <button
+                                    onClick={() => {
+                                      setMenuFor(null)
+                                      deleteDoc(d.id)
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
+                                  >
+                                    <Trash2 size={13} />
+                                    {t('vouchers.deleteDraft', 'Delete draft')}
+                                  </button>
+                                )}
+                                {d.status === 'posted' && d.docType === 'sales-invoice' && (
+                                  <button
+                                    onClick={() => {
+                                      setMenuFor(null)
+                                      downloadPdf(d)
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                  >
+                                    <Printer size={13} />
+                                    {t('vouchers.exportPdf', 'Export PDF')}
+                                  </button>
+                                )}
+                                {d.status === 'posted' && (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        setMenuFor(null)
+                                        voidDoc(d.id)
+                                      }}
+                                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
+                                    >
+                                      Void
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        setMenuFor(null)
+                                        if (!window.confirm('Reopen (unpost) this transaction? This will delete the journal entry and clear the transaction number. You can then edit and re-post it.')) return
+                                        try {
+                                          await api(`/documents/${d.id}/reopen`, { method: 'POST' })
+                                          pushToast('success', 'Transaction reopened — edit and re-post when ready')
+                                          navigate(`/vouchers/edit/${d.id}`)
+                                        } catch (err) {
+                                          pushToast('error', 'Reopen failed', err instanceof Error ? err.message : String(err))
+                                        }
+                                      }}
+                                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-amber-600 hover:bg-amber-50"
+                                    >
+                                      Reopen
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             </>
                           )}
                         </div>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-        </>
-      ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ))}
 
       {/* Print modal */}
       {printDoc && (
@@ -1374,7 +1369,7 @@ export default function Vouchers() {
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-slate-900/50" />
-            <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-2xl print:shadow-none print:max-w-full print:max-h-full print:rounded-none">
+            <div className="relative z-10 max-h-[90vh] w-full overflow-y-auto rounded-xl bg-white shadow-2xl print:shadow-none print:max-w-full print:max-h-full print:rounded-none">
 
               {/* ── Header ──────────────────────────────────── */}
               {(() => {
@@ -1400,11 +1395,10 @@ export default function Vouchers() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className={`inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
-                    viewDoc.status === 'posted' ? 'bg-emerald-100 text-emerald-700' :
-                    viewDoc.status === 'void' ? 'bg-red-100 text-red-700' :
-                    'bg-slate-100 text-slate-600'
-                  }`}>
+                  <div className={`inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${viewDoc.status === 'posted' ? 'bg-emerald-100 text-emerald-700' :
+                      viewDoc.status === 'void' ? 'bg-red-100 text-red-700' :
+                        'bg-slate-100 text-slate-600'
+                    }`}>
                     {viewDoc.status}
                   </div>
                   <div className="mt-1 text-sm text-slate-600">{formatDate(viewDoc.date)}</div>
@@ -1594,144 +1588,142 @@ export default function Vouchers() {
 
                 return (
                   <>
-                  <div className="border-t border-slate-200 px-8 py-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-slate-700">
-                        Receipts & Payments ({allReceipts.length})
-                      </h3>
-                      <button
-                        onClick={() => {
-                          const type = viewDoc.docType === 'sales-invoice' ? 'receipt-voucher' : 'payment-voucher'
-                          const params = new URLSearchParams()
-                          if (invParty) params.set('party', String(invParty))
-                          params.set('linkedInvoice', String(invId))
-                          setViewDoc(null)
-                          navigate(`/vouchers/new/${type}?${params.toString()}`)
-                        }}
-                        className="flex items-center gap-1 rounded bg-crimson-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-crimson-700"
-                      >
-                        <span>+ Create Receipt</span>
-                      </button>
-                    </div>
+                    <div className="border-t border-slate-200 px-8 py-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold text-slate-700">
+                          Receipts & Payments ({allReceipts.length})
+                        </h3>
+                        <button
+                          onClick={() => {
+                            const type = viewDoc.docType === 'sales-invoice' ? 'receipt-voucher' : 'payment-voucher'
+                            const params = new URLSearchParams()
+                            if (invParty) params.set('party', String(invParty))
+                            params.set('linkedInvoice', String(invId))
+                            setViewDoc(null)
+                            navigate(`/vouchers/new/${type}?${params.toString()}`)
+                          }}
+                          className="flex items-center gap-1 rounded bg-crimson-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-crimson-700"
+                        >
+                          <span>+ Create Receipt</span>
+                        </button>
+                      </div>
 
-                    {allReceipts.length === 0 ? (
-                      <p className="text-sm text-slate-400">No receipts recorded yet.</p>
-                    ) : (
-                      <>
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-                              <th className="py-2 cursor-pointer select-none hover:text-slate-700" onClick={() => setReceiptSortAsc(!receiptSortAsc)}>
-                                Date {receiptSortAsc ? '↑' : '↓'}
-                              </th>
-                              <th className="py-2">Transaction No.</th>
-                              <th className="py-2 text-right">Amount</th>
-                              <th className="py-2 text-center">Type</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {allReceipts.map((r) => {
-                              const raw = (r as any).linkedInvoice
-                              const lid = raw && typeof raw === 'object' ? raw.id : raw
-                              const isLinked = Number(lid) === invId
-                              return (
-                                <tr key={r.id} className="border-b border-slate-50">
-                                  <td className="py-2 text-slate-600">{formatDate(r.date)}</td>
-                                  <td className="py-2 font-mono text-slate-700">{r.number || `#${r.id}`}</td>
-                                  <td className="py-2 text-right font-mono font-medium text-slate-800">Rs. {fmt(Number(r.grossTotal) || 0)}</td>
-                                  <td className="py-2 text-center">
-                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                                      isLinked ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
-                                    }`}>
-                                      {isLinked ? 'Linked' : 'General'}
-                                    </span>
-                                  </td>
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                          <tfoot>
-                            <tr className="border-t-2 border-slate-300 font-medium">
-                              <td colSpan={2} className="py-2 text-xs uppercase text-slate-500">Total Paid</td>
-                              <td className="py-2 text-right font-mono text-slate-800">Rs. {fmt(totalPaid)}</td>
-                              <td />
-                            </tr>
-                          </tfoot>
-                        </table>
-                        <div className="mt-2 flex items-center gap-3 text-xs">
-                          <span className={`rounded-full px-2 py-0.5 font-bold ${
-                            ps.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
-                            ps.status === 'partial' ? 'bg-amber-100 text-amber-700' :
-                            'bg-slate-100 text-slate-500'
-                          }`}>
-                            {ps.status === 'paid' ? 'Fully Paid' : ps.status === 'partial' ? `Partial (${Math.round((ps.paid / (effectiveAmount(viewDoc) || 1)) * 100)}%)` : 'Unpaid'}
-                          </span>
-                          <span className="text-slate-500">
-                            Outstanding: Rs. {fmt(ps.outstanding)} of Rs. {fmt(effectiveAmount(viewDoc))}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                      {allReceipts.length === 0 ? (
+                        <p className="text-sm text-slate-400">No receipts recorded yet.</p>
+                      ) : (
+                        <>
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                                <th className="py-2 cursor-pointer select-none hover:text-slate-700" onClick={() => setReceiptSortAsc(!receiptSortAsc)}>
+                                  Date {receiptSortAsc ? '↑' : '↓'}
+                                </th>
+                                <th className="py-2">Transaction No.</th>
+                                <th className="py-2 text-right">Amount</th>
+                                <th className="py-2 text-center">Type</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {allReceipts.map((r) => {
+                                const raw = (r as any).linkedInvoice
+                                const lid = raw && typeof raw === 'object' ? raw.id : raw
+                                const isLinked = Number(lid) === invId
+                                return (
+                                  <tr key={r.id} className="border-b border-slate-50">
+                                    <td className="py-2 text-slate-600">{formatDate(r.date)}</td>
+                                    <td className="py-2 font-mono text-slate-700">{r.number || `#${r.id}`}</td>
+                                    <td className="py-2 text-right font-mono font-medium text-slate-800">Rs. {fmt(Number(r.grossTotal) || 0)}</td>
+                                    <td className="py-2 text-center">
+                                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${isLinked ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+                                        }`}>
+                                        {isLinked ? 'Linked' : 'General'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                            <tfoot>
+                              <tr className="border-t-2 border-slate-300 font-medium">
+                                <td colSpan={2} className="py-2 text-xs uppercase text-slate-500">Total Paid</td>
+                                <td className="py-2 text-right font-mono text-slate-800">Rs. {fmt(totalPaid)}</td>
+                                <td />
+                              </tr>
+                            </tfoot>
+                          </table>
+                          <div className="mt-2 flex items-center gap-3 text-xs">
+                            <span className={`rounded-full px-2 py-0.5 font-bold ${ps.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                                ps.status === 'partial' ? 'bg-amber-100 text-amber-700' :
+                                  'bg-slate-100 text-slate-500'
+                              }`}>
+                              {ps.status === 'paid' ? 'Fully Paid' : ps.status === 'partial' ? `Partial (${Math.round((ps.paid / (effectiveAmount(viewDoc) || 1)) * 100)}%)` : 'Unpaid'}
+                            </span>
+                            <span className="text-slate-500">
+                              Outstanding: Rs. {fmt(ps.outstanding)} of Rs. {fmt(effectiveAmount(viewDoc))}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </>
-                  )
+                )
               })()}
 
               {/* ── Voided Items Section ──────────────────── */}
-                  {viewDoc.voidedItems && viewDoc.voidedItems.length > 0 && (
-                    <div className="border-t border-slate-200 px-8 py-4 bg-red-50/50">
-                      <h3 className="text-sm font-semibold text-red-700 mb-3">
-                        Voided Items ({viewDoc.voidedItems.length})
-                      </h3>
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-red-200 text-left text-xs uppercase tracking-wide text-red-600">
-                            <th className="py-2">#</th>
-                            <th className="py-2">Item</th>
-                            <th className="py-2 text-right">Qty to void</th>
-                            <th className="py-2 text-right">Amount</th>
-                            <th className="py-2">Reason</th>
-                            <th className="py-2">Credit/Debit Note</th>
+              {viewDoc.voidedItems && viewDoc.voidedItems.length > 0 && (
+                <div className="border-t border-slate-200 px-8 py-4 bg-red-50/50">
+                  <h3 className="text-sm font-semibold text-red-700 mb-3">
+                    Voided Items ({viewDoc.voidedItems.length})
+                  </h3>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-red-200 text-left text-xs uppercase tracking-wide text-red-600">
+                        <th className="py-2">#</th>
+                        <th className="py-2">Item</th>
+                        <th className="py-2 text-right">Qty to void</th>
+                        <th className="py-2 text-right">Amount</th>
+                        <th className="py-2">Reason</th>
+                        <th className="py-2">Credit/Debit Note</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewDoc.voidedItems.map((vi: any, idx: number) => {
+                        const line = viewDoc.lines?.[vi.itemIndex]
+                        const amt = (Number(line?.rate) || 0) * vi.quantity
+                        return (
+                          <tr key={idx} className="border-b border-red-100">
+                            <td className="py-2 text-red-600">{vi.itemIndex + 1}</td>
+                            <td className="py-2 text-red-700 line-through">{line?.description || 'Item'}</td>
+                            <td className="py-2 text-right text-red-600">{vi.quantity} / {line?.qty || 1}</td>
+                            <td className="py-2 text-right font-mono text-red-700">Rs. {fmt(amt)}</td>
+                            <td className="py-2 text-red-600 text-xs">{vi.reason || '—'}</td>
+                            <td className="py-2">
+                              {vi.noteNumber ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                                  {vi.noteNumber}
+                                </span>
+                              ) : vi.creditNoteId ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
+                                  CN/DN #{vi.creditNoteId}
+                                </span>
+                              ) : '—'}
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {viewDoc.voidedItems.map((vi: any, idx: number) => {
-                            const line = viewDoc.lines?.[vi.itemIndex]
-                            const amt = (Number(line?.rate) || 0) * vi.quantity
-                            return (
-                              <tr key={idx} className="border-b border-red-100">
-                                <td className="py-2 text-red-600">{vi.itemIndex + 1}</td>
-                                <td className="py-2 text-red-700 line-through">{line?.description || 'Item'}</td>
-                                <td className="py-2 text-right text-red-600">{vi.quantity} / {line?.qty || 1}</td>
-                                <td className="py-2 text-right font-mono text-red-700">Rs. {fmt(amt)}</td>
-                                <td className="py-2 text-red-600 text-xs">{vi.reason || '—'}</td>
-                                <td className="py-2">
-                                  {vi.noteNumber ? (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
-                                      {vi.noteNumber}
-                                    </span>
-                                  ) : vi.creditNoteId ? (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
-                                      CN/DN #{vi.creditNoteId}
-                                    </span>
-                                  ) : '—'}
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                        <tfoot>
-                          <tr className="border-t-2 border-red-300 font-medium">
-                            <td colSpan={3} className="py-2 text-xs uppercase text-red-600">Total Void Amount</td>
-                            <td className="py-2 text-right font-mono text-red-700">Rs. {fmt(viewDoc.voidedAmount || 0)}</td>
-                            <td colSpan={2} />
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  )}
+                        )
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 border-red-300 font-medium">
+                        <td colSpan={3} className="py-2 text-xs uppercase text-red-600">Total Void Amount</td>
+                        <td className="py-2 text-right font-mono text-red-700">Rs. {fmt(viewDoc.voidedAmount || 0)}</td>
+                        <td colSpan={2} />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
 
-                            {/* ── Action Bar ─────────────────────────────── */}
+              {/* ── Action Bar ─────────────────────────────── */}
               <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-8 py-4 rounded-b-xl print:hidden">
                 <div>
                   {viewDoc.status === 'draft' && (
@@ -1806,7 +1798,7 @@ export default function Vouchers() {
       {/* ── Void Items Dialog ──────────────────────────── */}
       {voidDialogDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 print:hidden">
-          <div className="mx-4 w-full max-w-2xl rounded-xl bg-white shadow-2xl">
+          <div className="mx-4 w-full rounded-xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">{t('vouchers.voidItems', 'Void Items')}</h2>

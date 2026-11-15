@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
+import { BookOpen, ArrowRightLeft, FileText, ShoppingCart, CreditCard, FileMinus, FilePlus, Wallet, PackageCheck, Truck, UserCheck, Heart, Package } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { LiquidButton } from '../components/ui/LiquidButton'
 import AccountSelect from '../components/AccountSelect'
@@ -46,14 +47,23 @@ interface ILine { description: string; qty: number; rate: number; amount: number
 const blankJLine: JLine = { account: null, debit: 0, credit: 0, memo: '' }
 const blankILine: ILine = { description: '', qty: 1, rate: 0, amount: 0 }
 
-const chipIcon = (dt: string) => {
-  if (dt === 'journal-voucher') return '📒'
-  if (dt === 'contra') return '🔄'
-  if (dt.startsWith('sales')) return '🧾'
-  if (dt.startsWith('purchase')) return '📥'
-  if (dt === 'payment-voucher') return '💸'
-  if (dt === 'receipt-voucher') return '💰'
-  return '📄'
+const CHIP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  'journal-voucher': BookOpen,
+  contra: ArrowRightLeft,
+  'sales-invoice': FileText,
+  'purchase-invoice': ShoppingCart,
+  'payment-voucher': CreditCard,
+  'receipt-voucher': CreditCard,
+  'credit-note': FileMinus,
+  'debit-note': FilePlus,
+  'petty-cash-voucher': Wallet,
+  grn: PackageCheck,
+  'delivery-challan': Truck,
+  'membership-receipt': UserCheck,
+  'donation-receipt': Heart,
+  'sales-quote': FileText,
+  'sales-order': Package,
+  'purchase-order': Package,
 }
 
 export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps) {
@@ -279,7 +289,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
       <div className="flex-1 overflow-y-auto relative">
         {step === 1 ? (
           <div className="p-6 lg:p-10">
-            <div className="max-w-xl mx-auto space-y-8">
+            <div className="mx-auto space-y-8">
               <div className="space-y-3">
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   {t('vouchers.chooseType', 'Voucher type')}
@@ -289,42 +299,33 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                 </p>
               </div>
 
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {STEPS.map((dt) => {
+                  const Icon = CHIP_ICONS[dt.value]
                   const active = docType === dt.value
                   return (
                     <button
                       key={dt.value}
                       onClick={() => setDocType(dt.value)}
-                      className={`w-full rounded-xl border p-4 text-left transition-all ${active
+                      className={`h-40 rounded-xl border flex flex-col items-center justify-center gap-2 text-left transition-all ${active
                         ? 'border-crimson-600 bg-crimson-50/40 shadow-[0_0_0_3px_rgba(185,28,28,0.08)]'
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                        }`}
+                      }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl">{chipIcon(dt.value)}</span>
-                          <div>
-                            <span className={`block font-semibold ${active ? 'text-slate-900' : 'text-slate-700'}`}>
-                              {t(`vouchers.${dt.labelKey}`, DOC_TYPE_LABELS[dt.value])}
-                            </span>
-                            <span className="block text-[10px] text-slate-400">
-                              {dt.value === 'journal-voucher' ? t('vouchers.subDrCr', 'Dr / Cr lines')
-                                : dt.value === 'contra' ? t('vouchers.subTransfer', 'Transfer accounts')
-                                  : (dt.value.startsWith('sales') || dt.value.startsWith('purchase')) ? t('vouchers.subItem', 'Item lines')
-                                    : dt.value === 'payment-voucher' ? t('vouchers.subPay', 'Pay out')
-                                      : dt.value === 'receipt-voucher' ? t('vouchers.subReceive', 'Receive')
-                                        : ''}
-                            </span>
-                          </div>
-                        </div>
-                        <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[9px] font-bold ${active
-                          ? 'border-crimson-600 text-crimson-600'
-                          : 'border-slate-200 text-slate-400'
-                          }`}>
-                          {STEPS.indexOf(dt) + 1}
+                      <div className="flex items-center gap-2">
+                        <Icon className={`h-6 w-6 ${active ? 'text-crimson-600' : 'text-slate-500'}`} />
+                        <span className={`block font-semibold ${active ? 'text-slate-900' : 'text-slate-700'}`}>
+                          {t(`vouchers.${dt.labelKey}`, DOC_TYPE_LABELS[dt.value])}
                         </span>
                       </div>
+                      <span className="block text-[10px] text-slate-400 text-center">
+                        {dt.value === 'journal-voucher' ? t('vouchers.subDrCr', 'Dr / Cr lines')
+                          : dt.value === 'contra' ? t('vouchers.subTransfer', 'Transfer accounts')
+                            : (dt.value.startsWith('sales') || dt.value.startsWith('purchase')) ? t('vouchers.subItem', 'Item lines')
+                              : dt.value === 'payment-voucher' ? t('vouchers.subPay', 'Pay out')
+                                : dt.value === 'receipt-voucher' ? t('vouchers.subReceive', 'Receive')
+                                  : ''}
+                      </span>
                     </button>
                   )
                 })}

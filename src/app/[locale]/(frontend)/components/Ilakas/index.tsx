@@ -24,7 +24,7 @@ export default async function Ilakas({ locale: propLocale }: { locale?: Locale }
             {t('home.ilakas')}
           </h2>
 
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mx-auto">
             {t('home.ilakasDescription')}
           </p>
         </div>

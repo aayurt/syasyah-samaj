@@ -42,7 +42,7 @@ export default async function IlakaDashboard({ params: paramsPromise }: { params
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
           <div className="text-center text-white px-4">
             <h1 className="text-5xl font-bold mb-4">{ilaka.name}</h1>
-            <p className="text-xl max-w-2xl mx-auto">{ilaka.description}</p>
+            <p className="text-xl mx-auto">{ilaka.description}</p>
           </div>
         </div>
       </div>
@@ -69,12 +69,12 @@ export default async function IlakaDashboard({ params: paramsPromise }: { params
             </section>
 
             <section>
-                <h2 className="text-3xl font-semibold mb-6 border-b pb-2">Archives & History</h2>
-                <p className="text-muted-foreground">Discover the rich history and cultural heritage of {ilaka.name}.</p>
-                {/* Historical content placeholder */}
-                <div className="mt-4 p-8 bg-muted rounded-xl text-center italic">
-                    Historical records for this Ilaka are currently being digitized.
-                </div>
+              <h2 className="text-3xl font-semibold mb-6 border-b pb-2">Archives & History</h2>
+              <p className="text-muted-foreground">Discover the rich history and cultural heritage of {ilaka.name}.</p>
+              {/* Historical content placeholder */}
+              <div className="mt-4 p-8 bg-muted rounded-xl text-center italic">
+                Historical records for this Ilaka are currently being digitized.
+              </div>
             </section>
           </div>
 
@@ -100,7 +100,7 @@ export default async function IlakaDashboard({ params: paramsPromise }: { params
               <h3 className="text-xl font-bold mb-4">Location</h3>
               {ilaka.location?.mapUrl && (
                 <div className="aspect-square w-full rounded-lg overflow-hidden border">
-                   <iframe
+                  <iframe
                     src={ilaka.location.mapUrl}
                     width="100%"
                     height="100%"
