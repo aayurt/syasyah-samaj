@@ -33,6 +33,9 @@ import {
   Users,
   Wallet,
   RefreshCw,
+  AlertCircle,
+  CircleAlert,
+  ArrowRight,
   type LucideIcon,
 } from 'lucide-react'
 import { authClient, isAdminUser, useOfflineSession } from './lib/auth'
@@ -85,7 +88,7 @@ import { FiscalYearProvider } from './lib/fiscalYear'
 import { LangProvider, useT } from './lib/i18n'
 import { api } from './lib/api'
 import { useDataEpochWatcher } from './lib/dataOps'
-import { useSetupStatus } from './lib/setup'
+import { useSetupStatus, SETUP_STEPS } from './lib/setup'
 import { usePrewarmMasters } from './lib/prewarm'
 import type { BillingSettings } from './lib/types'
 import DataManagement from './pages/DataManagement'
@@ -315,6 +318,7 @@ function Shell({ email }: { email: string }) {
   }, [location.pathname]) // eslint-disable-line react-hooks/exhaustive-deps
   const [tourOpen, setTourOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [setupModalOpen, setSetupModalOpen] = useState(false)
   const [features, setFeatures] = useState<Record<string, boolean>>({})
   const [companyName, setCompanyName] = useState<string>('')
 
@@ -345,9 +349,10 @@ function Shell({ email }: { email: string }) {
   }, [])
 
   // Fresh (or just-cleaned) books land on the onboarding wizard instead of an
-  // empty dashboard. Redirect any accounting route to /setup when setup is
-  // KNOWN incomplete — a loading or in-use status must never bounce the user
-  // away (existing books stay usable; only fresh tenants are compelled).
+  // empty dashboard. When setup is KNOWN incomplete, show a modal telling the
+  // user exactly which step is missing instead of a silent redirect — a
+  // loading or in-use status must never bounce the user away (existing books
+  // stay usable; only fresh tenants are compelled).
   useEffect(() => {
     if (
       setup.loading ||
@@ -356,8 +361,13 @@ function Shell({ email }: { email: string }) {
       location.pathname === '/setup' ||
       location.pathname.startsWith('/payroll')
     ) return
+    setSetupModalOpen(true)
+  }, [location.pathname, setup.loading, setup.complete, setup.inUse])
+
+  const goToSetup = () => {
+    setSetupModalOpen(false)
     navigate('/setup', { replace: true })
-  }, [location.pathname, setup.loading, setup.complete, setup.inUse, navigate])
+  }
 
   const closeTour = () => {
     localStorage.setItem('tour-seen', '1')
@@ -530,6 +540,63 @@ function Shell({ email }: { email: string }) {
         <UpdatePrompt />
       </div>
       <Toaster />
+      {setupModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 print:hidden">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle size={28} className="text-amber-600 shrink-0" />
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-slate-900">
+                  Setup incomplete
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Your books need one more step before you can post vouchers
+                  and run reports:
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {SETUP_STEPS
+                .filter((s) => {
+                  const v = setup[s.key]
+                  return v === false
+                })
+                .map((s) => (
+                  <div
+                    key={s.key}
+                    className="flex items-center gap-3 rounded-lg border border-amber-100 bg-amber-50 p-3"
+                  >
+                    <CircleAlert size={16} className="text-amber-500 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-800">
+                        {s.label}
+                      </p>
+                      <p className="text-xs text-amber-600">
+                        Go to {s.to}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setSetupModalOpen(false)}
+                className="flex items-center gap-2 rounded bg-white px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 shadow-sm hover:bg-slate-50"
+              >
+                Not now
+              </button>
+              <button
+                onClick={goToSetup}
+                className="flex items-center gap-2 rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+              >
+                Go to setup <ArrowRight size={15} className="ml-1" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
