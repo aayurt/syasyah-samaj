@@ -18,6 +18,9 @@ import { toBaseCurrency } from '../lib/types'
 
 interface VoucherStepperProps {
   mode?: 'create'
+  inline?: boolean
+  onDocTypeChange?: (dt: DocType) => void
+  onSaved?: (id: number) => void
 }
 
 const STEPS = [
@@ -66,7 +69,7 @@ const CHIP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   'purchase-order': Package,
 }
 
-export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps) {
+export default function VoucherStepper({ mode = 'create', inline, onDocTypeChange, onSaved }: VoucherStepperProps) {
   const navigate = useNavigate()
   const { docType: routeDocType } = useParams<{ docType?: string }>()
   const t = useT()
@@ -243,12 +246,12 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
       } else {
         await api(`/documents/${savedId}/post`, { method: 'POST' })
       }
-      navigate('/vouchers?tab=all')
+      inline ? onSaved?.(savedId) : navigate('/vouchers?tab=all')
     } catch (err) {
       setError(err instanceof Error ? err.message : (isOrder ? 'Confirm failed' : 'Post failed'))
       setSaving(false)
     }
-  }, [isJournal, isOrder, navigate, saveDraft, balanced, jLines, fromAccount, toAccount, contraAmount, iLines])
+  }, [isJournal, isOrder, navigate, saveDraft, balanced, jLines, fromAccount, toAccount, contraAmount, iLines, onSaved])
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -256,7 +259,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
         <div className="px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate('/vouchers')}
+              onClick={() => (inline ? setStep(1) : navigate('/vouchers'))}
               className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
               aria-label="Back to All Transactions"
             >
@@ -322,7 +325,7 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                   return (
                     <button
                       key={dt.value}
-                      onClick={() => { setDocType(dt.value); navigate(`/vouchers/new/${dt.value}`) }}
+                      onClick={() => { setDocType(dt.value); inline ? onDocTypeChange?.(dt.value) : navigate(`/vouchers/new/${dt.value}`) }}
                       className={`h-32 rounded-xl border flex flex-col items-center justify-center gap-1 text-left transition-all ${active
                         ? 'border-crimson-600 bg-crimson-50/40 shadow-[0_0_0_3px_rgba(185,28,28,0.08)]'
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
