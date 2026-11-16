@@ -414,6 +414,110 @@ export const Accounts: CollectionConfig = {
         description: 'Normal balance direction. Contra accounts (e.g. Accumulated Depreciation) carry a credit normal balance.',
       },
     },
+    // ── COA Phase 1: spec §5 account-master fields (additive) ─────────
+    // company <-> tenant mapping: spec company_id == existing tenant.
+    // Audit reuses existing audit-logs (entityType='account') — no dup table.
+    {
+      name: 'status',
+      type: 'select',
+      defaultValue: 'active',
+      required: true,
+      options: [
+        { label: 'Active', value: 'active' },
+        { label: 'Inactive', value: 'inactive' },
+        { label: 'Blocked', value: 'blocked' },
+        { label: 'Archived', value: 'archived' },
+      ],
+      admin: {
+        description:
+          'Active = new transactions allowed. Inactive/Blocked/Archived = no new postings; history remains readable.',
+      },
+    },
+    {
+      name: 'financialStatement',
+      type: 'select',
+      options: [
+        { label: 'Balance Sheet', value: 'balance-sheet' },
+        { label: 'Income Statement', value: 'income-statement' },
+      ],
+      admin: {
+        description:
+          'System-derived from account type where possible; editable override.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'postingAllowed',
+      type: 'checkbox',
+      defaultValue: true,
+      admin: {
+        description:
+          'Whether direct journal postings are allowed. Non-posting accounts are headings/control accounts.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'controlAccount',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description:
+          'Control (subledger) account — must reconcile with supporting party balances.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'reconciliationRequired',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Periodic reconciliation required for this account.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'costCentreRequired',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Cost centre dimension required on postings to this account.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'branchRequired',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Branch dimension required on postings to this account.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'currencyCode',
+      type: 'text',
+      defaultValue: 'NPR',
+      admin: {
+        description: 'Account currency code (ISO). Defaults to NPR.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'effectiveFrom',
+      type: 'date',
+      admin: {
+        description: 'Date from which this account definition is effective.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'deletedAt',
+      type: 'date',
+      admin: {
+        description: 'Soft-delete timestamp. Set instead of hard delete when children or ledger activity exist.',
+        position: 'sidebar',
+      },
+    },
     // Illaka scoping — required; auto-assigned from the user's illaka (or C00).
     {
       name: 'tenant',

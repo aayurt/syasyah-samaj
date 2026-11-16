@@ -6,7 +6,7 @@ import {
 } from '@/access/tenantScoped'
 import type { CollectionConfig } from 'payload'
 import { assignTenant } from '@/utilities/tenantScope'
-import { resolveScopedTenant } from '@/access/tenantScoped'
+import { resolveScopedTenant, isCentralUser } from '@/access/tenantScoped'
 import { isBillingUser } from '@/access/tenantScoped'
 import { toNum, round2 } from '@/utilities/journalValidation'
 import { validateOpeningBatch } from '@/utilities/accountingValidation'
@@ -115,6 +115,7 @@ export const OpeningBalances: CollectionConfig = {
             fiscalYear: number
             tenant: number
             balances: Array<{ account: number; amount: number }>
+            confirmReplace?: boolean
           }
           if (!body.fiscalYear || !body.tenant || !Array.isArray(body.balances)) {
             return Response.json({ error: 'fiscalYear, tenant, and balances array are required.' }, { status: 400 })
@@ -165,7 +166,6 @@ export const OpeningBalances: CollectionConfig = {
             }, { status: 400 })
           }
 
-          // Remove existing non-posted balances for this FY + tenant (drafts only).
           const existing = await req.payload.find({
             collection: 'opening-balances',
             where: {
@@ -180,6 +180,34 @@ export const OpeningBalances: CollectionConfig = {
             overrideAccess: true,
           })
 
+          // Duplicate-draft guard: require explicit replace (QA-007).
+          if (existing.totalDocs > 0 && body.confirmReplace !== true) {
+            return Response.json({
+              error: `A draft batch already exists for this fiscal year (${existing.totalDocs} records). Set confirmReplace: true to replace it.`,
+              existingCount: existing.totalDocs,
+            }, { status: 409 })
+          }
+
+          // Balance enforcement at save: Debit total must equal Credit total (QA-008).
+          let saveDebit = 0
+          let saveCredit = 0
+          for (const b of body.balances) {
+            const amt = round2(Number(b.amount))
+            if (amt > 0) saveDebit += amt
+            else if (amt < 0) saveCredit += Math.abs(amt)
+          }
+          const saveDiff = round2(saveDebit - saveCredit)
+          if (Math.abs(saveDiff) > 0.01) {
+            return Response.json({
+              error: `Opening balances must balance at save. Debit ${saveDebit} ≠ Credit ${saveCredit} (diff ${saveDiff}).`,
+              totalDebit: saveDebit,
+              totalCredit: saveCredit,
+            }, { status: 400 })
+          }
+
+          const userId = (req.user as any)?.id ?? null
+
+          // Remove existing non-posted balances for this FY + tenant (drafts only).
           for (const doc of existing.docs as any[]) {
             await req.payload.delete({
               collection: 'opening-balances',
@@ -187,8 +215,6 @@ export const OpeningBalances: CollectionConfig = {
               overrideAccess: true,
             })
           }
-
-          const userId = (req.user as any)?.id ?? null
 
           // Insert new entries (only non-zero balances) as DRAFT.
           let saved = 0
@@ -230,13 +256,13 @@ export const OpeningBalances: CollectionConfig = {
       },
     },
     // ── POST /api/opening-balances/approve ────────────────────────────
-    // Approve a draft batch: status draft → approved.
+    // Approve a draft batch: status draft → approved. (approver = central roles)
     {
       path: '/approve',
       method: 'post',
       handler: async (req) => {
-        if (!isBillingUser(req.user)) {
-          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        if (!isBillingUser(req.user) || !isCentralUser(req.user)) {
+          return Response.json({ error: 'Unauthorized: approver role required.' }, { status: 401 })
         }
         try {
           const body = (await req.json?.()) as { fiscalYear: number; tenant: number }
@@ -286,15 +312,74 @@ export const OpeningBalances: CollectionConfig = {
         }
       },
     },
+    // ── POST /api/opening-balances/reject ─────────────────────────────
+    // Reject a draft batch: status draft → rejected, with a reason. (approver = central roles)
+    {
+      path: '/reject',
+      method: 'post',
+      handler: async (req) => {
+        if (!isBillingUser(req.user) || !isCentralUser(req.user)) {
+          return Response.json({ error: 'Unauthorized: approver role required.' }, { status: 401 })
+        }
+        try {
+          const body = (await req.json?.()) as { fiscalYear: number; tenant: number; reason?: string }
+          if (!body.fiscalYear || !body.tenant) {
+            return Response.json({ error: 'fiscalYear and tenant are required.' }, { status: 400 })
+          }
+
+          const drafts = await req.payload.find({
+            collection: 'opening-balances',
+            where: {
+              and: [
+                { fiscalYear: { equals: body.fiscalYear } },
+                { tenant: { equals: body.tenant } },
+                { status: { equals: 'draft' } },
+              ],
+            },
+            limit: 1000,
+            depth: 0,
+            overrideAccess: true,
+          })
+
+          if (drafts.totalDocs === 0) {
+            return Response.json({ error: 'No draft opening balances found for this fiscal year.' }, { status: 400 })
+          }
+
+          const userId = (req.user as any)?.id ?? null
+          const now = new Date().toISOString()
+          let rejected = 0
+          for (const doc of drafts.docs as any[]) {
+            await req.payload.update({
+              collection: 'opening-balances',
+              id: doc.id,
+              data: {
+                status: 'rejected',
+                rejectedBy: userId,
+                rejectedAt: now,
+                rejectionReason: body.reason ?? '',
+                updatedBy: userId,
+              } as any,
+              overrideAccess: true,
+            })
+            rejected++
+          }
+
+          return Response.json({ message: `Rejected ${rejected} opening-balance records.`, rejected, status: 'rejected' })
+        } catch (err) {
+          return Response.json({ error: (err as Error).message || 'Reject failed' }, { status: 400 })
+        }
+      },
+    },
     // ── POST /api/opening-balances/post ───────────────────────────────
     // Atomic post: create the opening journal entry AND mark all approved
-    // balances as posted. If journal creation fails, nothing is marked.
+    // balances as posted in ONE Payload transaction. Rejects unbalanced
+    // batches — no silent residual absorption (QA-003, QA-004, QA-006, QA-008).
     {
       path: '/post',
       method: 'post',
       handler: async (req) => {
-        if (!isBillingUser(req.user)) {
-          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        if (!isBillingUser(req.user) || (req.user?.role !== 'admin' && req.user?.role !== 'super-admin')) {
+          return Response.json({ error: 'Unauthorized: poster role required.' }, { status: 401 })
         }
         try {
           const body = (await req.json?.()) as { fiscalYear: number; tenant: number }
@@ -346,7 +431,7 @@ export const OpeningBalances: CollectionConfig = {
           const userId = (req.user as any)?.id ?? null
           const now = new Date().toISOString()
 
-          // Build journal lines from approved balances.
+          // Build journal lines from approved balances + enforce Dr = Cr (no absorption).
           const lines: any[] = []
           let totalDebit = 0
           let totalCredit = 0
@@ -363,62 +448,52 @@ export const OpeningBalances: CollectionConfig = {
           }
 
           const residual = round2(totalDebit - totalCredit)
-          if (Math.abs(residual) > 0.001) {
-            const equityRes = await req.payload.find({
-              collection: 'gl-accounts',
-              where: { and: [{ type: { equals: 'equity' } }, { tenant: { equals: body.tenant } }] },
-              limit: 1,
-              depth: 0,
-              overrideAccess: true,
-            })
-            const equityAcct = equityRes.docs?.[0] as any
-            if (!equityAcct) {
-              return Response.json({ error: 'No equity account found to absorb opening-balance rounding residual.' }, { status: 400 })
-            }
-            if (residual > 0) {
-              lines.push({ account: equityAcct.id, credit: residual })
-            } else {
-              lines.push({ account: equityAcct.id, debit: Math.abs(residual) })
-            }
+          if (Math.abs(residual) > 0.01) {
+            return Response.json({
+              error: `Opening balances are not balanced. Debit ${totalDebit} ≠ Credit ${totalCredit} (diff ${residual}). Post rejected — post an adjustment journal first.`,
+              totalDebit,
+              totalCredit,
+            }, { status: 400 })
           }
 
-          // Create the journal entry (the write that must succeed before we mark balances).
-          const journal = await req.payload.create({
-            collection: 'journal-entries',
-            data: {
-              date: fyStart,
-              narration: `Opening balances — ${fyLabel}`,
-              status: 'posted',
-              tenant: body.tenant,
-              lines,
-            } as any,
-            overrideAccess: true,
-          })
-
-          // Mark all approved balances as posted (atomic with the journal entry above).
-          let posted = 0
-          const newDocIds: number[] = []
-          for (const doc of approved.docs as any[]) {
-            await req.payload.update({
-              collection: 'opening-balances',
-              id: doc.id,
+          // Atomic: journal create + balance marks in one transaction (rollback on any failure).
+          const result = await (req.payload as any).transaction(async (tx: any) => {
+            const journal = await tx.create({
+              collection: 'journal-entries',
               data: {
+                date: fyStart,
+                narration: `Opening balances — ${fyLabel}`,
                 status: 'posted',
-                postedToJournal: true,
-                postedBy: userId,
-                postedAt: now,
-                updatedBy: userId,
+                tenant: body.tenant,
+                lines,
               } as any,
               overrideAccess: true,
             })
-            newDocIds.push(Number(doc.id))
-            posted++
-          }
+
+            let posted = 0
+            for (const doc of approved.docs as any[]) {
+              await tx.update({
+                collection: 'opening-balances',
+                id: doc.id,
+                data: {
+                  status: 'posted',
+                  postedToJournal: true,
+                  postedBy: userId,
+                  postedAt: now,
+                  updatedBy: userId,
+                } as any,
+                overrideAccess: true,
+              })
+              posted++
+            }
+
+            return { journal, posted }
+          })
 
           return Response.json({
-            message: `Posted ${posted} opening-balance records as journal entry ${journal.id}.`,
-            posted,
-            journalId: journal.id,
+            message: `Posted ${result.posted} opening-balance records as journal entry ${result.journal.id}.`,
+            posted: result.posted,
+            journalId: result.journal.id,
             status: 'posted',
           })
         } catch (err) {
@@ -646,11 +721,11 @@ export const OpeningBalances: CollectionConfig = {
       required: true,
       admin: { position: 'sidebar' },
     },
-    // Workflow status: draft → approved → posted → reversed.
+    // Workflow status: draft → approved → posted → reversed → rejected.
     {
       name: 'status',
       type: 'select',
-      options: ['draft', 'approved', 'posted', 'reversed'],
+      options: ['draft', 'approved', 'posted', 'reversed', 'rejected'],
       defaultValue: 'draft',
       required: true,
       admin: { position: 'sidebar' },
@@ -699,6 +774,23 @@ export const OpeningBalances: CollectionConfig = {
     {
       name: 'reversedAt',
       type: 'date',
+      admin: { position: 'sidebar' },
+    },
+    // Rejection audit — who rejected a draft batch and why.
+    {
+      name: 'rejectedBy',
+      type: 'relationship',
+      relationTo: 'users',
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'rejectedAt',
+      type: 'date',
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'rejectionReason',
+      type: 'text',
       admin: { position: 'sidebar' },
     },
     {
