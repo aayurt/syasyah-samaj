@@ -84,6 +84,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
     : 'journal-voucher')
   const [docType, setDocType] = useState<DocType>(defaultDocType)
   const [step, setStep] = useState(1)
+  const [confirmSwitchTo, setConfirmSwitchTo] = useState<DocType | null>(null)
   const [partyId, setPartyId] = useState<number | null>(null)
   const [date, setDate] = useState(todayAD())
   const [currency, setCurrency] = useState<Currency>('NPR')
@@ -115,6 +116,19 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
   const itemTotal = useMemo(() => iLines.reduce((s, l) => s + (l.amount || 0), 0), [iLines])
   const step1Valid = true // step 1 is type only; a default type is always selected
   const balanced = Math.abs(debitTotal - creditTotal) < 0.0051
+
+  const today = todayAD()
+  const dirty =
+    jLines.some((l) => l.account != null || l.debit || l.credit || l.memo) ||
+    iLines.some((l) => l.description || l.qty !== 1 || l.rate || l.amount) ||
+    partyId != null ||
+    narration !== '' ||
+    date !== today ||
+    currency !== 'NPR' ||
+    exchangeRate != null ||
+    fromAccount != null ||
+    toAccount != null ||
+    contraAmount > 0
 
   // Reset line state when the doc type changes
   useEffect(() => {
@@ -325,7 +339,11 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                   return (
                     <button
                       key={dt.value}
-                      onClick={() => { setDocType(dt.value); inline ? onDocTypeChange?.(dt.value) : navigate(`/vouchers/new/${dt.value}`) }}
+                      onClick={() => {
+                        if (dirty && docType !== dt.value) { setConfirmSwitchTo(dt.value); return }
+                        setDocType(dt.value)
+                        inline ? onDocTypeChange?.(dt.value) : navigate(`/vouchers/new/${dt.value}`)
+                      }}
                       className={`h-32 rounded-xl border flex flex-col items-center justify-center gap-1 text-left transition-all ${active
                         ? 'border-crimson-600 bg-crimson-50/40 shadow-[0_0_0_3px_rgba(185,28,28,0.08)]'
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
@@ -735,6 +753,41 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
           </div>
         )}
       </div>
+      {confirmSwitchTo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setConfirmSwitchTo(null)}
+          />
+          <div className="relative bg-white rounded-xl border border-slate-200 p-6 max-w-md w-full shadow-xl">
+            <h2 className="text-sm font-semibold text-slate-900">
+              {t('vouchers.confirmTypeChange', 'Change voucher type?')}
+            </h2>
+            <p className="text-[12px] text-slate-600 mt-2">
+              {t('vouchers.confirmTypeChangeBody', 'Filled contents will be removed. Continue?')}
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmSwitchTo(null)}
+                className="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                {t('vouchers.cancel', 'Cancel')}
+              </button>
+              <button
+                onClick={() => {
+                  const next = confirmSwitchTo
+                  setConfirmSwitchTo(null)
+                  setDocType(next)
+                  inline ? onDocTypeChange?.(next) : navigate(`/vouchers/new/${next}`)
+                }}
+                className="px-4 py-2 rounded-lg bg-crimson-600 text-sm text-white hover:bg-crimson-700"
+              >
+                {t('vouchers.continueAnyway', 'Continue')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
