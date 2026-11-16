@@ -102,6 +102,8 @@ export interface Config {
     employees: Employee;
     'fiscal-years': FiscalYear;
     'opening-balances': OpeningBalance;
+    opening_balance_batches: OpeningBalanceBatch;
+    opening_balance_lines: OpeningBalanceLine;
     'data-ops': DataOp;
     'pay-groups': PayGroup;
     'payroll-runs': PayrollRun;
@@ -169,6 +171,8 @@ export interface Config {
     employees: EmployeesSelect<false> | EmployeesSelect<true>;
     'fiscal-years': FiscalYearsSelect<false> | FiscalYearsSelect<true>;
     'opening-balances': OpeningBalancesSelect<false> | OpeningBalancesSelect<true>;
+    opening_balance_batches: OpeningBalanceBatchesSelect<false> | OpeningBalanceBatchesSelect<true>;
+    opening_balance_lines: OpeningBalanceLinesSelect<false> | OpeningBalanceLinesSelect<true>;
     'data-ops': DataOpsSelect<false> | DataOpsSelect<true>;
     'pay-groups': PayGroupsSelect<false> | PayGroupsSelect<true>;
     'payroll-runs': PayrollRunsSelect<false> | PayrollRunsSelect<true>;
@@ -1073,6 +1077,10 @@ export interface AccountGroup {
    * Display order within the parent group.
    */
   sortOrder?: number | null;
+  /**
+   * Hierarchy level (0 = root). Auto-computed from parent chain.
+   */
+  level?: number | null;
   tenant?: (number | null) | Tenant;
   updatedAt: string;
   createdAt: string;
@@ -1094,13 +1102,17 @@ export interface GlAccount {
    * Parent account — creates a sub-account (parent → child) hierarchy.
    */
   parent?: (number | null) | GlAccount;
+  /**
+   * Hierarchy level (0 = root). Auto-computed from parent chain.
+   */
+  level?: number | null;
   type: 'asset' | 'liability' | 'equity' | 'income' | 'expense';
   /**
    * Cash/bank accounts drive the cash & bank book and reconciliation.
    */
   class?: ('cash' | 'bank' | 'other') | null;
   /**
-   * Opening balance at the start of the books (debit positive).
+   * Deprecated — do not use. Single source of truth is the opening-balances collection.
    */
   openingBalance?: number | null;
   active?: boolean | null;
@@ -1109,6 +1121,46 @@ export interface GlAccount {
    * Normal balance direction. Contra accounts (e.g. Accumulated Depreciation) carry a credit normal balance.
    */
   normalBalance?: ('debit' | 'credit') | null;
+  /**
+   * Active = new transactions allowed. Inactive/Blocked/Archived = no new postings; history remains readable.
+   */
+  status: 'active' | 'inactive' | 'blocked' | 'archived';
+  /**
+   * System-derived from account type where possible; editable override.
+   */
+  financialStatement?: ('balance-sheet' | 'income-statement') | null;
+  /**
+   * Whether direct journal postings are allowed. Non-posting accounts are headings/control accounts.
+   */
+  postingAllowed?: boolean | null;
+  /**
+   * Control (subledger) account — must reconcile with supporting party balances.
+   */
+  controlAccount?: boolean | null;
+  /**
+   * Periodic reconciliation required for this account.
+   */
+  reconciliationRequired?: boolean | null;
+  /**
+   * Cost centre dimension required on postings to this account.
+   */
+  costCentreRequired?: boolean | null;
+  /**
+   * Branch dimension required on postings to this account.
+   */
+  branchRequired?: boolean | null;
+  /**
+   * Account currency code (ISO). Defaults to NPR.
+   */
+  currencyCode?: string | null;
+  /**
+   * Date from which this account definition is effective.
+   */
+  effectiveFrom?: string | null;
+  /**
+   * Soft-delete timestamp. Set instead of hard delete when children or ledger activity exist.
+   */
+  deletedAt?: string | null;
   tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
@@ -2310,7 +2362,57 @@ export interface OpeningBalance {
    * Opening balance for this account at the start of the fiscal year (signed by account type).
    */
   amount?: number | null;
+  postedToJournal?: boolean | null;
   tenant: number | Tenant;
+  status: 'draft' | 'approved' | 'posted' | 'reversed' | 'rejected';
+  createdBy?: (number | null) | User;
+  updatedBy?: (number | null) | User;
+  approvedBy?: (number | null) | User;
+  approvedAt?: string | null;
+  postedBy?: (number | null) | User;
+  postedAt?: string | null;
+  reversedBy?: (number | null) | User;
+  reversedAt?: string | null;
+  rejectedBy?: (number | null) | User;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
+  reversalReason?: string | null;
+  sourceBatch?: (number | null) | OpeningBalance;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "opening_balance_batches".
+ */
+export interface OpeningBalanceBatch {
+  id: number;
+  fiscal_year: number | FiscalYear;
+  tenant: number | Tenant;
+  status: 'draft' | 'approved' | 'posted' | 'rejected';
+  total_debit: number;
+  total_credit: number;
+  reference?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "opening_balance_lines".
+ */
+export interface OpeningBalanceLine {
+  id: number;
+  batch: number | OpeningBalanceBatch;
+  account: number | GlAccount;
+  debit: number;
+  credit: number;
+  currency_code: string;
+  exchange_rate?: number | null;
+  base_currency_amount?: number | null;
+  branch?: string | null;
+  cost_centre?: string | null;
+  reference?: string | null;
+  description?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -4173,6 +4275,14 @@ export interface PayloadLockedDocument {
         value: number | OpeningBalance;
       } | null)
     | ({
+        relationTo: 'opening_balance_batches';
+        value: number | OpeningBalanceBatch;
+      } | null)
+    | ({
+        relationTo: 'opening_balance_lines';
+        value: number | OpeningBalanceLine;
+      } | null)
+    | ({
         relationTo: 'data-ops';
         value: number | DataOp;
       } | null)
@@ -4674,6 +4784,7 @@ export interface AccountGroupsSelect<T extends boolean = true> {
   parent?: T;
   description?: T;
   sortOrder?: T;
+  level?: T;
   tenant?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -4688,12 +4799,23 @@ export interface GlAccountsSelect<T extends boolean = true> {
   description?: T;
   group?: T;
   parent?: T;
+  level?: T;
   type?: T;
   class?: T;
   openingBalance?: T;
   active?: T;
   allowManualPosting?: T;
   normalBalance?: T;
+  status?: T;
+  financialStatement?: T;
+  postingAllowed?: T;
+  controlAccount?: T;
+  reconciliationRequired?: T;
+  costCentreRequired?: T;
+  branchRequired?: T;
+  currencyCode?: T;
+  effectiveFrom?: T;
+  deletedAt?: T;
   tenant?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -5278,7 +5400,55 @@ export interface OpeningBalancesSelect<T extends boolean = true> {
   account?: T;
   fiscalYear?: T;
   amount?: T;
+  postedToJournal?: T;
   tenant?: T;
+  status?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  approvedBy?: T;
+  approvedAt?: T;
+  postedBy?: T;
+  postedAt?: T;
+  reversedBy?: T;
+  reversedAt?: T;
+  rejectedBy?: T;
+  rejectedAt?: T;
+  rejectionReason?: T;
+  reversalReason?: T;
+  sourceBatch?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "opening_balance_batches_select".
+ */
+export interface OpeningBalanceBatchesSelect<T extends boolean = true> {
+  fiscal_year?: T;
+  tenant?: T;
+  status?: T;
+  total_debit?: T;
+  total_credit?: T;
+  reference?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "opening_balance_lines_select".
+ */
+export interface OpeningBalanceLinesSelect<T extends boolean = true> {
+  batch?: T;
+  account?: T;
+  debit?: T;
+  credit?: T;
+  currency_code?: T;
+  exchange_rate?: T;
+  base_currency_amount?: T;
+  branch?: T;
+  cost_centre?: T;
+  reference?: T;
+  description?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -6415,6 +6585,19 @@ export interface BillingSetting {
    */
   cogsAccount?: (number | null) | GlAccount;
   /**
+   * COGS accounts (P&L bucket). Falls back to cogsAccount when empty.
+   */
+  cogsAccounts?:
+    | {
+        account?: (number | null) | GlAccount;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Inter-illaka transfer clearing account (balances transfer legs).
+   */
+  interIllakaClearingAccount?: (number | null) | GlAccount;
+  /**
    * Sales returns / purchase returns (credit & debit notes).
    */
   returnsAccount?: (number | null) | GlAccount;
@@ -6683,6 +6866,13 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   donationAccount?: T;
   inventoryAccount?: T;
   cogsAccount?: T;
+  cogsAccounts?:
+    | T
+    | {
+        account?: T;
+        id?: T;
+      };
+  interIllakaClearingAccount?: T;
   returnsAccount?: T;
   accruedPayableAccount?: T;
   depreciationAccount?: T;

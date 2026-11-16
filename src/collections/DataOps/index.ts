@@ -326,6 +326,7 @@ async function ensureChart(
       await payload.create({
         collection: 'gl-accounts',
         data: { ...a, group: groupIds[a.group], tenant: tid },
+        draft: true,
         overrideAccess: true,
       })
     }

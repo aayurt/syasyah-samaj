@@ -66,6 +66,8 @@ import { Employees } from './collections/Employees'
 import { PayrollRuns } from './collections/PayrollRuns'
 import { FiscalYears } from './collections/FiscalYears/index'
 import { OpeningBalances } from './collections/OpeningBalances'
+import { OpeningBalanceBatches } from './collections/OpeningBalanceBatches'
+import { OpeningBalanceLines } from './collections/OpeningBalanceLines'
 import { DataOps } from './collections/DataOps'
 
 const filename = fileURLToPath(import.meta.url)
@@ -159,6 +161,8 @@ export default buildConfig({
     Employees,
     FiscalYears,
     OpeningBalances,
+    OpeningBalanceBatches,
+    OpeningBalanceLines,
     DataOps,
     PayGroups,
     PayrollRuns,
