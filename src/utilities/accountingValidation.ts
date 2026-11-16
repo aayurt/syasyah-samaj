@@ -267,9 +267,8 @@ export function validateOpeningBatch({
   lines: Array<{
     accountCode?: string
     accountName?: string
-    debit?: number | string
-    credit?: number | string
     accountId?: number | null
+    amount?: number | string
     isPosting?: boolean
     isActive?: boolean
   }>
@@ -313,8 +312,9 @@ export function validateOpeningBatch({
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
     const ref = `line ${i + 1}`
-    const debit = Number(line.debit || 0)
-    const credit = Number(line.credit || 0)
+    const amount = Number(line.amount || 0)
+    const debit = amount > 0 ? amount : 0
+    const credit = amount < 0 ? Math.abs(amount) : 0
 
     if (!line.accountId && !line.accountCode) {
       issues.push(
