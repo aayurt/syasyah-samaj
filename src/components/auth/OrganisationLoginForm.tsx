@@ -171,7 +171,7 @@ export default function OrganisationLoginForm() {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-8 font-sans transition-colors">
+    <div className="w-full  mx-auto py-8 px-4 sm:px-6 space-y-8 font-sans transition-colors">
       {/* Top Gateway Selection Guidance */}
       <div className="text-center mx-auto space-y-2">
         <span className="inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 border border-stone-800 bg-stone-900 text-white dark:border-stone-700 dark:bg-stone-100 dark:text-stone-900 rounded">
@@ -192,16 +192,16 @@ export default function OrganisationLoginForm() {
           type="button"
           onClick={() => setActivePortal('member')}
           className={`cursor-pointer text-left p-5 rounded-xl transition-all space-y-3 min-h-[44px] ${activePortal === 'member'
-              ? 'border-2 border-stone-900 bg-white shadow-sm ring-1 ring-stone-900 dark:border-stone-100 dark:bg-stone-800 dark:ring-stone-100'
-              : 'border border-stone-200 bg-stone-50/70 hover:border-stone-400 hover:bg-white dark:border-stone-800 dark:bg-stone-900/60 dark:hover:border-stone-700 dark:hover:bg-stone-800/80'
+            ? 'border-2 border-stone-900 bg-white shadow-sm ring-1 ring-stone-900 dark:border-stone-100 dark:bg-stone-800 dark:ring-stone-100'
+            : 'border border-stone-200 bg-stone-50/70 hover:border-stone-400 hover:bg-white dark:border-stone-800 dark:bg-stone-900/60 dark:hover:border-stone-700 dark:hover:bg-stone-800/80'
             }`}
         >
           <div className="flex justify-between items-start">
             <span className="text-2xl">{portalMeta.member.icon}</span>
             <span
               className={`text-[10px] font-bold px-2 py-0.5 rounded ${activePortal === 'member'
-                  ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-                  : 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
+                ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+                : 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
                 }`}
             >
               {activePortal === 'member' ? content.selectedText : portalMeta.member.badgeTag}
@@ -225,16 +225,16 @@ export default function OrganisationLoginForm() {
           type="button"
           onClick={() => setActivePortal('coordinator')}
           className={`cursor-pointer text-left p-5 rounded-xl transition-all space-y-3 min-h-[44px] ${activePortal === 'coordinator'
-              ? 'border-2 border-stone-900 bg-white shadow-sm ring-1 ring-stone-900 dark:border-stone-100 dark:bg-stone-800 dark:ring-stone-100'
-              : 'border border-stone-200 bg-stone-50/70 hover:border-stone-400 hover:bg-white dark:border-stone-800 dark:bg-stone-900/60 dark:hover:border-stone-700 dark:hover:bg-stone-800/80'
+            ? 'border-2 border-stone-900 bg-white shadow-sm ring-1 ring-stone-900 dark:border-stone-100 dark:bg-stone-800 dark:ring-stone-100'
+            : 'border border-stone-200 bg-stone-50/70 hover:border-stone-400 hover:bg-white dark:border-stone-800 dark:bg-stone-900/60 dark:hover:border-stone-700 dark:hover:bg-stone-800/80'
             }`}
         >
           <div className="flex justify-between items-start">
             <span className="text-2xl">{portalMeta.coordinator.icon}</span>
             <span
               className={`text-[10px] font-bold px-2 py-0.5 rounded ${activePortal === 'coordinator'
-                  ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-                  : 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
+                ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+                : 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
                 }`}
             >
               {activePortal === 'coordinator' ? content.selectedText : portalMeta.coordinator.badgeTag}
@@ -258,16 +258,16 @@ export default function OrganisationLoginForm() {
           type="button"
           onClick={() => setActivePortal('accounting')}
           className={`cursor-pointer text-left p-5 rounded-xl transition-all space-y-3 min-h-[44px] ${activePortal === 'accounting'
-              ? 'border-2 border-stone-900 bg-white shadow-sm ring-1 ring-stone-900 dark:border-stone-100 dark:bg-stone-800 dark:ring-stone-100'
-              : 'border border-stone-200 bg-stone-50/70 hover:border-stone-400 hover:bg-white dark:border-stone-800 dark:bg-stone-900/60 dark:hover:border-stone-700 dark:hover:bg-stone-800/80'
+            ? 'border-2 border-stone-900 bg-white shadow-sm ring-1 ring-stone-900 dark:border-stone-100 dark:bg-stone-800 dark:ring-stone-100'
+            : 'border border-stone-200 bg-stone-50/70 hover:border-stone-400 hover:bg-white dark:border-stone-800 dark:bg-stone-900/60 dark:hover:border-stone-700 dark:hover:bg-stone-800/80'
             }`}
         >
           <div className="flex justify-between items-start">
             <span className="text-2xl">{portalMeta.accounting.icon}</span>
             <span
               className={`text-[10px] font-bold px-2 py-0.5 rounded ${activePortal === 'accounting'
-                  ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-                  : 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
+                ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+                : 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
                 }`}
             >
               {activePortal === 'accounting' ? content.selectedText : portalMeta.accounting.badgeTag}

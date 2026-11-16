@@ -38,7 +38,7 @@
 - `src/pages/VoucherForm.tsx` — uses `p-5` in cards
 - `src/pages/Parties.tsx`, `src/pages/Items.tsx`, `src/pages/Accounts.tsx`
 - `src/pages/Vouchers.tsx`, `src/pages/Journal.tsx`
-- `src/pages/reports/*.tsx` — check `max-w-5xl mx-auto` pattern
+- `src/pages/reports/*.tsx` — check ` mx-auto` pattern
 - `src/pages/Dashboard.tsx`
 
 ---

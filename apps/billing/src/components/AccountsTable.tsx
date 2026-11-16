@@ -73,7 +73,7 @@ export default function AccountsTable({
 
   if (accounts.length === 0) {
     return (
-      <div className={`mx-auto max-w-5xl rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center ${className || ''}`}>
+      <div className={`mx-auto  rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center ${className || ''}`}>
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-crimson-50 text-crimson-600">
           <Folder size={28} />
         </div>
@@ -99,7 +99,7 @@ export default function AccountsTable({
   }
 
   return (
-    <div className={`mx-auto max-w-5xl space-y-5 ${className || ''}`}>
+    <div className={`mx-auto  space-y-5 ${className || ''}`}>
       {/* Search */}
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs font-medium text-slate-500">
@@ -209,22 +209,22 @@ export default function AccountsTable({
                             : '—'}
                         </td>
                         <td className="px-4 py-2 text-right">
-                        <ActionMenu
-                          items={[
-                            {
-                              label: 'Edit',
-                              icon: <Pencil size={13} />,
-                              onClick: () => onEditGroup(group),
-                            },
-                            {
-                              label: 'Delete',
-                              icon: <Trash2 size={13} />,
-                              danger: true,
-                              onClick: () => onDelete(group.id, true),
-                            },
-                          ]}
-                        />
-                      </td>
+                          <ActionMenu
+                            items={[
+                              {
+                                label: 'Edit',
+                                icon: <Pencil size={13} />,
+                                onClick: () => onEditGroup(group),
+                              },
+                              {
+                                label: 'Delete',
+                                icon: <Trash2 size={13} />,
+                                danger: true,
+                                onClick: () => onDelete(group.id, true),
+                              },
+                            ]}
+                          />
+                        </td>
                       </tr>
 
                       {/* Subheading (Accounts under group) */}

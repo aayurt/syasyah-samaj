@@ -112,7 +112,7 @@ export default function ConflictResolutionModal({ entry, onClose, onResolved }: 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-slate-900/50" onClick={onClose} />
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+      <div className="relative z-10 flex max-h-[90vh] w-full  flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
           <div>

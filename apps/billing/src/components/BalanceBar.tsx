@@ -50,7 +50,7 @@ export default function BalanceBar({ debit, credit, children, actions }: Balance
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 px-6 py-3 backdrop-blur print:hidden">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
+      <div className="mx-auto flex  items-center justify-between gap-3">
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="flex items-center gap-3 font-mono text-sm">
             <span className="text-slate-500">
@@ -63,9 +63,8 @@ export default function BalanceBar({ debit, credit, children, actions }: Balance
           </div>
           {balanced ? (
             <span
-              className={`shrink-0 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ${
-                snapping ? 'animate-balance-snap' : ''
-              }`}
+              className={`shrink-0 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ${snapping ? 'animate-balance-snap' : ''
+                }`}
             >
               ✓ {t('vouchers.balanced', 'balanced')}
             </span>
