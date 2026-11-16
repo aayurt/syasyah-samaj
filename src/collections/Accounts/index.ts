@@ -68,15 +68,32 @@ const validateAccount = async ({
         throw new Error('Circular parent relationship detected.')
       }
       seen.add(cursor)
-      const parent = await req.payload.findById({
+      const parent = await req.payload.findByID({
         collection: 'gl-accounts',
         id: cursor,
         depth: 0,
         overrideAccess: true,
       })
+      // Parent must belong to the same tenant/company.
+      if (tenant && (parent as any)?.tenant !== tenant) {
+        throw new Error('Parent account must belong to the same company.')
+      }
       cursor = parent?.parent
       hops++
     }
+  }
+
+  // Auto-compute hierarchy level from parent chain.
+  if (data?.parent && req?.payload) {
+    const parent = await req.payload.findByID({
+      collection: 'gl-accounts',
+      id: data.parent,
+      depth: 0,
+      overrideAccess: true,
+    })
+    data.level = Number((parent as any)?.level ?? 0) + 1
+  } else if (data?.level == null) {
+    data.level = 0
   }
 
   return data
@@ -309,6 +326,15 @@ export const Accounts: CollectionConfig = {
       },
     },
     {
+      name: 'level',
+      type: 'number',
+      defaultValue: 0,
+      admin: {
+        description: 'Hierarchy level (0 = root). Auto-computed from parent chain.',
+        position: 'sidebar',
+      },
+    },
+    {
       name: 'type',
       type: 'select',
       required: true,
@@ -332,7 +358,8 @@ export const Accounts: CollectionConfig = {
       type: 'number',
       defaultValue: 0,
       admin: {
-        description: 'Opening balance at the start of the books (debit positive).',
+        description: 'Deprecated — do not use. Single source of truth is the opening-balances collection.',
+        position: 'sidebar',
       },
     },
     {

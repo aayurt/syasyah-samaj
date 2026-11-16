@@ -38,7 +38,7 @@ export const AccountGroups: CollectionConfig = {
   },
   hooks: {
     beforeValidate: [
-      ({ data }) => {
+      async ({ data, req }) => {
         const d = data as any
         if (!d) return data
 
@@ -54,6 +54,20 @@ export const AccountGroups: CollectionConfig = {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-|-$/g, '')
             .slice(0, 20)
+        }
+
+        // Auto-compute hierarchy level from parent chain.
+        if (d.parent && req?.payload) {
+          const parentId = typeof d.parent === 'object' ? d.parent?.id : d.parent
+          const parent = await req.payload.findByID({
+            collection: 'account-groups',
+            id: parentId,
+            depth: 0,
+            overrideAccess: true,
+          })
+          d.level = Number((parent as any)?.level ?? 0) + 1
+        } else if (d.level == null) {
+          d.level = 0
         }
 
         return data
@@ -101,6 +115,15 @@ export const AccountGroups: CollectionConfig = {
       defaultValue: 0,
       admin: {
         description: 'Display order within the parent group.',
+      },
+    },
+    {
+      name: 'level',
+      type: 'number',
+      defaultValue: 0,
+      admin: {
+        description: 'Hierarchy level (0 = root). Auto-computed from parent chain.',
+        position: 'sidebar',
       },
     },
     // Optional tenant scoping — metadata only in v1, not enforced
@@ -182,14 +205,18 @@ export const AccountGroups: CollectionConfig = {
           }
 
           let parentId: number | null = null
+          let level = 0
           if (g.parentCode) {
             const p = createdByCode.get(g.parentCode)
-            if (p) parentId = Number(p.id)
+            if (p) {
+              parentId = Number(p.id)
+              level = Number((p as any).level ?? 0) + 1
+            }
           }
 
           const createdGrp = await req.payload.create({
             collection: 'account-groups',
-            data: { ...g, parent: parentId } as any,
+            data: { ...g, parent: parentId, level } as any,
             overrideAccess: true,
           })
           createdByCode.set(g.code, createdGrp)
