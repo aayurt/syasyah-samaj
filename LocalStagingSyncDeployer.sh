@@ -118,6 +118,7 @@ cd "$REMOTE_PATH"
 if [ "$RSYNC_MODE" -eq 0 ]; then
   echo ">> Fetching latest source..."
   if [ -d ".git" ]; then
+    git config --global --add safe.directory "$REMOTE_PATH" 2>/dev/null || true
     git fetch origin "$BRANCH"
     git checkout "$BRANCH" 2>/dev/null || git checkout -B "$BRANCH" origin/"$BRANCH"
     git pull --ff-only origin "$BRANCH" 2>/dev/null || git reset --hard origin/"$BRANCH"
