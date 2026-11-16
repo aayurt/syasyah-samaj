@@ -45,6 +45,7 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 8086,
       },
+      interpreter: '/root/.nvm/versions/node/v24.13.1/bin/node',
     },
   ],
 };

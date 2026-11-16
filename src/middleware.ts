@@ -9,7 +9,7 @@ const I18nMiddleware = createI18nMiddleware({
 
 const SUBDOMAIN_REGEX =
   /^(?<subdomain>[a-zA-Z0-9-]+)\.(?<domain>afnoevents\.com|localhost:\d+|syasyahsamaj\.com)$/
-const MAIN_DOMAINS = ['afnoevents.com', 'syasyahsamaj.com', 'localhost:3000']
+const MAIN_DOMAINS = ['afnoevents.com', 'syasyahsamaj.com', 'staging.syasyahsamaj.com', 'localhost:3000']
 
 function extractSubdomain(host: string): string | null {
   if (MAIN_DOMAINS.includes(host)) {
