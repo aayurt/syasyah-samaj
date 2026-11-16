@@ -101,6 +101,7 @@ ok "Build output shipped."
 REMOTE_SCRIPT=$(cat <<EOF
 set -euo pipefail
 source ~/.nvm/nvm.sh
+nvm use 24.13.1 >/dev/null 2>&1 || true
 cd "$REMOTE_PATH"
 
 echo ">> Installing dependencies - refreshes sharp + other native modules for this platform..."
