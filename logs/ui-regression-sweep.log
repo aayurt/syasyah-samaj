@@ -1,0 +1,88 @@
+═══ Weekly UI Regression Sweep ═══
+
+✗ motion.div usage detected (4):
+   framer-motion@11 + @types/react@19 drops className on motion.div.
+   Switch to typed MotionDiv alias (import { MotionDiv } from "framer-motion").
+
+   apps/billing/src/components/ui/AnimatedSidebar.tsx:209
+     <motion.div
+   apps/billing/src/components/ui/AnimatedSidebar.tsx:340
+     <motion.div
+   apps/billing/src/components/ui/AnimatedSidebar.tsx:396
+     <motion.div
+   apps/billing/src/components/ui/AnimatedSidebar.tsx:476
+     <motion.div
+
+✗ Touch target issues below 44px threshold (597):
+   Mobile-first card actions must have touch targets ≥ 44px.
+
+   apps/billing/src/App.tsx:219 — interactive element without explicit ≥44px touch target
+     onClick={() => authClient.signOut()}
+   apps/billing/src/App.tsx:414 — interactive element without explicit ≥44px touch target
+     onClick={() => setMobileSidebarOpen(false)}
+   apps/billing/src/App.tsx:426 — interactive element without explicit ≥44px touch target
+     onClick={() => setMobileSidebarOpen((o) => !o)}
+   apps/billing/src/App.tsx:447 — interactive element without explicit ≥44px touch target
+     onClick={() => setPaletteOpen(true)}
+   apps/billing/src/pages/AI.tsx:303 — interactive element without explicit ≥44px touch target
+     onClick={() => {
+   apps/billing/src/pages/AI.tsx:340 — interactive element without explicit ≥44px touch target
+     onClick={copyPrompt}
+   apps/billing/src/pages/AI.tsx:347 — interactive element without explicit ≥44px touch target
+     onClick={() => navigate(-1)}
+   apps/billing/src/pages/AI.tsx:380 — interactive element without explicit ≥44px touch target
+     <button onClick={clearThread} className="text-xs text-slate-400 hover:text-crimson-600">{t('ai.clearThread', 'Clear')}</button>
+   apps/billing/src/pages/AI.tsx:403 — interactive element without explicit ≥44px touch target
+     <button onClick={sendThreadMessage} className="px-3 py-2 rounded border border-slate-200 bg-white text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50" disabled={!threadDraft.trim()}>
+   apps/billing/src/pages/AI.tsx:414 — interactive element without explicit ≥44px touch target
+     <button onClick={copyPrompt} className="flex items-center gap-1 text-xs text-crimson-600 hover:text-crimson-800">
+   apps/billing/src/pages/AI.tsx:424 — interactive element without explicit ≥44px touch target
+     onClick={() => setStep('paste')}
+   apps/billing/src/pages/AI.tsx:442 — interactive element without explicit ≥44px touch target
+     onClick={() => setRawJson(exampleJson(model))}
+   apps/billing/src/pages/AI.tsx:458 — interactive element without explicit ≥44px touch target
+     <button onClick={() => setStep('prompt')} className="px-4 py-2 rounded border border-slate-200 bg-white text-sm text-slate-700 hover:bg-slate-50">
+   apps/billing/src/pages/AI.tsx:462 — interactive element without explicit ≥44px touch target
+     onClick={handleParse}
+   apps/billing/src/pages/AI.tsx:503 — interactive element without explicit ≥44px touch target
+     <button onClick={() => setStep('paste')} className="px-4 py-2 rounded border border-slate-200 bg-white text-sm text-slate-700 hover:bg-slate-50">
+   apps/billing/src/pages/AI.tsx:506 — interactive element without explicit ≥44px touch target
+     <button onClick={toPreview} className="px-5 py-2 rounded-lg bg-crimson-600 text-white font-medium hover:bg-crimson-700 shadow-md">
+   apps/billing/src/pages/AI.tsx:566 — interactive element without explicit ≥44px touch target
+     onClick={() => removeRow(i)}
+   apps/billing/src/pages/AI.tsx:581 — interactive element without explicit ≥44px touch target
+     onClick={addRow}
+   apps/billing/src/pages/AI.tsx:586 — interactive element without explicit ≥44px touch target
+     <button onClick={() => setStep('validate')} className="px-4 py-2 rounded border border-slate-200 bg-white text-sm text-slate-700 hover:bg-slate-50">
+   apps/billing/src/pages/AI.tsx:590 — interactive element without explicit ≥44px touch target
+     onClick={handleExecute}
+   apps/billing/src/pages/AI.tsx:637 — interactive element without explicit ≥44px touch target
+     onClick={() => setStep('preview')}
+   apps/billing/src/pages/AI.tsx:643 — interactive element without explicit ≥44px touch target
+     onClick={() => {
+   apps/billing/src/pages/Accounts.tsx:287 — interactive element without explicit ≥44px touch target
+     onClick={() => fileInputRef.current?.click()}
+   apps/billing/src/pages/Accounts.tsx:294 — interactive element without explicit ≥44px touch target
+     onClick={() => setShowExportModal(true)}
+   apps/billing/src/pages/Accounts.tsx:301 — interactive element without explicit ≥44px touch target
+     onClick={openNew}
+   apps/billing/src/pages/Accounts.tsx:464 — interactive element without explicit ≥44px touch target
+     onClick={() => { setShowForm(false); setEditing(null) }}
+   apps/billing/src/pages/Aging.tsx:91 — interactive element without explicit ≥44px touch target
+     onClick={() => setSide(s)}
+   apps/billing/src/pages/Aging.tsx:104 — interactive element without explicit ≥44px touch target
+     onClick={() => {
+   apps/billing/src/pages/Aging.tsx:116 — interactive element without explicit ≥44px touch target
+     onClick={pdf}
+   apps/billing/src/pages/Aging.tsx:124 — interactive element without explicit ≥44px touch target
+     onClick={() => window.print()}
+   …and 567 more
+
+═══ Total findings: 601 ═══
+
+🛠 Fix motion.div:
+   import { MotionDiv } from "framer-motion"
+   Replace <motion.div> with <MotionDiv> for proper className support.
+🛠 Fix touch targets:
+   Add min-h-11 (44px) or h-11 to all interactive elements.
+   Ensure buttons on cards meet the 44px minimum touch target.
