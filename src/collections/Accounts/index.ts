@@ -8,6 +8,7 @@ import { isBillingUser, resolveScopedTenant } from '@/access/tenantScoped'
 import type { CollectionConfig } from 'payload'
 import { assignTenant } from '@/utilities/tenantScope'
 import { accountTypeOptions } from '../AccountGroups'
+import { validateAccountData } from '@/utilities/accountingValidation'
 import { sumPostedByAccount } from '@/utilities/journalSums'
 import { round2, toNum } from '@/utilities/journalValidation'
 import { paginate, parsePagination } from '@/utilities/pagination'
@@ -17,6 +18,10 @@ import { paginate, parsePagination } from '@/utilities/pagination'
  *
  * Cycles are walked up the parent chain and bounded at 50 hops. Codes must be
  * unique per tenant (excluding the account being edited).
+ *
+ * Field-level rules (blank name, duplicate code, invalid type, incompatible
+ * child type, parent-company mismatch, deletion restrictions) are delegated
+ * to the centralized accountingValidation service.
  *
  * ponytail: posting to an account that has children is not yet rejected here;
  * add a posting-time check (account has descendants) when headings are seeded.
@@ -33,29 +38,58 @@ const validateAccount = async ({
   const id = data?.id ?? originalDoc?.id
   const tenant = data?.tenant ?? originalDoc?.tenant
 
-  // An account cannot be its own parent.
-  if (data?.parent != null && id != null && data.parent === id) {
-    throw new Error('An account cannot be its own parent.')
-  }
+  // Gather context for field-level validation.
+  let existingCodes: string[] = []
+  let parentType: string | undefined
+  let parentTenant: number | undefined
 
-  // Account codes are unique within a tenant.
-  if (data?.code && req?.payload) {
-    const existing = await req.payload.find({
+  if (req?.payload) {
+    // Existing codes in this tenant (excluding the account being edited).
+    const codeRes = await req.payload.find({
       collection: 'gl-accounts',
       where: {
         and: [
-          { code: { equals: data.code } },
           { tenant: { equals: tenant } },
           ...(id ? [{ id: { not_equals: id } }] : []),
         ],
       },
-      limit: 1,
+      limit: 1000,
       depth: 0,
       overrideAccess: true,
     })
-    if (existing.docs.length > 0) {
-      throw new Error(`Account code "${data.code}" already exists.`)
+    existingCodes = (codeRes.docs as any[]).map((d) => String(d.code))
+
+    // Resolve parent type + tenant for compatibility checks.
+    if (data?.parent) {
+      const parent = await req.payload.findByID({
+        collection: 'gl-accounts',
+        id: data.parent,
+        depth: 0,
+        overrideAccess: true,
+      })
+      if (parent) {
+        parentType = (parent as any).type
+        parentTenant = (parent as any).tenant
+      }
     }
+  }
+
+  // Field-level validation via the centralized service.
+  const fieldResult = validateAccountData({
+    data,
+    existingCodes,
+    parentId: data?.parent ?? null,
+    parentType,
+    parentTenant,
+    tenant,
+  })
+  if (!fieldResult.valid) {
+    throw new Error(fieldResult.issues.map((i) => i.message).join(' '))
+  }
+
+  // An account cannot be its own parent.
+  if (data?.parent != null && id != null && data.parent === id) {
+    throw new Error('An account cannot be its own parent.')
   }
 
   // Detect parent cycles: walk up the chain, bounded.
@@ -74,10 +108,6 @@ const validateAccount = async ({
         depth: 0,
         overrideAccess: true,
       })
-      // Parent must belong to the same tenant/company.
-      if (tenant && (parent as any)?.tenant !== tenant) {
-        throw new Error('Parent account must belong to the same company.')
-      }
       cursor = parent?.parent
       hops++
     }
