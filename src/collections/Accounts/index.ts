@@ -12,6 +12,8 @@ import { validateAccountData } from '@/utilities/accountingValidation'
 import { sumPostedByAccount } from '@/utilities/journalSums'
 import { round2, toNum } from '@/utilities/journalValidation'
 import { paginate, parsePagination } from '@/utilities/pagination'
+import { parse } from 'csv-parse/sync'
+import * as XLSX from 'xlsx'
 
 /** Validate account data: no self-parent, no parent cycle, unique code within
  * tenant.
@@ -321,6 +323,348 @@ export const Accounts: CollectionConfig = {
           })
         } catch (err) {
           return Response.json({ error: (err as Error).message || 'Seed failed' }, { status: 400 })
+        }
+      },
+    },
+    // ── GET /api/gl-accounts/tree ────────────────────────────────────
+    // Hierarchical account tree (root → children → grandchildren), tenant-scoped.
+    {
+      path: '/tree',
+      method: 'get',
+      handler: async (req) => {
+        if (!req.user || !isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const { searchParams } = new URL(req.url || '/')
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
+        const res = await req.payload.find({
+          collection: 'gl-accounts',
+          where: tenant ? { tenant: { equals: tenant } } : undefined,
+          limit: 2000,
+          depth: 0,
+          overrideAccess: true,
+          sort: 'code',
+        })
+        const accounts = (res.docs as any[]).map((a) => ({
+          id: a.id,
+          code: a.code,
+          name: a.name,
+          type: a.type,
+          level: a.level,
+          parent: typeof a.parent === 'object' && a.parent ? a.parent.id : a.parent,
+          status: a.status,
+          active: a.active,
+        })) as any[]
+        const byId = new Map(accounts.map((a) => [a.id, a]))
+        const roots: any[] = []
+        for (const a of accounts) {
+          a.children = []
+          if (!a.parent || !byId.has(a.parent)) {
+            roots.push(a)
+          } else {
+            byId.get(a.parent)!.children.push(a)
+          }
+        }
+        return Response.json({ docs: roots, total: roots.length })
+      },
+    },
+    // ── GET /api/gl-accounts/:id/children ────────────────────────────
+    // Direct children of an account.
+    {
+      path: '/:id/children',
+      method: 'get',
+      handler: async (req) => {
+        if (!req.user || !isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const { searchParams } = new URL(req.url || '/')
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
+        const res = await req.payload.find({
+          collection: 'gl-accounts',
+          where: {
+            and: [
+              { parent: { equals: (req as any).params.id } },
+              ...(tenant ? [{ tenant: { equals: tenant } }] : []),
+            ],
+          },
+          limit: 2000,
+          depth: 0,
+          overrideAccess: true,
+          sort: 'code',
+        })
+        return Response.json({
+          docs: res.docs,
+          total: res.totalDocs,
+          hasMore: res.hasNextPage,
+        })
+      },
+    },
+    // ── GET /api/gl-accounts/:id/ledger ──────────────────────────────
+    // Ledger activity for an account — delegates to journal-entries /ledger.
+    {
+      path: '/:id/ledger',
+      method: 'get',
+      handler: async (req) => {
+        const acctId = (req as any).params.id
+        if (!req.user || !isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const { searchParams } = new URL(req.url || '/')
+        searchParams.set('account', acctId)
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
+        if (tenant) searchParams.set('tenant', String(tenant))
+        const ledgerRes = await req.payload.find({
+          collection: 'journal-entries',
+          where: {
+            status: { equals: 'posted' },
+            'lines.account': { equals: acctId },
+            ...(tenant ? { tenant: { equals: tenant } } : {}),
+          },
+          limit: 1000,
+          depth: 0,
+          sort: 'date',
+          overrideAccess: true,
+        })
+        let running = 0
+        const docs = (ledgerRes.docs as any[]).map((entry) => {
+          let debit = 0
+          let credit = 0
+          for (const line of entry.lines || []) {
+            const accId =
+              typeof line.account === 'object' && line.account
+                ? line.account.id
+                : line.account
+            if (String(accId) === String(acctId)) {
+              debit += toNum(line.debit)
+              credit += toNum(line.credit)
+            }
+          }
+          running += debit - credit
+          return {
+            id: entry.id,
+            date: entry.date,
+            narration: entry.narration,
+            debit: round2(debit),
+            credit: round2(credit),
+            running: round2(running),
+          }
+        })
+        return Response.json({ docs, total: ledgerRes.totalDocs })
+      },
+    },
+    // ── POST /api/gl-accounts/import ─────────────────────────────────
+    // Import accounts from CSV text, base64 xlsx, or rows array.
+    // Codes unique per tenant; validated via accountingValidation (backend-authoritative).
+    {
+      path: '/import',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user || !isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        try {
+          const body = (await req.json?.()) as any
+          const tenant = resolveScopedTenant(req, body.tenant)
+          if (!tenant) {
+            return Response.json({ error: 'tenant is required.' }, { status: 400 })
+          }
+
+          let rows: any[]
+          if (typeof body.csv === 'string' && body.csv.trim()) {
+            const parsed = parse(body.csv, { columns: true, skip_empty_lines: true, relax_column_count: true }) as Record<string, unknown>[]
+            rows = parsed.map((r) => ({
+              code: r.code ?? r['Account Code'] ?? r['account_code'],
+              name: r.name ?? r['Account Name'] ?? r['account_name'],
+              type: r.type ?? r['Account Type'] ?? r['account_type'],
+              parentCode: r.parentCode ?? r['Parent Code'] ?? r['parent_code'],
+              group: r.group ?? r['Account Group'] ?? r['account_group'],
+              normalBalance: r.normalBalance ?? r['Normal Balance'] ?? r['normal_balance'],
+              financialStatement: r.financialStatement ?? r['Financial Statement'] ?? r['financial_statement'],
+              postingAllowed: r.postingAllowed ?? r['Posting Allowed'] ?? r['posting_allowed'],
+              controlAccount: r.controlAccount ?? r['Control Account'] ?? r['control_account'],
+              currencyCode: r.currencyCode ?? r['Currency Code'] ?? r['currency_code'],
+              status: r.status ?? r['Status'] ?? r['status'],
+              effectiveFrom: r.effectiveFrom ?? r['Effective From'] ?? r['effective_from'],
+              description: r.description ?? r['Description'] ?? r['description'],
+            }))
+          } else if (typeof body.file === 'string' && body.file.trim()) {
+            const buf = Buffer.from(body.file, 'base64')
+            const workbook = XLSX.read(buf, { type: 'buffer' })
+            const sheetName = workbook.SheetNames[0]
+            if (!sheetName) {
+              return Response.json({ error: 'xlsx file has no sheets.' }, { status: 400 })
+            }
+            const sheet = workbook.Sheets[sheetName] as any
+            const parsed = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as any[][]
+            const headers = parsed[0] as string[]
+            rows = parsed.slice(1).map((r: any[]) => {
+              const row: Record<string, unknown> = {}
+              headers.forEach((h, i) => { row[String(h).trim()] = r[i] })
+              return {
+                code: row.code ?? row['Account Code'] ?? row['account_code'],
+                name: row.name ?? row['Account Name'] ?? row['account_name'],
+                type: row.type ?? row['Account Type'] ?? row['account_type'],
+                parentCode: row.parentCode ?? row['Parent Code'] ?? row['parent_code'],
+                group: row.group ?? row['Account Group'] ?? row['account_group'],
+                normalBalance: row.normalBalance ?? row['Normal Balance'] ?? row['normal_balance'],
+                financialStatement: row.financialStatement ?? row['Financial Statement'] ?? row['financial_statement'],
+                postingAllowed: row.postingAllowed ?? row['Posting Allowed'] ?? row['posting_allowed'],
+                controlAccount: row.controlAccount ?? row['Control Account'] ?? row['control_account'],
+                currencyCode: row.currencyCode ?? row['Currency Code'] ?? row['currency_code'],
+                status: row.status ?? row['Status'] ?? row['status'],
+                effectiveFrom: row.effectiveFrom ?? row['Effective From'] ?? row['effective_from'],
+                description: row.description ?? row['Description'] ?? row['description'],
+              }
+            })
+          } else if (Array.isArray(body.rows)) {
+            rows = body.rows
+          } else {
+            return Response.json({ error: 'Provide \"csv\", \"file\" (base64 xlsx), or \"rows\" array.' }, { status: 400 })
+          }
+
+          if (!rows.length) {
+            return Response.json({ error: 'No rows to import.' }, { status: 400 })
+          }
+
+          const existingRes = await req.payload.find({
+            collection: 'gl-accounts',
+            where: { tenant: { equals: tenant } },
+            limit: 1000,
+            depth: 0,
+            overrideAccess: true,
+          })
+          const existingCodes = new Set((existingRes.docs as any[]).map((d) => String(d.code)))
+          const createdByCode = new Map<string, any>()
+          const created: any[] = []
+          const skipped: any[] = []
+          const errors: any[] = []
+
+          for (let i = 0; i < rows.length; i++) {
+            const r = rows[i]
+            const ref = `row ${i + 1}`
+            const code = String(r.code ?? '').trim()
+            if (!code) { errors.push({ row: ref, error: 'code is required' }); continue }
+
+            const name = String(r.name ?? '').trim()
+            if (!name) { errors.push({ row: ref, code, error: 'name is required' }); continue }
+
+            const data: any = {
+              code,
+              name,
+              type: r.type,
+              normalBalance: r.normalBalance,
+              financialStatement: r.financialStatement,
+              postingAllowed: r.postingAllowed === 'true' || r.postingAllowed === true || r.postingAllowed === 1 || r.postingAllowed === '1',
+              controlAccount: r.controlAccount === 'true' || r.controlAccount === true || r.controlAccount === 1 || r.controlAccount === '1',
+              currencyCode: String(r.currencyCode ?? 'NPR').trim(),
+              status: r.status ?? 'active',
+              effectiveFrom: r.effectiveFrom ?? undefined,
+              description: r.description ?? undefined,
+              tenant,
+            }
+
+            let parentId: number | null = null
+            if (r.parentCode) {
+              const p = createdByCode.get(String(r.parentCode).trim())
+              if (p) parentId = Number(p.id)
+            }
+            if (parentId != null) data.parent = parentId
+
+            const result = validateAccountData({
+              data,
+              existingCodes: Array.from(existingCodes),
+              parentId,
+              parentType: undefined,
+              parentTenant: undefined,
+              tenant: tenant as unknown as number,
+            })
+            if (!result.valid) {
+              errors.push({ row: ref, code, issues: result.issues })
+              continue
+            }
+
+            // Resolve group by name if provided (never seed an orphan account).
+            if (r.group) {
+              const groupRes = await req.payload.find({
+                collection: 'account-groups',
+                where: { name: { equals: String(r.group).trim() } },
+                limit: 1,
+                depth: 0,
+                overrideAccess: true,
+              })
+              const group = groupRes.docs[0] as any
+              if (group) data.group = group.id
+            }
+
+            try {
+              const acct = await req.payload.create({
+                collection: 'gl-accounts',
+                data,
+                overrideAccess: true,
+              } as any)
+              existingCodes.add(code)
+              createdByCode.set(code, acct)
+              created.push({ row: ref, id: acct.id, code: (acct as any).code })
+            } catch (e: any) {
+              errors.push({ row: ref, code, error: e?.message || 'create failed' })
+            }
+          }
+
+          return Response.json({ created: created.length, skipped: skipped.length, errorCount: errors.length, items: created, errors })
+        } catch (err) {
+          return Response.json({ error: err instanceof Error ? err.message : 'Import failed' }, { status: 400 })
+        }
+      },
+    },
+    // ── GET /api/gl-accounts/export ──────────────────────────────────
+    // Export all accounts for a tenant as CSV.
+    {
+      path: '/export',
+      method: 'get',
+      handler: async (req) => {
+        if (!req.user || !isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        try {
+          const { searchParams } = new URL(req.url || '/')
+          const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
+          if (!tenant) {
+            return Response.json({ error: 'tenant is required.' }, { status: 400 })
+          }
+          const res = await req.payload.find({
+            collection: 'gl-accounts',
+            where: { tenant: { equals: tenant } },
+            limit: 1000,
+            depth: 0,
+            overrideAccess: true,
+          })
+          const accounts = res.docs as any[]
+          const rows = accounts.map((a) => ({
+            code: a.code,
+            name: a.name,
+            type: a.type,
+            parentCode: typeof a.parent === 'object' && a.parent ? a.parent.code : undefined,
+            group: typeof a.group === 'object' && a.group ? a.group.name : undefined,
+            normalBalance: a.normalBalance,
+            financialStatement: a.financialStatement,
+            postingAllowed: a.postingAllowed,
+            controlAccount: a.controlAccount,
+            currencyCode: a.currencyCode,
+            status: a.status,
+            effectiveFrom: a.effectiveFrom,
+            description: a.description,
+          }))
+          const headers = Object.keys(rows[0] ?? {})
+          const esc = (v: string) => (v.includes(',') || v.includes('"') ? `"${v.replace(/"/g, '""')}"` : v)
+          const csv = [headers.join(','), ...rows.map((r) => headers.map((h) => esc(String((r as any)[h] ?? ''))).join(',')).join(String.fromCharCode(10))]
+          return new Response(csv.join('\n'), {
+            headers: {
+              'Content-Type': 'text/csv; charset=utf-8',
+              'Content-Disposition': `attachment; filename="chart-of-accounts-${tenant}.csv"`,
+            },
+          })
+        } catch (err) {
+          return Response.json({ error: err instanceof Error ? err.message : 'Export failed' }, { status: 400 })
         }
       },
     },
