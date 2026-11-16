@@ -66,6 +66,25 @@ const CHIP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   'purchase-order': Package,
 }
 
+const CHIP_IMAGES: Record<string, string> = {
+  'journal-voucher': 'https://picsum.photos/id/100/200/200',
+  contra: 'https://picsum.photos/id/101/200/200',
+  'sales-invoice': 'https://picsum.photos/id/102/200/200',
+  'purchase-invoice': 'https://picsum.photos/id/103/200/200',
+  'payment-voucher': 'https://picsum.photos/id/104/200/200',
+  'receipt-voucher': 'https://picsum.photos/id/105/200/200',
+  'credit-note': 'https://picsum.photos/id/106/200/200',
+  'debit-note': 'https://picsum.photos/id/107/200/200',
+  'petty-cash-voucher': 'https://picsum.photos/id/108/200/200',
+  grn: 'https://picsum.photos/id/109/200/200',
+  'delivery-challan': 'https://picsum.photos/id/110/200/200',
+  'membership-receipt': 'https://picsum.photos/id/111/200/200',
+  'donation-receipt': 'https://picsum.photos/id/112/200/200',
+  'sales-quote': 'https://picsum.photos/id/113/200/200',
+  'sales-order': 'https://picsum.photos/id/114/200/200',
+  'purchase-order': 'https://picsum.photos/id/115/200/200',
+}
+
 export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps) {
   const navigate = useNavigate()
   const { docType: routeDocType } = useParams<{ docType?: string }>()
@@ -315,22 +334,31 @@ export default function VoucherStepper({ mode = 'create' }: VoucherStepperProps)
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                 {STEPS.map((dt) => {
                   const Icon = CHIP_ICONS[dt.value]
+                  const Image = CHIP_IMAGES[dt.value]
                   const active = docType === dt.value
                   return (
                     <button
                       key={dt.value}
                       onClick={() => { setDocType(dt.value); navigate(`/vouchers/new/${dt.value}`) }}
-                      className={`h-40 rounded-xl border flex flex-col items-center justify-center gap-2 text-left transition-all ${active
+                      className={`h-32 rounded-xl border flex flex-col items-center justify-center gap-1 text-left transition-all ${active
                         ? 'border-crimson-600 bg-crimson-50/40 shadow-[0_0_0_3px_rgba(185,28,28,0.08)]'
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <Icon className={`h-6 w-6 ${active ? 'text-crimson-600' : 'text-slate-500'}`} />
-                        <span className={`block font-semibold ${active ? 'text-slate-900' : 'text-slate-700'}`}>
+                      <div className="flex items-center gap-1">
+                        <img
+                          src={Image}
+                          alt={dt.labelKey}
+                          className={`h-5 w-5 object-cover rounded ${active ? '' : 'opacity-70 grayscale'}`}
+                          onError={(e) => { e.currentTarget.className = 'hidden' }}
+                        />
+                        <Icon
+                          className={`h-5 w-5 ${Image ? 'hidden' : ''} ${active ? 'text-crimson-600' : 'text-slate-500'}`}
+                        />
+                        <span className={`block text-xs font-semibold ${active ? 'text-slate-900' : 'text-slate-700'}`}>
                           {t(`vouchers.${dt.labelKey}`, DOC_TYPE_LABELS[dt.value])}
                         </span>
                       </div>
