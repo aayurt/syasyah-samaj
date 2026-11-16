@@ -3,7 +3,7 @@ import { LiquidButton } from '../components/ui/LiquidButton'
 import { Download, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import { api, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
-import { parseImportFile } from '../lib/importExport'
+import { parseImportFile, validateImportRows, type ValidationError } from '../lib/importExport'
 import ImportPreviewModal from '../components/ImportPreviewModal'
 import ExportModal from '../components/ExportModal'
 import { pushToast } from '../lib/toast'
@@ -52,7 +52,7 @@ export default function Accounts() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
   const [groupToEdit, setGroupToEdit] = useState<AccountGroup | undefined>(undefined)
-  const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[] } | null>(null)
+  const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[]; rowErrors: ValidationError[] } | null>(null)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCoaSetup, setShowCoaSetup] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -318,7 +318,8 @@ export default function Accounts() {
           if (!file) return
           try {
             const parsed = await parseImportFile<Record<string, unknown>>(file)
-            setImportData({ collection: parsed.collection, docs: parsed.docs })
+            const { errors: rowErrors } = validateImportRows(parsed.docs, parsed.collection)
+            setImportData({ collection: parsed.collection, docs: parsed.docs, rowErrors })
           } catch (err) {
             pushToast('error', 'Parse failed', err instanceof Error ? err.message : String(err))
           }
@@ -513,6 +514,7 @@ export default function Accounts() {
         <ImportPreviewModal
           collection={importData.collection}
           docs={importData.docs}
+          rowErrors={importData.rowErrors}
           onClose={() => setImportData(null)}
           onImported={() => {
             setImportData(null)

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, CheckCircle2, X, Loader2 } from 'lucide-react'
 import {
   classifyRecords,
@@ -6,6 +6,7 @@ import {
   fetchAllDocs,
   type DedupResult,
   type ImportAction,
+  type ValidationError,
 } from '../lib/importExport'
 import { useT } from '../lib/i18n'
 import { useTenantQuery } from '../lib/tenant'
@@ -18,11 +19,13 @@ type Step = 'classify' | 'review' | 'executing' | 'done'
 export default function ImportPreviewModal({
   collection,
   docs,
+  rowErrors = [],
   onClose,
   onImported,
 }: {
   collection: string
   docs: AnyDoc[]
+  rowErrors?: ValidationError[]
   onClose: () => void
   onImported: () => void
 }) {
@@ -34,6 +37,21 @@ export default function ImportPreviewModal({
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [result, setResult] = useState<{ created: number; updated: number; skipped: number; errors: string[] } | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Row → validation errors (row = data-row number, header is row 1)
+  const errorsByRow = useMemo(() => {
+    const m = new Map<number, ValidationError[]>()
+    for (const e of rowErrors) {
+      const bucket = m.get(e.row) ?? []
+      bucket.push(e)
+      m.set(e.row, bucket)
+    }
+    return m
+  }, [rowErrors])
+
+  const docRow = (doc: AnyDoc) => docs.indexOf(doc) + 2
+  const docErrors = (doc: AnyDoc) => errorsByRow.get(docRow(doc)) ?? []
+  const hasDocErrors = (doc: AnyDoc) => docErrors(doc).some((e) => e.severity === 'error')
 
   // Fetch existing records and classify
   useEffect(() => {
@@ -71,7 +89,7 @@ export default function ImportPreviewModal({
     const records: { doc: AnyDoc; action: ImportAction }[] = []
 
     dedup.newRecords.forEach((doc, i) => {
-      records.push({ doc, action: actions.get(i) || 'create' })
+      records.push({ doc, action: hasDocErrors(doc) ? 'skip' : (actions.get(i) || 'create') })
     })
     dedup.exactDuplicates.forEach((pair, i) => {
       const key = docs.length + i
