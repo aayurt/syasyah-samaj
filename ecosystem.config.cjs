@@ -32,5 +32,19 @@ module.exports = {
         PORT: 8085,
       },
     },
+    {
+      name: 'syasha-samaj-staging',
+      script: 'node_modules/next/dist/bin/next',
+      args: 'start -p 8086 -H 0.0.0.0',
+      cwd: __dirname,
+      instances: 1,
+      exec_mode: 'fork',
+      max_memory_restart: '1G',
+      node_args: '--max-old-space-size=300',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 8086,
+      },
+    },
   ],
-}
+};

@@ -77,26 +77,14 @@ else
 fi
 
 # -- 2. Ship source to the server ----------------------------------------
-if [ "$RSYNC_MODE" -eq 1 ]; then
-  info "Rsync mode: sending source tree to $SERVER:$REMOTE_PATH (no git)..."
-  run_local rsync -az --delete \
-    --exclude='.git' --exclude='node_modules' --exclude='.next' \
-    --exclude='apps/billing/node_modules' --exclude='apps/billing/dist' \
-    --exclude='apps/desktop/src-tauri/target' --exclude='.env' --exclude='.env.local' \
-    --exclude='.env.staging' --exclude='.freebuff' --exclude='public/media' \
-    "$LOCAL_PATH/" "$SERVER:$REMOTE_PATH/"
-else
-  info "Git mode: committing + pushing branch '$BRANCH'..."
-  if [ -z "$MESSAGE" ]; then MESSAGE="deploy: $(date '+%Y-%m-%d %H:%M')"; fi
-  if [ -n "$(git -C "$LOCAL_PATH" status --porcelain)" ]; then
-    run_local git -C "$LOCAL_PATH" add -A
-    run_local git -C "$LOCAL_PATH" commit -m "$MESSAGE"
-  else
-    ok "No local changes to commit."
-  fi
-  run_local git -C "$LOCAL_PATH" push origin "$BRANCH"
-  ok "Pushed $BRANCH."
-fi
+info "Rsync source tree to $SERVER:$REMOTE_PATH..."
+run_local rsync -az --delete \
+  --exclude='.git' --exclude='node_modules' --exclude='.next' \
+  --exclude='apps/billing/node_modules' --exclude='apps/billing/dist' \
+  --exclude='apps/desktop/src-tauri/target' --exclude='.env' --exclude='.env.local' \
+  --exclude='.env.staging' --exclude='.freebuff' --exclude='public/media' \
+  "$LOCAL_PATH/" "$SERVER:$REMOTE_PATH/"
+ok "Source shipped."
 
 # -- 3. Ship build artifacts (always rsync - the server never builds) ----
 info "Shipping build output (.next + billing dist) to $SERVER..."
@@ -115,33 +103,17 @@ set -euo pipefail
 source ~/.nvm/nvm.sh
 cd "$REMOTE_PATH"
 
-if [ "$RSYNC_MODE" -eq 0 ]; then
-  echo ">> Fetching latest source..."
-  if [ -d ".git" ]; then
-    git config --global --add safe.directory "$REMOTE_PATH" 2>/dev/null || true
-    git fetch origin "$BRANCH"
-    git checkout "$BRANCH" 2>/dev/null || git checkout -B "$BRANCH" origin/"$BRANCH"
-    git pull --ff-only origin "$BRANCH" 2>/dev/null || git reset --hard origin/"$BRANCH"
-  else
-    git init
-    git remote add origin "git@github.com:aayurt/syasyah-samaj.git"
-    git fetch origin "$BRANCH"
-    git checkout -B "$BRANCH" origin/"$BRANCH"
-  fi
-  echo "OK At: \$(git log --oneline -1)"
-fi
-
 echo ">> Installing dependencies - refreshes sharp + other native modules for this platform..."
 pnpm install --frozen-lockfile || pnpm install
 pnpm rebuild sharp 2>/dev/null || true
 
 echo "OK Dependencies ready (sharp verified)."
 
-echo ">> Reloading PM2 ($PM2_APP)..."
+echo ">> Reloading PM2 apps ($PM2_APP + syasha-samaj)..."
 if pm2 describe "$PM2_APP" >/dev/null 2>&1; then
   pm2 reload ecosystem.config.cjs --update-env
 else
-  pm2 start ecosystem.config.cjs --name "$PM2_APP"
+  pm2 start ecosystem.config.cjs
 fi
 pm2 save
 echo "DONE Server deploy complete."
