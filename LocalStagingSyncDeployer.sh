@@ -117,9 +117,16 @@ cd "$REMOTE_PATH"
 
 if [ "$RSYNC_MODE" -eq 0 ]; then
   echo ">> Fetching latest source..."
-  git fetch origin "$BRANCH"
-  git checkout "$BRANCH" 2>/dev/null || git checkout -B "$BRANCH" origin/"$BRANCH"
-  git pull --ff-only origin "$BRANCH" 2>/dev/null || git reset --hard origin/"$BRANCH"
+  if [ -d ".git" ]; then
+    git fetch origin "$BRANCH"
+    git checkout "$BRANCH" 2>/dev/null || git checkout -B "$BRANCH" origin/"$BRANCH"
+    git pull --ff-only origin "$BRANCH" 2>/dev/null || git reset --hard origin/"$BRANCH"
+  else
+    git init
+    git remote add origin "git@github.com:aayurt/syasyah-samaj.git"
+    git fetch origin "$BRANCH"
+    git checkout -B "$BRANCH" origin/"$BRANCH"
+  fi
   echo "OK At: \$(git log --oneline -1)"
 fi
 
