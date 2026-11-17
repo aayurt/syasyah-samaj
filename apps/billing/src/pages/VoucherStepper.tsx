@@ -290,8 +290,8 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
       </header>
 
       <div className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
-        <div className="px-6 py-4 flex items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
+        <div className="px-6 py-4">
+          <div className="flex-1 min-w-0 mb-3">
             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
               {t('vouchers.chooseType', 'Voucher type')}
             </label>
@@ -299,7 +299,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
               {t('vouchers.typeDetermines', 'Pick the kind of transaction. The fields below adapt to your selection.')}
             </p>
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto px-4 py-2 rounded-xl border border-slate-200 bg-white scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto px-4 py-2 rounded-xl border border-slate-200 bg-white scrollbar-hide">
             {STEPS.map((dt) => {
               const Icon = CHIP_ICONS[dt.value]
               const active = docType === dt.value
@@ -311,13 +311,13 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                     setDocType(dt.value)
                     inline ? onDocTypeChange?.(dt.value) : navigate(`/vouchers/new/${dt.value}`)
                   }}
-                  className={`flex flex-col items-center justify-center gap-1 px-3 py-2 min-w-[96px] rounded-xl border transition-all ${active
+                  className={`flex flex-col items-center justify-center gap-1 flex-1 min-w-[110px] max-w-[140px] rounded-xl border transition-all ${active
                     ? 'border-crimson-600 bg-crimson-50/40 shadow-[0_0_0_3px_rgba(185,28,28,0.08)]'
                     : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
-                  <Icon className={`h-7 w-7 ${active ? 'text-crimson-600' : 'text-slate-500'}`} />
-                  <span className={`block text-[10px] font-semibold leading-none text-center ${active ? 'text-slate-900' : 'text-slate-700'}`}>
+                  <Icon className={`h-6 w-6 ${active ? 'text-crimson-600' : 'text-slate-500'}`} />
+                  <span className={`block text-[9px] font-semibold leading-none text-center whitespace-normal ${active ? 'text-slate-900' : 'text-slate-700'}`}>
                     {t(`vouchers.${dt.labelKey}`, DOC_TYPE_LABELS[dt.value])}
                   </span>
                 </button>
@@ -333,7 +333,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
             {/* Live balance strip */}
             {isJournal && (
               <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-center gap-4 border-t border-slate-100">
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Balance</p>
                     <p className="text-xs font-semibold text-slate-900">
@@ -352,7 +352,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
             <div className="space-y-5">
               {/* Meta fields starting from date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-2 lg:col-span-2">
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     {t('common.date', 'Date')}
                   </label>
@@ -363,7 +363,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                 {partyRequired && (
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      {t('vouchers.columnParty', 'Party')}
+                      {t('vouchers.columnParty', 'Party')} <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={String(partyId ?? '')}
@@ -433,7 +433,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                   <button
                     type="button"
                     onClick={isJournal ? addJLine : isContra ? () => { } : addILine}
-                    className="text-xs font-semibold text-crimson-600 hover:text-crimson-800 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                    className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                     disabled={isContra}
                   >
                     <span>+</span> {t('vouchers.addLine', 'Add line')}
@@ -488,7 +488,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                                 </td>
                                 <td className="px-4 py-3 text-center">
                                   <button type="button" onClick={() => removeJLine(i)} disabled={jLines.length === 1}
-                                    className="p-1.5 text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
+                                    className="p-2 min-w-[28px] min-h-[28px] text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
                                     ×
                                   </button>
                                 </td>
@@ -504,14 +504,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                           </tbody>
                         </table>
                       </div>
-                      <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-center justify-between gap-3">
-                        <button
-                          type="button"
-                          onClick={addJLine}
-                          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                        >
-                          <span>+</span> {t('vouchers.addLine', 'Add line')}
-                        </button>
+                      <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-end gap-3">
                         <div className="flex items-end gap-3 text-xs font-medium">
                           <div className="flex flex-col items-end gap-1">
                             <span className="text-slate-500 uppercase text-[10px]">Dr</span>
@@ -607,7 +600,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                                 </td>
                                 <td className="px-4 py-3 text-center">
                                   <button type="button" onClick={() => removeILine(i)} disabled={iLines.length === 1}
-                                    className="p-1.5 text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
+                                    className="p-2 min-w-[28px] min-h-[28px] text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
                                     ×
                                   </button>
                                 </td>
@@ -623,14 +616,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                           </tbody>
                         </table>
                       </div>
-                      <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-end justify-between gap-3">
-                        <button
-                          type="button"
-                          onClick={addILine}
-                          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                        >
-                          <span>+</span> {t('vouchers.addLine', 'Add line')}
-                        </button>
+                      <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-end gap-3">
                         <div className="flex flex-col items-end gap-1 text-sm font-medium">
                           <span className="text-slate-500 uppercase text-[10px]">Total</span>
                           <span className="text-slate-900">{fmt(itemTotal)}</span>
