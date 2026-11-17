@@ -227,6 +227,7 @@ docker compose -f docker-compose.yml up -d --build
 | [CONVENTIONS.md](docs/CONVENTIONS.md) | TypeScript, React, i18n, testing conventions |
 | [TESTING.md](docs/TESTING.md) | Test pyramid, coverage, CI pipeline |
 | [DEVELOPMENT.md](docs/DEVELOPMENT.md) | Local setup, common tasks, debugging |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production deploy via LocalSyncDeployer.sh, migrations, rollback |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | PR workflow, governance, translation |
 | [RUNBOOK.md](RUNBOOK.md) | Operations, incidents, monitoring, scaling |
 | [ADRs](docs/adr/) | Architecture Decision Records |

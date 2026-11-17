@@ -12,15 +12,17 @@
 
 ## Deployment
 
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the authoritative process.
+
 ### Production (VPS)
+The VPS does **not** build — it is too small for `next build`. Build and ship from a dev machine with `LocalSyncDeployer.sh`:
+
 ```bash
-# On VPS
-cd /var/www/syasyah-samaj
-git pull origin main
-pnpm install --frozen-lockfile
-pnpm build
-pm2 restart ecosystem.config.cjs
+./LocalSyncDeployer.sh --dry-run
+./LocalSyncDeployer.sh --message="fix: describe the change"
 ```
+
+For SPA-only changes, see the surgical deploy section in the deployment doc.
 
 ### Docker (Alternative)
 ```bash
