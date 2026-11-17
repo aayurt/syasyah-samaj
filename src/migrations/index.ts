@@ -20,6 +20,10 @@ import * as migration_20260903_fiscal_years from './20260903_fiscal_years';
 import * as migration_20260906_fy_date_fix from './20260906_fy_date_fix';
 import * as migration_20261011_045410___name from './20261011_045410___name';
 import * as migration_20261115_doc_sequences_order_types from './20261115_doc_sequences_order_types';
+import * as migration_20261115_gl_accounts_normal_balance from './20261115_gl_accounts_normal_balance';
+import * as migration_20261116_100000_coa_opening_balance_columns from './20261116_100000_coa_opening_balance_columns';
+import * as migration_20261117_100000_coa_account_master_fields from './20261117_100000_coa_account_master_fields';
+import * as migration_20261117_110000_coa_opening_balance_batches_lines from './20261117_110000_coa_opening_balance_batches_lines';
 
 export const migrations = [
   {
@@ -131,5 +135,25 @@ export const migrations = [
     up: migration_20261115_doc_sequences_order_types.up,
     down: migration_20261115_doc_sequences_order_types.down,
     name: '20261115_doc_sequences_order_types',
+  },
+  {
+    up: migration_20261115_gl_accounts_normal_balance.up,
+    down: migration_20261115_gl_accounts_normal_balance.down,
+    name: '20261115_gl_accounts_normal_balance',
+  },
+  {
+    up: migration_20261116_100000_coa_opening_balance_columns.up,
+    down: migration_20261116_100000_coa_opening_balance_columns.down,
+    name: '20261116_100000_coa_opening_balance_columns',
+  },
+  {
+    up: migration_20261117_100000_coa_account_master_fields.up,
+    down: migration_20261117_100000_coa_account_master_fields.down,
+    name: '20261117_100000_coa_account_master_fields',
+  },
+  {
+    up: migration_20261117_110000_coa_opening_balance_batches_lines.up,
+    down: migration_20261117_110000_coa_opening_balance_batches_lines.down,
+    name: '20261117_110000_coa_opening_balance_batches_lines',
   },
 ];
