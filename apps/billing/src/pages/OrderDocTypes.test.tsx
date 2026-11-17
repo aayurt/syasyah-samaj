@@ -6,10 +6,10 @@
  * posted)") and POST /documents/:id/confirm assigns the order number and
  * locks the order. These tests pin the SPA behaviour:
  *
- *   1. the two order types are offered in the transaction-type picker
+ *   1. the two order types are offered as type chips
  *   2. an order is CONFIRMED, never posted
  *   3. an ordinary voucher is still posted (no regression)
- *   4. a failed draft save does not advance the wizard
+ *   4. a failed draft save shows an error
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
@@ -59,49 +59,54 @@ beforeEach(() => {
   )
 })
 
-/**
- * The step-1 type picker. The page's <label>s are not associated with their
- * <select>s via htmlFor, so the picker is located by the document-type values
- * it offers rather than by an accessible label.
- */
-function typeSelect() {
-  const select = screen.getAllByRole('combobox').find((el) => {
-    const values = Array.from((el as HTMLSelectElement).options).map((o) => o.value)
-    return values.includes('sales-invoice') && values.includes('journal-voucher')
-  }) as HTMLSelectElement | undefined
-  if (!select) throw new Error('document-type picker not found')
-  return select
+/** A type chip, located by its visible label (e.g. "Sales Order"). */
+function chip(label: string) {
+  const btn = screen.getByRole('button', { name: new RegExp(label, 'i') })
+  return btn
 }
 
-/** Pick the document type on step 1. */
+/** Pick the document type chip. */
 async function chooseType(value: string) {
-  const select = typeSelect()
-  fireEvent.change(select, { target: { value } })
-  await waitFor(() => expect(select.value).toBe(value))
+  const label = value === 'sales-order' ? 'Sales Order'
+    : value === 'purchase-order' ? 'Purchase Order'
+    : value === 'sales-invoice' ? 'Sales Invoice'
+    : value
+  fireEvent.click(chip(label))
+  await waitFor(() => screen.getByRole('button', { name: new RegExp(label, 'i') }))
 }
 
-/** Pick a party from the step-1 dropdown. */
+/** Pick a party from the dropdown. */
 async function chooseParty() {
-  const select = screen
-    .getAllByRole('combobox')
-    .find((el) => {
+  const select = await waitForEl(() => {
+    const els = screen.getAllByRole('combobox')
+    return els.find((el) => {
       const values = Array.from((el as HTMLSelectElement).options).map((o) => o.value)
       return values.includes('7')
-    }) as HTMLSelectElement | undefined
+    })
+  }) as HTMLSelectElement | undefined
   if (!select) throw new Error('party picker not found')
   fireEvent.change(select, { target: { value: '7' } })
   await waitFor(() => expect(select.value).toBe('7'))
 }
 
-/** The line-edit table only exists on step 2. */
+function waitForEl<T>(fn: () => T | undefined, timeout = 2000): Promise<T | undefined> {
+  const start = Date.now()
+  return new Promise((resolve) => {
+    const tick = () => {
+      const el = fn()
+      if (el || Date.now() - start > timeout) { resolve(el); return }
+      setTimeout(tick, 10)
+    }
+    tick()
+  })
+}
+
+/** The item lines table. Present immediately in single-UI mode. */
 function lineTable() {
   return screen.queryAllByRole('table').find((t) => t.querySelector('input'))
 }
 
-/**
- * Fill the single line row on step 2. The line inputs live in a table with no
- * associated <label>s, so they are addressed by their column position.
- */
+/** Fill the single line row. */
 async function fillLine() {
   const table = lineTable()
   if (!table) throw new Error('line table not found')
@@ -115,13 +120,12 @@ async function fillLine() {
 }
 
 describe('VoucherStepper — order document types', () => {
-  it('offers Sales Order and Purchase Order in the transaction-type picker', async () => {
+  it('offers Sales Order and Purchase Order as type chips', async () => {
     const { default: VoucherStepper } = await import('./VoucherStepper')
     renderWithProviders(<VoucherStepper mode="create" />)
 
-    const values = Array.from(typeSelect().options).map((o) => o.value)
-    expect(values).toContain('sales-order')
-    expect(values).toContain('purchase-order')
+    expect(screen.getByRole('button', { name: /Sales Order/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Purchase Order/i })).toBeInTheDocument()
   })
 
   it('confirms a sales order instead of posting it', async () => {
@@ -131,14 +135,9 @@ describe('VoucherStepper — order document types', () => {
     await chooseType('sales-order')
     await chooseParty()
 
-    // Step 1 → step 2.
-    fireEvent.click(screen.getByRole('button', { name: /next/i }))
-    await waitFor(() => expect(lineTable()).toBeDefined())
-
     await fillLine()
 
-    // Step 2 → step 3 (review).
-    fireEvent.click(screen.getByRole('button', { name: /review/i }))
+    fireEvent.click(screen.getByRole('button', { name: /confirm order/i }))
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /confirm order/i })).toBeInTheDocument(),
     )
@@ -165,12 +164,7 @@ describe('VoucherStepper — order document types', () => {
     await chooseType('sales-invoice')
     await chooseParty()
 
-    fireEvent.click(screen.getByRole('button', { name: /next/i }))
-    await waitFor(() => expect(lineTable()).toBeDefined())
     await fillLine()
-
-    fireEvent.click(screen.getByRole('button', { name: /review/i }))
-    await waitFor(() => expect(screen.getByRole('button', { name: /^post$/i })).toBeInTheDocument())
 
     fireEvent.click(screen.getByRole('button', { name: /^post$/i }))
 
@@ -182,7 +176,7 @@ describe('VoucherStepper — order document types', () => {
     )
   })
 
-  it('does not advance the wizard when the draft save fails', async () => {
+  it('shows an error when the draft save fails', async () => {
     failSave = true
     const { default: VoucherStepper } = await import('./VoucherStepper')
     renderWithProviders(<VoucherStepper mode="create" />)
@@ -190,12 +184,10 @@ describe('VoucherStepper — order document types', () => {
     await chooseType('sales-order')
     await chooseParty()
 
-    fireEvent.click(screen.getByRole('button', { name: /next/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save draft/i }))
 
-    // The error is shown and the wizard stays on step 1.
     await waitFor(() =>
       expect(screen.getByText(/Draft save rejected by the server/i)).toBeInTheDocument(),
     )
-    expect(lineTable()).toBeUndefined()
   })
 })

@@ -83,7 +83,6 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
     ? (routeDocType as DocType)
     : 'journal-voucher')
   const [docType, setDocType] = useState<DocType>(defaultDocType)
-  const [step, setStep] = useState(1)
   const [confirmSwitchTo, setConfirmSwitchTo] = useState<DocType | null>(null)
   const [partyId, setPartyId] = useState<number | null>(null)
   const [date, setDate] = useState(todayAD())
@@ -114,7 +113,6 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
   }, [jLines])
 
   const itemTotal = useMemo(() => iLines.reduce((s, l) => s + (l.amount || 0), 0), [iLines])
-  const step1Valid = true // step 1 is type only; a default type is always selected
   const balanced = Math.abs(debitTotal - creditTotal) < 0.0051
 
   const today = todayAD()
@@ -151,13 +149,6 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
   const addILine = useCallback(() => setILines((ls) => [...ls, blankILine]), [])
   const removeILine = useCallback((index: number) => setILines((ls) => ls.length > 1
     ? ls.filter((_, i) => i !== index) : ls), [])
-
-  const goNext = useCallback(() => {
-    setError('')
-    setStep(2)
-  }, [])
-
-  const goPrev = () => { setError(''); setStep(1) }
 
   const buildDraftBody = useCallback(() => {
     const base: Record<string, unknown> = {
@@ -273,7 +264,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
         <div className="px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => (inline ? setStep(1) : navigate('/vouchers'))}
+              onClick={() => navigate('/vouchers')}
               className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
               aria-label="Back to All Transactions"
             >
@@ -299,109 +290,48 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
       </header>
 
       <div className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
-        <div className="px-6 py-3 flex items-center gap-2">
-          <div className="flex-1 relative h-1">
-            <div className="absolute left-0 top-0 h-full w-full bg-slate-200 rounded-full" />
-            <div className={`absolute left-0 top-0 h-full rounded-full transition-all duration-300 ${step === 1 ? 'w-1/2 bg-crimson-600' : 'w-full bg-crimson-600/30'}`} />
+        <div className="px-6 py-4 flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              {t('vouchers.chooseType', 'Voucher type')}
+            </label>
+            <p className="text-sm text-slate-600">
+              {t('vouchers.typeDetermines', 'Pick the kind of transaction. The fields below adapt to your selection.')}
+            </p>
           </div>
-          <div className="flex-1 relative h-1">
-            <div className="absolute left-0 top-0 h-full w-full bg-slate-200 rounded-full" />
-            <div className={`absolute left-0 top-0 h-full rounded-full transition-all duration-300 ${step === 2 ? 'w-full bg-crimson-600' : 'bg-crimson-600/30'}`} />
+          <div className="flex items-center gap-2 overflow-x-auto px-4 py-2 rounded-xl border border-slate-200 bg-white scrollbar-hide">
+            {STEPS.map((dt) => {
+              const Icon = CHIP_ICONS[dt.value]
+              const active = docType === dt.value
+              return (
+                <button
+                  key={dt.value}
+                  onClick={() => {
+                    if (dirty && docType !== dt.value) { setConfirmSwitchTo(dt.value); return }
+                    setDocType(dt.value)
+                    inline ? onDocTypeChange?.(dt.value) : navigate(`/vouchers/new/${dt.value}`)
+                  }}
+                  className={`flex flex-col items-center justify-center gap-1 px-3 py-2 min-w-[96px] rounded-xl border transition-all ${active
+                    ? 'border-crimson-600 bg-crimson-50/40 shadow-[0_0_0_3px_rgba(185,28,28,0.08)]'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  <Icon className={`h-7 w-7 ${active ? 'text-crimson-600' : 'text-slate-500'}`} />
+                  <span className={`block text-[10px] font-semibold leading-none text-center ${active ? 'text-slate-900' : 'text-slate-700'}`}>
+                    {t(`vouchers.${dt.labelKey}`, DOC_TYPE_LABELS[dt.value])}
+                  </span>
+                </button>
+              )
+            })}
           </div>
-        </div>
-        <div className="px-6 py-2 flex justify-between text-[10px] font-semibold uppercase tracking-wider">
-          <span className={step === 1 ? 'text-crimson-700' : 'text-slate-400'}>
-            {t('vouchers.stepType', 'Step 1 · Voucher type')}
-          </span>
-          <span className={step === 2 ? 'text-crimson-700' : 'text-slate-400'}>
-            {t('vouchers.stepDetails', 'Step 2 · Entry details')}
-          </span>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto relative">
-        {step === 1 ? (
-          <div className="p-6 lg:p-10">
-            <div className="mx-auto space-y-8">
-              <div className="space-y-3">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  {t('vouchers.chooseType', 'Voucher type')}
-                </label>
-                <p className="text-sm text-slate-600">
-                  {t('vouchers.typeDetermines', 'Pick the kind of transaction. The fields that follow adapt to it.')}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                {STEPS.map((dt) => {
-                 const Icon = CHIP_ICONS[dt.value]
-                 const active = docType === dt.value
-                  return (
-                    <button
-                      key={dt.value}
-                      onClick={() => {
-                        if (dirty && docType !== dt.value) { setConfirmSwitchTo(dt.value); return }
-                        setDocType(dt.value)
-                        inline ? onDocTypeChange?.(dt.value) : navigate(`/vouchers/new/${dt.value}`)
-                      }}
-                      className={`h-32 rounded-xl border flex flex-col items-center justify-center gap-1 text-left transition-all ${active
-                        ? 'border-crimson-600 bg-crimson-50/40 shadow-[0_0_0_3px_rgba(185,28,28,0.08)]'
-                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex flex-col items-center justify-center gap-1">
-                        <Icon className={`h-8 w-8 ${active ? 'text-crimson-600' : 'text-slate-500'}`} />
-                        <span className={`block text-xs font-semibold ${active ? 'text-slate-900' : 'text-slate-700'}`}>
-                          {t(`vouchers.${dt.labelKey}`, DOC_TYPE_LABELS[dt.value])}
-                        </span>
-                      </div>
-                      <span className="block text-[10px] text-slate-400 text-center">
-                        {dt.value === 'journal-voucher' ? t('vouchers.subDrCr', 'Dr / Cr lines')
-                          : dt.value === 'contra' ? t('vouchers.subTransfer', 'Transfer accounts')
-                            : (dt.value.startsWith('sales') || dt.value.startsWith('purchase')) ? t('vouchers.subItem', 'Item lines')
-                              : dt.value === 'payment-voucher' ? t('vouchers.subPay', 'Pay out')
-                                : dt.value === 'receipt-voucher' ? t('vouchers.subReceive', 'Receive')
-                                  : ''}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-[10px] text-slate-400">
-                  {t('vouchers.pickType', 'Select a voucher type to proceed')}
-                </span>
-                <button
-                  type="button"
-                  onClick={goNext}
-                  disabled={!step1Valid}
-                  className={`px-6 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider shadow-sm transition-all ${!step1Valid
-                    ? 'border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
-                    : 'bg-crimson-600 text-white hover:bg-crimson-700 hover:shadow-md focus:ring-2 focus:ring-crimson-600/30'
-                    }`}
-                >
-                  {t('vouchers.continue', 'Continue')} →
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="p-6 lg:p-10">
-            <div className="mx-auto space-y-6">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={goPrev}
-                  className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg px-2 py-1.5 transition-colors text-sm"
-                >
-                  <ArrowLeft size={14} /> {t('vouchers.changeType', 'Choose a different type')}
-                </button>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  {t('vouchers.step2', 'Step 2 · Entry details')}
-                </span>
-              </div>
-
-              {/* Live balance strip */}
+        <div className="p-6 lg:p-10">
+          <div className="mx-auto space-y-8">
+            {/* Live balance strip */}
+            {isJournal && (
               <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex items-center justify-between gap-4">
                   <div className="space-y-1">
@@ -417,341 +347,341 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className="space-y-5">
-                {/* Meta fields starting from date */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      {t('common.date', 'Date')}
-                    </label>
-                    <NepaliDateInput value={date} onChange={setDate} />
-                    {!date && <p className="mt-1 text-[10px] text-red-500">{t('vouchers.dateRequired', 'Date is required')}</p>}
-                  </div>
-
-                  {partyRequired && (
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        {t('vouchers.columnParty', 'Party')}
-                      </label>
-                      <select
-                        value={String(partyId ?? '')}
-                        onChange={(e) => setPartyId(e.target.value ? Number(e.target.value) : null)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
-                      >
-                        <option value="">{t('vouchers.select', '— select —')}</option>
-                        {parties.map((p) => (
-                          <option key={p.id} value={String(p.id)}>{p.name}</option>
-                        ))}
-                      </select>
-                      {!partyId && <p className="mt-1 text-[10px] text-red-500">{t('vouchers.partyRequired', 'Party is required')}</p>}
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      {t('common.currency', 'Currency')}
-                    </label>
-                    <select
-                      value={currency}
-                      onChange={(e) => setCurrency(e.target.value as Currency)}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
-                    >
-                      {CURRENCIES.map((c) => (
-                        <option key={c.code} value={c.code}>{c.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {currency !== 'NPR' && (
-                    <div className="space-y-2 lg:col-span-2">
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        {t('common.exchangeRate', 'Exchange rate')}
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        min="0"
-                        value={exchangeRate ?? ''}
-                        onChange={(e) => setExchangeRate(e.target.value ? parseFloat(e.target.value) : null)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-2 lg:col-span-3">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      {t('common.memo', 'Narration')}
-                    </label>
-                    <textarea
-                      value={narration}
-                      onChange={(e) => setNarration(e.target.value)}
-                      placeholder={t('vouchers.narrationPlaceholder', 'Transaction description…')}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
-                      rows={2}
-                    />
-                  </div>
+            <div className="space-y-5">
+              {/* Meta fields starting from date */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    {t('common.date', 'Date')}
+                  </label>
+                  <NepaliDateInput value={date} onChange={setDate} />
+                  {!date && <p className="mt-1 text-[10px] text-red-500">{t('vouchers.dateRequired', 'Date is required')}</p>}
                 </div>
 
-                {/* Lines table */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                      {t('vouchers.entryLines', 'Entry lines')}
-                    </h2>
-                    <button
-                      type="button"
-                      onClick={isJournal ? addJLine : isContra ? () => { } : addILine}
-                      className="text-xs font-semibold text-crimson-600 hover:text-crimson-800 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                      disabled={isContra}
+                {partyRequired && (
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {t('vouchers.columnParty', 'Party')}
+                    </label>
+                    <select
+                      value={String(partyId ?? '')}
+                      onChange={(e) => setPartyId(e.target.value ? Number(e.target.value) : null)}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
                     >
-                      <span>+</span> {t('vouchers.addLine', 'Add line')}
-                    </button>
+                      <option value="">{t('vouchers.select', '— select —')}</option>
+                      {parties.map((p) => (
+                        <option key={p.id} value={String(p.id)}>{p.name}</option>
+                      ))}
+                    </select>
+                    {!partyId && <p className="mt-1 text-[10px] text-red-500">{t('vouchers.partyRequired', 'Party is required')}</p>}
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-                    {isJournal ? (
-                      <>
-                        <div className="overflow-x-auto border-b border-slate-100">
-                          <table className="w-full text-left text-xs border-collapse">
-                            <thead>
-                              <tr className="border-b border-slate-100 bg-slate-50">
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
-                                  {t('common.account', 'Account')}
-                                </th>
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                  {t('common.debit', 'Debit')}
-                                </th>
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                  {t('common.credit', 'Credit')}
-                                </th>
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
-                                  {t('common.memo', 'Memo')}
-                                </th>
-                                <th className="px-4 py-3 text-center" />
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {jLines.map((l, i) => (
-                                <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                  <td className="px-4 py-3">
-                                    <AccountSelect
-                                      accounts={accounts}
-                                      value={l.account ?? ''}
-                                      onChange={(id) => setJLine(i, { account: Number(id) })}
-                                    />
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <input type="number" min="0" step="0.01" value={l.debit}
-                                      onChange={(e) => setJLine(i, { debit: Math.max(0, Number(e.target.value) || 0) })}
-                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <input type="number" min="0" step="0.01" value={l.credit}
-                                      onChange={(e) => setJLine(i, { credit: Math.max(0, Number(e.target.value) || 0) })}
-                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <input value={l.memo}
-                                      onChange={(e) => setJLine(i, { memo: e.target.value })}
-                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                  </td>
-                                  <td className="px-4 py-3 text-center">
-                                    <button type="button" onClick={() => removeJLine(i)} disabled={jLines.length === 1}
-                                      className="p-1.5 text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
-                                      ×
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                              {jLines.length === 0 && (
-                                <tr>
-                                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-xs">
-                                    No lines yet. Add a line to begin.
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                        <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-center justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={addJLine}
-                            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                          >
-                            <span>+</span> {t('vouchers.addLine', 'Add line')}
-                          </button>
-                          <div className="flex items-end gap-3 text-xs font-medium">
-                            <div className="flex flex-col items-end gap-1">
-                              <span className="text-slate-500 uppercase text-[10px]">Dr</span>
-                              <span className="text-slate-900">{fmt(debitTotal)}</span>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <span className="text-slate-500 uppercase text-[10px]">Cr</span>
-                              <span className="text-slate-900">{fmt(creditTotal)}</span>
-                            </div>
-                            <div className={`flex flex-col items-end gap-1 ${balanced ? 'text-emerald-600' : 'text-crimson-600'}`}>
-                              <span className="text-[10px] uppercase">{t('vouchers.difference', 'Difference')}</span>
-                              <span>
-                                {balanced ? t('vouchers.balanced', '✓ balanced') : t('vouchers.difference', 'Difference') + ': ' + fmt(Math.abs(debitTotal - creditTotal))}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    ) : isContra ? (
-                      <div className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="space-y-2">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                              {t('vouchers.fromAccount', 'From account (credited)')}
-                            </label>
-                            <AccountSelect accounts={accounts} value={String(fromAccount ?? '')}
-                              onChange={(id) => setFromAccount(Number(id))} placeholder={t('vouchers.selectAccount', '— select account —')} />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                              {t('vouchers.toAccount', 'To account (debited)')}
-                            </label>
-                            <AccountSelect accounts={accounts} value={String(toAccount ?? '')}
-                              onChange={(id) => setToAccount(Number(id))} placeholder={t('vouchers.selectAccount', '— select account —')} />
-                          </div>
-                          <div className="flex h-[138px] flex-col justify-end">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                              {t('common.amount', 'Amount')}
-                            </label>
-                            <input type="number" min="0" step="0.01" value={contraAmount}
-                              onChange={(e) => setContraAmount(Math.max(0, Number(e.target.value) || 0))}
-                              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-right text-slate-700 outline-none focus:ring-2 focus:ring-crimson-600" />
-                          </div>
-                        </div>
-                        <div className="mt-4 border-t border-slate-100 pt-4 flex justify-end gap-2 text-sm font-medium">
-                          <span className="text-slate-500 uppercase text-[10px]">Transfer</span>
-                          <span className="text-slate-900">{fmt(contraAmount)}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="overflow-x-auto border-b border-slate-100">
-                          <table className="w-full text-left text-xs border-collapse">
-                            <thead>
-                              <tr className="border-b border-slate-100 bg-slate-50">
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
-                                  {t('common.description', 'Description')}
-                                </th>
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                  {t('vouchers.qty', 'Qty')}
-                                </th>
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                  {t('vouchers.rate', 'Rate')}
-                                </th>
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                  {t('common.amount', 'Amount')}
-                                </th>
-                                <th className="px-4 py-3 text-center" />
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {iLines.map((l, i) => (
-                                <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                  <td className="px-4 py-3">
-                                    <input value={l.description}
-                                      onChange={(e) => setILine(i, { description: e.target.value })}
-                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <input type="number" min="0" step="any" value={l.qty}
-                                      onChange={(e) => setILine(i, { qty: Math.max(0, Number(e.target.value) || 0) })}
-                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <input type="number" min="0" step="0.01" value={l.rate}
-                                      onChange={(e) => setILine(i, { rate: Math.max(0, Number(e.target.value) || 0) })}
-                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <span className="block rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700">
-                                      {fmt(l.amount)}
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-3 text-center">
-                                    <button type="button" onClick={() => removeILine(i)} disabled={iLines.length === 1}
-                                      className="p-1.5 text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
-                                      ×
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                              {iLines.length === 0 && (
-                                <tr>
-                                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-xs">
-                                    No lines yet. Add a line to begin.
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                        <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-end justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={addILine}
-                            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                          >
-                            <span>+</span> {t('vouchers.addLine', 'Add line')}
-                          </button>
-                          <div className="flex flex-col items-end gap-1 text-sm font-medium">
-                            <span className="text-slate-500 uppercase text-[10px]">Total</span>
-                            <span className="text-slate-900">{fmt(itemTotal)}</span>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                )}
 
-                  <div className="mt-8 border-t border-slate-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    {error && (
-                      <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        {error}
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    {t('common.currency', 'Currency')}
+                  </label>
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value as Currency)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
+                  >
+                    {CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {currency !== 'NPR' && (
+                  <div className="space-y-2 lg:col-span-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {t('common.exchangeRate', 'Exchange rate')}
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={exchangeRate ?? ''}
+                      onChange={(e) => setExchangeRate(e.target.value ? parseFloat(e.target.value) : null)}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2 lg:col-span-3">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    {t('common.memo', 'Narration')}
+                  </label>
+                  <textarea
+                    value={narration}
+                    onChange={(e) => setNarration(e.target.value)}
+                    placeholder={t('vouchers.narrationPlaceholder', 'Transaction description…')}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              {/* Lines table */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    {t('vouchers.entryLines', 'Entry lines')}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={isJournal ? addJLine : isContra ? () => { } : addILine}
+                    className="text-xs font-semibold text-crimson-600 hover:text-crimson-800 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                    disabled={isContra}
+                  >
+                    <span>+</span> {t('vouchers.addLine', 'Add line')}
+                  </button>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                  {isJournal ? (
+                    <>
+                      <div className="overflow-x-auto border-b border-slate-100">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-100 bg-slate-50">
+                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
+                                {t('common.account', 'Account')}
+                              </th>
+                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                {t('common.debit', 'Debit')}
+                              </th>
+                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                {t('common.credit', 'Credit')}
+                              </th>
+                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
+                                {t('common.memo', 'Memo')}
+                              </th>
+                              <th className="px-4 py-3 text-center" />
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {jLines.map((l, i) => (
+                              <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-4 py-3">
+                                  <AccountSelect
+                                    accounts={accounts}
+                                    value={l.account ?? ''}
+                                    onChange={(id) => setJLine(i, { account: Number(id) })}
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <input type="number" min="0" step="0.01" value={l.debit}
+                                    onChange={(e) => setJLine(i, { debit: Math.max(0, Number(e.target.value) || 0) })}
+                                    className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <input type="number" min="0" step="0.01" value={l.credit}
+                                    onChange={(e) => setJLine(i, { credit: Math.max(0, Number(e.target.value) || 0) })}
+                                    className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <input value={l.memo}
+                                    onChange={(e) => setJLine(i, { memo: e.target.value })}
+                                    className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <button type="button" onClick={() => removeJLine(i)} disabled={jLines.length === 1}
+                                    className="p-1.5 text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
+                                    ×
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            {jLines.length === 0 && (
+                              <tr>
+                                <td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-xs">
+                                  No lines yet. Add a line to begin.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
-                    )}
-                    {draftId && lastSaved && !error && (
-                      <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        <span>{t('vouchers.draftSaved', 'Draft saved')}</span>
-                        <span className="text-slate-400">·</span>
-                        <span>{lastSaved}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                      <button
-                        onClick={() => { void saveDraft() }}
-                        disabled={saving}
-                        className="flex-1 sm:flex-none border border-slate-200 bg-white px-5 py-2.5 rounded-lg text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-all focus:ring-2 focus:ring-crimson-600"
-                      >
-                        {t('vouchers.saveDraft', 'Save draft')}
-                      </button>
-                      {!isQuote && (
+                      <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-center justify-between gap-3">
                         <button
-                          onClick={postVoucher}
-                          disabled={saving || (!isJournal && (!iLines.some((l) => l.description && (l.amount || 0) > 0)))
-                            || (isJournal && !balanced)}
-                          className={`flex-1 sm:flex-none bg-crimson-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider shadow-sm disabled:opacity-60 disabled:pointer-events-none transition-all focus:ring-2 focus:ring-crimson-600 ${!saving ? 'hover:bg-crimson-700' : ''}`}
+                          type="button"
+                          onClick={addJLine}
+                          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                         >
-                          {saving
-                            ? t('vouchers.posting', 'Posting…')
-                            : isOrder
-                              ? t('vouchers.confirmOrder', 'Confirm order')
-                              : t('vouchers.post', 'Post')}
+                          <span>+</span> {t('vouchers.addLine', 'Add line')}
                         </button>
-                      )}
+                        <div className="flex items-end gap-3 text-xs font-medium">
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-slate-500 uppercase text-[10px]">Dr</span>
+                            <span className="text-slate-900">{fmt(debitTotal)}</span>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-slate-500 uppercase text-[10px]">Cr</span>
+                            <span className="text-slate-900">{fmt(creditTotal)}</span>
+                          </div>
+                          <div className={`flex flex-col items-end gap-1 ${balanced ? 'text-emerald-600' : 'text-crimson-600'}`}>
+                            <span className="text-[10px] uppercase">{t('vouchers.difference', 'Difference')}</span>
+                            <span>
+                              {balanced ? t('vouchers.balanced', '✓ balanced') : t('vouchers.difference', 'Difference') + ': ' + fmt(Math.abs(debitTotal - creditTotal))}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : isContra ? (
+                    <div className="p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            {t('vouchers.fromAccount', 'From account (credited)')}
+                          </label>
+                          <AccountSelect accounts={accounts} value={String(fromAccount ?? '')}
+                            onChange={(id) => setFromAccount(Number(id))} placeholder={t('vouchers.selectAccount', '— select account —')} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            {t('vouchers.toAccount', 'To account (debited)')}
+                          </label>
+                          <AccountSelect accounts={accounts} value={String(toAccount ?? '')}
+                            onChange={(id) => setToAccount(Number(id))} placeholder={t('vouchers.selectAccount', '— select account —')} />
+                        </div>
+                        <div className="flex h-[138px] flex-col justify-end">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            {t('common.amount', 'Amount')}
+                          </label>
+                          <input type="number" min="0" step="0.01" value={contraAmount}
+                            onChange={(e) => setContraAmount(Math.max(0, Number(e.target.value) || 0))}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-right text-slate-700 outline-none focus:ring-2 focus:ring-crimson-600" />
+                        </div>
+                      </div>
+                      <div className="mt-4 border-t border-slate-100 pt-4 flex justify-end gap-2 text-sm font-medium">
+                        <span className="text-slate-500 uppercase text-[10px]">Transfer</span>
+                        <span className="text-slate-900">{fmt(contraAmount)}</span>
+                      </div>
                     </div>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto border-b border-slate-100">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-100 bg-slate-50">
+                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
+                                {t('common.description', 'Description')}
+                              </th>
+                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                {t('vouchers.qty', 'Qty')}
+                              </th>
+                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                {t('vouchers.rate', 'Rate')}
+                              </th>
+                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                {t('common.amount', 'Amount')}
+                              </th>
+                              <th className="px-4 py-3 text-center" />
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {iLines.map((l, i) => (
+                              <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-4 py-3">
+                                  <input value={l.description}
+                                    onChange={(e) => setILine(i, { description: e.target.value })}
+                                    className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <input type="number" min="0" step="any" value={l.qty}
+                                    onChange={(e) => setILine(i, { qty: Math.max(0, Number(e.target.value) || 0) })}
+                                    className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <input type="number" min="0" step="0.01" value={l.rate}
+                                    onChange={(e) => setILine(i, { rate: Math.max(0, Number(e.target.value) || 0) })}
+                                    className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="block rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700">
+                                    {fmt(l.amount)}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <button type="button" onClick={() => removeILine(i)} disabled={iLines.length === 1}
+                                    className="p-1.5 text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
+                                    ×
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            {iLines.length === 0 && (
+                              <tr>
+                                <td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-xs">
+                                  No lines yet. Add a line to begin.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-end justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={addILine}
+                          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          <span>+</span> {t('vouchers.addLine', 'Add line')}
+                        </button>
+                        <div className="flex flex-col items-end gap-1 text-sm font-medium">
+                          <span className="text-slate-500 uppercase text-[10px]">Total</span>
+                          <span className="text-slate-900">{fmt(itemTotal)}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="mt-8 border-t border-slate-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  {error && (
+                    <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {error}
+                    </div>
+                  )}
+                  {draftId && lastSaved && !error && (
+                    <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span>{t('vouchers.draftSaved', 'Draft saved')}</span>
+                      <span className="text-slate-400">·</span>
+                      <span>{lastSaved}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <button
+                      onClick={() => { void saveDraft() }}
+                      disabled={saving}
+                      className="flex-1 sm:flex-none border border-slate-200 bg-white px-5 py-2.5 rounded-lg text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-all focus:ring-2 focus:ring-crimson-600"
+                    >
+                      {t('vouchers.saveDraft', 'Save draft')}
+                    </button>
+                    {!isQuote && (
+                      <button
+                        onClick={postVoucher}
+                        disabled={saving || (!isJournal && (!iLines.some((l) => l.description && (l.amount || 0) > 0)))
+                          || (isJournal && !balanced)}
+                        className={`flex-1 sm:flex-none bg-crimson-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider shadow-sm disabled:opacity-60 disabled:pointer-events-none transition-all focus:ring-2 focus:ring-crimson-600 ${!saving ? 'hover:bg-crimson-700' : ''}`}
+                      >
+                        {saving
+                          ? t('vouchers.posting', 'Posting…')
+                          : isOrder
+                            ? t('vouchers.confirmOrder', 'Confirm order')
+                            : t('vouchers.post', 'Post')}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
       {confirmSwitchTo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">

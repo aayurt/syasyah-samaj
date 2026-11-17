@@ -44,7 +44,9 @@ import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
 import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
+import { Pagination } from '../components/ui/Pagination'
 import { useSetupStatus } from '../lib/setup'
+import { usePagination } from '../lib/usePagination'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
@@ -901,6 +903,11 @@ export default function Vouchers() {
     onChange: syncToUrl,
   })
 
+  // Paginate the filtered+sorted rows (page number, offset, per-page size).
+  const { pageRows, state: pagState, actions: pagActions } = usePagination(visible, {
+    pageSize: 25,
+  })
+
   return (
     <div className="w-full">
       <div>
@@ -1141,7 +1148,7 @@ export default function Vouchers() {
                       </td>
                     </tr>
                   )}
-                  {visible.map((d) => (
+                  {pageRows.map((d) => (
                     <tr key={d.id} className={`border-b border-slate-50 ${selected.has(d.id) ? 'bg-blue-50' : ''}`}>
                       <td className="px-4 py-2">
                         <input
@@ -1322,6 +1329,14 @@ export default function Vouchers() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination controls */}
+            {pagState.total > 0 && (
+              <div className="mt-4 flex items-center justify-between gap-2">
+                <Pagination state={pagState} actions={pagActions} />
+              </div>
+            )}
+
           </>
         ))}
 
