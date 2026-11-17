@@ -24,6 +24,7 @@ import * as migration_20261115_gl_accounts_normal_balance from './20261115_gl_ac
 import * as migration_20261116_100000_coa_opening_balance_columns from './20261116_100000_coa_opening_balance_columns';
 import * as migration_20261117_100000_coa_account_master_fields from './20261117_100000_coa_account_master_fields';
 import * as migration_20261117_110000_coa_opening_balance_batches_lines from './20261117_110000_coa_opening_balance_batches_lines';
+import * as migration_20261117_120000_account_groups_level from './20261117_120000_account_groups_level';
 
 export const migrations = [
   {
@@ -155,5 +156,10 @@ export const migrations = [
     up: migration_20261117_110000_coa_opening_balance_batches_lines.up,
     down: migration_20261117_110000_coa_opening_balance_batches_lines.down,
     name: '20261117_110000_coa_opening_balance_batches_lines',
+  },
+  {
+    up: migration_20261117_120000_account_groups_level.up,
+    down: migration_20261117_120000_account_groups_level.down,
+    name: '20261117_120000_account_groups_level',
   },
 ];
