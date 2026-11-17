@@ -33,7 +33,6 @@ const nextConfig = {
     ],
   },
   reactStrictMode: true,
-  trailingSlash: true,
   // A second dev instance (e2e on separate ports) uses its own build dir so
   // it never touches the running dev server's .next. Defaults to '.next'.
   ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
