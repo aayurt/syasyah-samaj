@@ -448,7 +448,7 @@ export default function Parties() {
         />
       </div>
 
-      <div className="mt-3 rounded-lg border border-slate-200 bg-white">
+      <div className="mt-3 rounded-lg border border-slate-200 bg-white overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">

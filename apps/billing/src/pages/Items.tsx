@@ -403,93 +403,95 @@ export default function Items() {
             placeholder={t('items.name', 'Search item…')}
           />
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <SortableTh label={t('items.name', 'Item')} sortKey="name" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Unit" sortKey="unit" sort={sort} onSort={toggleSort} />
-              <SortableTh label="On hand" sortKey="onHand" sort={sort} onSort={toggleSort} align="right" />
-              <SortableTh label="Avg cost" sortKey="avgCost" sort={sort} onSort={toggleSort} align="right" />
-              <SortableTh label="Value" sortKey="value" sort={sort} onSort={toggleSort} align="right" />
-              <SortableTh label={t('items.salePrice', 'Sale price')} sortKey="salePrice" sort={sort} onSort={toggleSort} align="right" />
-              <th className="px-4 py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
-                  {t('items.noItems', 'No items yet.')}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                <SortableTh label={t('items.name', 'Item')} sortKey="name" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Unit" sortKey="unit" sort={sort} onSort={toggleSort} />
+                <SortableTh label="On hand" sortKey="onHand" sort={sort} onSort={toggleSort} align="right" />
+                <SortableTh label="Avg cost" sortKey="avgCost" sort={sort} onSort={toggleSort} align="right" />
+                <SortableTh label="Value" sortKey="value" sort={sort} onSort={toggleSort} align="right" />
+                <SortableTh label={t('items.salePrice', 'Sale price')} sortKey="salePrice" sort={sort} onSort={toggleSort} align="right" />
+                <th className="px-4 py-2"></th>
               </tr>
-            )}
-            {visible.map((it) => {
-              const lv = levelFor(it.id)
-              return (
-                <tr key={it.id} className="border-b border-slate-50">
-                  <td className="px-4 py-2">
-                    <button
-                      onClick={() => showLedger(it)}
-                      className="text-left font-medium text-slate-800 hover:text-blue-700 hover:underline"
-                    >
-                      {it.code ? `${it.code} · ` : ''}
-                      {it.name}
-                    </button>
-                  </td>
-                  <td className="px-4 py-2 text-slate-500">{it.unit || '—'}</td>
-                  <td className="px-4 py-2 text-right font-mono text-slate-700">
-                    <span
-                      className={
-                        lv?.belowReorder ? 'text-amber-700 font-semibold' : ''
-                      }
-                    >
-                      {lv ? fmtQty(lv.onHand) : '—'}
-                    </span>
-                    {lv?.belowReorder && (
-                      <span
-                        className="ml-1.5 text-amber-600"
-                        title="Below reorder level"
-                      >
-                        ⚠
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2 text-right font-mono text-slate-600">
-                    {lv && lv.onHand > 0 ? fmt(lv.avgCost) : '—'}
-                  </td>
-                  <td className="px-4 py-2 text-right font-mono text-slate-800">
-                    {lv && lv.onHand > 0 ? fmt(lv.value) : '—'}
-                  </td>
-                  <td className="px-4 py-2 text-right font-mono text-slate-600">
-                    {it.salePrice ? fmt(Number(it.salePrice)) : '—'}
-                  </td>
-                  <td className="px-4 py-2 text-right">
-                    <ActionMenu
-                      items={[
-                        {
-                          label: t('common.edit', 'Edit'),
-                          icon: <Pencil size={13} />,
-                          onClick: () => startEdit(it),
-                        },
-                        {
-                          label: t('items.title', 'Stock ledger'),
-                          icon: <TriangleAlert size={13} />,
-                          onClick: () => showLedger(it),
-                        },
-                        {
-                          label: t('common.delete', 'Delete'),
-                          icon: <Trash2 size={13} />,
-                          danger: true,
-                          onClick: () => remove(it.id),
-                        },
-                      ]}
-                    />
+            </thead>
+            <tbody>
+              {visible.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
+                    {t('items.noItems', 'No items yet.')}
                   </td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
+              )}
+              {visible.map((it) => {
+                const lv = levelFor(it.id)
+                return (
+                  <tr key={it.id} className="border-b border-slate-50">
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => showLedger(it)}
+                        className="text-left font-medium text-slate-800 hover:text-blue-700 hover:underline"
+                      >
+                        {it.code ? `${it.code} · ` : ''}
+                        {it.name}
+                      </button>
+                    </td>
+                    <td className="px-4 py-2 text-slate-500">{it.unit || '—'}</td>
+                    <td className="px-4 py-2 text-right font-mono text-slate-700">
+                      <span
+                        className={
+                          lv?.belowReorder ? 'text-amber-700 font-semibold' : ''
+                        }
+                      >
+                        {lv ? fmtQty(lv.onHand) : '—'}
+                      </span>
+                      {lv?.belowReorder && (
+                        <span
+                          className="ml-1.5 text-amber-600"
+                          title="Below reorder level"
+                        >
+                          ⚠
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-right font-mono text-slate-600">
+                      {lv && lv.onHand > 0 ? fmt(lv.avgCost) : '—'}
+                    </td>
+                    <td className="px-4 py-2 text-right font-mono text-slate-800">
+                      {lv && lv.onHand > 0 ? fmt(lv.value) : '—'}
+                    </td>
+                    <td className="px-4 py-2 text-right font-mono text-slate-600">
+                      {it.salePrice ? fmt(Number(it.salePrice)) : '—'}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      <ActionMenu
+                        items={[
+                          {
+                            label: t('common.edit', 'Edit'),
+                            icon: <Pencil size={13} />,
+                            onClick: () => startEdit(it),
+                          },
+                          {
+                            label: t('items.title', 'Stock ledger'),
+                            icon: <TriangleAlert size={13} />,
+                            onClick: () => showLedger(it),
+                          },
+                          {
+                            label: t('common.delete', 'Delete'),
+                            icon: <Trash2 size={13} />,
+                            danger: true,
+                            onClick: () => remove(it.id),
+                          },
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
         </>
       )}
@@ -521,55 +523,57 @@ export default function Items() {
             </p>
           ) : (
             <>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="px-4 py-2">{t('common.date', 'Date')}</th>
-                    <th className="px-4 py-2">Doc</th>
-                    <th className="px-4 py-2 text-right">In</th>
-                    <th className="px-4 py-2 text-right">Out</th>
-                    <th className="px-4 py-2 text-right">Unit cost</th>
-                    <th className="px-4 py-2 text-right">On hand</th>
-                    <th className="px-4 py-2 text-right">Avg cost</th>
-                    <th className="px-4 py-2 text-right">Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ledger.rows.map((r, i) => (
-                    <tr
-                      key={r.id ?? `open-${i}`}
-                      className="border-b border-slate-50"
-                    >
-                      <td className="px-4 py-2 text-slate-600">
-                        {r.date ? formatDate(r.date) : (
-                          <span className="text-slate-400">opening</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 font-mono text-slate-600">
-                        {r.docNumber || (r.location ? r.location : '—')}
-                      </td>
-                      <td className="px-4 py-2 text-right font-mono text-emerald-700">
-                        {r.qtyIn ? fmtQty(r.qtyIn) : ''}
-                      </td>
-                      <td className="px-4 py-2 text-right font-mono text-red-700">
-                        {r.qtyOut ? `−${fmtQty(r.qtyOut)}` : ''}
-                      </td>
-                      <td className="px-4 py-2 text-right font-mono text-slate-600">
-                        {fmt(r.unitCost)}
-                      </td>
-                      <td className="px-4 py-2 text-right font-mono text-slate-800">
-                        {fmtQty(r.qtyOnHand)}
-                      </td>
-                      <td className="px-4 py-2 text-right font-mono text-slate-600">
-                        {fmt(r.avgCost)}
-                      </td>
-                      <td className="px-4 py-2 text-right font-mono text-slate-700">
-                        {fmt(r.balanceValue)}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                      <th className="px-4 py-2">{t('common.date', 'Date')}</th>
+                      <th className="px-4 py-2">Doc</th>
+                      <th className="px-4 py-2 text-right">In</th>
+                      <th className="px-4 py-2 text-right">Out</th>
+                      <th className="px-4 py-2 text-right">Unit cost</th>
+                      <th className="px-4 py-2 text-right">On hand</th>
+                      <th className="px-4 py-2 text-right">Avg cost</th>
+                      <th className="px-4 py-2 text-right">Value</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {ledger.rows.map((r, i) => (
+                      <tr
+                        key={r.id ?? `open-${i}`}
+                        className="border-b border-slate-50"
+                      >
+                        <td className="px-4 py-2 text-slate-600">
+                          {r.date ? formatDate(r.date) : (
+                            <span className="text-slate-400">opening</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 font-mono text-slate-600">
+                          {r.docNumber || (r.location ? r.location : '—')}
+                        </td>
+                        <td className="px-4 py-2 text-right font-mono text-emerald-700">
+                          {r.qtyIn ? fmtQty(r.qtyIn) : ''}
+                        </td>
+                        <td className="px-4 py-2 text-right font-mono text-red-700">
+                          {r.qtyOut ? `−${fmtQty(r.qtyOut)}` : ''}
+                        </td>
+                        <td className="px-4 py-2 text-right font-mono text-slate-600">
+                          {fmt(r.unitCost)}
+                        </td>
+                        <td className="px-4 py-2 text-right font-mono text-slate-800">
+                          {fmtQty(r.qtyOnHand)}
+                        </td>
+                        <td className="px-4 py-2 text-right font-mono text-slate-600">
+                          {fmt(r.avgCost)}
+                        </td>
+                        <td className="px-4 py-2 text-right font-mono text-slate-700">
+                          {fmt(r.balanceValue)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               <div className="flex justify-between px-4 py-3 text-sm font-semibold text-slate-800">
                 <span>Closing</span>
                 <span className="flex gap-8">

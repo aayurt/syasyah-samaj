@@ -477,15 +477,17 @@ export default function Accounts() {
       {loading ? (
         <div className="h-64 flex items-center justify-center text-slate-400 text-sm">Loading accounts…</div>
       ) : (
-        <AccountsTable
-          accounts={accounts}
-          groups={groups}
-          openings={openings}
-          onEdit={startEdit}
-          onEditGroup={handleEditGroup}
-          onDelete={remove}
-          onConfigureCoa={() => setShowCoaSetup(true)}
-        />
+        <div className="overflow-x-auto">
+          <AccountsTable
+            accounts={accounts}
+            groups={groups}
+            openings={openings}
+            onEdit={startEdit}
+            onEditGroup={handleEditGroup}
+            onDelete={remove}
+            onConfigureCoa={() => setShowCoaSetup(true)}
+          />
+        </div>
       )}
 
       <CoaSetupModal

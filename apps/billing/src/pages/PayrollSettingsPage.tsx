@@ -132,7 +132,7 @@ export default function PayrollSettingsPage() {
   }
 
   return (
-    <div className="p-6 w-full">
+    <div className="p-4 sm:p-6 w-full">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-xl font-semibold text-slate-900">
           <Settings2 size={20} className="text-crimson-600" />
