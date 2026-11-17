@@ -311,10 +311,10 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                     setDocType(dt.value)
                     inline ? onDocTypeChange?.(dt.value) : navigate(`/vouchers/new/${dt.value}`)
                   }}
-                  className={`flex flex-col items-center justify-center gap-1 flex-1 min-w-[120px] max-w-[150px] rounded-xl border transition-all ${active
+                  className={`flex h-16 flex-col items-center justify-center gap-1 flex-1 min-w-[120px] max-w-[150px] rounded-xl border transition-all ${active
                     ? 'border-crimson-600 bg-crimson-50/40 shadow-[0_0_0_3px_rgba(185,28,28,0.08)]'
                     : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   <Icon className={`h-6 w-6 ${active ? 'text-crimson-600' : 'text-slate-500'}`} />
                   <span className={`block text-[9px] font-semibold leading-none text-center whitespace-normal ${active ? 'text-slate-900' : 'text-slate-700'}`}>
@@ -331,343 +331,343 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
         <div className="p-6 lg:p-10">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 lg:p-8">
             <div className="mx-auto space-y-8">
-            {/* Live balance strip */}
-            {isJournal && (
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-center gap-4 border-t border-slate-100">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Balance</p>
-                    <p className="text-xs font-semibold text-slate-900">
-                      {t('common.debitTotal', 'Debit total')} {fmt(debitTotal)} · {t('common.creditTotal', 'Credit total')} {fmt(creditTotal)}
-                    </p>
-                  </div>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${balanced
-                    ? 'border-emerald-200 text-emerald-600 bg-emerald-50'
-                    : 'border-slate-200 text-slate-500 bg-white'}`}>
-                    {balanced ? '✓' : '⚖'}
+              {/* Live balance strip */}
+              {isJournal && (
+                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center justify-center gap-4 border-t border-slate-100">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Balance</p>
+                      <p className="text-xs font-semibold text-slate-900">
+                        {t('common.debitTotal', 'Debit total')} {fmt(debitTotal)} · {t('common.creditTotal', 'Credit total')} {fmt(creditTotal)}
+                      </p>
+                    </div>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${balanced
+                      ? 'border-emerald-200 text-emerald-600 bg-emerald-50'
+                      : 'border-slate-200 text-slate-500 bg-white'}`}>
+                      {balanced ? '✓' : '⚖'}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="space-y-5">
-              {/* Meta fields starting from date */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2 lg:col-span-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    {t('common.date', 'Date')}
-                  </label>
-                  <NepaliDateInput value={date} onChange={setDate} />
-                  {!date && <p className="mt-1 text-[10px] text-red-500">{t('vouchers.dateRequired', 'Date is required')}</p>}
-                </div>
-
-                {partyRequired && (
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      {t('vouchers.columnParty', 'Party')} <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={String(partyId ?? '')}
-                      onChange={(e) => setPartyId(e.target.value ? Number(e.target.value) : null)}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
-                    >
-                      <option value="">{t('vouchers.select', '— select —')}</option>
-                      {parties.map((p) => (
-                        <option key={p.id} value={String(p.id)}>{p.name}</option>
-                      ))}
-                    </select>
-                    {!partyId && <p className="mt-1 text-[10px] text-red-500">{t('vouchers.partyRequired', 'Party is required')}</p>}
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    {t('common.currency', 'Currency')}
-                  </label>
-                  <select
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value as Currency)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
-                  >
-                    {CURRENCIES.map((c) => (
-                      <option key={c.code} value={c.code}>{c.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {currency !== 'NPR' && (
+              <div className="space-y-5">
+                {/* Meta fields starting from date */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2 lg:col-span-2">
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      {t('common.exchangeRate', 'Exchange rate')}
+                      {t('common.date', 'Date')}
                     </label>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={exchangeRate ?? ''}
-                      onChange={(e) => setExchangeRate(e.target.value ? parseFloat(e.target.value) : null)}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
+                    <NepaliDateInput value={date} onChange={setDate} />
+                    {!date && <p className="mt-1 text-[10px] text-red-500">{t('vouchers.dateRequired', 'Date is required')}</p>}
+                  </div>
+
+                  {partyRequired && (
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        {t('vouchers.columnParty', 'Party')} <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={String(partyId ?? '')}
+                        onChange={(e) => setPartyId(e.target.value ? Number(e.target.value) : null)}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
+                      >
+                        <option value="">{t('vouchers.select', '— select —')}</option>
+                        {parties.map((p) => (
+                          <option key={p.id} value={String(p.id)}>{p.name}</option>
+                        ))}
+                      </select>
+                      {!partyId && <p className="mt-1 text-[10px] text-red-500">{t('vouchers.partyRequired', 'Party is required')}</p>}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {t('common.currency', 'Currency')}
+                    </label>
+                    <select
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value as Currency)}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
+                    >
+                      {CURRENCIES.map((c) => (
+                        <option key={c.code} value={c.code}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {currency !== 'NPR' && (
+                    <div className="space-y-2 lg:col-span-2">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        {t('common.exchangeRate', 'Exchange rate')}
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={exchangeRate ?? ''}
+                        onChange={(e) => setExchangeRate(e.target.value ? parseFloat(e.target.value) : null)}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2 lg:col-span-3">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {t('common.memo', 'Narration')}
+                    </label>
+                    <textarea
+                      value={narration}
+                      onChange={(e) => setNarration(e.target.value)}
+                      placeholder={t('vouchers.narrationPlaceholder', 'Transaction description…')}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
+                      rows={2}
                     />
                   </div>
-                )}
-
-                <div className="space-y-2 lg:col-span-3">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    {t('common.memo', 'Narration')}
-                  </label>
-                  <textarea
-                    value={narration}
-                    onChange={(e) => setNarration(e.target.value)}
-                    placeholder={t('vouchers.narrationPlaceholder', 'Transaction description…')}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
-                    rows={2}
-                  />
-                </div>
-              </div>
-
-              {/* Lines table */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    {t('vouchers.entryLines', 'Entry lines')}
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={isJournal ? addJLine : isContra ? () => { } : addILine}
-                    className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                    disabled={isContra}
-                  >
-                    <span>+</span> {t('vouchers.addLine', 'Add line')}
-                  </button>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-                  {isJournal ? (
-                    <>
-                      <div className="overflow-x-auto border-b border-slate-100">
-                        <table className="w-full text-left text-xs border-collapse">
-                          <thead>
-                            <tr className="border-b border-slate-100 bg-slate-50">
-                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
-                                {t('common.account', 'Account')}
-                              </th>
-                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                {t('common.debit', 'Debit')}
-                              </th>
-                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                {t('common.credit', 'Credit')}
-                              </th>
-                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
-                                {t('common.memo', 'Memo')}
-                              </th>
-                              <th className="px-4 py-3 text-center" />
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {jLines.map((l, i) => (
-                              <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                <td className="px-4 py-3">
-                                  <AccountSelect
-                                    accounts={accounts}
-                                    value={l.account ?? ''}
-                                    onChange={(id) => setJLine(i, { account: Number(id) })}
-                                  />
-                                </td>
-                                <td className="px-4 py-3">
-                                  <input type="number" min="0" step="0.01" value={l.debit}
-                                    onChange={(e) => setJLine(i, { debit: Math.max(0, Number(e.target.value) || 0) })}
-                                    className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                </td>
-                                <td className="px-4 py-3">
-                                  <input type="number" min="0" step="0.01" value={l.credit}
-                                    onChange={(e) => setJLine(i, { credit: Math.max(0, Number(e.target.value) || 0) })}
-                                    className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                </td>
-                                <td className="px-4 py-3">
-                                  <input value={l.memo}
-                                    onChange={(e) => setJLine(i, { memo: e.target.value })}
-                                    className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                  <button type="button" onClick={() => removeJLine(i)} disabled={jLines.length === 1}
-                                    className="p-2 min-w-[28px] min-h-[28px] text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
-                                    ×
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                            {jLines.length === 0 && (
-                              <tr>
-                                <td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-xs">
-                                  No lines yet. Add a line to begin.
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                      <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-end gap-3">
-                        <div className="flex items-end gap-3 text-xs font-medium">
-                          <div className="flex flex-col items-end gap-1">
-                            <span className="text-slate-500 uppercase text-[10px]">Dr</span>
-                            <span className="text-slate-900">{fmt(debitTotal)}</span>
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <span className="text-slate-500 uppercase text-[10px]">Cr</span>
-                            <span className="text-slate-900">{fmt(creditTotal)}</span>
-                          </div>
-                          <div className={`flex flex-col items-end gap-1 ${balanced ? 'text-emerald-600' : 'text-crimson-600'}`}>
-                            <span className="text-[10px] uppercase">{t('vouchers.difference', 'Difference')}</span>
-                            <span>
-                              {balanced ? t('vouchers.balanced', '✓ balanced') : t('vouchers.difference', 'Difference') + ': ' + fmt(Math.abs(debitTotal - creditTotal))}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  ) : isContra ? (
-                    <div className="p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            {t('vouchers.fromAccount', 'From account (credited)')}
-                          </label>
-                          <AccountSelect accounts={accounts} value={String(fromAccount ?? '')}
-                            onChange={(id) => setFromAccount(Number(id))} placeholder={t('vouchers.selectAccount', '— select account —')} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            {t('vouchers.toAccount', 'To account (debited)')}
-                          </label>
-                          <AccountSelect accounts={accounts} value={String(toAccount ?? '')}
-                            onChange={(id) => setToAccount(Number(id))} placeholder={t('vouchers.selectAccount', '— select account —')} />
-                        </div>
-                        <div className="flex h-[138px] flex-col justify-end">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            {t('common.amount', 'Amount')}
-                          </label>
-                          <input type="number" min="0" step="0.01" value={contraAmount}
-                            onChange={(e) => setContraAmount(Math.max(0, Number(e.target.value) || 0))}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-right text-slate-700 outline-none focus:ring-2 focus:ring-crimson-600" />
-                        </div>
-                      </div>
-                      <div className="mt-4 border-t border-slate-100 pt-4 flex justify-end gap-2 text-sm font-medium">
-                        <span className="text-slate-500 uppercase text-[10px]">Transfer</span>
-                        <span className="text-slate-900">{fmt(contraAmount)}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="overflow-x-auto border-b border-slate-100">
-                        <table className="w-full text-left text-xs border-collapse">
-                          <thead>
-                            <tr className="border-b border-slate-100 bg-slate-50">
-                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
-                                {t('common.description', 'Description')}
-                              </th>
-                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                {t('vouchers.qty', 'Qty')}
-                              </th>
-                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                {t('vouchers.rate', 'Rate')}
-                              </th>
-                              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                {t('common.amount', 'Amount')}
-                              </th>
-                              <th className="px-4 py-3 text-center" />
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {iLines.map((l, i) => (
-                              <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                <td className="px-4 py-3">
-                                  <input value={l.description}
-                                    onChange={(e) => setILine(i, { description: e.target.value })}
-                                    className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                </td>
-                                <td className="px-4 py-3">
-                                  <input type="number" min="0" step="any" value={l.qty}
-                                    onChange={(e) => setILine(i, { qty: Math.max(0, Number(e.target.value) || 0) })}
-                                    className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                </td>
-                                <td className="px-4 py-3">
-                                  <input type="number" min="0" step="0.01" value={l.rate}
-                                    onChange={(e) => setILine(i, { rate: Math.max(0, Number(e.target.value) || 0) })}
-                                    className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                </td>
-                                <td className="px-4 py-3">
-                                  <span className="block rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700">
-                                    {fmt(l.amount)}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                  <button type="button" onClick={() => removeILine(i)} disabled={iLines.length === 1}
-                                    className="p-2 min-w-[28px] min-h-[28px] text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
-                                    ×
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                            {iLines.length === 0 && (
-                              <tr>
-                                <td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-xs">
-                                  No lines yet. Add a line to begin.
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                      <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-end gap-3">
-                        <div className="flex flex-col items-end gap-1 text-sm font-medium">
-                          <span className="text-slate-500 uppercase text-[10px]">Total</span>
-                          <span className="text-slate-900">{fmt(itemTotal)}</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
                 </div>
 
-                <div className="mt-8 border-t border-slate-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  {error && (
-                    <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
-                      {error}
-                    </div>
-                  )}
-                  {draftId && lastSaved && !error && (
-                    <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <span>{t('vouchers.draftSaved', 'Draft saved')}</span>
-                      <span className="text-slate-400">·</span>
-                      <span>{lastSaved}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                {/* Lines table */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      {t('vouchers.entryLines', 'Entry lines')}
+                    </h2>
                     <button
-                      onClick={() => { void saveDraft() }}
-                      disabled={saving}
-                      className="flex-1 sm:flex-none border border-slate-200 bg-white px-5 py-2.5 rounded-lg text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-all focus:ring-2 focus:ring-crimson-600"
+                      type="button"
+                      onClick={isJournal ? addJLine : isContra ? () => { } : addILine}
+                      className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                      disabled={isContra}
                     >
-                      {t('vouchers.saveDraft', 'Save draft')}
+                      <span>+</span> {t('vouchers.addLine', 'Add line')}
                     </button>
-                    {!isQuote && (
-                      <button
-                        onClick={postVoucher}
-                        disabled={saving || (!isJournal && (!iLines.some((l) => l.description && (l.amount || 0) > 0)))
-                          || (isJournal && !balanced)}
-                        className={`flex-1 sm:flex-none bg-crimson-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider shadow-sm disabled:opacity-60 disabled:pointer-events-none transition-all focus:ring-2 focus:ring-crimson-600 ${!saving ? 'hover:bg-crimson-700' : ''}`}
-                      >
-                        {saving
-                          ? t('vouchers.posting', 'Posting…')
-                          : isOrder
-                            ? t('vouchers.confirmOrder', 'Confirm order')
-                            : t('vouchers.post', 'Post')}
-                      </button>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                    {isJournal ? (
+                      <>
+                        <div className="overflow-x-auto border-b border-slate-100">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="border-b border-slate-100 bg-slate-50">
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
+                                  {t('common.account', 'Account')}
+                                </th>
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                  {t('common.debit', 'Debit')}
+                                </th>
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                  {t('common.credit', 'Credit')}
+                                </th>
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
+                                  {t('common.memo', 'Memo')}
+                                </th>
+                                <th className="px-4 py-3 text-center" />
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {jLines.map((l, i) => (
+                                <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <AccountSelect
+                                      accounts={accounts}
+                                      value={l.account ?? ''}
+                                      onChange={(id) => setJLine(i, { account: Number(id) })}
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <input type="number" min="0" step="0.01" value={l.debit}
+                                      onChange={(e) => setJLine(i, { debit: Math.max(0, Number(e.target.value) || 0) })}
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <input type="number" min="0" step="0.01" value={l.credit}
+                                      onChange={(e) => setJLine(i, { credit: Math.max(0, Number(e.target.value) || 0) })}
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <input value={l.memo}
+                                      onChange={(e) => setJLine(i, { memo: e.target.value })}
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <button type="button" onClick={() => removeJLine(i)} disabled={jLines.length === 1}
+                                      className="p-2 min-w-[28px] min-h-[28px] text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
+                                      ×
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                              {jLines.length === 0 && (
+                                <tr>
+                                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-xs">
+                                    No lines yet. Add a line to begin.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-end gap-3">
+                          <div className="flex items-end gap-3 text-xs font-medium">
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-slate-500 uppercase text-[10px]">Dr</span>
+                              <span className="text-slate-900">{fmt(debitTotal)}</span>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-slate-500 uppercase text-[10px]">Cr</span>
+                              <span className="text-slate-900">{fmt(creditTotal)}</span>
+                            </div>
+                            <div className={`flex flex-col items-end gap-1 ${balanced ? 'text-emerald-600' : 'text-crimson-600'}`}>
+                              <span className="text-[10px] uppercase">{t('vouchers.difference', 'Difference')}</span>
+                              <span>
+                                {balanced ? t('vouchers.balanced', '✓ balanced') : t('vouchers.difference', 'Difference') + ': ' + fmt(Math.abs(debitTotal - creditTotal))}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    ) : isContra ? (
+                      <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              {t('vouchers.fromAccount', 'From account (credited)')}
+                            </label>
+                            <AccountSelect accounts={accounts} value={String(fromAccount ?? '')}
+                              onChange={(id) => setFromAccount(Number(id))} placeholder={t('vouchers.selectAccount', '— select account —')} />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              {t('vouchers.toAccount', 'To account (debited)')}
+                            </label>
+                            <AccountSelect accounts={accounts} value={String(toAccount ?? '')}
+                              onChange={(id) => setToAccount(Number(id))} placeholder={t('vouchers.selectAccount', '— select account —')} />
+                          </div>
+                          <div className="flex h-[138px] flex-col justify-end">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              {t('common.amount', 'Amount')}
+                            </label>
+                            <input type="number" min="0" step="0.01" value={contraAmount}
+                              onChange={(e) => setContraAmount(Math.max(0, Number(e.target.value) || 0))}
+                              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-right text-slate-700 outline-none focus:ring-2 focus:ring-crimson-600" />
+                          </div>
+                        </div>
+                        <div className="mt-4 border-t border-slate-100 pt-4 flex justify-end gap-2 text-sm font-medium">
+                          <span className="text-slate-500 uppercase text-[10px]">Transfer</span>
+                          <span className="text-slate-900">{fmt(contraAmount)}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="overflow-x-auto border-b border-slate-100">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="border-b border-slate-100 bg-slate-50">
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
+                                  {t('common.description', 'Description')}
+                                </th>
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                  {t('vouchers.qty', 'Qty')}
+                                </th>
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                  {t('vouchers.rate', 'Rate')}
+                                </th>
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                  {t('common.amount', 'Amount')}
+                                </th>
+                                <th className="px-4 py-3 text-center" />
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {iLines.map((l, i) => (
+                                <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <input value={l.description}
+                                      onChange={(e) => setILine(i, { description: e.target.value })}
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <input type="number" min="0" step="any" value={l.qty}
+                                      onChange={(e) => setILine(i, { qty: Math.max(0, Number(e.target.value) || 0) })}
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <input type="number" min="0" step="0.01" value={l.rate}
+                                      onChange={(e) => setILine(i, { rate: Math.max(0, Number(e.target.value) || 0) })}
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="block rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700">
+                                      {fmt(l.amount)}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <button type="button" onClick={() => removeILine(i)} disabled={iLines.length === 1}
+                                      className="p-2 min-w-[28px] min-h-[28px] text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
+                                      ×
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                              {iLines.length === 0 && (
+                                <tr>
+                                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-xs">
+                                    No lines yet. Add a line to begin.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-end gap-3">
+                          <div className="flex flex-col items-end gap-1 text-sm font-medium">
+                            <span className="text-slate-500 uppercase text-[10px]">Total</span>
+                            <span className="text-slate-900">{fmt(itemTotal)}</span>
+                          </div>
+                        </div>
+                      </>
                     )}
+                  </div>
+
+                  <div className="mt-8 border-t border-slate-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    {error && (
+                      <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        {error}
+                      </div>
+                    )}
+                    {draftId && lastSaved && !error && (
+                      <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span>{t('vouchers.draftSaved', 'Draft saved')}</span>
+                        <span className="text-slate-400">·</span>
+                        <span>{lastSaved}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <button
+                        onClick={() => { void saveDraft() }}
+                        disabled={saving}
+                        className="flex-1 sm:flex-none border border-slate-200 bg-white px-5 py-2.5 rounded-lg text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-all focus:ring-2 focus:ring-crimson-600"
+                      >
+                        {t('vouchers.saveDraft', 'Save draft')}
+                      </button>
+                      {!isQuote && (
+                        <button
+                          onClick={postVoucher}
+                          disabled={saving || (!isJournal && (!iLines.some((l) => l.description && (l.amount || 0) > 0)))
+                            || (isJournal && !balanced)}
+                          className={`flex-1 sm:flex-none bg-crimson-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider shadow-sm disabled:opacity-60 disabled:pointer-events-none transition-all focus:ring-2 focus:ring-crimson-600 ${!saving ? 'hover:bg-crimson-700' : ''}`}
+                        >
+                          {saving
+                            ? t('vouchers.posting', 'Posting…')
+                            : isOrder
+                              ? t('vouchers.confirmOrder', 'Confirm order')
+                              : t('vouchers.post', 'Post')}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
           </div>
         </div>
       </div>
