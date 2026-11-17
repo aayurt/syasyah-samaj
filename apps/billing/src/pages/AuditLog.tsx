@@ -99,7 +99,7 @@ export default function AuditLog() {
       if (actionFilter) where.action = { equals: actionFilter }
       if (entityFilter) where.entityType = { equals: entityFilter }
       if (Object.keys(where).length > 0) q.where = where as any
-      const res = await api<{ docs: AuditLogEntry[]; totalDocs: number }>('audit-logs', { query: q })
+      const res = await api<{ docs: AuditLogEntry[]; totalDocs: number }>('/audit-logs', { query: q })
       setLogs(res.docs)
       setTotal(res.totalDocs)
     } catch (err: unknown) {

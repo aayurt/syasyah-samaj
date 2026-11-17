@@ -103,7 +103,7 @@ export default function BankReconciliation() {
     }
     try {
       const where = JSON.stringify({ account: { equals: Number(selectedAccount) } })
-      const res = await api<{ docs: BankStatement[] }>('bank-statements', {
+      const res = await api<{ docs: BankStatement[] }>('/bank-statements', {
         query: {
           where,
           sort: '-createdAt',
