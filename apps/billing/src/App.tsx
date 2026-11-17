@@ -38,7 +38,7 @@ import {
   ArrowRight,
   type LucideIcon,
 } from 'lucide-react'
-import { authClient, isAdminUser, useOfflineSession } from './lib/auth'
+import { authClient, canAccessBilling, useOfflineSession } from './lib/auth'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Accounts from './pages/Accounts'
@@ -206,28 +206,23 @@ function AppShell() {
 
   if (!session) return <Login />
 
-  if (!isAdminUser((session.user as { role?: string }).role)) {
-    // Also allow illaka-scoped roles (they have billing access)
-    const role = (session.user as { role?: string }).role || ''
-    const illakaRoles = ['illaka-chair', 'illaka-treasurer', 'illaka-secretary', 'illaka-accountant', 'illaka-member-officer', 'viewer']
-    if (!illakaRoles.includes(role)) {
-      return (
-        <div className="grid h-screen place-items-center">
-          <div className="text-center">
-            <p className="text-lg font-semibold text-slate-800">{t('login.notAuthorized', 'Not authorized')}</p>
-            <p className="mt-1 text-sm text-slate-500">
-              {t('login.needAdmin', 'You need an admin account to use Billing.')}
-            </p>
-            <button
-              onClick={() => authClient.signOut()}
-              className="mt-4 text-sm text-crimson-600 hover:underline"
-            >
-              {t('login.signOut', 'Sign out')}
-            </button>
-          </div>
+  if (!canAccessBilling((session.user as { role?: string }).role)) {
+    return (
+      <div className="grid h-screen place-items-center">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-slate-800">{t('login.notAuthorized', 'Not authorized')}</p>
+          <p className="mt-1 text-sm text-slate-500">
+            {t('login.needAdmin', 'You need an admin account to use Billing.')}
+          </p>
+          <button
+            onClick={() => authClient.signOut()}
+            className="mt-4 text-sm text-crimson-600 hover:underline"
+          >
+            {t('login.signOut', 'Sign out')}
+          </button>
         </div>
-      )
-    }
+      </div>
+    )
   }
 
   return (

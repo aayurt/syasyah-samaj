@@ -11,4 +11,7 @@
 **/temp
 **/docs/**
 tsconfig.json
+.env*
+coverage/
+.next/
 

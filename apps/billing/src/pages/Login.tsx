@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, Copy, Lock, Mail, Eye, EyeOff } from 'lucide-react'
-import { authClient, isAdminUser } from '../lib/auth'
+import { authClient, canAccessBilling } from '../lib/auth'
 import { useT } from '../lib/i18n'
 
 // Public demo credentials — shown on the login card so anyone can try the
@@ -46,7 +46,7 @@ export default function Login() {
         password,
       })
       if (signInError) throw new Error(signInError.message || 'Sign in failed')
-      if (data?.user && !isAdminUser((data.user as { role?: string }).role)) {
+      if (data?.user && !canAccessBilling((data.user as { role?: string }).role)) {
         await authClient.signOut()
         setError(t('login.needAdmin', 'You need an admin account to use Billing.'))
         setLoading(false)

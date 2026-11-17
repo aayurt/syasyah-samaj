@@ -16,7 +16,7 @@ vi.mock('../lib/auth', () => ({
     signIn: { email: signInMock },
     signOut: signOutMock,
   },
-  isAdminUser: (role?: string) => role === 'admin',
+  canAccessBilling: (role?: string) => role === 'admin' || role === 'viewer',
 }))
 
 vi.mock('../lib/i18n', () => ({
@@ -66,6 +66,17 @@ describe('Login', () => {
       email: 'admin@example.com',
       password: 'secret123',
     })
+    await vi.waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/'))
+  })
+
+  it('navigates to the dashboard after a demo sign-in', async () => {
+    signInMock.mockResolvedValue({ data: { user: { role: 'viewer' } }, error: null })
+    const user = userEvent.setup()
+    render(<Login />)
+    await user.click(screen.getByTitle('Fill the sign-in form with the demo credentials'))
+    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    expect(signOutMock).not.toHaveBeenCalled()
     await vi.waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/'))
   })
 

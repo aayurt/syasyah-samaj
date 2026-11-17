@@ -18,22 +18,14 @@ export const betterAuthOptions: Partial<BetterAuthOptions> = {
     // ponytail: cookie config ceiling = better-auth defaults; add when a
     // supported cookie option surface appears in the version's types.
   },
-  // emailAndPassword: {
-  //   enabled: true,
-  //   resetPasswordTokenExpiresIn: 3600, // 1 hour
-  //   sendResetPassword: async ({ user, url }) => {
-  //     await resend.emails.send({
-  //       to: user.email,
-  //       subject: 'Reset your password',
-  //       html: `
-  //         <p>Hello ${user.name},</p>
-  //         <p>Click the link below to reset your password:</p>
-  //         <a href="${url}">${url}</a>
-  //         <p>If you did not request a password reset, please ignore this email.</p>
-  //       `,
-  //     })
-  //   },
-  // },
+  emailAndPassword: {
+    enabled: true,
+    resetPasswordTokenExpiresIn: 3600, // 1 hour
+    sendResetPassword: async ({ user, url }) => {
+      // Dev-only: no email provider wired. Reset link is logged; use the URL directly.
+      console.log(`[seed] password-reset link for ${user.email}: ${url}`)
+    },
+  },
   // emailVerification: {
   //   sendOnSignUp: true,
 

@@ -1,0 +1,13 @@
+[
+  {
+    "code": "SYASYAJ",
+    "name": "Syasyah Samaj",
+    "slug": "syasyah-samaj",
+    "type": "central",
+    "active": true,
+    "enabled": true,
+    "description": "Community organization, Yala, Nepal",
+    "contactInfo": { "phone": "+977-1-5555555", "email": "info@syasyahsamaj.com" },
+    "location": { "address": "Yala, Lalitpur, Nepal" }
+  }
+]

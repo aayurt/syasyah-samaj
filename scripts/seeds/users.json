@@ -1,0 +1,30 @@
+[
+  {
+    "email": "admin@syasyahsamaj.com",
+    "name": "Samaj Administrator",
+    "role": "admin",
+    "phoneNumber": "+977-1-5555001",
+    "password": "Admin2026!"
+  },
+  {
+    "email": "moderator@syasyahsamaj.com",
+    "name": "Samaj Moderator",
+    "role": "viewer",
+    "phoneNumber": "+977-1-5555002",
+    "password": "Mod2026!"
+  },
+  {
+    "email": "member@syasyahsamaj.com",
+    "name": "Samaj Member",
+    "role": "user",
+    "phoneNumber": "+977-1-5555003",
+    "password": "Member2026!"
+  },
+  {
+    "email": "demo@syasyahsamaj.com",
+    "name": "Demo User",
+    "role": "viewer",
+    "phoneNumber": "+977-1-5555004",
+    "password": "SyashaDemo2026!"
+  }
+]

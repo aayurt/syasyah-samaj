@@ -11,6 +11,19 @@ export const authClient = createAuthClient({
 export const isAdminUser = (role?: string): boolean =>
   role === 'admin' || role === 'super-admin'
 
+// Roles allowed to enter the Billing app. The publicly advertised demo account
+// uses the read-only `viewer` role — write/admin gates still use isAdminUser().
+const ILLAKA_ROLES = [
+  'illaka-chair',
+  'illaka-treasurer',
+  'illaka-secretary',
+  'illaka-accountant',
+  'illaka-member-officer',
+  'viewer',
+]
+export const canAccessBilling = (role?: string): boolean =>
+  isAdminUser(role) || ILLAKA_ROLES.includes(role ?? '')
+
 const SESSION_CACHE_KEY = 'session'
 
 type CachedSession = { user: { email: string; role?: string } }

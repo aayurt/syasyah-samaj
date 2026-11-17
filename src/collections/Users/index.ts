@@ -128,7 +128,12 @@ export const Users: CollectionConfig = {
   hooks: {
     beforeChange: [
       async ({ data, req, operation }) => {
-        if (!req.user) {
+        // Self-service sign-ups (no authenticated req.user) must never be able
+        // to self-assign an elevated role. Trusted local seeding sets
+        // SEED_LOCAL in-process so the explicit roles in scripts/seeds/users.json
+        // are preserved instead of being flattened to 'user'.
+        const isTrustedSeed = process.env.SEED_LOCAL === 'true'
+        if (!isTrustedSeed && !req.user) {
           data.role = 'user'
         }
         if (req.user && !(isAdmin({ req }) || isSuperAdminAccess({ req }))) {

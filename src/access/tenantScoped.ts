@@ -35,12 +35,15 @@ export const isCentralUser = (user: User | null | undefined): boolean =>
 export const isIllakaUser = (user: User | null | undefined): boolean =>
   Boolean(user && ILLAKA_ROLES.has(roleOf(user)))
 
-/** The user's accounting scope: their first assigned illaka, or undefined. */
+/** The user's accounting scope: their first assigned illaka, or undefined.
+ * Falls back to the singular tenant field for users created without the
+ * multi-tenant `tenants` array (e.g. local seed data). */
 export const userTenantId = (
   user: User | null | undefined,
 ): number | string | undefined => {
   const first = user?.tenants?.[0]
-  return first?.tenant ? extractID(first.tenant) : undefined
+  if (first?.tenant) return extractID(first.tenant)
+  return user?.tenant ? extractID(user.tenant) : undefined
 }
 
 /** A user allowed into the billing module at all (central or illaka roles). */

@@ -1,0 +1,44 @@
+[
+  {
+    "collection": "documents",
+    "data": {
+      "docType": "journal-voucher",
+      "number": "JV-2026-0001",
+      "date": "2026-08-01",
+      "status": "posted",
+      "narration": "Opening membership fees collected",
+      "netTotal": 50000,
+      "taxTotal": 0,
+      "grossTotal": 50000,
+      "paymentMethod": "bank"
+    }
+  },
+  {
+    "collection": "documents",
+    "data": {
+      "docType": "receipt-voucher",
+      "number": "RV-2026-0001",
+      "date": "2026-08-05",
+      "status": "posted",
+      "narration": "Donation received from member",
+      "netTotal": 15000,
+      "taxTotal": 0,
+      "grossTotal": 15000,
+      "paymentMethod": "bank"
+    }
+  },
+  {
+    "collection": "documents",
+    "data": {
+      "docType": "payment-voucher",
+      "number": "PV-2026-0001",
+      "date": "2026-08-10",
+      "status": "posted",
+      "narration": "Office rent paid for Shrawan",
+      "netTotal": 20000,
+      "taxTotal": 0,
+      "grossTotal": 20000,
+      "paymentMethod": "bank"
+    }
+  }
+]
