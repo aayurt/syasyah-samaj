@@ -168,14 +168,14 @@ export default function PayrollBatch() {
   const progress = ((stageIdx + 1) / STAGES.length) * 100
 
   return (
-    <div className="p-6 w-full">
-      <h1 className="text-xl font-semibold text-slate-900 mb-2">Payroll Batch</h1>
-      <p className="text-sm text-slate-500 mb-6">
+    <div className="p-4 sm:p-6 w-full">
+      <h1 className="text-lg sm:text-xl font-semibold text-slate-900 mb-2">Payroll Batch</h1>
+      <p className="text-sm text-slate-500 mb-4">
         Six-stage payroll batch: generate draft → validate → calculate → release → post.
       </p>
 
       {/* Progress */}
-      <div className="mb-6 rounded-lg border border-slate-200 bg-white p-4">
+      <div className="mb-4 sm:mb-6 rounded-lg border border-slate-200 bg-white p-3 sm:p-4">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-2/3 bg-slate-200 rounded-full h-2">
             <div className="bg-crimson-600 h-2 rounded-full" style={{ width: `${progress}%` }} />
@@ -184,11 +184,11 @@ export default function PayrollBatch() {
             Stage {stageIdx + 1} of {STAGES.length} — {STAGES[stageIdx]?.label}
           </span>
         </div>
-        <div className="flex gap-1 text-xs">
+        <div className="flex gap-1 overflow-x-auto text-xs px-1">
           {STAGES.map((s, i) => (
             <div
               key={s.key}
-              className={`flex-1 px-2 py-1 rounded text-center ${
+              className={`shrink-0 px-2.5 sm:px-2 py-1 rounded text-center whitespace-nowrap ${
                 i < stageIdx
                   ? 'bg-emerald-100 text-emerald-700'
                   : i === stageIdx
@@ -204,9 +204,9 @@ export default function PayrollBatch() {
 
       {/* Stage content */}
       {stage === 'setup' && (
-        <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="text-sm font-semibold text-slate-800 mb-4">1. Period & Setup</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+        <section className="mb-4 sm:mb-6 rounded-lg border border-slate-200 bg-white p-3 sm:p-6">
+          <h2 className="text-xs sm:text-sm font-semibold text-slate-800 mb-2 sm:mb-4">1. Period & Setup</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-end">
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">Period (YYYY-MM)</label>
               <input
@@ -249,32 +249,32 @@ export default function PayrollBatch() {
       )}
 
       {stage === 'review' && selectedRun && (
-        <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="text-sm font-semibold text-slate-800 mb-4">2. Review & Exclusion</h2>
-          <p className="text-sm text-slate-500 mb-4">
+        <section className="mb-4 sm:mb-6 rounded-lg border border-slate-200 bg-white p-3 sm:p-6">
+          <h2 className="text-xs sm:text-sm font-semibold text-slate-800 mb-2 sm:mb-4">2. Review & Exclusion</h2>
+          <p className="text-sm text-slate-500 mb-3">
             Review the per-employee lines. Exclude employees who should not be paid this period.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase text-slate-500">
-                  <th className="px-3 py-2">Code</th>
-                  <th className="px-3 py-2">Employee</th>
-                  <th className="px-3 py-2 text-right">Basic</th>
-                  <th className="px-3 py-2 text-right">Gross</th>
-                  <th className="px-3 py-2 text-right">Net</th>
-                  <th className="px-3 py-2 text-right">Include</th>
+                  <th className="px-2 sm:px-3 py-1.5 sm:py-2">Code</th>
+                  <th className="px-2 sm:px-3 py-1.5 sm:py-2">Employee</th>
+                  <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-right">Basic</th>
+                  <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-right">Gross</th>
+                  <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-right">Net</th>
+                  <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-right">Include</th>
                 </tr>
               </thead>
               <tbody>
                 {(selectedRun.lines || []).map((line: any, i: number) => (
                   <tr key={i} className="border-b border-slate-100 last:border-0">
-                    <td className="px-3 py-2 font-mono text-xs">{line.empCode}</td>
-                    <td className="px-3 py-2">{line.name}</td>
-                    <td className="px-3 py-2 text-right">{fmt(line.basic)}</td>
-                    <td className="px-3 py-2 text-right">{fmt(line.gross)}</td>
-                    <td className="px-3 py-2 text-right">{fmt(line.net)}</td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 font-mono text-xs">{line.empCode}</td>
+                    <td className="px-2 sm:px-3 py-1.5 sm:py-2">{line.name}</td>
+                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-right">{fmt(line.basic)}</td>
+                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-right">{fmt(line.gross)}</td>
+                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-right">{fmt(line.net)}</td>
+                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-right">
                       <input
                         type="checkbox"
                         defaultChecked
@@ -286,11 +286,11 @@ export default function PayrollBatch() {
               </tbody>
             </table>
           </div>
-          <div className="mt-4 flex justify-end gap-2">
-            <button onClick={prev} className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+          <div className="mt-3 sm:mt-4 flex justify-end gap-2 sm:gap-2">
+            <button onClick={prev} className="rounded border border-slate-300 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-slate-600 hover:bg-slate-50">
               Back
             </button>
-            <button onClick={next} className="rounded bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700">
+            <button onClick={next} className="rounded bg-crimson-600 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-white hover:bg-crimson-700">
               Validate
             </button>
           </div>
@@ -298,13 +298,13 @@ export default function PayrollBatch() {
       )}
 
       {stage === 'validate' && (
-        <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="text-sm font-semibold text-slate-800 mb-4">3. Validate</h2>
-          <p className="text-sm text-slate-500 mb-4">
+        <section className="mb-4 sm:mb-6 rounded-lg border border-slate-200 bg-white p-3 sm:p-6">
+          <h2 className="text-xs sm:text-sm font-semibold text-slate-800 mb-2 sm:mb-4">3. Validate</h2>
+          <p className="text-sm text-slate-500 mb-3">
             Pre-flight checks: roster active, period open, accounts configured.
           </p>
-          <div className="mb-4 p-3 rounded bg-slate-50 border border-slate-200">
-            <p className="text-sm text-slate-700">
+          <div className="mb-3 sm:mb-4 p-2 sm:p-3 rounded bg-slate-50 border border-slate-200">
+            <p className="text-xs sm:text-sm text-slate-700">
               <strong className="text-slate-900">Run:</strong> {selectedRun?.runNumber || '—'}
               <br />
               <strong className="text-slate-900">Period:</strong> {selectedRun?.period || '—'}
@@ -312,14 +312,14 @@ export default function PayrollBatch() {
               <strong className="text-slate-900">Employees:</strong> {(selectedRun?.lines || []).length}
             </p>
           </div>
-          <div className="flex justify-end gap-2">
-            <button onClick={prev} className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+          <div className="flex justify-end gap-2 sm:gap-2">
+            <button onClick={prev} className="rounded border border-slate-300 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-slate-600 hover:bg-slate-50">
               Back
             </button>
             <button
               onClick={handleValidate}
               disabled={running === 'validate' || !selectedRun}
-              className="rounded bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+              className="rounded bg-crimson-600 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
             >
               {running === 'validate' ? 'Validating…' : 'Run Validation'}
             </button>
@@ -328,26 +328,26 @@ export default function PayrollBatch() {
       )}
 
       {stage === 'calculate' && (
-        <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="text-sm font-semibold text-slate-800 mb-4">4. Calculate</h2>
-          <p className="text-sm text-slate-500 mb-4">
+        <section className="mb-4 sm:mb-6 rounded-lg border border-slate-200 bg-white p-3 sm:p-6">
+          <h2 className="text-xs sm:text-sm font-semibold text-slate-800 mb-2 sm:mb-4">4. Calculate</h2>
+          <p className="text-sm text-slate-500 mb-3">
             Recompute totals from lines and apply employer statutory contributions.
           </p>
-          <div className="flex justify-end gap-2">
-            <button onClick={prev} className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+          <div className="flex justify-end gap-2 sm:gap-2">
+            <button onClick={prev} className="rounded border border-slate-300 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-slate-600 hover:bg-slate-50">
               Back
             </button>
             <button
               onClick={handleCalculate}
               disabled={running === 'calculate' || !selectedRun}
-              className="rounded bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+              className="rounded bg-crimson-600 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
             >
               {running === 'calculate' ? 'Calculating…' : 'Calculate Totals'}
             </button>
           </div>
           {selectedRun && (
-            <div className="mt-4 p-3 rounded bg-emerald-50 border border-emerald-200">
-              <p className="text-sm text-emerald-800">
+            <div className="mt-3 sm:mt-4 p-2 sm:p-3 rounded bg-emerald-50 border border-emerald-200">
+              <p className="text-xs sm:text-sm text-emerald-800">
                 Gross: {fmt(selectedRun.grossPay)} &nbsp;|&nbsp;
                 Deductions: {fmt(selectedRun.totalDeductions)} &nbsp;|&nbsp;
                 Net: {fmt(selectedRun.netPay)}
@@ -358,33 +358,33 @@ export default function PayrollBatch() {
       )}
 
       {stage === 'variance' && selectedRun && (
-        <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="text-sm font-semibold text-slate-800 mb-4">5. Review & Variance</h2>
-          <p className="text-sm text-slate-500 mb-4">
+        <section className="mb-4 sm:mb-6 rounded-lg border border-slate-200 bg-white p-3 sm:p-6">
+          <h2 className="text-xs sm:text-sm font-semibold text-slate-800 mb-2 sm:mb-4">5. Review & Variance</h2>
+          <p className="text-sm text-slate-500 mb-3">
             Compare against prior period. Flag large variances before release.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <div className="p-3 rounded bg-white border border-slate-200">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4">
+            <div className="p-2 sm:p-3 rounded bg-white border border-slate-200">
               <div className="text-xs text-slate-500">Gross Pay</div>
               <div className="text-lg font-mono text-slate-900">{fmt(selectedRun.grossPay)}</div>
             </div>
-            <div className="p-3 rounded bg-white border border-slate-200">
+            <div className="p-2 sm:p-3 rounded bg-white border border-slate-200">
               <div className="text-xs text-slate-500">Net Pay</div>
               <div className="text-lg font-mono text-slate-900">{fmt(selectedRun.netPay)}</div>
             </div>
-            <div className="p-3 rounded bg-white border border-slate-200">
+            <div className="p-2 sm:p-3 rounded bg-white border border-slate-200">
               <div className="text-xs text-slate-500">Lines</div>
               <div className="text-lg font-mono text-slate-900">{selectedRun.lines?.length}</div>
             </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <button onClick={prev} className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+          <div className="flex justify-end gap-2 sm:gap-2">
+            <button onClick={prev} className="rounded border border-slate-300 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-slate-600 hover:bg-slate-50">
               Back
             </button>
             <button
               onClick={handleRelease}
               disabled={running === 'release' || !selectedRun}
-              className="rounded bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+              className="rounded bg-crimson-600 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
             >
               {running === 'release' ? 'Releasing…' : 'Release for Approval'}
             </button>
@@ -393,26 +393,26 @@ export default function PayrollBatch() {
       )}
 
       {stage === 'release' && selectedRun && (
-        <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="text-sm font-semibold text-slate-800 mb-4">6. Release & Post</h2>
-          <p className="text-sm text-slate-500 mb-4">
+        <section className="mb-4 sm:mb-6 rounded-lg border border-slate-200 bg-white p-3 sm:p-6">
+          <h2 className="text-xs sm:text-sm font-semibold text-slate-800 mb-2 sm:mb-4">6. Release & Post</h2>
+          <p className="text-sm text-slate-500 mb-3">
             Release the run for approval, then post the journal entry.
           </p>
-          <div className="mb-4 p-3 rounded bg-slate-50 border border-slate-200">
-            <p className="text-sm text-slate-700">
+          <div className="mb-3 sm:mb-4 p-2 sm:p-3 rounded bg-slate-50 border border-slate-200">
+            <p className="text-xs sm:text-sm text-slate-700">
               <strong className="text-slate-900">Status:</strong> {selectedRun.approvalStatus || 'Draft'}
               <br />
               <strong className="text-slate-900">Net Pay:</strong> {fmt(selectedRun.netPay)}
             </p>
           </div>
-          <div className="flex justify-end gap-2">
-            <button onClick={prev} className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+          <div className="flex justify-end gap-2 sm:gap-2">
+            <button onClick={prev} className="rounded border border-slate-300 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-slate-600 hover:bg-slate-50">
               Back
             </button>
             <button
               onClick={handlePost}
               disabled={running === 'release' || !selectedRun}
-              className="rounded bg-crimson-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
+              className="rounded bg-crimson-600 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50"
             >
               {running === 'release' ? 'Posting…' : 'Post Journal Entry'}
             </button>
@@ -421,7 +421,7 @@ export default function PayrollBatch() {
       )}
 
       {!selectedRun && stage !== 'setup' && (
-        <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+        <div className="mb-4 sm:mb-6 rounded-lg border border-dashed border-slate-300 bg-white p-3 sm:p-8 text-center text-sm text-slate-500">
           No draft run selected. Go back to Stage 1 and generate one.
         </div>
       )}
