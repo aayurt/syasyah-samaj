@@ -3,6 +3,8 @@ import { Account, AccountGroup, AccountType } from '../lib/types'
 import ActionMenu from './ActionMenu'
 import { Pencil, Trash2, ChevronRight, ChevronDown, Folder, FileText, Plus } from 'lucide-react'
 import { useT } from '../lib/i18n'
+import { usePagination } from '../lib/usePagination'
+import { Pagination } from './ui/Pagination'
 
 type AccountsTableProps = {
   accounts: Account[]
@@ -68,6 +70,10 @@ export default function AccountsTable({
     )
   }, [accounts, searchQuery])
 
+  const { pageRows, state: pagState, actions: pagActions } = usePagination<Account>(filteredAccounts, {
+    pageSize: 15,
+  })
+
   // Group accounts and groups by Type
   const types: AccountType[] = ['asset', 'liability', 'equity', 'income', 'expense']
 
@@ -94,16 +100,24 @@ export default function AccountsTable({
             </button>
           </div>
         )}
-      </div>
-    )
-  }
+      {pagState.total > 0 && (
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <span className="text-xs text-slate-500">
+            Page {pagState.page} of {pagState.totalPages} ({pagState.total} accounts)
+          </span>
+          <Pagination state={pagState} actions={pagActions} />
+        </div>
+      )}
+    </div>
+  )
+}
 
   return (
     <div className={`mx-auto  space-y-5 ${className || ''}`}>
       {/* Search */}
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs font-medium text-slate-500">
-          {filteredAccounts.length} of {accounts.length} accounts · {groups.length} headings
+          {pageRows.length} of {filteredAccounts.length} accounts · {groups.length} headings
         </span>
         <input
           type="text"
@@ -114,6 +128,11 @@ export default function AccountsTable({
         />
       </div>
 
+      {pageRows.length === 0 && filteredAccounts.length > 0 && (
+        <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-400">
+          No accounts on this page.
+        </div>
+      )}
       {filteredAccounts.length === 0 && (
         <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-400">
           No accounts match &ldquo;{searchQuery}&rdquo;.
@@ -121,7 +140,7 @@ export default function AccountsTable({
       )}
 
       {types.map((type) => {
-        const typeAccts = filteredAccounts.filter((a) => a.type === type)
+        const typeAccts = pageRows.filter((a) => a.type === type)
         const typeGroups = groups.filter((g) => g.type === type)
         if (typeAccts.length === 0 && typeGroups.length === 0) return null
 
@@ -325,8 +344,16 @@ export default function AccountsTable({
               </tbody>
             </table>
           </div>
-        )
-      })}
+        )}
+      )}
+      {pagState.total > 0 && (
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <span className="text-xs text-slate-500">
+            Page {pagState.page} of {pagState.totalPages} ({pagState.total} accounts)
+          </span>
+          <Pagination state={pagState} actions={pagActions} />
+        </div>
+      )}
     </div>
   )
 }

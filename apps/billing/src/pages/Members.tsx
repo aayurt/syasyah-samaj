@@ -13,7 +13,9 @@ import { TableSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useT } from '../lib/i18n'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
+import { usePagination } from '../lib/usePagination'
 import SearchBox from '../components/SearchBox'
+import { Pagination } from '../components/ui/Pagination'
 import { DISTRICTS } from '../lib/districts'
 import MemberViewModal from '../components/MemberViewModal'
 import { parseImportFile } from '../lib/importExport'
@@ -1097,6 +1099,8 @@ export default function Members() {
   })
   const filtered = visible
 
+  const { pageRows, state: pagState, actions: pagActions } = usePagination<Member>(filtered, { pageSize: 15 })
+
   const handleDelete = async (m: Member) => {
     setOpenMenu(null)
     if (!window.confirm(`Delete member "${m.fullName}"? This cannot be undone.`)) return
@@ -1375,10 +1379,6 @@ export default function Members() {
           <DataStatus />
           {loading && members.length === 0 ? (
             <TableSkeleton rows={6} />
-          ) : filtered.length === 0 ? (
-            <div className="py-12 text-center text-sm text-slate-400">
-              {query ? t('members.noMembers', 'No members match your search.') : t('members.noMembers', 'No members yet.')}
-            </div>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
               <table className="w-full text-sm">
@@ -1395,7 +1395,7 @@ export default function Members() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filtered.map((m) => {
+                  {pageRows.map((m) => {
                     const mid = ((m as Record<string, unknown>).memberId as string) || ''
                     const locality = (m.application?.addressPermanent || '').split(/[,\n]/)[0].trim()
                     const contact = m.phoneNumber || m.application?.mobile || ''
@@ -1504,8 +1504,23 @@ export default function Members() {
                     </tr>
                     )
                   })}
+                  {pageRows.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-400">
+                        {query ? t('members.noMembers', 'No members match your search.') : t('members.noMembers', 'No members yet.')}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
+            </div>
+          )}
+          {pagState.total > 0 && (
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <span className="text-xs text-slate-500">
+                Page {pagState.page} of {pagState.totalPages} ({pagState.total} members)
+              </span>
+              <Pagination state={pagState} actions={pagActions} />
             </div>
           )}
         </>

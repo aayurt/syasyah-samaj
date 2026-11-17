@@ -63,7 +63,7 @@ export default function Accounts() {
     setError('')
     try {
       const [a, g, o] = await Promise.all([
-        list<Account>('gl-accounts', { depth: 1, sort: 'name', ...tenantQuery }),
+        list<Account>('gl-accounts', { depth: 0, sort: 'name', ...tenantQuery }),
         list<AccountGroup>('account-groups', { depth: 0, sort: 'name' }),
         selectedYear
           ? api<{ docs: OpeningBalance[] }>('/opening-balances/for-year', {
