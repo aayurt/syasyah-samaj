@@ -299,7 +299,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
               {t('vouchers.typeDetermines', 'Pick the kind of transaction. The fields below adapt to your selection.')}
             </p>
           </div>
-          <div className="flex gap-2 overflow-x-auto px-4 py-2 rounded-xl border border-slate-200 bg-white scrollbar-hide">
+          <div className="flex gap-3 overflow-x-auto px-4 py-3 rounded-xl border border-slate-200 bg-white scrollbar-hide">
             {STEPS.map((dt) => {
               const Icon = CHIP_ICONS[dt.value]
               const active = docType === dt.value
@@ -311,7 +311,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                     setDocType(dt.value)
                     inline ? onDocTypeChange?.(dt.value) : navigate(`/vouchers/new/${dt.value}`)
                   }}
-                  className={`flex flex-col items-center justify-center gap-1 flex-1 min-w-[110px] max-w-[140px] rounded-xl border transition-all ${active
+                  className={`flex flex-col items-center justify-center gap-1 flex-1 min-w-[120px] max-w-[150px] rounded-xl border transition-all ${active
                     ? 'border-crimson-600 bg-crimson-50/40 shadow-[0_0_0_3px_rgba(185,28,28,0.08)]'
                     : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                   }`}
@@ -329,7 +329,8 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
 
       <div className="flex-1 overflow-y-auto relative">
         <div className="p-6 lg:p-10">
-          <div className="mx-auto space-y-8">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 lg:p-8">
+            <div className="mx-auto space-y-8">
             {/* Live balance strip */}
             {isJournal && (
               <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -666,6 +667,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
