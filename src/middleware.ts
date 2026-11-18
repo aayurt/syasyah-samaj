@@ -1,3 +1,70 @@
+// -------------------------------------------------------------------
+// Polyfill browser-only APIs missing on Node 18 (the VPS runs v18.19.1).
+// Some server dependencies (e.g. @smithy/fetch-http-handler) reference
+// `File` / `FileReader` at module load time; without these globals the
+// auth API routes 500 with `ReferenceError: File is not defined`.
+// -------------------------------------------------------------------
+if (typeof globalThis.File === 'undefined') {
+  const BlobCtor = globalThis.Blob
+  class File extends (BlobCtor as any) {
+    declare readonly name: string
+    declare readonly lastModified: number
+    declare readonly lastModifiedDate: Date
+    declare readonly webkitRelativePath: string
+    constructor(bits?: any[], options?: { type?: string; lastModified?: number; name?: string }) {
+      super(bits, options)
+      this.name = options?.name ?? ''
+      this.lastModified = options?.lastModified ?? Date.now()
+      this.lastModifiedDate = new Date(this.lastModified)
+      this.webkitRelativePath = ''
+    }
+  }
+  globalThis.File = File as any
+}
+if (typeof globalThis.FileReader === 'undefined') {
+  const UNSENT = 0, LOADING = 1, DONE = 2
+  class FileReader {
+    private _state = UNSENT
+    result: string | ArrayBuffer | null = null
+    error: DOMException | null = null
+    get readyState() { return this._state }
+    onloadstart: any = null
+    onprogress: any = null
+    onload: any = null
+    onerror: any = null
+    onabort: any = null
+    onloadend: any = null
+    readAsArrayBuffer(blob: Blob) {
+      this._state = LOADING
+      blob.arrayBuffer().then((buf) => {
+        this.result = buf
+        this._state = DONE
+        this.onloadend?.(null as any)
+      }).catch((err) => {
+        this.error = err
+        this._state = DONE
+        this.onerror?.(null as any)
+        this.onloadend?.(null as any)
+      })
+    }
+    readAsText(blob: Blob) {
+      this._state = LOADING
+      blob.text().then((text) => {
+        this.result = text
+        this._state = DONE
+        this.onloadend?.(null as any)
+      }).catch((err) => {
+        this.error = err
+        this._state = DONE
+        this.onerror?.(null as any)
+        this.onloadend?.(null as any)
+      })
+    }
+    abort() { this._state = UNSENT }
+  }
+  globalThis.FileReader = FileReader as any
+}
+
 import { createI18nMiddleware } from 'next-international/middleware'
 import { NextRequest, NextResponse } from 'next/server'
 import { locales, defaultLocale } from './locales/config'
