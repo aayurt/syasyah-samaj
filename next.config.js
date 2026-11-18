@@ -41,6 +41,26 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  webpack: (config, { isServer, webpack }) => {
+    if (isServer) {
+      // Node 18 (PersonalVPS) lacks browser globals File/FileReader.
+      // @smithy/util-stream (chunk 3754) evaluates `MakeTypeAssertion(File)`
+      // at module load — before Next.js lazy-loads the middleware chunk where
+      // the polyfill otherwise lives — so the ReferenceError fires at route
+      // module load, not request handling. Inject the polyfill at the top of
+      // every server chunk so it runs before any module in that chunk.
+      // ponytail: ceiling = Node 18 on PersonalVPS; upgrade path = drop this
+      // once the server runs Node 20+ (native File/FileReader).
+      config.plugins.push(
+        new webpack.BannerPlugin({
+          raw: true,
+          banner:
+            'if(typeof globalThis.File==="undefined"){globalThis.File=class File extends (globalThis.Blob||function(){}){constructor(bits,options){super(bits,options);this.name=options?.name??"";this.lastModified=options?.lastModified??Date.now();this.lastModifiedDate=new Date(this.lastModified);this.webkitRelativePath=""}}}if(typeof globalThis.FileReader==="undefined"){globalThis.FileReader=class FileReader{constructor(){this.readyState=0;this.result=null;this.error=null;this.onloadstart=null;this.onprogress=null;this.onload=null;this.onerror=null;this.onabort=null;this.onloadend=null}readAsArrayBuffer(b){this.readyState=1;b.arrayBuffer().then(r=>{this.result=r;this.readyState=2;this.onloadend&&this.onloadend(null)}).catch(e=>{this.error=e;this.readyState=2;this.onerror&&this.onerror(null);this.onloadend&&this.onloadend(null)})}readAsText(b){this.readyState=1;b.text().then(r=>{this.result=r;this.readyState=2;this.onloadend&&this.onloadend(null)}).catch(e=>{this.error=e;this.readyState=2;this.onerror&&this.onerror(null);this.onloadend&&this.onloadend(null)})}abort(){this.readyState=0}}};',
+        })
+      )
+    }
+    return config
+  },
 }
 
 export default withPayload(nextConfig)
