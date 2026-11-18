@@ -401,10 +401,11 @@ function Shell({ email }: { email: string }) {
         onToggleGroup={toggleGroup}
         t={t}
         userEmail={email}
+        isMobile={isMobile}
         className={`
           relative z-20
           ${isMobile
-            ? 'fixed inset-y-0 left-0 h-screen shadow-2xl translate-x-full transition-transform duration-300 ease-in-out'
+            ? 'fixed inset-y-0 left-0 w-[280px] h-screen shadow-2xl translate-x-full transition-transform duration-300 ease-in-out'
             + (mobileSidebarOpen ? 'translate-x-0' : '')
             : ''
           }

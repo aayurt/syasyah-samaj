@@ -47,6 +47,8 @@ interface AnimatedSidebarProps {
   onOpenChange?: (open: boolean) => void
   /** Extra tailwind classes applied to the aside. */
   className?: string
+  /** When true, skips framer-motion width animation (mobile uses fixed drawer width). */
+  isMobile?: boolean
 }
 
 export function AnimatedSidebar({
@@ -61,6 +63,7 @@ export function AnimatedSidebar({
   open = false,
   onOpenChange,
   className = '',
+  isMobile = false,
 }: AnimatedSidebarProps) {
   const { tenantId, setTenantId, tenants, isCentral } = useTenant()
 
@@ -125,7 +128,7 @@ export function AnimatedSidebar({
   return (
     <motion.aside
       initial={false}
-      animate={{
+      animate={isMobile ? {} : {
         width: collapsed ? 64 : 240,
       }}
       transition={{
