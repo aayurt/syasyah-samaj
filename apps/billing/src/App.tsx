@@ -251,7 +251,7 @@ function Shell({ email }: { email: string }) {
     () => localStorage.getItem('sidebar-collapsed') === '1',
   )
   // Mobile sidebar is off-canvas: visible by default on small screens,
-  // slides out (translate-x-full) when closed to reveal full content.
+  // slides out (translate-x-[-100%]) when closed to reveal full content.
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' && window.innerWidth < 768,
@@ -406,7 +406,7 @@ function Shell({ email }: { email: string }) {
         className={`
           relative z-20
           ${isMobile
-            ? '!fixed inset-y-0 left-0 w-[280px] h-screen shadow-2xl' + (mobileSidebarOpen ? ' translate-x-0' : ' translate-x-full') + ' transition-transform duration-300 ease-in-out'
+            ? '!fixed inset-y-0 left-0 w-[280px] h-screen shadow-2xl' + (mobileSidebarOpen ? ' translate-x-0' : ' translate-x-[-100%]') + ' transition duration-300 ease-in-out'
             : ''
           }
         `}
