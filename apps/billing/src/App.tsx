@@ -406,7 +406,7 @@ function Shell({ email }: { email: string }) {
         className={`
           relative z-20
           ${isMobile
-            ? 'fixed inset-y-0 left-0 w-[280px] h-screen shadow-2xl translate-x-0 transition-transform duration-300 ease-in-out' + (!mobileSidebarOpen ? ' translate-x-full' : '')
+            ? 'fixed inset-y-0 left-0 w-[280px] h-screen shadow-2xl' + (mobileSidebarOpen ? ' translate-x-0' : ' translate-x-full') + ' transition-transform duration-300 ease-in-out'
             : ''
           }
         `}
