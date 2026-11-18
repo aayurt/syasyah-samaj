@@ -23,10 +23,8 @@ import {
   LayoutDashboard,
   ListChecks,
   NotebookText,
-  PanelLeftClose,
   Receipt,
   Search,
-  PanelLeftOpen,
   Scale,
   Settings as SettingsIcon,
   Sparkles,
@@ -250,9 +248,7 @@ function Shell({ email }: { email: string }) {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('sidebar-collapsed') === '1',
   )
-  // Mobile sidebar is off-canvas: visible by default on small screens,
-  // slides out (translate-x-[-100%]) when closed to reveal full content.
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(true)
+  // Mobile sidebar is always expanded on small screens — no off-canvas toggle.
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' && window.innerWidth < 768,
   )
@@ -288,10 +284,6 @@ function Shell({ email }: { email: string }) {
   // the header carries the system switcher.
   const inPayroll = location.pathname.startsWith('/payroll')
   const activeNavGroups = inPayroll ? payrollNavGroups : navGroups
-  // Close the mobile sidebar when navigating to a new page.
-  useEffect(() => {
-    setMobileSidebarOpen(false)
-  }, [location.pathname])
   useEffect(() => {
     setClosedGroups((prev) => {
       const next = { ...prev }
@@ -392,7 +384,7 @@ function Shell({ email }: { email: string }) {
   return (
     <div className="flex h-screen bg-slate-100">
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-      {/* Sidebar: fixed on desktop, off-canvas (absolute overlay) on mobile. */}
+      {/* Sidebar: fixed on desktop, expanded overlay on mobile. */}
       <AnimatedSidebar
         collapsed={collapsed}
         onToggle={toggleSidebar}
@@ -406,35 +398,18 @@ function Shell({ email }: { email: string }) {
         className={`
           relative z-20
           ${isMobile
-            ? '!fixed inset-y-0 left-0 w-[280px] h-screen shadow-2xl' + (mobileSidebarOpen ? ' translate-x-0' : ' translate-x-[-100%]') + ' transition duration-300 ease-in-out'
+            ? '!fixed inset-y-0 left-0 w-[280px] h-screen shadow-2xl translate-x-0 transition duration-300 ease-in-out'
             : ''
           }
         `}
-        open={mobileSidebarOpen}
-        onOpenChange={setMobileSidebarOpen}
+        open
       />
-      {/* Mobile sidebar backdrop */}
-      {isMobile && mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 z-10 bg-black/40 backdrop-blur-sm"
-          onClick={() => setMobileSidebarOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-      <div className="flex flex-1 flex-col overflow-y-hidden">
+      <div className={`flex flex-1 flex-col overflow-y-hidden ${isMobile ? 'pl-[280px]' : ''}`}>
         <div className="print:hidden">
           <ConnectingBanner />
         </div>
         <header className="print:hidden flex flex-wrap items-center justify-between border-b border-slate-200 bg-white px-3 py-2 md:px-6 md:py-2.5 gap-2">
           <div className="flex items-center gap-3">
-            {/* Mobile hamburger — opens the off-canvas sidebar. */}
-            <button
-              onClick={() => setMobileSidebarOpen((o) => !o)}
-              aria-label={mobileSidebarOpen ? t('sidebar.collapse', 'Collapse sidebar') : t('sidebar.expand', 'Expand sidebar')}
-              className="md:hidden flex items-center gap-1.5 rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-            >
-              {mobileSidebarOpen ? <PanelLeftClose size={18} className="text-slate-900" /> : <PanelLeftOpen size={18} className="text-slate-900" />}
-            </button>
             <Breadcrumbs />
             {companyName && (
               <span className="hidden md:block flex-1 max-w-[260px] truncate text-sm font-semibold text-slate-900 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200/60 ml-4">
