@@ -55,6 +55,7 @@ export default function Accounts() {
   const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[]; rowErrors: ValidationError[] } | null>(null)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCoaSetup, setShowCoaSetup] = useState(false)
+  const [view, setView] = useState<'tree' | 'table'>('tree')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { selectedYear } = useFiscalYear()
 
@@ -308,6 +309,33 @@ export default function Accounts() {
         </div>
       </div>
 
+      <div className="mt-3 flex items-center gap-2 text-xs">
+        <span className="text-slate-500">{t('accounts.view', 'View:')}</span>
+        <div className="inline-flex rounded-lg border border-slate-300 bg-white shadow-sm">
+          <button
+            type="button"
+            onClick={() => setView('tree')}
+            className={`px-3 py-1.5 rounded-l-lg text-sm font-medium transition-colors ${
+              view === 'tree'
+                ? 'bg-slate-100 text-slate-900 border-r border-slate-200'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            {t('accounts.viewTree', 'Tree')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setView('table')}
+            className={`px-3 py-1.5 rounded-r-lg text-sm font-medium transition-colors ${
+              view === 'table'
+                ? 'bg-slate-100 text-slate-900'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            {t('accounts.viewTable', 'Table')}
+          </button>
+        </div>
+      </div>
       <input
         ref={fileInputRef}
         type="file"
@@ -486,6 +514,7 @@ export default function Accounts() {
             onEditGroup={handleEditGroup}
             onDelete={remove}
             onConfigureCoa={() => setShowCoaSetup(true)}
+            view={view}
           />
         </div>
       )}

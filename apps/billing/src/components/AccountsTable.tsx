@@ -15,6 +15,7 @@ type AccountsTableProps = {
   onDelete: (id: number, isGroup?: boolean) => void
   onConfigureCoa?: () => void
   className?: string
+  view?: 'tree' | 'table'
 }
 
 const TYPE_LABELS: Record<AccountType, string> = {
@@ -42,6 +43,7 @@ export default function AccountsTable({
   onDelete,
   onConfigureCoa,
   className,
+  view = 'tree',
 }: AccountsTableProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
@@ -139,7 +141,71 @@ export default function AccountsTable({
         </div>
       )}
 
-      {types.map((type) => {
+      {view === 'table' ? (
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 text-sm font-semibold text-slate-800 flex justify-between items-center">
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-crimson-600" />
+              {t('accounts.allAccounts', 'All Accounts')}
+            </span>
+            <span className="text-xs font-normal text-slate-400">
+              {pageRows.length} account{pageRows.length === 1 ? '' : 's'}
+            </span>
+          </div>
+          <table className="w-full text-left text-sm table-fixed">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/40 text-xs uppercase tracking-wide text-slate-500 font-medium">
+                <th className="w-24 px-4 py-2">Code</th>
+                <th className="px-4 py-2">Account Name</th>
+                <th className="w-24 px-4 py-2">Type</th>
+                <th className="w-24 px-4 py-2">Group</th>
+                <th className="w-20 px-4 py-2">{t('accounts.currency', 'Currency')}</th>
+                <th className="w-28 px-4 py-2">Description</th>
+                <th className="w-28 px-4 py-2 text-right">Opening (FY)</th>
+                <th className="w-20 px-4 py-2 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageRows.map((a) => {
+                const opening = openings[a.id] ?? a.openingBalance ?? 0
+                const g = typeof a.group === 'object' && a.group !== null ? a.group : groups.find((x) => x.id === a.group)
+                return (
+                  <tr key={a.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
+                    <td className="px-4 py-2 font-mono text-xs text-slate-500">{a.code || '—'}</td>
+                    <td className="px-4 py-2 text-slate-700 flex items-center gap-2">
+                      <FileText size={13} className="text-slate-300 shrink-0" />
+                      <span className="font-medium text-slate-800">{a.name}</span>
+                    </td>
+                    <td className="px-4 py-2 text-xs text-slate-500 capitalize">{a.type}</td>
+                    <td className="px-4 py-2 text-xs text-slate-500">{g?.name || '—'}</td>
+                    <td className="px-4 py-2 text-xs text-slate-500">{a.currency || 'NPR'}</td>
+                    <td className="px-4 py-2 text-xs text-slate-500">{a.description || '—'}</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs text-slate-700 font-medium">{opening.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-2 text-right">
+                      <ActionMenu
+                        items={[
+                          {
+                            label: 'Edit',
+                            icon: <Pencil size={13} />,
+                            onClick: () => onEdit(a),
+                          },
+                          {
+                            label: 'Delete',
+                            icon: <Trash2 size={13} />,
+                            danger: true,
+                            onClick: () => onDelete(a.id),
+                          },
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        types.map((type) => {
         const typeAccts = pageRows.filter((a) => a.type === type)
         const typeGroups = groups.filter((g) => g.type === type)
         if (typeAccts.length === 0 && typeGroups.length === 0) return null
@@ -345,7 +411,8 @@ export default function AccountsTable({
             </table>
           </div>
         )}
-      )}
+        ))
+      }
       {pagState.total > 0 && (
         <div className="mt-4 flex items-center justify-between gap-2">
           <span className="text-xs text-slate-500">
