@@ -348,7 +348,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="w-full space-y-4 p-4">
+    <div className="w-full space-y-4">
       {/* ── Top Header & Title ────────────────────────────────────────── */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
