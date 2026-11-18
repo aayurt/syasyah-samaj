@@ -207,7 +207,9 @@ export default function AccountsTable({
       ) : (
         types.map((type) => {
         const typeAccts = pageRows.filter((a) => a.type === type)
-        const typeGroups = groups.filter((g) => g.type === type)
+        const typeGroups = Array.from(
+          new Map(groups.filter((g) => g.type === type).map((g) => [g.id, g])).values()
+        )
         if (typeAccts.length === 0 && typeGroups.length === 0) return null
 
         // Group accounts by group ID
