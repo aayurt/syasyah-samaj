@@ -250,8 +250,9 @@ function Shell({ email }: { email: string }) {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('sidebar-collapsed') === '1',
   )
-  // Mobile sidebar is off-canvas: hidden by default, slides in when opened.
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  // Mobile sidebar is off-canvas: visible by default on small screens,
+  // slides out (translate-x-full) when closed to reveal full content.
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' && window.innerWidth < 768,
   )
@@ -405,8 +406,7 @@ function Shell({ email }: { email: string }) {
         className={`
           relative z-20
           ${isMobile
-            ? 'fixed inset-y-0 left-0 w-[280px] h-screen shadow-2xl translate-x-full transition-transform duration-300 ease-in-out'
-            + (mobileSidebarOpen ? 'translate-x-0' : '')
+            ? 'fixed inset-y-0 left-0 w-[280px] h-screen shadow-2xl translate-x-0 transition-transform duration-300 ease-in-out' + (!mobileSidebarOpen ? ' translate-x-full' : '')
             : ''
           }
         `}
