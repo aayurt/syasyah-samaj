@@ -2,7 +2,18 @@
 
 Production: <https://syasyahsamaj.com/> (Cloudflare → VPS `PersonalVPS`, PM2 app `syasha-samaj`, port 8085).
 
-The golden rule: **the VPS never builds**. It is too small to run `next build` (sshd stops answering until the build finishes). We build locally, ship the build output, refresh native modules on the server with `pnpm install`, then reload PM2. `LocalSyncDeployer.sh` automates this.
+## Golden rule: the VPS never builds
+
+**The VPS never runs `next build` (or any build).** It is a low-memory box — `next build` starves it until sshd stops answering, so every deploy must build locally and ship only artifacts:
+
+```
+local machine:        pnpm run build   →  rsync .next/ and apps/billing/dist/
+server (PersonalVPS): pnpm install + pnpm rebuild sharp  →  pm2 reload
+```
+
+`LocalSyncDeployer.sh` automates exactly this path and contains no server-side build step. If you are tempted to `ssh` in and run `pnpm build` or `next build` on the server because something looks stale — don't. Rebuild locally and re-run the deploy script instead. There is no supported server-side build path.
+
+**Why:** the VPS has low memory; a `next build` spikes it past what sshd needs, so the box stops answering mid-build and the deploy hangs. Shipping prebuilt `.next/` avoids the problem entirely.
 
 ## Prerequisites
 

@@ -449,7 +449,7 @@ export default function Dashboard() {
       <SetupChecklist />
 
       {/* ── Key Metrics & KPI Strip ───────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
             <BookOpenText size={18} />
