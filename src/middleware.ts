@@ -64,6 +64,7 @@ if (typeof globalThis.FileReader === 'undefined') {
   }
   globalThis.FileReader = FileReader as any
 }
+console.log('[polyfill] File=', typeof globalThis.File, 'FileReader=', typeof globalThis.FileReader)
 
 import { createI18nMiddleware } from 'next-international/middleware'
 import { NextRequest, NextResponse } from 'next/server'
@@ -90,6 +91,7 @@ function extractSubdomain(host: string): string | null {
 export async function middleware(request: NextRequest) {
   // CORS headers for cross-origin API requests from billing SPA (port 5174)
   if (request.nextUrl.pathname.startsWith('/api/')) {
+    console.log('[api-req] File=', typeof globalThis.File, 'FileReader=', typeof globalThis.FileReader, request.nextUrl.pathname)
     const response = NextResponse.next()
     const origin = request.headers.get('origin') || 'http://localhost:5174'
     response.headers.set('Access-Control-Allow-Origin', origin)
