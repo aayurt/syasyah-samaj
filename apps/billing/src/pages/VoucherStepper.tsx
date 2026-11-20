@@ -674,6 +674,9 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                           <table className="w-full text-left text-xs border-collapse">
                             <thead>
                               <tr className="border-b border-slate-100 bg-slate-50">
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-center w-[24px]">
+                                  #
+                                </th>
                                 <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400">
                                   {t('common.description', 'Description')}
                                 </th>
@@ -684,38 +687,17 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                                   {t('vouchers.rate', 'Rate')}
                                 </th>
                                 <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <span>{t('vouchers.discount', 'Discount')}</span>
-                                    <button type="button" onClick={() => setDiscountMode(discountMode === 'pct' ? 'amt' : 'pct')}
-                                      className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100">
-                                      {discountMode === 'pct' ? 'Rs.' : '%'}
-                                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                                    </button>
-                                  </div>
-                                </th>
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
                                   {t('common.amount', 'Amount')}
-                                </th>
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                  {t('vouchers.taxCode', 'Tax Code')}
-                                </th>
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                  {t('vouchers.taxRate', 'Tax rate (%)')}
-                                </th>
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                  {t('vouchers.taxAmt', 'Tax Amt')}
-                                </th>
-                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
-                                  {t('common.total', 'Total')}
                                 </th>
                                 <th className="px-4 py-3 text-center" />
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                              {iLines.map((l, i) => {
-                                const discVal = discountMode === 'pct' ? l.discountPct : l.discountAmt
-                                return (
+                              {iLines.map((l, i) => (
                                 <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                  <td className="px-4 py-3 text-center text-[10px] text-slate-500">
+                                    {i + 1}
+                                  </td>
                                   <td className="px-4 py-3">
                                     {useInventoryEntry ? (
                                       <input
@@ -751,44 +733,8 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                                       className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
                                   </td>
                                   <td className="px-4 py-3">
-                                    <input type="number" min="0" step="0.01" value={discVal || ''}
-                                      onChange={(e) => {
-                                        const val = e.target.value
-                                        if (discountMode === 'pct') setILine(i, { discountPct: val, discountAmt: '' })
-                                        else setILine(i, { discountAmt: val, discountPct: '' })
-                                      }}
-                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                  </td>
-                                  <td className="px-4 py-3">
                                     <span className="block rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700">
                                       {fmt(l.amount)}
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <select value={l.taxType || ''}
-                                      onChange={(e) => setILine(i, { taxType: e.target.value })}
-                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20">
-                                      <option value="">{t('vouchers.none', 'None')}</option>
-                                      {taxTypes.map((t) => (
-                                        <option key={t.id} value={t.id}>
-                                          {t.name}{t.active !== false && t.rate != null ? ` (${t.rate}%)` : ''}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <input type="number" min="0" step="0.01" value={l.taxRate || ''}
-                                      onChange={(e) => setILine(i, { taxRate: e.target.value })}
-                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <span className="block rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700">
-                                      {fmt(lineTaxAmt(l))}
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <span className="block rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 font-medium">
-                                      {fmt(lineNetAmt(l))}
                                     </span>
                                   </td>
                                   <td className="px-4 py-3 text-center">
@@ -798,11 +744,10 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                                     </button>
                                   </td>
                                 </tr>
-                                )
-                              })}
+                              ))}
                               {iLines.length === 0 && (
                                 <tr>
-                                  <td colSpan={10} className="px-4 py-8 text-center text-slate-400 text-xs">
+                                  <td colSpan={6} className="px-4 py-8 text-center text-slate-400 text-xs">
                                     No lines yet. Add a line to begin.
                                   </td>
                                 </tr>
@@ -811,138 +756,101 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                           </table>
                         </div>
                         <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 space-y-0">
-                          {/* Discount toggle */}
-                          <div className="flex items-center justify-between py-2.5">
-                            <button type="button" onClick={() => setDiscountEnabled((e) => !e)}
-                              className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                              <div className={`relative h-6 w-10 rounded-full transition-colors ${discountEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                                <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${discountEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                              </div>
-                              {t('vouchers.discountOnTotal', 'Discount on Total')}
-                            </button>
-                            {discountEnabled && globalDiscountAmt > 0 && (
-                              <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
-                                −{fmt(globalDiscountAmt)}
+                          {/* Edit-style totals summary */}
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-slate-500 uppercase text-[10px]">Sub Total</span>
+                              <span className="font-mono text-slate-700">{fmt(itemTotal)}</span>
+                            </div>
+                            <div className="flex items-center justify-between py-1.5 border-t border-slate-200 pt-1">
+                              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer" role="checkbox" aria-checked={discountEnabled} onClick={() => setDiscountEnabled((e) => !e)}>
+                                <div className={`relative h-5 w-9 rounded-full transition-colors ${discountEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                                  <div className={`absolute top-[2px] h-4 w-4 rounded-full bg-white shadow transition-transform ${discountEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                </div>
+                                <span className="text-slate-500 uppercase text-[10px]">Discount</span>
+                              </label>
+                              <span className={discountEnabled && globalDiscountAmt > 0 ? 'font-mono text-red-600' : 'text-slate-400 text-xs'}>
+                                {discountEnabled && globalDiscountAmt > 0 ? `−${fmt(globalDiscountAmt)}` : '—'}
                               </span>
-                            )}
-                          </div>
-                          {discountEnabled && (
-                            <div className="flex items-center gap-3 pb-3">
-                              <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                            </div>
+                            {discountEnabled && (
+                              <div className="flex items-center gap-3 py-1">
                                 <button type="button" onClick={() => { setDiscountMode('pct'); setGlobalDiscountAmount(0) }}
-                                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${discountMode === 'pct' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${discountMode === 'pct' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                                   %
                                 </button>
                                 <button type="button" onClick={() => { setDiscountMode('amt'); setGlobalDiscountAmount(0) }}
-                                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${discountMode === 'amt' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${discountMode === 'amt' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                                   Rs.
                                 </button>
+                                <div className="relative flex-1 max-w-[160px]">
+                                  {discountMode === 'pct' ? (
+                                    <>
+                                      <input type="number" min="0" max="100" step="0.01" value={globalDiscountAmount}
+                                        onChange={(e) => setGlobalDiscountAmount(Math.max(0, Number(e.target.value) || 0))}
+                                        placeholder="0"
+                                        className="w-full rounded border border-slate-300 px-3 h-8 pr-6 font-mono text-sm outline-none focus:border-slate-500" />
+                                      <span className="pointer-events-none absolute right-2 top-[6px] text-xs text-slate-400">%</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="pointer-events-none absolute left-2 top-[6px] text-xs text-slate-400">Rs.</span>
+                                      <input type="number" min="0" step="0.01" value={globalDiscountAmount}
+                                        onChange={(e) => setGlobalDiscountAmount(Math.max(0, Number(e.target.value) || 0))}
+                                        placeholder="0"
+                                        className="w-full rounded border border-slate-300 pl-6 h-8 font-mono text-sm outline-none focus:border-slate-500" />
+                                    </>
+                                  )}
+                                </div>
+                                <span className="text-xs text-slate-400">= {fmt(globalDiscountAmt)}</span>
                               </div>
-                              <div className="relative flex-1 max-w-[180px]">
-                                {discountMode === 'pct' ? (
-                                  <>
-                                    <input type="number" min="0" max="100" step="0.01" value={globalDiscountAmount}
-                                      onChange={(e) => setGlobalDiscountAmount(Math.max(0, Number(e.target.value) || 0))}
-                                      placeholder="0"
-                                      className="w-full rounded border border-slate-300 px-3 h-9 pr-8 font-mono text-sm outline-none focus:border-slate-500" />
-                                    <span className="pointer-events-none absolute right-2.5 top-[7px] text-xs text-slate-400">%</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="pointer-events-none absolute left-2.5 top-[7px] text-xs text-slate-400">Rs.</span>
-                                    <input type="number" min="0" step="0.01" value={globalDiscountAmount}
-                                      onChange={(e) => setGlobalDiscountAmount(Math.max(0, Number(e.target.value) || 0))}
-                                      placeholder="0"
-                                      className="w-full rounded border border-slate-300 pl-8 h-9 font-mono text-sm outline-none focus:border-slate-500" />
-                                  </>
-                                )}
-                                <span className="text-xs text-slate-400">
-                                  = {fmt(globalDiscountAmt)}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Tax (VAT / GST) — always visible on item types */}
-                          <div className="flex items-center justify-between py-2.5 border-t border-slate-100 pt-3">
-                            <span className="text-sm font-medium text-slate-700">{t('vouchers.vatGst', 'Tax (VAT / GST)')}</span>
-                            <span className={vatGstTotal > 0 ? 'rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600' : 'text-slate-400 text-xs'}>
-                              {vatGstTotal > 0 ? fmt(vatGstTotal) : '—'}
-                            </span>
-                          </div>
-
-                          {/* TDS toggle */}
-                          <div className="flex items-center justify-between py-2.5">
-                            <button type="button" onClick={() => setTdsEnabled((e) => !e)}
-                              className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                              <div className={`relative h-6 w-10 rounded-full transition-colors ${tdsEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                                <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${tdsEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                              </div>
-                              {t('vouchers.tdsFullLabel', 'TDS (Tax Deducted at Source)')}
-                            </button>
-                            {tdsEnabled && tdsTotal > 0 && (
-                              <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
-                                −{fmt(tdsTotal)}
-                              </span>
                             )}
-                          </div>
-                          {tdsEnabled && (
-                            <div className="space-y-3 pb-3">
-                              <div className="flex items-center gap-3">
+                            {discountEnabled && globalDiscountAmt > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-slate-500 uppercase text-[10px]">Taxable Amount</span>
+                                <span className="font-mono text-slate-700">{fmt(netItemTotal)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between py-1.5 border-t border-slate-200 pt-1">
+                              <span className="text-slate-500 uppercase text-[10px]">Tax</span>
+                              <span className={vatGstTotal > 0 ? 'font-mono text-slate-700' : 'text-slate-400 text-xs'}>
+                                {vatGstTotal > 0 ? `+${fmt(vatGstTotal)}` : '—'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between py-1.5 border-t border-slate-200 pt-1">
+                              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer" role="checkbox" aria-checked={tdsEnabled} onClick={() => setTdsEnabled((e) => !e)}>
+                                <div className={`relative h-5 w-9 rounded-full transition-colors ${tdsEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                                  <div className={`absolute top-[2px] h-4 w-4 rounded-full bg-white shadow transition-transform ${tdsEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                </div>
+                                <span className="text-slate-500 uppercase text-[10px]">TDS</span>
+                              </label>
+                              <span className={tdsEnabled && tdsTotal > 0 ? 'font-mono text-red-600' : 'text-slate-400 text-xs'}>
+                                {tdsEnabled && tdsTotal > 0 ? `−${fmt(tdsTotal)}` : '—'}
+                              </span>
+                            </div>
+                            {tdsEnabled && (
+                              <div className="flex items-center gap-3 py-1">
                                 <select value={tdsTypeId || ''}
                                   onChange={(e) => { setTdsTypeId(e.target.value || null); setTdsAmount(0) }}
-                                  className="h-9 flex-1 rounded border border-slate-300 px-2 text-sm outline-none focus:border-slate-500">
+                                  className="h-8 flex-1 rounded border border-slate-300 px-2 text-xs outline-none focus:border-slate-500">
                                   <option value="">{t('vouchers.selectTdsType', 'Select TDS type')}</option>
                                   {taxTypes.map((t) =>
                                     <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>
                                   )}
                                 </select>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-                                  <button type="button" onClick={() => { setTdsAmount(0) }}
-                                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${tdsAmount === 0 ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                    %
-                                  </button>
-                                  <button type="button" onClick={() => {}}
-                                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors text-slate-500 hover:text-slate-700`}>
-                                    Rs.
-                                  </button>
-                                </div>
-                                <div className="relative flex-1 max-w-[180px]">
-                                  <input type="number" min="0" max="100" step="0.01"
-                                    value={tdsAmount}
+                                <div className="relative max-w-[100px]">
+                                  <span className="pointer-events-none absolute left-2 top-[6px] text-xs text-slate-400">Rs.</span>
+                                  <input type="number" min="0" step="0.01" value={tdsAmount}
                                     onChange={(e) => setTdsAmount(Math.max(0, Number(e.target.value) || 0))}
                                     placeholder="0"
-                                    className="w-full rounded border border-slate-300 px-3 h-9 pr-8 font-mono text-sm outline-none focus:border-slate-500" />
-                                  <span className="pointer-events-none absolute right-2.5 top-[7px] text-xs text-slate-400">%</span>
-                                  <span className="text-xs text-slate-400">= {fmt(tdsTotal)}</span>
+                                    className="w-full rounded border border-slate-300 pl-6 h-8 font-mono text-xs outline-none focus:border-slate-500" />
                                 </div>
+                                <span className="text-xs text-slate-400">= {fmt(tdsTotal)}</span>
                               </div>
-                            </div>
-                          )}
-
-                          {/* Totals grid */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mt-3 border-t border-slate-100 pt-3">
-                            <div className="flex flex-col items-end gap-1">
-                              <span className="text-slate-500 uppercase text-[10px]">{t('vouchers.itemTotal', 'Item total')}</span>
-                              <span className="text-slate-900">{fmt(itemTotal)}</span>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <span className="text-slate-500 uppercase text-[10px]">{t('vouchers.discountOnTotal', 'Discount on total')}</span>
-                              <span className="text-slate-600">{fmt(globalDiscountAmt)}</span>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <span className="text-slate-500 uppercase text-[10px]">{t('vouchers.vatGst', 'Tax (VAT / GST)')}</span>
-                              <span className="text-slate-900">{fmt(vatGstTotal)}</span>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <span className="text-slate-500 uppercase text-[10px]">{t('vouchers.tds', 'TDS')}</span>
-                              <span className="text-slate-900">{fmt(tdsTotal)}</span>
-                            </div>
-                            <div className="flex flex-col items-end gap-1 col-span-2 md:col-span-2">
-                              <span className="text-slate-500 uppercase text-[10px]">{t('vouchers.grandTotal', 'Grand total')}</span>
-                              <span className="text-crimson-700 font-bold">{fmt(grandTotal)}</span>
+                            )}
+                            <div className="flex justify-between border-t-2 border-slate-300 pt-2 text-base">
+                              <span className="font-bold text-slate-900">Total</span>
+                              <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
                             </div>
                           </div>
                         </div>

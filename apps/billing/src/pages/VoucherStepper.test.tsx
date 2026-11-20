@@ -113,53 +113,47 @@ describe('VoucherStepper — inventory entry toggle', () => {
   })
 })
 
-describe('VoucherStepper — per-line discount and discount on total', () => {
-  /** Fill the single line row: qty, rate, optional per-line discount pct. */
-  function fillLine(qty = '100', rate = '10', discountPct?: string) {
+describe('VoucherStepper — Edit Sales Invoice style totals', () => {
+  /** Fill the single line row: qty, rate (per-line discount/tax columns removed). */
+  function fillLine(qty = '100', rate = '10') {
     const table = screen.queryAllByRole('table').find((t) => t.querySelector('input'))
     if (!table) throw new Error('line table not found')
     const row = Array.from(table.querySelectorAll('tbody tr')).find((r) => r.querySelector('input'))
     if (!row) throw new Error('line row not found')
     const description = row.querySelector('input[placeholder*="Item name"]') as HTMLInputElement
     const numbers = Array.from(row.querySelectorAll('input[type="number"]')) as HTMLInputElement[]
-    const [qtyIn, rateIn, discIn] = numbers
-    if (!description || !qtyIn || !rateIn || !discIn) throw new Error('line inputs not found')
+    const [qtyIn, rateIn] = numbers
+    if (!description || !qtyIn || !rateIn) throw new Error('line inputs not found')
     fireEvent.change(description, { target: { value: 'Steel rods' } })
     fireEvent.change(qtyIn, { target: { value: qty } })
     fireEvent.change(rateIn, { target: { value: rate } })
-    if (discountPct !== undefined) fireEvent.change(discIn, { target: { value: discountPct } })
     return row
   }
 
-  it('matches image table columns: NAME, QTY, RATE, DISCOUNT, AMOUNT, TAX CODE, TAX RATE, TAX AMT, TOTAL', () => {
+  it('renders edit-style line table: # | Description | Qty | Rate | Amount', () => {
     renderWithProviders(<VoucherStepper mode="create" />)
     pickType('Sales Invoice')
     expect(screen.queryByText(/Unit/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Tax Code/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Tax rate/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Tax Amt/i)).not.toBeInTheDocument()
+    expect(screen.getByText('#')).toBeInTheDocument()
+    expect(screen.getByText('Description', { exact: true })).toBeInTheDocument()
     const row = fillLine()
-    // qty, rate, per-line discount, tax-rate = 4 number inputs
-    expect(Array.from(row.querySelectorAll('input[type="number"]'))).toHaveLength(4)
+    expect(Array.from(row.querySelectorAll('input[type="number"]'))).toHaveLength(2)
   })
 
-  it('applies per-line pct discount to the line Total cell', () => {
-    renderWithProviders(<VoucherStepper mode="create" />)
-    pickType('Sales Invoice')
-    const row = fillLine('100', '10', '10')
-    const cellTexts = Array.from(row.querySelectorAll('td')).map((td) => td.textContent)
-    expect(cellTexts.join('|')).toContain('1,000') // amount = qty × rate
-    expect(cellTexts.join('|')).toContain('900')   // total after 10% line discount
-  })
-
-  it('Discount on Total toggle reduces the grand total cell', () => {
+  it('Discount on Total toggle reduces the grand total', () => {
     renderWithProviders(<VoucherStepper mode="create" />)
     pickType('Sales Invoice')
     fillLine('100', '10')
-    const toggle = screen.getByRole('button', { name: /Discount on Total/i })
-    fireEvent.click(toggle)
-    const input = toggle.closest('div')?.parentElement?.querySelector('input[placeholder="0"]')
+    const discountToggle = screen.getByRole('checkbox', { name: /Discount/i })
+    fireEvent.click(discountToggle)
+    const input = screen.getByPlaceholderText('0') as HTMLInputElement
     if (!input) throw new Error('discount input not found')
     fireEvent.change(input, { target: { value: '10' } })
-    const grandTotalRow = screen.getByText(/grand total/i).closest('div')!
-    expect(grandTotalRow.textContent).toContain('900')
-    expect(grandTotalRow.textContent).not.toContain('1,000')
+    const totalRow = screen.getByText('Total').closest('div')!
+    expect(totalRow.textContent).toContain('900')
+    expect(totalRow.textContent).not.toContain('1,000')
   })
 })
