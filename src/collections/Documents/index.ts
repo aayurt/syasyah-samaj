@@ -71,6 +71,7 @@ type DocLine = {
   qty?: number | string | null
   rate?: number | string | null
   amount?: number | string | null
+  item?: string | null
 }
 
 function recomputeTotals(d: any, settings?: any) {

@@ -45,7 +45,7 @@ const STEPS = [
 const ORDER_TYPES = ['sales-order', 'purchase-order'] as const
 
 interface JLine { account: number | null; debit: number; credit: number; memo: string }
-interface ILine { description: string; qty: number; rate: number; amount: number }
+interface ILine { description: string; qty: number; rate: number; amount: number; item?: string }
 
 const blankJLine: JLine = { account: null, debit: 0, credit: 0, memo: '' }
 const blankILine: ILine = { description: '', qty: 1, rate: 0, amount: 0 }

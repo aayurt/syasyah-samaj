@@ -608,6 +608,11 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   // "Detailed Line Items" — the default is the focused 3-field flow.
   const cashSimple = isCash && !cashDetailed
   const isInventory = INVENTORY_TYPES.includes(docType)
+
+  // Inventory entry toggle — when ON, every line uses item selection
+  // (catalog, stock levels, AVCO cost). When OFF, lines use plain description.
+  // Defaults to true for inventory doc types, false otherwise.
+  const [useInventoryEntry, setUseInventoryEntry] = useState(isInventory)
   const isTaxable = ['sales-invoice', 'purchase-invoice', 'payment-voucher', 'receipt-voucher'].includes(docType)
   const bankAccounts = accounts.filter((a) => a.class === 'bank')
   const cashBankAccounts = accounts.filter((a) => a.class === 'cash' || a.class === 'bank')
@@ -1271,6 +1276,25 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
           </div>
 
+          {/* ── Inventory Entry Toggle ─────────────────────────────── */}
+          {isItem && (
+            <div className="mt-4 flex items-center gap-2 px-3 py-2 bg-slate-50 rounded border border-slate-200">
+              <input
+                type="checkbox"
+                id="use-inventory-entry"
+                checked={useInventoryEntry}
+                onChange={(e) => setUseInventoryEntry(e.target.checked)}
+                className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <label htmlFor="use-inventory-entry" className="text-sm font-medium text-slate-700 cursor-pointer">
+                {t('vouchers.inventoryEntryToggle', 'Inventory entry mode')}
+              </label>
+              <span className="text-xs text-slate-500">
+                {useInventoryEntry ? t('vouchers.inventoryEntryOn', 'Item selection + stock tracking') : t('vouchers.inventoryEntryOff', 'Description only')}
+              </span>
+            </div>
+          )}
+
           {/* ── Item Lines Table ────────────────────────────────── */}
           {isItem && (
             <div className="mt-4 rounded-lg border border-slate-200 bg-white">
@@ -1322,7 +1346,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                       <tr key={l.key} className="anim-enter-row border-b border-slate-50">
                         <td className="px-2 py-2 text-center text-slate-400">{i + 1}</td>
                         <td className="px-2 py-2">
-                          {isInventory ? (
+                          {useInventoryEntry ? (
                             <div className="relative">
                               <input
                                 type="text"

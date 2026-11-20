@@ -32,7 +32,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const today = todayAD
 
-type LineDraft = { description: string; qty: string; rate: string }
+type LineDraft = { description: string; qty: string; rate: string; item?: string }
 
 export default function RecurringBilling() {
   const tenantQuery = useTenantQuery()
