@@ -1132,67 +1132,11 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
             <RequiredChecklist items={requiredFields} />
           </div>
 
-          {/* ── Top Row: Party / Invoice No / Date ──────────────── */}
+          {/* ── Top Row: Invoice No / Date / Party / Currency ──────── */}
           <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-              {/* Party */}
-              {/* Party — hidden in simple cash mode (the cash panel has its own) */}
-              {(isItem || isCash) && !cashSimple && (
-                <div ref={partyRef} className="relative">
-                  <label className="text-sm font-medium text-slate-700">
-                    {t('vouchers.partyLabel', 'Party')}{' '}
-                    {docType !== 'petty-cash-voucher' && (
-                      <span className="text-red-500">*</span>
-                    )}
-                  </label>
-                  <div className="relative mt-1">
-                    <input
-                      type="text"
-                      value={showPartyDropdown ? partySearch : (selectedParty?.name || partySearch)}
-                      onChange={(e) => { setPartySearch(e.target.value); setShowPartyDropdown(true); setParty('') }}
-                      onFocus={() => { setShowPartyDropdown(true); setPartySearch('') }}
-                      placeholder={t('vouchers.searchParty', 'Search for party')}
-                      className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 pr-8 text-sm outline-none focus:border-slate-500"
-                    />
-                    <ChevronDown className="pointer-events-none absolute right-2.5 top-[11px] h-4 w-4 text-slate-400" />
-                  </div>
-                  {showPartyDropdown && (
-                    <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-                      {filteredParties.length === 0 && <div className="px-3 py-2 text-sm text-slate-400">No parties found</div>}
-                      <button type="button" onClick={() => { setShowPartyPopup(true); setShowPartyDropdown(false) }}
-                        className="w-full border-t border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
-                        {t('vouchers.addNewParty', '+ Add new party')}
-                      </button>
-                      {filteredParties.map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => { setParty(String(p.id)); setPartySearch(p.name); setShowPartyDropdown(false) }}
-                          className={`flex w-full flex-col gap-0.5 px-3 py-2 text-left hover:bg-slate-50 ${String(p.id) === party ? 'bg-crimson-50' : ''}`}
-                        >
-                          <span className="flex w-full items-center justify-between gap-2 text-sm">
-                            <span className={`truncate font-medium ${String(p.id) === party ? 'text-crimson-700' : 'text-slate-800'}`}>{p.name}</span>
-                            <span className="shrink-0 text-xs text-slate-400">{p.type}</span>
-                          </span>
-                          {(p.phone || partyLocality(p)) && (
-                            <span className="flex w-full flex-wrap items-center gap-1.5">
-                              {p.phone && (
-                                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">📞 {p.phone}</span>
-                              )}
-                              {partyLocality(p) && (
-                                <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-700">📍 {partyLocality(p)}</span>
-                              )}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Invoice No */}
-              <div>
+              {/* Invoice No — full width on top */}
+              <div className="sm:col-span-4">
                 <label className="text-sm font-medium text-slate-700">{t('vouchers.invoiceNo', 'Invoice No')}</label>
                 <div className="mt-1 grid grid-cols-[auto_1fr] gap-2">
                   <input
@@ -1240,44 +1184,99 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                   onChange={setDate}
                 />
               </div>
-            </div>
 
-            {/* Currency / Exchange Rate */}
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-sm font-medium text-slate-700">
-                  {t('vouchers.currencyLabel', 'Currency')}
-                </label>
-                <select
-                  value={currency}
-                  onChange={(e) => { setCurrency(e.target.value as Currency); if (e.target.value === 'NPR') setExchangeRate(null) }}
-                  className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
-                >
-                  {CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code}>{c.label}</option>
-                  ))}
-                </select>
-              </div>
-              {currency !== 'NPR' && (
-                <div>
-                  <label className="text-sm font-medium text-slate-700">
-                    {t('vouchers.exchangeRateLabel', 'Exchange Rate')}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    value={exchangeRate ?? ''}
-                    onChange={(e) => setExchangeRate(Number(e.target.value) || null)}
-                    placeholder="1.0000"
-                    className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
-                  />
+              {/* Party — hidden in simple cash mode (the cash panel has its own) */}
+              {(isItem || isCash) && !cashSimple && (
+                <div className="sm:col-span-2">
+                  <div ref={partyRef} className="relative">
+                    <label className="text-sm font-medium text-slate-700">
+                      {t('vouchers.partyLabel', 'Party')}{' '}
+                      {docType !== 'petty-cash-voucher' && (
+                        <span className="text-red-500">*</span>
+                      )}
+                    </label>
+                    <div className="relative mt-1">
+                      <input
+                        type="text"
+                        value={showPartyDropdown ? partySearch : (selectedParty?.name || partySearch)}
+                        onChange={(e) => { setPartySearch(e.target.value); setShowPartyDropdown(true); setParty('') }}
+                        onFocus={() => { setShowPartyDropdown(true); setPartySearch('') }}
+                        placeholder={t('vouchers.searchParty', 'Search for party')}
+                        className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 pr-8 text-sm outline-none focus:border-slate-500"
+                      />
+                      <ChevronDown className="pointer-events-none absolute right-2.5 top-[11px] h-4 w-4 text-slate-400" />
+                    </div>
+                    {showPartyDropdown && (
+                      <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                        {filteredParties.length === 0 && <div className="px-3 py-2 text-sm text-slate-400">No parties found</div>}
+                        <button type="button" onClick={() => { setShowPartyPopup(true); setShowPartyDropdown(false) }}
+                          className="w-full border-t border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
+                          {t('vouchers.addNewParty', '+ Add new party')}
+                        </button>
+                        {filteredParties.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => { setParty(String(p.id)); setPartySearch(p.name); setShowPartyDropdown(false) }}
+                            className={`flex w-full flex-col gap-0.5 px-3 py-2 text-left hover:bg-slate-50 ${String(p.id) === party ? 'bg-crimson-50' : ''}`}
+                          >
+                            <span className="flex w-full items-center justify-between gap-2 text-sm">
+                              <span className={`truncate font-medium ${String(p.id) === party ? 'text-crimson-700' : 'text-slate-800'}`}>{p.name}</span>
+                              <span className="shrink-0 text-xs text-slate-400">{p.type}</span>
+                            </span>
+                            {(p.phone || partyLocality(p)) && (
+                              <span className="flex w-full flex-wrap items-center gap-1.5">
+                                {p.phone && (
+                                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">📞 {p.phone}</span>
+                                )}
+                                {partyLocality(p) && (
+                                  <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-700">📍 {partyLocality(p)}</span>
+                                )}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
-            </div>
 
+              {/* Currency — full width below */}
+              <div className="sm:col-span-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    {t('vouchers.currencyLabel', 'Currency')}
+                  </label>
+                  <select
+                    value={currency}
+                    onChange={(e) => { setCurrency(e.target.value as Currency); if (e.target.value === 'NPR') setExchangeRate(null) }}
+                    className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
+                  >
+                    {CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+                {currency !== 'NPR' && (
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">
+                      {t('vouchers.exchangeRateLabel', 'Exchange Rate')}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      value={exchangeRate ?? ''}
+                      onChange={(e) => setExchangeRate(Number(e.target.value) || null)}
+                      placeholder="1.0000"
+                      className="w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* ── Inventory Entry Toggle ─────────────────────────────── */}
           {isItem && (
             <div className={`mt-4 flex items-center gap-2 px-3 py-2 rounded border ${useInventoryEntry ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
               <input
