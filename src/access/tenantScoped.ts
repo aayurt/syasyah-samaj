@@ -70,7 +70,7 @@ export const scopedRead: Access = ({ req }) => {
   if (isCentralUser(req.user)) return true
   if (req.user.role === 'viewer' || isIllakaUser(req.user)) {
     const id = userTenantId(req.user)
-    return id ? { tenant: { equals: id } } : false
+    return id ? { or: [{ tenant: { equals: id } }, { tenant: { equals: null } }] } : false
   }
   return false
 }

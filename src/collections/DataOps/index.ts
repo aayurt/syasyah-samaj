@@ -284,12 +284,21 @@ async function ensureAccountGroups(payload: Payload, tenant: string): Promise<Re
   const tid = toNum(tenant)
   const groupIds: Record<string, number> = {}
   for (const g of STARTER_GROUPS) {
-    const existing = await payload.find({
+    // Tenant-specific group first, then fall back to common (NULL tenant) group
+    let existing = await payload.find({
       collection: 'account-groups',
       where: { code: { equals: g.code }, tenant: { equals: tenant } },
       limit: 1,
       depth: 0,
     })
+    if (!existing.docs[0]?.id) {
+      existing = await payload.find({
+        collection: 'account-groups',
+        where: { code: { equals: g.code }, tenant: { equals: null } },
+        limit: 1,
+        depth: 0,
+      })
+    }
     if (existing.docs[0]?.id) {
       groupIds[g.code] = existing.docs[0].id as number
       continue
@@ -317,6 +326,17 @@ async function ensureChart(
       limit: 1,
       depth: 0,
     })
+    // Fall back to common (NULL tenant) accounts — a shared COA means
+    // tenant-specific accounts may not exist yet.
+    if ((count.totalDocs ?? 0) === 0) {
+      const common = await payload.find({
+        collection: 'gl-accounts',
+        where: { tenant: { equals: null } },
+        limit: 1,
+        depth: 0,
+      })
+      if ((common.totalDocs ?? 0) > 0) return { groups: 0, accounts: 0 }
+    }
     if ((count.totalDocs ?? 0) > 0) return { groups: 0, accounts: 0 }
 
     const groupIds = preExistingGroups ?? await ensureAccountGroups(payload, tenant)

@@ -78,6 +78,8 @@ const NON_TENANT_COLLECTIONS = new Set([
   'messages',
   'timeline',
   'tenants',
+  'gl-accounts',
+  'account-groups',
 ])
 
 async function doFetch<T>(path: string, options: ApiOptions): Promise<T> {
