@@ -9,13 +9,14 @@ interface AccountSelectProps {
   value: string | number
   onChange: (id: string) => void
   placeholder?: string
+  disabled?: boolean   // ponytail: lock the picker when item pins an account
 }
 
 /**
  * Custom searchable account dropdown.
  * Shows code · name in the trigger, type-ahead search in the panel.
  */
-export default function AccountSelect({ accounts, value, onChange, placeholder }: AccountSelectProps) {
+export default function AccountSelect({ accounts, value, onChange, placeholder, disabled }: AccountSelectProps) {
   const t = useT()
   const resolvedPlaceholder = placeholder || t('accountSelect.selectAccount')
   const [open, setOpen] = useState(false)
@@ -53,10 +54,11 @@ export default function AccountSelect({ accounts, value, onChange, placeholder }
       {/* Trigger */}
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        disabled={disabled}
+        onClick={() => { if (!disabled) setOpen(!open) }}
         className={`flex h-[36px] w-full items-center gap-2 rounded border px-3 text-left text-sm transition-colors ${
           open ? 'border-crimson-400 ring-1 ring-crimson-200' : 'border-slate-300 hover:border-slate-400'
-        } ${selected ? 'text-slate-800' : 'text-slate-400'}`}
+        } ${selected ? 'text-slate-800' : 'text-slate-400'} ${disabled ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}`}
       >
         {selected ? (
           <>
@@ -113,10 +115,11 @@ export default function AccountSelect({ accounts, value, onChange, placeholder }
                 <button
                   key={a.id}
                   type="button"
-                  onClick={() => { onChange(String(a.id)); setOpen(false) }}
+                  disabled={disabled}
+                  onClick={() => { if (!disabled) { onChange(String(a.id)); setOpen(false) } }}
                   className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
                     String(a.id) === String(value) ? 'bg-crimson-50 text-crimson-700' : 'text-slate-700 hover:bg-slate-50'
-                  }`}
+                  } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
                 >
                   {a.code && (
                     <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-500">

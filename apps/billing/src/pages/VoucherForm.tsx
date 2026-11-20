@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import NepaliDateInput from '../components/NepaliDateInput'
 import OutstandingInvoices from '../components/OutstandingInvoices'
+import AccountSelect from '../components/AccountSelect'
 import { useBalanceSnap } from '../components/BalanceBar'
 import { api, fmt, useSyncState } from '../lib/api'
 import { useT } from '../lib/i18n'
@@ -65,6 +66,8 @@ interface LineDraft {
   key: string; id?: string; item: string; description: string
   unit: string; qty: string; rate: string; taxType: string; taxRate: string; amount: string
   discountPct: string; discountAmt: string
+  account: string            // GL account for this line
+  subAccount: string         // child account when parent account chosen without item
 }
 interface JLineDraft {
   key: string; id?: string; account: string; debit: string; credit: string; memo: string
@@ -75,7 +78,7 @@ interface TaxLineDraft {
 
 const emptyLine = (): LineDraft => ({
   key: crypto.randomUUID(), item: '', description: '', unit: '', qty: '', rate: '', taxType: '', taxRate: '', amount: '',
-  discountPct: '', discountAmt: '',
+  discountPct: '', discountAmt: '', account: '', subAccount: '',
 })
 const emptyJLine = (): JLineDraft => ({
   key: crypto.randomUUID(), account: '', debit: '', credit: '', memo: '',
@@ -444,6 +447,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   // Item search per row
   const [itemSearchRow, setItemSearchRow] = useState<string | null>(null)
   const [itemSearchText, setItemSearchText] = useState('')
+  const [subAccountRow, setSubAccountRow] = useState<string | null>(null)
 
   // Add item popup
   const [showItemPopup, setShowItemPopup] = useState(false)
@@ -520,6 +524,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                 taxRate: l.taxRate != null ? String(l.taxRate) : '',
                 amount: l.amount != null ? String(l.amount) : '',
                 discountPct: '', discountAmt: '',
+                account: idOf(l.account) ?? '', subAccount: '',
               }
             }))
           }
@@ -805,6 +810,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
         rate: l.rate !== '' ? Number(l.rate) : undefined,
         taxRate: l.taxRate !== '' ? Number(l.taxRate) : undefined,
         amount: l.amount !== '' ? Number(l.amount) : undefined,
+        ...(l.account ? { account: Number(l.account) } : {}),
+        ...(l.subAccount ? { subAccount: Number(l.subAccount) } : {}),
       }))
       base.taxRate = parseFloat(taxRate) || 0
       if (globalDiscountEnabled && globalDiscountAmount > 0) {
@@ -909,6 +916,14 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       return
     }
     setSaving(true); setError('')
+    // Validate: each line needs Item or Account; parent Account without Item needs Sub-account
+    for (const l of lines) {
+      if (!l.item && !l.account) { setError('Each line needs an Item or Account'); setSaving(false); return }
+      if (!l.item && l.account) {
+        const hasChildren = accounts.some((a) => a.parent !== null && Number(a.parent) === Number(l.account))
+        if (hasChildren && !l.subAccount) { setError('Select a Sub-account for this Account'); setSaving(false); return }
+      }
+    }
     try {
       // Orders are confirmed, not posted. The server's /post handler rejects
       // order document types outright, and /confirm assigns the order number
@@ -1303,6 +1318,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                   <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
                     <th className="w-10 px-2 py-3 text-center">#</th>
                     <th className="min-w-[180px] px-3 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
+                    <th className="w-24 px-2 py-3 text-left">{t('vouchers.account', 'Account')}</th>
+                    <th className="w-24 px-2 py-3 text-left">{t('vouchers.subAccount', 'Sub-account')}</th>
                     <th className="w-20 px-2 py-3 text-right">{t('vouchers.qty', 'Qty')}</th>
                     <th className="w-24 px-2 py-3 text-right">{t('vouchers.rate', 'Rate')}</th>
                     <th className="w-24 px-2 py-3 text-right">
@@ -1335,6 +1352,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     const finalAmt = calc.finalAmt
                     // Cost / margin hint for inventory lines.
                     const lv = l.item ? levelFor(l.item) : undefined
+                    const selectedItem = l.item ? items.find((it) => String(it.id) === l.item) : undefined
+                    const accountLocked = Boolean(l.item && selectedItem?.accountId)
                     const lineQty = parseFloat(l.qty) || 0
                     const lineCost = lv ? lv.avgCost : 0
                     const isPurchaseLine = docType === 'purchase-invoice' || docType === 'grn'
@@ -1353,7 +1372,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                                 value={itemSearchRow === l.key ? itemSearchText : (items.find((it) => String(it.id) === l.item)?.name || '')}
                                 onChange={(e) => {
                                   setItemSearchRow(l.key); setItemSearchText(e.target.value)
-                                  setLine(l.key, { item: '', description: e.target.value })
+                                  setLine(l.key, { item: '', description: e.target.value, account: '', subAccount: '' })
                                 }}
                                 onFocus={() => { setItemSearchRow(l.key); setItemSearchText('') }}
                                 onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
@@ -1370,7 +1389,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                                   {itemSearchText && items.filter((it) => it.name.toLowerCase().includes(itemSearchText.toLowerCase())).slice(0, 5).map((it) => (
                                     <button key={it.id} type="button" onClick={() => {
                                       const selectedUnit = items.find((it) => String(it.id) === l.item)?.unit
-                                      setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || ''), unit: selectedUnit || '' })
+                                      setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || ''), unit: selectedUnit || '', account: String(it.accountId || ''), subAccount: '' })
                                       setItemSearchRow(null); setItemSearchText('')
                                     }} className="block w-full px-2 py-1.5 text-left text-sm hover:bg-slate-50">
                                       {it.code ? `${it.code} · ` : ''}{it.name}
@@ -1379,7 +1398,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                                   {!itemSearchText && items.slice(0, 5).map((it) => (
                                     <button key={it.id} type="button" onClick={() => {
                                       const selectedUnit = items.find((it) => String(it.id) === l.item)?.unit
-                                      setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || ''), unit: selectedUnit || '' })
+                                      setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || ''), unit: selectedUnit || '', account: String(it.accountId || ''), subAccount: '' })
                                       setItemSearchRow(null); setItemSearchText('')
                                     }} className="block w-full px-2 py-1.5 text-left text-sm hover:bg-slate-50">
                                       {it.code ? `${it.code} · ` : ''}{it.name}
@@ -1427,12 +1446,39 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                           )}
                         </td>
                         <td className="px-1 py-2">
+                          <AccountSelect
+                            accounts={accounts}
+                            value={l.account}
+                            onChange={(id) => {
+                              setLine(l.key, { account: id })
+                              if (!l.item) {
+                                const children = accounts.filter((a) => a.parent !== null && Number(a.parent) === Number(id))
+                                setSubAccountRow(children.length > 0 ? l.key : null)
+                              } else {
+                                setSubAccountRow(null)
+                              }
+                            }}
+                            placeholder={t('vouchers.selectAccount', 'Select account')}
+                            disabled={accountLocked}
+                          />
+                        </td>
+                        <td className="px-1 py-2">
                           <input type="number" min="0" step="any" value={l.qty}
                             onChange={(e) => setLine(l.key, { qty: e.target.value })}
                             onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 1, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
                             data-grid-cell={`${i}:1`}
                             className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
                         </td>
+                        {!l.item && l.account && accounts.some((a) => a.parent !== null && Number(a.parent) === Number(l.account)) ? (
+                          <td className="px-1 py-2" key="subacct">
+                            <AccountSelect
+                              accounts={accounts.filter((a) => a.parent !== null && Number(a.parent) === Number(l.account))}
+                              value={l.subAccount}
+                              onChange={(id) => setLine(l.key, { subAccount: id })}
+                              placeholder={t('vouchers.selectSubAccount', 'Sub-account')}
+                            />
+                          </td>
+                        ) : null}
                         <td className="px-1 py-2">
                           <input type="number" min="0" step="0.01" value={l.rate}
                             onChange={(e) => setLine(l.key, { rate: e.target.value })}

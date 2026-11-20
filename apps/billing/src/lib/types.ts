@@ -173,6 +173,7 @@ export interface Party {
 export interface DocumentLine {
   id?: string
   item?: number | Item | null
+  account?: number | Account | null   // ponytail: GL account posted by this line
   description: string
   unit?: string
   qty?: number
@@ -252,6 +253,7 @@ export interface Item {
   code?: string
   name: string
   unit?: string
+  accountId?: number | null   // ponytail: default GL account auto-selected when item is picked on a voucher line
   valuationMethod?: 'avco' | 'fifo'
   reorderLevel?: number
   openingStock?: number

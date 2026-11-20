@@ -82,7 +82,7 @@ export default function Popover({
       style={{
         top: pos.top,
         left: pos.left,
-        width: minWidth ? Math.max(pos.width, minWidth) : pos.width,
+        // width: minWidth ? Math.max(pos.width, minWidth) : pos.width,
       }}
     >
       {children}

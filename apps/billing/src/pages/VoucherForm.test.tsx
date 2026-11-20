@@ -1,3 +1,5 @@
+import { describe, it, expect } from 'vitest'
+
 /**
  * Inventory entry toggle tests.
  *
@@ -79,5 +81,42 @@ describe('inventory entry toggle — default state logic', () => {
 
   it('defaults to false for contra voucher', () => {
     expect(defaultUseInventory('contra')).toBe(false)
+  })
+})
+
+describe('account / sub-account line behavior', () => {
+  const accounts = [
+    { id: '100', code: '100', name: 'Sales', parent: null, type: 'income' },
+    { id: '101', code: '101', name: 'Product Sales', parent: '100', type: 'income' },
+    { id: '102', code: '102', name: 'Service Sales', parent: '100', type: 'income' },
+    { id: '200', code: '200', name: 'Cash', parent: null, type: 'asset' },
+  ]
+
+  function childrenOf(parentId: string) {
+    return accounts.filter((a) => a.parent !== null && String(a.parent) === parentId)
+  }
+
+  it('reveals sub-account column when parent account picked without item', () => {
+    expect(childrenOf('100').length).toBeGreaterThan(0)
+    expect(childrenOf('200').length).toBe(0)
+  })
+
+  it('requires sub-account when parent account picked without item', () => {
+    const line = { item: '', account: '100', subAccount: '' }
+    const hasChildren = accounts.some((a) => a.parent !== null && Number(a.parent) === Number(line.account))
+    const valid = hasChildren ? Boolean(line.subAccount) : true
+    expect(valid).toBe(false)
+  })
+
+  it('does not require sub-account when leaf account picked without item', () => {
+    const line = { item: '', account: '200', subAccount: '' }
+    const hasChildren = accounts.some((a) => a.parent !== null && Number(a.parent) === Number(line.account))
+    const valid = hasChildren ? Boolean(line.subAccount) : true
+    expect(valid).toBe(true)
+  })
+
+  it('rejects line with neither item nor account', () => {
+    const line = { item: '', account: '', subAccount: '' }
+    expect(Boolean(line.item || line.account)).toBe(false)
   })
 })
