@@ -253,7 +253,13 @@ export interface Item {
   code?: string
   name: string
   unit?: string
+  itemType?: 'inventory' | 'non-inventory'
   accountId?: number | null   // ponytail: default GL account auto-selected when item is picked on a voucher line
+  salesAccount?: number | null
+  purchaseAccount?: number | null
+  salesTaxCode?: number | null
+  purchaseTaxCode?: number | null
+  defaultDescription?: string
   valuationMethod?: 'avco' | 'fifo'
   reorderLevel?: number
   openingStock?: number

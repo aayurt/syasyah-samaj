@@ -260,6 +260,62 @@ export const Items: CollectionConfig = {
       },
     },
     {
+      name: 'itemType',
+      type: 'select',
+      defaultValue: 'non-inventory',
+      required: true,
+      options: [
+        { label: 'Inventory Item', value: 'inventory' },
+        { label: 'Non-Inventory Item', value: 'non-inventory' },
+      ],
+      admin: {
+        description: 'Inventory items track stock; non-inventory items do not.',
+      },
+    },
+    {
+      name: 'salesAccount',
+      type: 'relationship',
+      relationTo: 'gl-accounts',
+      admin: {
+        description: 'GL account credited on sales of this item.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'purchaseAccount',
+      type: 'relationship',
+      relationTo: 'gl-accounts',
+      admin: {
+        description: 'GL account debited on purchases of this item.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'salesTaxCode',
+      type: 'relationship',
+      relationTo: 'tax-types',
+      admin: {
+        description: 'Default tax code applied on sales of this item.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'purchaseTaxCode',
+      type: 'relationship',
+      relationTo: 'tax-types',
+      admin: {
+        description: 'Default tax code applied on purchases of this item.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'defaultDescription',
+      type: 'text',
+      admin: {
+        description: 'Default description pre-filled on transaction lines.',
+      },
+    },
+    {
       name: 'active',
       type: 'checkbox',
       defaultValue: true,

@@ -22,6 +22,12 @@ const emptyForm = {
   name: '',
   code: '',
   unit: '',
+  itemType: 'non-inventory',
+  salesAccount: '',
+  purchaseAccount: '',
+  salesTaxCode: '',
+  purchaseTaxCode: '',
+  defaultDescription: '',
   reorderLevel: '',
   openingStock: '',
   salePrice: '',
@@ -131,9 +137,13 @@ export default function Items() {
       name: it.name,
       code: it.code || '',
       unit: it.unit || '',
+      itemType: it.itemType || 'non-inventory',
+      salesAccount: String(it.salesAccount ?? ''),
+      purchaseAccount: String(it.purchaseAccount ?? ''),
+      salesTaxCode: String(it.salesTaxCode ?? ''),
+      purchaseTaxCode: String(it.purchaseTaxCode ?? ''),
+      defaultDescription: it.defaultDescription || '',
       reorderLevel: it.reorderLevel ? String(it.reorderLevel) : '',
-      // Opening stock only stays editable while no stock movements exist —
-      // once the ledger has entries, the field is locked (shown disabled).
       openingStock: String(it.openingStock ?? ''),
       salePrice: it.salePrice ? String(it.salePrice) : '',
       purchasePrice: it.purchasePrice ? String(it.purchasePrice) : '',
@@ -154,6 +164,12 @@ export default function Items() {
         name: form.name,
         code: form.code || undefined,
         unit: form.unit || undefined,
+        itemType: form.itemType,
+        salesAccount: form.salesAccount ? Number(form.salesAccount) : undefined,
+        purchaseAccount: form.purchaseAccount ? Number(form.purchaseAccount) : undefined,
+        salesTaxCode: form.salesTaxCode ? Number(form.salesTaxCode) : undefined,
+        purchaseTaxCode: form.purchaseTaxCode ? Number(form.purchaseTaxCode) : undefined,
+        defaultDescription: form.defaultDescription || undefined,
         reorderLevel: form.reorderLevel ? Number(form.reorderLevel) : 0,
         salePrice: form.salePrice ? Number(form.salePrice) : undefined,
         purchasePrice: form.purchasePrice ? Number(form.purchasePrice) : undefined,
@@ -306,6 +322,69 @@ export default function Items() {
                 onChange={(e) => setForm({ ...form, unit: e.target.value })}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
                 placeholder="pc, kg, box…"
+              />
+            </label>
+            <label className="text-sm text-slate-700">
+              {t('items.itemType', 'Item type')}
+              <select
+                value={form.itemType}
+                onChange={(e) => setForm({ ...form, itemType: e.target.value })}
+                className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500"
+              >
+                <option value="inventory">{t('items.inventoryItem', 'Inventory Item')}</option>
+                <option value="non-inventory">{t('items.nonInventoryItem', 'Non-Inventory Item')}</option>
+              </select>
+            </label>
+            <label className="text-sm text-slate-700">
+              {t('items.salesAccount', 'Sales account (ID)')}
+              <input
+                type="number"
+                min="0"
+                value={form.salesAccount}
+                onChange={(e) => setForm({ ...form, salesAccount: e.target.value })}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                placeholder="GL account id"
+              />
+            </label>
+            <label className="text-sm text-slate-700">
+              {t('items.purchaseAccount', 'Purchase account (ID)')}
+              <input
+                type="number"
+                min="0"
+                value={form.purchaseAccount}
+                onChange={(e) => setForm({ ...form, purchaseAccount: e.target.value })}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                placeholder="GL account id"
+              />
+            </label>
+            <label className="text-sm text-slate-700">
+              {t('items.salesTaxCode', 'Sales tax code (ID)')}
+              <input
+                type="number"
+                min="0"
+                value={form.salesTaxCode}
+                onChange={(e) => setForm({ ...form, salesTaxCode: e.target.value })}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                placeholder="Tax type id"
+              />
+            </label>
+            <label className="text-sm text-slate-700">
+              {t('items.purchaseTaxCode', 'Purchase tax code (ID)')}
+              <input
+                type="number"
+                min="0"
+                value={form.purchaseTaxCode}
+                onChange={(e) => setForm({ ...form, purchaseTaxCode: e.target.value })}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                placeholder="Tax type id"
+              />
+            </label>
+            <label className="text-sm text-slate-700">
+              {t('items.defaultDescription', 'Default description')}
+              <input
+                value={form.defaultDescription}
+                onChange={(e) => setForm({ ...form, defaultDescription: e.target.value })}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
               />
             </label>
             <label className="text-sm text-slate-700">
