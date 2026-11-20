@@ -430,6 +430,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                   <div className="flex items-center justify-between">
                     <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                       {t('vouchers.entryLines', 'Entry lines')}
+                      ======
                     </h2>
                     <button
                       type="button"
