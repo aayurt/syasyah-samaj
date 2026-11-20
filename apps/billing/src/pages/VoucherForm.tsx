@@ -1096,8 +1096,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                               type="button"
                               onClick={() => updateDocType(typeId)}
                               className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all ${active
-                                  ? `${m.activeClasses} ring-2 ring-crimson-600/20 shadow-sm ${m.textClasses} font-semibold`
-                                  : `${m.inactiveClasses} text-slate-700 font-medium`
+                                ? `${m.activeClasses} ring-2 ring-crimson-600/20 shadow-sm ${m.textClasses} font-semibold`
+                                : `${m.inactiveClasses} text-slate-700 font-medium`
                                 }`}
                             >
                               <span className={active ? m.textClasses : 'text-slate-500'}>
@@ -1221,8 +1221,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                       type="button"
                       onClick={() => { setNumberManual((m) => !m); setManualNumber('') }}
                       className={`shrink-0 rounded px-2 min-h-[40px] py-2.5 text-xs font-medium transition-colors ${numberManual
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                         }`}
                     >
                       {numberManual ? t('vouchers.manualLabel', 'Manual') : t('vouchers.autoLabel', 'Auto')}
@@ -1278,6 +1278,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
           </div>
 
           {/* ── Inventory Entry Toggle ─────────────────────────────── */}
+          {isItem ? "YES" : "NO"}
+          =={docType}==
           {isItem && (
             <div className={`mt-4 flex items-center gap-2 px-3 py-2 rounded border ${useInventoryEntry ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
               <input
