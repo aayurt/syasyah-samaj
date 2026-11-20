@@ -7,7 +7,8 @@ import AccountSelect from '../components/AccountSelect'
 import NepaliDateInput from '../components/NepaliDateInput'
 import { api, fmt } from '../lib/api'
 import { useT } from '../lib/i18n'
-import { CURRENCIES, DOC_TYPE_LABELS, type Account, type Currency, type DocType, type Party } from '../lib/types'
+import { calcEval } from '../lib/calcEval'
+import { CURRENCIES, DOC_TYPE_LABELS, type Account, type Currency, type DocType, type Item, type Party, type TaxType } from '../lib/types'
 import { useCachedList } from '../lib/useCachedList'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { todayAD } from '../lib/nepaliDate'
@@ -45,10 +46,10 @@ const STEPS = [
 const ORDER_TYPES = ['sales-order', 'purchase-order'] as const
 
 interface JLine { account: number | null; debit: number; credit: number; memo: string }
-interface ILine { description: string; qty: number; rate: number; amount: number; item?: string }
+interface ILine { description: string; qty: number; rate: number; amount: number; item?: string; taxType?: string; taxRate?: string; discountPct?: string; discountAmt?: string }
 
 const blankJLine: JLine = { account: null, debit: 0, credit: 0, memo: '' }
-const blankILine: ILine = { description: '', qty: 1, rate: 0, amount: 0 }
+const blankILine: ILine = { description: '', qty: 1, rate: 0, amount: 0, taxType: '', taxRate: '', discountPct: '', discountAmt: '' }
 
 const CHIP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   'journal-voucher': BookOpen,
@@ -78,6 +79,9 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
   const activeTenantName = tenants.find((t) => t.id === tenantId)?.name
   const { docs: parties } = useCachedList<Party>('parties', { sort: 'name', ...tenantQuery })
   const { docs: accounts } = useCachedList<Account>('gl-accounts', { sort: 'name', ...tenantQuery })
+  const { docs: items } = useCachedList<Item>('items', { sort: 'name', ...tenantQuery })
+  const { docs: taxTypesRaw } = useCachedList<TaxType>('tax-types', { sort: 'name', ...tenantQuery })
+  const taxTypes = taxTypesRaw.filter((t) => t.active !== false)
 
   const defaultDocType = (routeDocType && DOC_TYPE_LABELS[routeDocType]
     ? (routeDocType as DocType)
@@ -94,6 +98,11 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
   const [fromAccount, setFromAccount] = useState<number | null>(null)
   const [toAccount, setToAccount] = useState<number | null>(null)
   const [contraAmount, setContraAmount] = useState(0)
+  const [useInventoryEntry, setUseInventoryEntry] = useState(false)
+  const [discountMode, setDiscountMode] = useState<'pct' | 'amt'>('pct')
+  const [globalDiscountAmount, setGlobalDiscountAmount] = useState(0)
+  const [tdsTypeId, setTdsTypeId] = useState<string | null>(null)
+  const [tdsAmount, setTdsAmount] = useState(0)
   const [draftId, setDraftId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -103,6 +112,9 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
   const isContra = docType === 'contra'
   const isQuote = docType === 'sales-quote'
   const isOrder = (ORDER_TYPES as readonly string[]).includes(docType)
+  const isItem = ['sales-quote', 'sales-order', 'sales-invoice', 'purchase-order', 'purchase-invoice',
+    'credit-note', 'debit-note', 'petty-cash-voucher', 'grn', 'delivery-challan',
+    'receipt-voucher', 'payment-voucher'].includes(docType)
   const partyRequired = docType !== 'petty-cash-voucher'
   const party = useMemo(() => parties.find((p) => p.id === partyId), [parties, partyId])
 
@@ -113,6 +125,68 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
   }, [jLines])
 
   const itemTotal = useMemo(() => iLines.reduce((s, l) => s + (l.amount || 0), 0), [iLines])
+
+  // ---- tax / discount calculations ----
+  const lineDiscountAmt = useCallback(
+    (l: ILine) => {
+      const pct = parseFloat(l.discountPct || '0') || 0
+      const amt = parseFloat(l.discountAmt || '0') || 0
+      return pct > 0 ? ((l.amount || 0) * pct) / 100 : amt
+    },
+    [],
+  )
+
+  const lineTaxableAmt = useCallback(
+    (l: ILine) => (l.amount || 0) - lineDiscountAmt(l),
+    [lineDiscountAmt],
+  )
+
+  const lineTaxAmt = useCallback(
+    (l: ILine) => {
+      const rate = parseFloat(l.taxRate || '0') || 0
+      return rate > 0 ? (lineTaxableAmt(l) * rate) / 100 : 0
+    },
+    [lineTaxableAmt],
+  )
+
+  const lineNetAmt = useCallback((l: ILine) => lineTaxableAmt(l) + lineTaxAmt(l), [
+    lineTaxableAmt,
+    lineTaxAmt,
+  ])
+
+  const globalDiscountAmt = useMemo(() => {
+    if (discountMode === 'pct') return (itemTotal * globalDiscountAmount) / 100
+    return globalDiscountAmount
+  }, [discountMode, globalDiscountAmount, itemTotal])
+
+  const netItemTotal = useMemo(() => iLines.reduce((s, l) => s + lineNetAmt(l), 0) - globalDiscountAmt, [
+    iLines,
+    lineNetAmt,
+    globalDiscountAmt,
+  ])
+
+  const taxTypeTotals = useMemo(() => {
+    const map = new Map<string, { taxAmt: number; taxable: number }>()
+    iLines.forEach((l) => {
+      if (!l.taxType || !l.taxRate) return
+      const key = l.taxType
+      if (!map.has(key)) map.set(key, { taxAmt: 0, taxable: 0 })
+      const cur = map.get(key)!
+      cur.taxable += lineTaxableAmt(l)
+      cur.taxAmt += lineTaxAmt(l)
+    })
+    return Array.from(map.entries()).map(([id, v]) => ({ id, ...v }))
+  }, [iLines, lineTaxableAmt, lineTaxAmt])
+
+  const vatGstTotal = useMemo(() => taxTypeTotals.reduce((s, t) => s + t.taxAmt, 0), [taxTypeTotals])
+  const tdsTotal = useMemo(() => tdsAmount, [tdsAmount])
+
+  const grandTotal = useMemo(() => netItemTotal + vatGstTotal - tdsTotal, [
+    netItemTotal,
+    vatGstTotal,
+    tdsTotal,
+  ])
+
   const balanced = Math.abs(debitTotal - creditTotal) < 0.0051
 
   const today = todayAD()
@@ -126,7 +200,11 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
     exchangeRate != null ||
     fromAccount != null ||
     toAccount != null ||
-    contraAmount > 0
+    contraAmount > 0 ||
+    globalDiscountAmount > 0 ||
+    tdsTypeId != null ||
+    tdsAmount > 0 ||
+    iLines.some((l) => l.taxType || l.taxRate || l.discountAmt || l.discountPct)
 
   // Reset line state when the doc type changes
   useEffect(() => {
@@ -181,11 +259,19 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
         qty: l.qty || 1,
         rate: l.rate || 0,
         amount: l.amount || 0,
+        ...(useInventoryEntry && l.item ? { item: l.item } : {}),
+        ...(l.taxType ? { taxType: l.taxType } : {}),
+        ...(l.taxRate ? { taxRate: l.taxRate } : {}),
+        ...(l.discountAmt ? { discountAmt: l.discountAmt } : {}),
       }))
+      base.discountMode = discountMode
+      base.discountAmount = globalDiscountAmount || undefined
+      base.vatGstTotal = vatGstTotal || undefined
+      base.tdsTypeId = tdsTypeId || undefined
+      base.tdsAmount = tdsAmount || undefined
     }
     return base
-  }, [contraAmount, currency, date, docType, exchangeRate, fromAccount, isContra, isJournal, jLines, narration,
-    partyId, partyRequired, tenantQuery.tenant, toAccount, iLines])
+  }, [contraAmount, currency, date, docType, discountMode, exchangeRate, fromAccount, globalDiscountAmount, isContra, isJournal, jLines, narration, partyId, partyRequired, tdsAmount, tdsTypeId, tenantQuery.tenant, toAccount, vatGstTotal, iLines, useInventoryEntry])
 
   const saveDraft = useCallback(async (): Promise<number | null> => {
     setError('')
@@ -430,7 +516,6 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                   <div className="flex items-center justify-between">
                     <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                       {t('vouchers.entryLines', 'Entry lines')}
-                      ======
                     </h2>
                     <button
                       type="button"
@@ -441,6 +526,26 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                       <span>+</span> {t('vouchers.addLine', 'Add line')}
                     </button>
                   </div>
+
+                  {/* ── Inventory Entry Toggle ─────────────────────────────── */}
+                  {isItem && (
+                    <div className={`mt-4 flex items-center gap-2 px-3 py-2 rounded border ${useInventoryEntry ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
+                      <input
+                        type="checkbox"
+                        id="use-inventory-entry"
+                        checked={useInventoryEntry}
+                        onChange={(e) => setUseInventoryEntry(e.target.checked)}
+                        className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <label htmlFor="use-inventory-entry" className="text-sm font-medium text-slate-700 cursor-pointer">
+                        {t('vouchers.inventoryEntryToggle', 'Inventory entry mode')}
+                      </label>
+                      <span className="text-xs text-slate-500">
+                        {useInventoryEntry ? t('vouchers.inventoryEntryOn', 'Item selection + stock tracking') : t('vouchers.inventoryEntryOff', 'Description only')}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
                     {isJournal ? (
                       <>
@@ -574,6 +679,18 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                                 <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
                                   {t('common.amount', 'Amount')}
                                 </th>
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                  {t('vouchers.taxCode', 'Tax Code')}
+                                </th>
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                  {t('vouchers.taxRate', 'Tax rate (%)')}
+                                </th>
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                  {t('vouchers.taxAmt', 'Tax Amt')}
+                                </th>
+                                <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-slate-400 text-right">
+                                  {t('vouchers.discount', 'Discount')}
+                                </th>
                                 <th className="px-4 py-3 text-center" />
                               </tr>
                             </thead>
@@ -581,9 +698,28 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                               {iLines.map((l, i) => (
                                 <tr key={i} className="hover:bg-slate-50 transition-colors">
                                   <td className="px-4 py-3">
-                                    <input value={l.description}
-                                      onChange={(e) => setILine(i, { description: e.target.value })}
-                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                    {useInventoryEntry ? (
+                                      <input
+                                        value={l.item ? (items.find((it) => String(it.id) === l.item)?.name || '') : l.description}
+                                        onChange={(e) => {
+                                          const val = e.target.value
+                                          const match = items.find((it) => it.name.toLowerCase() === val.toLowerCase())
+                                          setILine(i, {
+                                            item: match ? String(match.id) : '',
+                                            description: match ? match.name : val,
+                                          })
+                                        }}
+                                        placeholder={t('vouchers.enterItemName', 'Enter Item name')}
+                                        className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
+                                      />
+                                    ) : (
+                                      <input
+                                        value={l.description}
+                                        onChange={(e) => setILine(i, { description: e.target.value })}
+                                        placeholder={t('vouchers.enterItemName', 'Enter Item name')}
+                                        className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20"
+                                      />
+                                    )}
                                   </td>
                                   <td className="px-4 py-3">
                                     <input type="number" min="0" step="any" value={l.qty}
@@ -600,6 +736,33 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                                       {fmt(l.amount)}
                                     </span>
                                   </td>
+                                  <td className="px-4 py-3">
+                                    <select value={l.taxType || ''}
+                                      onChange={(e) => setILine(i, { taxType: e.target.value })}
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20">
+                                      <option value="">{t('vouchers.none', 'None')}</option>
+                                      {taxTypes.map((t) => (
+                                        <option key={t.id} value={t.id}>
+                                          {t.name}{t.active !== false && t.rate != null ? ` (${t.rate}%)` : ''}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <input type="number" min="0" step="0.01" value={l.taxRate || ''}
+                                      onChange={(e) => setILine(i, { taxRate: e.target.value })}
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="block rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700">
+                                      {fmt(lineTaxAmt(l))}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <input type="number" min="0" step="0.01" value={l.discountAmt || ''}
+                                      onChange={(e) => setILine(i, { discountAmt: e.target.value })}
+                                      className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                                  </td>
                                   <td className="px-4 py-3 text-center">
                                     <button type="button" onClick={() => removeILine(i)} disabled={iLines.length === 1}
                                       className="p-2 min-w-[28px] min-h-[28px] text-slate-400 hover:bg-slate-100 hover:text-crimson-600 disabled:opacity-40 disabled:pointer-events-none transition-colors" aria-label="Remove line">
@@ -610,7 +773,7 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                               ))}
                               {iLines.length === 0 && (
                                 <tr>
-                                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-xs">
+                                  <td colSpan={9} className="px-4 py-8 text-center text-slate-400 text-xs">
                                     No lines yet. Add a line to begin.
                                   </td>
                                 </tr>
@@ -618,10 +781,69 @@ export default function VoucherStepper({ mode = 'create', inline, onDocTypeChang
                             </tbody>
                           </table>
                         </div>
-                        <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex items-end gap-3">
-                          <div className="flex flex-col items-end gap-1 text-sm font-medium">
-                            <span className="text-slate-500 uppercase text-[10px]">Total</span>
-                            <span className="text-slate-900">{fmt(itemTotal)}</span>
+                        <div className="border-t border-slate-100 bg-slate-50 px-4 py-3">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-slate-500 uppercase text-[10px]">{t('vouchers.itemTotal', 'Item total')}</span>
+                              <span className="text-slate-900">{fmt(itemTotal)}</span>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-slate-500 uppercase text-[10px]">{t('vouchers.discountOnTotal', 'Discount on total')}</span>
+                              <div className="flex items-end gap-1">
+                                <span className="text-slate-600">{fmt(globalDiscountAmt)}</span>
+                                <span className="text-slate-400 text-[10px]">{discountMode === 'pct' ? globalDiscountAmount + '%' : ''}</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-slate-500 uppercase text-[10px]">{t('vouchers.vatGst', 'Tax (VAT / GST)')}</span>
+                              <span className="text-slate-900">{fmt(vatGstTotal)}</span>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-slate-500 uppercase text-[10px]">{t('vouchers.tds', 'TDS')}</span>
+                              <span className="text-slate-900">{fmt(tdsTotal)}</span>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-slate-500 uppercase text-[10px]">{t('vouchers.grandTotal', 'Grand total')}</span>
+                              <span className="text-crimson-700 font-bold">{fmt(grandTotal)}</span>
+                            </div>
+                          </div>
+                          <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="space-y-2">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                {t('vouchers.discountMode', 'Discount mode')}
+                              </label>
+                              <div className="flex gap-2">
+                                <label className="flex items-center gap-1 cursor-pointer text-xs">
+                                  <input type="radio" checked={discountMode === 'pct'} onChange={() => setDiscountMode('pct')} className="rounded border-slate-300 text-crimson-600 focus:ring-crimson-500" /> {t('vouchers.pct', '%')}
+                                </label>
+                                <label className="flex items-center gap-1 cursor-pointer text-xs">
+                                  <input type="radio" checked={discountMode === 'amt'} onChange={() => setDiscountMode('amt')} className="rounded border-slate-300 text-crimson-600 focus:ring-crimson-500" /> {t('vouchers.amt', 'amt')}
+                                </label>
+                              </div>
+                            </div>
+                            <div className="flex h-[36px] flex-col justify-end">
+                              <input type="number" min="0" step="0.01" value={globalDiscountAmount}
+                                onChange={(e) => setGlobalDiscountAmount(Math.max(0, Number(e.target.value) || 0))}
+                                className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                {t('vouchers.tdsType', 'TDS type')}
+                              </label>
+                              <select value={tdsTypeId || ''}
+                                onChange={(e) => setTdsTypeId(e.target.value || null)}
+                                className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20">
+                                <option value="">{t('vouchers.none', 'None')}</option>
+                                {taxTypes.map((t) => (
+                                  <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="flex h-[36px] flex-col justify-end">
+                              <input type="number" min="0" step="0.01" value={tdsAmount}
+                                onChange={(e) => setTdsAmount(Math.max(0, Number(e.target.value) || 0))}
+                                className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-right text-slate-700 outline-none focus:border-crimson-600 focus:ring-1 focus:ring-crimson-50/20" />
+                            </div>
                           </div>
                         </div>
                       </>
