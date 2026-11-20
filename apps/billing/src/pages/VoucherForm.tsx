@@ -298,7 +298,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   const t = useT()
   const navigate = useNavigate()
   const { id, docType: urlDocType } = useParams()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
@@ -355,19 +355,16 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     nepaliWordsOnPrint ? numberToNepaliWords(n) : amountInWords(n)
 
   // Form state
-  const [docType, setDocType] = useState<DocType>((urlDocType as DocType) || 'sales-invoice')
-  const [typeChosen, setTypeChosen] = useState<boolean>(() => mode === 'edit' || Boolean(urlDocType))
-  const [typeExpanded, setTypeExpanded] = useState<boolean>(() => mode === 'create' && !urlDocType)
+  const urlType = searchParams.get('type') as DocType | null
+  const [docType, setDocType] = useState<DocType>(urlType || (urlDocType as DocType) || 'journal-voucher')
   const updateDocType = (dt: DocType) => {
     setDocType(dt)
-    setTypeChosen(true)
-    setTypeExpanded(false)
     setInvoicePrefix(DOC_PREFIXES[dt] || 'INV')
     setManualNumber('')
     setNumberManual(false)
-    // Navigate to the typed URL so refresh preserves the selection
-    if (mode === 'create' && !id && !embedded) {
-      navigate(`/vouchers/new/${dt}`, { replace: true })
+    // Keep the choice in the URL so it survives refresh
+    if (!id && !embedded) {
+      setSearchParams({ type: dt }, { replace: true })
     }
   }
 
@@ -985,162 +982,45 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       {error && <p className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       {/* ── Doc Type Cards ── */}
+      {/* ── Transaction Type (inline on the same page) ── */}
       {mode === 'create' && (
-        <div className="rounded-lg border border-slate-200 bg-white p-4 transition-all shadow-sm">
-          {typeChosen && !typeExpanded ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-crimson-50 text-crimson-700 border border-crimson-200">
-                  {DOC_TYPE_META[docType]?.icon || <FilePenLine size={18} />}
-                </span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase font-semibold text-slate-400">Transaction Type</span>
-                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono font-medium text-slate-600">
-                      Step 1 Done
-                    </span>
-                  </div>
-                  <h2 className="text-base font-semibold text-slate-900 leading-tight">
-                    {docTypeLabels[docType] || docType}
-                  </h2>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setTypeExpanded(true)}
-                className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-              >
-                <span>Change Type</span>
-                <ChevronDown size={14} />
-              </button>
+        <div className="rounded-lg border border-slate-200 bg-white px-5 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">
+                Transaction Type
+              </span>
+              <span className="text-sm font-semibold text-slate-800">{docTypeLabels[docType] || docType}</span>
             </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeChosen) {
-                      setTypeExpanded(false)
-                    } else {
-                      navigate('/vouchers')
-                    }
-                  }}
-                  className="flex items-center gap-1.5 rounded px-2.5 py-1 text-slate-600 hover:bg-slate-100 transition-colors"
-                >
-                  <ArrowLeft size={16} />
-                  <span className="text-sm font-medium">{typeChosen ? 'Collapse' : 'Back'}</span>
-                </button>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <span className="text-xs uppercase tracking-wider font-semibold text-slate-400 block">
-                      {typeChosen ? 'Switching Type' : 'Step 1: Select Type'}
-                    </span>
-                    <span className="text-sm font-medium text-slate-800">
-                      {t('vouchers.questionLabel', 'What are you recording?')}
-                    </span>
-                  </div>
-                  {typeChosen && (
-                    <button
-                      type="button"
-                      onClick={() => setTypeExpanded(false)}
-                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                      title="Minimize"
-                    >
-                      <ChevronUp size={18} />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-4">
-                {[
-                  {
-                    key: 'sales',
-                    label: 'Sales & Invoicing',
-                    badgeBg: 'bg-indigo-100 text-indigo-700',
-                    icon: <ClipboardList size={12} />,
-                  },
-                  {
-                    key: 'purchase',
-                    label: 'Purchases & Expenses',
-                    badgeBg: 'bg-blue-100 text-blue-700',
-                    icon: <Package size={12} />,
-                  },
-                  {
-                    key: 'cash',
-                    label: 'Cash & Banking',
-                    badgeBg: 'bg-amber-100 text-amber-700',
-                    icon: <HandCoins size={12} />,
-                  },
-                  {
-                    key: 'stock',
-                    label: 'Inventory & Movement',
-                    badgeBg: 'bg-emerald-100 text-emerald-700',
-                    icon: <Warehouse size={12} />,
-                  },
-                  {
-                    key: 'journal',
-                    label: 'Adjustments & Journal',
-                    badgeBg: 'bg-violet-100 text-violet-700',
-                    icon: <FilePenLine size={12} />,
-                  },
-                ].map((cat) => {
-                  const types = Object.entries(DOC_TYPE_META).filter(
-                    ([, m]) => m.category === cat.key
-                  )
-                  if (types.length === 0) return null
-                  return (
-                    <div key={cat.key}>
-                      <div className="mb-2 flex items-center gap-2">
-                        <span
-                          className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${cat.badgeBg}`}
-                        >
-                          {cat.icon}
-                        </span>
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                          {cat.label}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                        {types.map(([dt, m]) => {
-                          const typeId = dt as DocType
-                          const active = docType === typeId
-                          return (
-                            <button
-                              key={dt}
-                              type="button"
-                              onClick={() => updateDocType(typeId)}
-                              className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all ${active
-                                ? `${m.activeClasses} ring-2 ring-crimson-600/20 shadow-sm ${m.textClasses} font-semibold`
-                                : `${m.inactiveClasses} text-slate-700 font-medium`
-                                }`}
-                            >
-                              <span className={active ? m.textClasses : 'text-slate-500'}>
-                                {m.icon}
-                              </span>
-                              <span className="text-sm truncate">
-                                {m.shortLabel}
-                              </span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </>
-          )}
+            <select
+              value={docType}
+              onChange={(e) => updateDocType(e.target.value as DocType)}
+              className="rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500 bg-white"
+            >
+              {[
+                { key: 'sales', label: 'Sales & Invoicing' },
+                { key: 'purchase', label: 'Purchases & Expenses' },
+                { key: 'cash', label: 'Cash & Banking' },
+                { key: 'stock', label: 'Inventory & Movement' },
+                { key: 'journal', label: 'Adjustments & Journal' },
+              ].map((cat) => {
+                const types = Object.entries(DOC_TYPE_META).filter(([, m]) => m.category === cat.key)
+                return (
+                  <optgroup key={cat.key} label={cat.label}>
+                    {types.map(([dt, m]) => (
+                      <option key={dt} value={dt}>{m.shortLabel}</option>
+                    ))}
+                  </optgroup>
+                )
+              })}
+            </select>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            Pick a type — it stays in the URL ({`type=${docType}`}) and survives refresh.
+          </p>
         </div>
       )}
-
-      {/* When creating, don't show the billing form until transaction type is selected */}
-      {mode === 'create' && !typeChosen ? (
-        <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500">
-          <p className="text-sm font-medium">Please select a transaction type above to begin recording.</p>
-        </div>
-      ) : (
-        <>
+      <>
 
           {/* ── Required Field Checklist ────────────────────────── */}
           <div className="mt-3 rounded-lg border border-slate-200 bg-white px-5 py-3">
@@ -2467,7 +2347,6 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
             </div>
           </div>
         </>
-      )}
 
       {/* ── Add Party Popup ──────────────────────────────── */}
       {showPartyPopup && (
