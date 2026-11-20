@@ -595,7 +595,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   /* ── Derived ────────────────────────────────────────────────── */
   const meta = docTypeLabels[docType] || DOC_TYPE_LABELS[docType] || docType
   const isItem = ['sales-quote', 'sales-order', 'sales-invoice', 'purchase-order', 'purchase-invoice',
-    'credit-note', 'debit-note', 'petty-cash-voucher', 'grn', 'delivery-challan'].includes(docType)
+    'credit-note', 'debit-note', 'petty-cash-voucher', 'grn', 'delivery-challan',
+    'receipt-voucher', 'payment-voucher', 'journal-voucher', 'contra'].includes(docType)
   const isContra = docType === 'contra'
   const isJournal = docType === 'journal-voucher'
   const isCash = CASH_TYPES.includes(docType)
@@ -1278,7 +1279,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
           {/* ── Inventory Entry Toggle ─────────────────────────────── */}
           {isItem && (
-            <div className="mt-4 flex items-center gap-2 px-3 py-2 bg-slate-50 rounded border border-slate-200">
+            <div className={`mt-4 flex items-center gap-2 px-3 py-2 rounded border ${useInventoryEntry ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
               <input
                 type="checkbox"
                 id="use-inventory-entry"
