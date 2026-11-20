@@ -112,8 +112,10 @@ async function fillLine() {
   if (!table) throw new Error('line table not found')
   const row = Array.from(table.querySelectorAll('tbody tr')).find((r) => r.querySelector('input'))
   if (!row) throw new Error('line row not found')
-  const inputs = Array.from(row.querySelectorAll('input')) as HTMLInputElement[]
-  const [description, qty, rate] = inputs
+  const description = row.querySelector('input[placeholder*="Item name"]') as HTMLInputElement | null
+  const numbers = Array.from(row.querySelectorAll('input[type="number"]')) as HTMLInputElement[]
+  if (!description || !numbers[0] || !numbers[1]) throw new Error('line inputs not found')
+  const [qty, rate] = numbers
   fireEvent.change(description, { target: { value: 'Steel rods 100kg' } })
   fireEvent.change(qty, { target: { value: '100' } })
   fireEvent.change(rate, { target: { value: '95' } })
