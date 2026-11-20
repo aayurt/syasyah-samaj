@@ -485,7 +485,7 @@ export async function api<T = unknown>(
       const doc = await engine.readDoc(slug, id)
       if (doc) return doc as unknown as T
     } else if (plainList) {
-      const cached = await engine.readCollection(slug, tenant)
+      const cached = await engine.readCollection(slug, tenant, Infinity)
       if (cached) {
         return {
           ...cached,

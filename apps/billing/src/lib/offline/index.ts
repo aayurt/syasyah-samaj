@@ -15,6 +15,10 @@ import type { OutboxEntry, SyncState as OldSyncState } from './types'
 // Server-computed data older than this is considered stale — the periodic
 // 60s sync keeps lastSyncAt well under this while the engine is healthy.
 const REPORT_STALE_MS = 2 * 60_000
+// Collection cache (pulled: keys) revalidates from the server after this age.
+// Without it, cache-first reads serve pre-cleanup data indefinitely (stale
+// IndexedDB after a server-side dedupe).
+const PULL_STALE_MS = 5 * 60_000
 
 const isTauri = () =>
   typeof window !== 'undefined' && '__TAURI__' in window
@@ -456,8 +460,9 @@ class CompatibilityEngine {
         if (change.data?.id) {
           const col = change.collection
           await this.adapter!.upsert(col, change.data)
-          // Mark collection as pulled
-          await this.setKey(`pulled:${col}`, '1')
+          // Mark collection as pulled — store a timestamp so cache-first
+          // reads can revalidate freshness (stale-while-revalidate).
+          await this.setKey(`pulled:${col}`, String(Date.now()))
         }
       }
       // Update sync cursor
@@ -474,9 +479,14 @@ class CompatibilityEngine {
   async readCollection(
     slug: string,
     tenant?: string,
+    maxAgeMs: number = PULL_STALE_MS,
   ): Promise<{ docs: Record<string, unknown>[]; totalDocs: number } | null> {
     const pulled = await this.getKey(`pulled:${tenant ? `${tenant}:` : ''}${slug}`)
     if (!pulled) return null
+    const pulledAt = Number(pulled)
+    // Legacy '1' markers and anything older than the TTL are stale — force a
+    // server re-fetch so cache-first pages don't show pre-cleanup rows.
+    if (Number.isFinite(pulledAt) && Date.now() - pulledAt > maxAgeMs) return null
     const docs = await this.adapter!.list(tenant ? `${tenant}:${slug}` : slug)
     return { docs, totalDocs: docs.length }
   }
@@ -518,7 +528,8 @@ class CompatibilityEngine {
     tenant?: string,
   ): Promise<void> {
     const key = tenant ? `${tenant}:${collection}` : collection
-    await this.setKey(`pulled:${key}`, '1')
+    // Store a timestamp so cache-first reads can revalidate freshness.
+    await this.setKey(`pulled:${key}`, String(Date.now()))
     for (const doc of docs) {
       await this.adapter!.upsert(key, doc)
     }
