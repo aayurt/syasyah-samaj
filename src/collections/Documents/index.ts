@@ -73,7 +73,7 @@ type DocLine = {
   amount?: number | string | null
 }
 
-function recomputeTotals(d: any) {
+function recomputeTotals(d: any, settings?: any) {
   const lines: DocLine[] = d.lines || []
   if (lines.length === 0) {
     // When called from the local API (req.payload.create()), Payload 3.x
@@ -96,6 +96,17 @@ function recomputeTotals(d: any) {
     net += amt
   }
   const lineSum = round2(net)
+
+  // Non-profit-making organisations do not charge VAT on sales or purchases —
+  // skip all tax computation so gross == net and no tax ledger legs post.
+  if (settings && settings.isProfitMaking === false) {
+    d.taxLines = []
+    d.taxRate = 0
+    d.taxTotal = 0
+    d.netTotal = lineSum
+    d.grossTotal = lineSum
+    return
+  }
 
   const taxLines: any[] = d.taxLines || []
   if (taxLines.length === 0) {
@@ -2386,7 +2397,8 @@ export const Documents: CollectionConfig = {
         // Skip recomputeTotals for local API calls where arrays aren't flattened;
         // totals must be pre-supplied by the caller (see Members pay-fee endpoint).
         if (d.lines && d.lines.length > 0) {
-          recomputeTotals(d)
+          const settings = await getSettings(req.payload)
+          recomputeTotals(d, settings)
         }
         return data
       },

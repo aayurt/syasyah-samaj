@@ -189,6 +189,15 @@ export const BillingSettings: GlobalConfig = {
           type: 'text',
           admin: { description: 'URL or path to the company logo image.' },
         },
+        {
+          name: 'isProfitMaking',
+          type: 'checkbox',
+          defaultValue: true,
+          admin: {
+            description:
+              'Whether the organisation is profit-making (VAT applies to sales/purchase invoices). When off, VAT is excluded from sales & purchase modules.',
+          },
+        },
       ],
     },
     {

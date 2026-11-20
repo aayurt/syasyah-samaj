@@ -345,6 +345,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   const [simplifiedInv, setSimplifiedInv] = useState({ enabled: true, threshold: 5000 })
   // Amount-in-words in Nepali (print/preview) — from BillingSettings.
   const [nepaliWordsOnPrint, setNepaliWordsOnPrint] = useState(false)
+  // Whether the org is profit-making — gates VAT on sales/purchase invoices.
+  const [isProfitMaking, setIsProfitMaking] = useState(true)
   /** In-words line honoring the nepaliWordsOnPrintEnabled toggle. */
   const amountInWordsFor = (n: number): string =>
     nepaliWordsOnPrint ? numberToNepaliWords(n) : amountInWords(n)
@@ -482,6 +484,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
           threshold: s.simplifiedInvoiceThreshold || 5000,
         })
         setNepaliWordsOnPrint(!!s.nepaliWordsOnPrintEnabled)
+        setIsProfitMaking(!!s.isProfitMaking)
       })
       .catch(() => { })
   }, [])
@@ -689,6 +692,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   }, [globalDiscountEnabled, globalDiscountMode, globalDiscountValue, lineTotals])
 
   const vatTotal = useMemo(() => {
+    // Non-profit-making organisations do not charge VAT.
+    if (!isProfitMaking) return 0
     let total = 0
     const taxable = lineTotals - globalDiscountAmount
     for (const tl of taxLines) {
@@ -703,7 +708,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       return lineCalculations.totalTax
     }
     return total
-  }, [taxLines, taxTypes, lineTotals, globalDiscountAmount, lineCalculations.totalTax])
+  }, [taxLines, taxTypes, lineTotals, globalDiscountAmount, lineCalculations.totalTax, isProfitMaking])
 
   const tdsAutoAmount = lineTotals > 0 && tdsRate > 0 ? (lineTotals * tdsRate) / 100 : 0
   const tdsAmount = tdsAmountManual ? parseFloat(tdsAmountManual) || 0 : tdsAutoAmount
@@ -814,6 +819,10 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       }))
     }
     const allTaxLines = [...taxLines]
+    // Non-profit-making organisations do not charge VAT — skip all tax lines.
+    if (!isProfitMaking) {
+      allTaxLines.length = 0
+    }
     // If no explicit additive tax lines were added at document level, aggregate line-level taxes
     if (!allTaxLines.some((tl) => tl.nature === 'additive')) {
       const lineTaxGroup = new Map<string, { rate: number; taxType?: string }>()
@@ -1546,60 +1555,64 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                   </div>
                 )}
 
-                {/* Tax */}
-                <div className="flex items-center justify-between py-2.5">
-                  <button type="button" onClick={() => setTaxSectionOpen((o) => !o)}
-                    className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                    <div className={`relative h-6 w-10 rounded-full transition-colors ${taxSectionOpen ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                      <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${taxSectionOpen ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                    </div>
-                    {t('vouchers.taxVatGst', 'Tax (VAT / GST)')}
-                  </button>
-                  {taxSectionOpen && vatTotal > 0 && (
-                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
-                      {fmt(vatTotal)}
-                    </span>
-                  )}
-                </div>
-                {taxSectionOpen && (
-                  <div className="pb-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500">{t('vouchers.additiveTaxes', 'Additive taxes')}</span>
-                      <button type="button" onClick={() => setTaxLines((ts) => [...ts, { key: crypto.randomUUID(), taxType: '', nature: 'additive' as TaxNature, rate: '' }])}
-                        className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700">
-                        <Plus size={12} /> {t('vouchers.addTax', '+ Add Tax Line')}
-                      </button>
-                    </div>
-                    {taxLines.filter((tl) => tl.nature === 'additive').map((tl) => {
-                      const txType = taxTypes.find((t) => String(t.id) === tl.taxType)
-                      const rate = txType ? Number(txType.rate) || parseFloat(tl.rate) || 0 : parseFloat(tl.rate) || 0
-                      const taxAmt = (lineTotals * rate) / 100
-                      return (
-                        <div key={tl.key} className="flex items-center gap-2">
-                          <select value={tl.taxType}
-                            onChange={(e) => {
-                              const selected = taxTypes.find((t) => String(t.id) === e.target.value)
-                              setTaxLines((ts) => ts.map((t) => t.key === tl.key ? { ...t, taxType: e.target.value, rate: selected ? String(selected.rate) : t.rate } : t))
-                            }}
-                            className="flex-1 rounded border border-slate-300 px-2 h-9 text-sm outline-none focus:border-slate-500">
-                            <option value="">{t('vouchers.selectTaxType', 'Select tax type')}</option>
-                            {taxTypes.filter((t) => t.nature === 'additive' && t.active !== false)
-                              .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
-                          </select>
-                          <span className="w-12 text-right font-mono text-xs text-slate-500">{rate}%</span>
-                          <span className="w-20 text-right font-mono text-xs font-medium text-slate-700">{fmt(taxAmt)}</span>
-                          <button type="button" onClick={() => setTaxLines((ts) => ts.filter((t) => t.key !== tl.key))}
-                            className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                {/* Tax — hidden for non-profit-making organisations */}
+                {isProfitMaking && (
+                  <>
+                    <div className="flex items-center justify-between py-2.5">
+                      <button type="button" onClick={() => setTaxSectionOpen((o) => !o)}
+                        className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                        <div className={`relative h-6 w-10 rounded-full transition-colors ${taxSectionOpen ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                          <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${taxSectionOpen ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
                         </div>
-                      )
-                    })}
-                    {vatTotal > 0 && (
-                      <div className="flex justify-end border-t border-slate-100 pt-2 text-xs">
-                        <span className="text-slate-500">{t('vouchers.totalTaxLabel', 'Total Tax:')} </span>
-                        <span className="ml-2 font-mono font-medium text-slate-700">{fmt(vatTotal)}</span>
+                        {t('vouchers.taxVatGst', 'Tax (VAT / GST)')}
+                      </button>
+                      {taxSectionOpen && vatTotal > 0 && (
+                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
+                          {fmt(vatTotal)}
+                        </span>
+                      )}
+                    </div>
+                    {taxSectionOpen && (
+                      <div className="pb-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-slate-500">{t('vouchers.additiveTaxes', 'Additive taxes')}</span>
+                          <button type="button" onClick={() => setTaxLines((ts) => [...ts, { key: crypto.randomUUID(), taxType: '', nature: 'additive' as TaxNature, rate: '' }])}
+                            className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700">
+                            <Plus size={12} /> {t('vouchers.addTax', '+ Add Tax Line')}
+                          </button>
+                        </div>
+                        {taxLines.filter((tl) => tl.nature === 'additive').map((tl) => {
+                          const txType = taxTypes.find((t) => String(t.id) === tl.taxType)
+                          const rate = txType ? Number(txType.rate) || parseFloat(tl.rate) || 0 : parseFloat(tl.rate) || 0
+                          const taxAmt = (lineTotals * rate) / 100
+                          return (
+                            <div key={tl.key} className="flex items-center gap-2">
+                              <select value={tl.taxType}
+                                onChange={(e) => {
+                                  const selected = taxTypes.find((t) => String(t.id) === e.target.value)
+                                  setTaxLines((ts) => ts.map((t) => t.key === tl.key ? { ...t, taxType: e.target.value, rate: selected ? String(selected.rate) : t.rate } : t))
+                                }}
+                                className="flex-1 rounded border border-slate-300 px-2 h-9 text-sm outline-none focus:border-slate-500">
+                                <option value="">{t('vouchers.selectTaxType', 'Select tax type')}</option>
+                                {taxTypes.filter((t) => t.nature === 'additive' && t.active !== false)
+                                  .map((t) => <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>)}
+                              </select>
+                              <span className="w-12 text-right font-mono text-xs text-slate-500">{rate}%</span>
+                              <span className="w-20 text-right font-mono text-xs font-medium text-slate-700">{fmt(taxAmt)}</span>
+                              <button type="button" onClick={() => setTaxLines((ts) => ts.filter((t) => t.key !== tl.key))}
+                                className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                            </div>
+                          )
+                        })}
+                        {vatTotal > 0 && (
+                          <div className="flex justify-end border-t border-slate-100 pt-2 text-xs">
+                            <span className="text-slate-500">{t('vouchers.totalTaxLabel', 'Total Tax:')} </span>
+                            <span className="ml-2 font-mono font-medium text-slate-700">{fmt(vatTotal)}</span>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
 
                 {/* TDS */}

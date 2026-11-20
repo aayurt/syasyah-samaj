@@ -415,6 +415,7 @@ export interface BillingSettings {
   companyEmail?: string
   companyAddress?: string
   companyLogo?: string
+  isProfitMaking?: boolean
   defAccountOrder?: string[]
   defaultCurrency?: Currency
 }
