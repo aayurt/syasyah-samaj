@@ -1,10 +1,10 @@
 /**
  * Order document types (sales-order / purchase-order) — flow tests.
  *
- * Orders are status-only documents. The server's POST /documents/:id/post
- * handler rejects them ("Orders are status-only documents (confirmed, not
- * posted)") and POST /documents/:id/confirm assigns the order number and
- * locks the order. These tests pin the SPA behaviour:
+ * Orders are status-only documents. The server's /post handler rejects them
+ * ("Orders are status-only documents (confirmed, not posted)") and
+ * /documents/:id/confirm assigns the order number and locks the order.
+ * These tests pin the SPA behaviour:
  *
  *   1. the two order types are offered as type chips
  *   2. an order is CONFIRMED, never posted
@@ -54,9 +54,7 @@ function handler(url: string, options?: { method?: string }) {
 beforeEach(() => {
   failSave = false
   apiMock.mockReset()
-  apiMock.mockImplementation(async (url: string, options?: { method?: string }) =>
-    handler(url, options),
-  )
+  apiMock.mockImplementation(async (url: string, options?: { method?: string }) => handler(url, options))
 })
 
 /** A type chip, located by its visible label (e.g. "Sales Order"). */
@@ -65,28 +63,22 @@ function chip(label: string) {
   return btn
 }
 
-/** Pick the document type chip. */
+/** Pick the document type chip. Waits for the party input to confirm the form mounted. */
 async function chooseType(value: string) {
   const label = value === 'sales-order' ? 'Sales Order'
     : value === 'purchase-order' ? 'Purchase Order'
     : value === 'sales-invoice' ? 'Sales Invoice'
     : value
   fireEvent.click(chip(label))
-  await waitFor(() => screen.getByRole('button', { name: new RegExp(label, 'i') }))
+  await waitFor(() => screen.getByPlaceholderText(/Search for party/i))
 }
 
-/** Pick a party from the dropdown. */
+/** Open the party dropdown and pick Himal Builders. */
 async function chooseParty() {
-  const select = await waitForEl(() => {
-    const els = screen.getAllByRole('combobox')
-    return els.find((el) => {
-      const values = Array.from((el as HTMLSelectElement).options).map((o) => o.value)
-      return values.includes('7')
-    })
-  }) as HTMLSelectElement | undefined
-  if (!select) throw new Error('party picker not found')
-  fireEvent.change(select, { target: { value: '7' } })
-  await waitFor(() => expect(select.value).toBe('7'))
+  const input = screen.getByPlaceholderText(/Search for party/i)
+  fireEvent.focus(input)
+  await waitFor(() => screen.getByRole('button', { name: /Himal Builders Pvt Ltd/i }))
+  fireEvent.click(screen.getByRole('button', { name: /Himal Builders Pvt Ltd/i }))
 }
 
 function waitForEl<T>(fn: () => T | undefined, timeout = 2000): Promise<T | undefined> {
@@ -121,31 +113,24 @@ async function fillLine() {
   fireEvent.change(rate, { target: { value: '95' } })
 }
 
-describe('VoucherStepper — order document types', () => {
+describe('VoucherForm — order document types', () => {
   it('offers Sales Order and Purchase Order as type chips', async () => {
-    const { default: VoucherStepper } = await import('./VoucherStepper')
-    renderWithProviders(<VoucherStepper mode="create" />)
+    const { default: VoucherForm } = await import('./VoucherForm')
+    renderWithProviders(<VoucherForm mode="create" />)
 
     expect(screen.getByRole('button', { name: /Sales Order/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Purchase Order/i })).toBeInTheDocument()
   })
 
   it('confirms a sales order instead of posting it', async () => {
-    const { default: VoucherStepper } = await import('./VoucherStepper')
-    renderWithProviders(<VoucherStepper mode="create" />)
+    const { default: VoucherForm } = await import('./VoucherForm')
+    renderWithProviders(<VoucherForm mode="create" />)
 
     await chooseType('sales-order')
     await chooseParty()
-
     await fillLine()
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm order/i }))
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: /confirm order/i })).toBeInTheDocument(),
-    )
-
-    fireEvent.click(screen.getByRole('button', { name: /confirm order/i }))
-
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Order/i }))
     await waitFor(() =>
       expect(apiMock).toHaveBeenCalledWith(
         '/documents/42/confirm',
@@ -160,16 +145,14 @@ describe('VoucherStepper — order document types', () => {
   })
 
   it('still posts an ordinary voucher (no regression)', async () => {
-    const { default: VoucherStepper } = await import('./VoucherStepper')
-    renderWithProviders(<VoucherStepper mode="create" />)
+    const { default: VoucherForm } = await import('./VoucherForm')
+    renderWithProviders(<VoucherForm mode="create" />)
 
     await chooseType('sales-invoice')
     await chooseParty()
-
     await fillLine()
 
-    fireEvent.click(screen.getByRole('button', { name: /^post$/i }))
-
+    fireEvent.click(screen.getByRole('button', { name: /Save & post/i }))
     await waitFor(() =>
       expect(apiMock).toHaveBeenCalledWith(
         '/documents/42/post',
@@ -180,14 +163,14 @@ describe('VoucherStepper — order document types', () => {
 
   it('shows an error when the draft save fails', async () => {
     failSave = true
-    const { default: VoucherStepper } = await import('./VoucherStepper')
-    renderWithProviders(<VoucherStepper mode="create" />)
+    const { default: VoucherForm } = await import('./VoucherForm')
+    renderWithProviders(<VoucherForm mode="create" />)
 
     await chooseType('sales-order')
     await chooseParty()
+    await fillLine()
 
-    fireEvent.click(screen.getByRole('button', { name: /save draft/i }))
-
+    fireEvent.click(screen.getByRole('button', { name: /Save Order/i }))
     await waitFor(() =>
       expect(screen.getByText(/Draft save rejected by the server/i)).toBeInTheDocument(),
     )

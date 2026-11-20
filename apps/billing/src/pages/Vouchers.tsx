@@ -52,7 +52,7 @@ import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
 import { exportInvoicePdf, isTemporaryReceipt } from '../lib/pdf'
 import PrintVoucher from '../components/PrintVoucher'
-import VoucherStepper from './VoucherStepper'
+import VoucherForm from './VoucherForm'
 interface DocTypeMeta {
   value: DocType
   label: string
@@ -962,7 +962,7 @@ export default function Vouchers() {
       {/* Single page: entry form shows below, adapts when voucher type changes */}
       {activeTab === 'new' && (
         <section className="mt-6">
-          <VoucherStepper inline onSaved={() => load()} />
+          <VoucherForm mode="create" embedded onSuccess={() => load()} />
         </section>
       )}
 

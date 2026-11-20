@@ -2371,12 +2371,25 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                       {t('vouchers.quotesHint', "Quotes don't post — copy to an invoice when accepted")}
                     </span>
                   ) : isOrder ? (
-                    <span className="hidden text-xs text-slate-400 sm:block">
-                      {t(
-                        'vouchers.ordersHint',
-                        "Orders don't touch the ledger — confirming locks the order; invoice or GRN fulfils it",
-                      )}
-                    </span>
+                    <LiquidButton
+                      type="button"
+                      variant="primary"
+                      size="md"
+                      onClick={() => submit(true)}
+                      disabled={saving || !allRequiredFilled || !hasPositiveTotal || setupBlocked}
+                      title={
+                        !hasPositiveTotal
+                          ? 'Total amount must be greater than 0'
+                          : setupBlocked
+                            ? `Finish setup first (${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} left) — see the checklist on the Dashboard`
+                            : !allRequiredFilled
+                              ? 'Fill all required fields first'
+                              : undefined
+                      }
+                      className="!bg-emerald-600 hover:!bg-emerald-700 !border-emerald-600"
+                    >
+                      {saving ? t('vouchers.confirming', 'Confirming…') : t('vouchers.confirmOrder', 'Confirm Order')}
+                    </LiquidButton>
                   ) : (
                     <LiquidButton
                       type="button"
