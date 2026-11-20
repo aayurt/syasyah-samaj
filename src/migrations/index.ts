@@ -25,6 +25,7 @@ import * as migration_20261116_100000_coa_opening_balance_columns from './202611
 import * as migration_20261117_100000_coa_account_master_fields from './20261117_100000_coa_account_master_fields';
 import * as migration_20261117_110000_coa_opening_balance_batches_lines from './20261117_110000_coa_opening_balance_batches_lines';
 import * as migration_20261117_120000_account_groups_level from './20261117_120000_account_groups_level';
+import * as migration_20261120_140234_add_is_profit_making_to_billing_settings from './20261120_140234_add_is_profit_making_to_billing_settings';
 
 export const migrations = [
   {
@@ -161,5 +162,10 @@ export const migrations = [
     up: migration_20261117_120000_account_groups_level.up,
     down: migration_20261117_120000_account_groups_level.down,
     name: '20261117_120000_account_groups_level',
+  },
+  {
+    up: migration_20261120_140234_add_is_profit_making_to_billing_settings.up,
+    down: migration_20261120_140234_add_is_profit_making_to_billing_settings.down,
+    name: '20261120_140234_add_is_profit_making_to_billing_settings'
   },
 ];

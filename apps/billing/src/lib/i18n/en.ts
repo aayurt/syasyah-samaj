@@ -269,6 +269,8 @@ export const en = {
     logoUrl: 'Logo URL',
     defaultCurrency: 'Default currency',
     address: 'Address',
+    isProfitMaking: 'Profit-Making Organisation',
+    isProfitMakingHint: 'When off, VAT is excluded from sales & purchase invoices',
     fiscalYears: 'Fiscal Years',
     addYear: 'Add Year',
     working: 'Working',

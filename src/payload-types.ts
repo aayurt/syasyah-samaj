@@ -6537,6 +6537,10 @@ export interface BillingSetting {
    */
   companyLogo?: string | null;
   /**
+   * Whether the organisation is profit-making (VAT applies to sales/purchase invoices). When off, VAT is excluded from sales & purchase modules.
+   */
+  isProfitMaking?: boolean | null;
+  /**
    * Accounts Receivable (sales invoices, receipts).
    */
   receivableAccount?: (number | null) | GlAccount;
@@ -6854,6 +6858,7 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   companyEmail?: T;
   companyAddress?: T;
   companyLogo?: T;
+  isProfitMaking?: T;
   receivableAccount?: T;
   payableAccount?: T;
   revenueAccount?: T;

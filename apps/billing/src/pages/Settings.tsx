@@ -338,8 +338,9 @@ export default function Settings() {
   const [companyEmail, setCompanyEmail] = useState('')
   const [companyAddress, setCompanyAddress] = useState('')
   const [companyLogo, setCompanyLogo] = useState('')
+  const [isProfitMaking, setIsProfitMaking] = useState(true)
   const [companyCurrency, setCompanyCurrency] = useState<Currency>('NPR')
-  const savedCompany = useRef<{ name: string; pan: string; contact: string; email: string; address: string; logo: string; currency: Currency }>({ name: '', pan: '', contact: '', email: '', address: '', logo: '', currency: 'NPR' })
+  const savedCompany = useRef<{ name: string; pan: string; contact: string; email: string; address: string; logo: string; currency: Currency; isProfitMaking: boolean }>({ name: '', pan: '', contact: '', email: '', address: '', logo: '', currency: 'NPR', isProfitMaking: true })
   const companyDirty =
     companyName !== savedCompany.current.name ||
     companyPan !== savedCompany.current.pan ||
@@ -347,7 +348,8 @@ export default function Settings() {
     companyEmail !== savedCompany.current.email ||
     companyAddress !== savedCompany.current.address ||
     companyLogo !== savedCompany.current.logo ||
-    companyCurrency !== savedCompany.current.currency
+    companyCurrency !== savedCompany.current.currency ||
+    isProfitMaking !== savedCompany.current.isProfitMaking
   const [companySaved, setCompanySaved] = useState(false)
 
 
@@ -597,7 +599,9 @@ export default function Settings() {
       setCompanyAddress(ca)
       setCompanyLogo(cl)
       setCompanyCurrency(ccy)
-      savedCompany.current = { name: cn, pan: cp, contact: cc, email: ce, address: ca, logo: cl, currency: ccy }
+      const pm = res.isProfitMaking !== false
+      setIsProfitMaking(pm)
+      savedCompany.current = { name: cn, pan: cp, contact: cc, email: ce, address: ca, logo: cl, currency: ccy, isProfitMaking: pm }
 
       const py = res.payrollEnabled !== false
       const br = res.bankReconciliationEnabled || false
@@ -729,7 +733,7 @@ export default function Settings() {
   }
 
   const persistCompany = () => {
-    const body = { companyName, companyPan, companyContact, companyEmail, companyAddress, companyLogo, defaultCurrency: companyCurrency }
+    const body = { companyName, companyPan, companyContact, companyEmail, companyAddress, companyLogo, defaultCurrency: companyCurrency, isProfitMaking }
     try {
       const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
       localStorage.setItem(
@@ -747,6 +751,7 @@ export default function Settings() {
       address: companyAddress,
       logo: companyLogo,
       currency: companyCurrency,
+      isProfitMaking,
     }
     setCompanySaved(true)
     setTimeout(() => setCompanySaved(false), 2000)
@@ -763,6 +768,7 @@ export default function Settings() {
     setCompanyAddress(s.address)
     setCompanyLogo(s.logo)
     setCompanyCurrency(s.currency)
+    setIsProfitMaking(s.isProfitMaking)
   }
 
   // ── Fiscal year actions ──
@@ -1454,6 +1460,17 @@ export default function Settings() {
                 placeholder="Registered address"
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
               />
+            </div>
+            <div className="sm:col-span-2 flex items-center gap-3">
+              <label className="text-sm text-slate-600 cursor-pointer flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={isProfitMaking}
+                  onChange={(e) => setIsProfitMaking(e.target.checked)}
+                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                {t('settings.isProfitMaking')} — {t('settings.isProfitMakingHint')}
+              </label>
             </div>
           </div>
           {companyLogo && (
