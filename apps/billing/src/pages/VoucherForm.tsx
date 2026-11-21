@@ -1174,6 +1174,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                         line={l}
                         index={i}
                         items={items}
+                        parties={parties}
                         accounts={accounts}
                         taxTypes={taxTypes}
                         transactionType={resolvedTxType}
