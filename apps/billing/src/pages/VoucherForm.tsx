@@ -351,14 +351,11 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   // Form state
   const urlType = searchParams.get('type') as DocType | null
   const [docType, setDocType] = useState<DocType>(urlType || (urlDocType as DocType) || 'journal-voucher')
-  const defaultCat = (Object.entries(DOC_TYPE_META).find(([dt]) => dt === docType)?.[1]?.category) || 'sales'
-  const [activeCat, setActiveCat] = useState<string>(defaultCat)
   const updateDocType = (dt: DocType) => {
     setDocType(dt)
     setInvoicePrefix(DOC_PREFIXES[dt] || 'INV')
     setManualNumber('')
     setNumberManual(false)
-    setActiveCat((Object.entries(DOC_TYPE_META).find(([d]) => d === dt)?.[1]?.category) || 'sales')
     // Keep the choice in the URL so it survives refresh
     if (!id && !embedded) {
       setSearchParams({ type: dt }, { replace: true })
@@ -954,34 +951,9 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
               </span>
               <span className="text-sm font-semibold text-slate-800">{docTypeLabels[docType] || docType}</span>
             </div>
-            {/* Category tabs */}
-            <div className="mt-3 flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
-              {[
-                { key: 'sales', label: 'Sales & Invoicing' },
-                { key: 'purchase', label: 'Purchases & Expenses' },
-                { key: 'cash', label: 'Cash & Banking' },
-                { key: 'stock', label: 'Inventory & Movement' },
-                { key: 'journal', label: 'Adjustments & Journal' },
-              ].map((cat) => (
-                <button
-                  key={cat.key}
-                  onClick={() => setActiveCat(cat.key)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                    activeCat === cat.key
-                      ? 'bg-crimson-600 text-white shadow-sm'
-                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-
             {/* Doc type grid — icon buttons, active one highlighted */}
             <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {Object.entries(DOC_TYPE_META)
-                .filter(([, m]) => m.category === activeCat)
-                .map(([dt, m]) => (
+              {Object.entries(DOC_TYPE_META).map(([dt, m]) => (
                   <button
                     key={dt}
                     onClick={() => updateDocType(dt as DocType)}

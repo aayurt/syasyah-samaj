@@ -57,22 +57,13 @@ beforeEach(() => {
   apiMock.mockImplementation(async (url: string, options?: { method?: string }) => handler(url, options))
 })
 
-/** Pick the document type from the grid buttons (category tab + type card).
+/** Pick the document type from the grid buttons.
  * The party field only renders after a type is chosen, so select first, then wait. */
 async function chooseType(value: string) {
-  const catByType: Record<string, string> = {
-    'sales-order': 'Sales & Invoicing',
-    'purchase-order': 'Purchases & Expenses',
-    'sales-invoice': 'Sales & Invoicing',
-  }
   const labelByType: Record<string, string> = {
     'sales-order': 'Sales Order',
     'purchase-order': 'Purchase Order',
     'sales-invoice': 'Sales Invoice',
-  }
-  const catLabel = catByType[value]
-  if (catLabel) {
-    fireEvent.click(screen.getByRole('button', { name: new RegExp(catLabel, 'i') }))
   }
   const label = labelByType[value] || value
   fireEvent.click(screen.getByRole('button', { name: new RegExp(`^${label}$`, 'i') }))
@@ -138,10 +129,7 @@ describe('VoucherForm — order document types', () => {
     const { default: VoucherForm } = await import('./VoucherForm')
     renderWithProviders(<VoucherForm mode="create" />)
 
-    fireEvent.click(screen.getByRole('button', { name: /Sales & Invoicing/i }))
     expect(screen.getByRole('button', { name: /Sales Order/i })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: /Purchases & Expenses/i }))
     expect(screen.getByRole('button', { name: /Purchase Order/i })).toBeInTheDocument()
   })
 
