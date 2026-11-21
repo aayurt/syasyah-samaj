@@ -1402,7 +1402,6 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
           )}
         </div>
 
-        <VoucherNotesCard narration={narration} onChange={setNarration} />
         {/* ── Item Summary Card ─────────────────────────────── */}
         {isItem && (
           <EntryCard title={t('vouchers.itemSummary', 'Item Summary')}>
@@ -1569,7 +1568,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
         {/* ── Cash Flow Panel (receipt/payment) ───────────────── */}
         {isCash && (
-          <EntryCard title="Cash / Bank" accent="amber">
+          <EntryCard title="Cash / Bank">
             {/* Simplified: one tactile 3-field strip for counter cashiers */}
             {cashSimple && (
               <div className="mt-4">
@@ -1753,6 +1752,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
             )}
           </EntryCard>
         )}
+
+        <VoucherNotesCard narration={narration} onChange={setNarration} />
 
         {/* ── Payment Fields (collapsible for cash types) ─────── */}
         {isCash && !cashSimple && (
