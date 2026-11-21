@@ -1,7 +1,7 @@
 # Implementation Plan: Plans Module Completion & UI Integration
 
 **Date:** 2026-11-21  
-**Status:** Ready for Review / Execution  
+**Status:** Phase 1 & Phase 2 Complete | Phase 3 In Progress  
 **Target:** Monorepo (`apps/billing`, `src/collections/FixedAssets`)
 
 ---
@@ -83,36 +83,22 @@ flowchart TD
 
 ---
 
-### Phase 2: Fixed Assets Module Expansion ([`fixed-assets.md`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/docs/plans/fixed-assets.md))
+### Phase 2: Fixed Assets Module Expansion ([`fixed-assets.md`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/docs/plans/fixed-assets.md)) — **COMPLETE**
 
-#### 2.1 Server Endpoints in [`src/collections/FixedAssets/index.ts`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/src/collections/FixedAssets/index.ts)
+#### 2.1 Server Endpoints in [`src/collections/FixedAssets/index.ts`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/src/collections/FixedAssets/index.ts) — **DONE**
 1. **Batch Depreciation Run (`POST /fixed-assets/depreciation-run`)**:
-   - Request: `{ asOf?: string, category?: string, dryRun?: boolean }`
-   - Logic: Query all active, non-fully-depreciated assets; calculate eligible months; detect previously posted periods to prevent duplicates; return summary and create atomic journal entries per eligible asset when `dryRun = false`.
+   - Query all active assets; calculate eligible months since last depreciation posting; prevent duplicates; create atomic journal entries per eligible asset when `dryRun = false`.
+   - Supports `asOf` date and `dryRun` preview mode.
 2. **Asset Disposal (`POST /fixed-assets/:id/dispose`)**:
-   - Request: `{ disposalDate: string, disposalType: 'sale' | 'retirement' | 'write_off' | 'donation', proceeds: number, proceedsAccount?: number, remarks?: string }`
-   - Logic:
-     - Automatically calculate depreciation from last posted period up to `disposalDate`.
-     - Calculate Net Book Value (Cost − Total Accumulated Depreciation).
-     - Compute Gain/Loss on Disposal = `proceeds - netBookValue`.
-     - Generate compound journal entry:
-       - Dr. Proceeds Account (Bank/Cash) with proceeds amount
-       - Dr. Accumulated Depreciation with accumulated depreciation
-       - Cr. Fixed Asset at Cost with purchase cost
-       - Dr. Loss on Disposal (or Cr. Gain on Disposal) for difference
-     - Update asset status to `'disposed'`.
+   - Auto-calculates depreciation up to disposal date; computes NBV and gain/loss; posts compound journal entry (Dr proceeds, Dr accumulated depreciation, Cr fixed asset cost, Dr/Cr gain/loss); marks asset as `disposed`.
+   - Uses billing settings: `fixedAssetCostAccount`, `accumulatedDepreciationAccount`, `disposalGainLossAccount`, `depreciationAccount`.
 
-#### 2.2 Frontend UI in [`FixedAssets.tsx`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/apps/billing/src/pages/FixedAssets.tsx)
-1. **Add Tab Navigation**:
-   - `Register` | `Depreciation Run` | `Disposals` | `Asset Reports`
-2. **Depreciation Run Tab / Modal**:
-   - Fiscal period picker (Bikram Sambat & Gregorian support via `useCalendar`).
-   - "Calculate Preview" button showing eligible assets, elapsed periods, and total depreciation amount.
-   - "Post Depreciation" confirmation with journal entry creation.
-3. **Disposal Workflow**:
-   - Action item in asset row: "Dispose Asset".
-   - Disposal dialog prompting for date, type, proceeds, and proceeds account.
-   - Shows preview of Net Book Value and computed Gain/Loss before confirmation.
+#### 2.2 Frontend UI in [`FixedAssets.tsx`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/apps/billing/src/pages/FixedAssets.tsx) — **DONE**
+1. **4-Tab Navigation**: Register | Depreciation Run | Disposals | Reports
+2. **Depreciation Run Tab**: As-of date picker, dry-run toggle, preview table (asset, monthly depn, periods, total), post button to GL
+3. **Disposal Tab**: Active asset list with dispose action; disposal dialog with date, type, proceeds, proceeds account, remarks; NBV/gain-loss preview before confirmation
+4. **Reports Tab**: Links to Fixed Asset Register, Fixed Asset Summary, Depreciation Schedule
+5. **Billing Settings**: Added `fixedAssetCostAccount` and `disposalGainLossAccount` fields
 
 ---
 
