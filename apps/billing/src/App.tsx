@@ -468,7 +468,7 @@ function Shell({ email }: { email: string }) {
         </header>
         {/* Full-width responsive content container. Pages expand to fill; on mobile
            the sidebar overlays so content remains usable and full-width. */}
-        <main className="flex-1 overflow-auto w-full print:overflow-visible p-4">
+        <main className="flex-1 overflow-auto overscroll-y-contain w-full print:overflow-visible p-4">
           <Routes>
             <Route
               path="/vouchers"

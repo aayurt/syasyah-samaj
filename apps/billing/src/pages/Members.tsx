@@ -968,7 +968,7 @@ export default function Members() {
   const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[] } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
+  const loadMembers = useCallback(() => {
     setLoading(true)
     api<{ docs: Member[] }>('/members', {
       query: { limit: 1000, depth: 1, sort: '-updatedAt', ...tenantQuery },
@@ -976,7 +976,11 @@ export default function Members() {
       .then((res) => setMembers(res.docs || []))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [cacheVersion, tenantId])
+  }, [tenantQuery])
+
+  useEffect(() => {
+    loadMembers()
+  }, [loadMembers, cacheVersion, tenantId])
 
   // Load membership types for the create form
   useEffect(() => {
@@ -1199,7 +1203,7 @@ export default function Members() {
                   const file = e.target.files?.[0]
                   if (!file) return
                   try {
-                    const parsed = await parseImportFile<Record<string, unknown>>(file)
+                    const parsed = await parseImportFile<Record<string, unknown>>(file, 'members')
                     setImportData({ collection: parsed.collection, docs: parsed.docs })
                   } catch (err) {
                     pushToast('error', 'Parse failed', err instanceof Error ? err.message : String(err))
@@ -1538,7 +1542,10 @@ export default function Members() {
           collection={importData.collection}
           docs={importData.docs}
           onClose={() => setImportData(null)}
-          onImported={() => setImportData(null)}
+          onImported={() => {
+            setImportData(null)
+            loadMembers()
+          }}
         />
       )}
     </div>

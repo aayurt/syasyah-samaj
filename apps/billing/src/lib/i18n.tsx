@@ -5,7 +5,7 @@ import { ne } from './i18n/ne'
 export type Lang = 'en' | 'ne'
 
 const STORAGE_KEY = 'ui-lang'
-const DEFAULT_LANG: Lang = 'en'
+const DEFAULT_LANG: Lang = 'ne'
 
 type LangContextValue = {
   lang: Lang

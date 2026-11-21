@@ -345,7 +345,7 @@ export default function Accounts() {
           const file = e.target.files?.[0]
           if (!file) return
           try {
-            const parsed = await parseImportFile<Record<string, unknown>>(file)
+            const parsed = await parseImportFile<Record<string, unknown>>(file, 'gl-accounts')
             const { errors: rowErrors } = validateImportRows(parsed.docs, parsed.collection)
             setImportData({ collection: parsed.collection, docs: parsed.docs, rowErrors })
           } catch (err) {

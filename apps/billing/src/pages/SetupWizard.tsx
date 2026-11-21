@@ -93,7 +93,7 @@ export default function SetupWizard() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const t = useT()
-  const { tenantId, isIllaka, isCentral } = useTenant()
+  const { tenantId, setTenantId, tenants, isIllaka, isCentral } = useTenant()
   const { years, loading: yearsLoading, refresh: refreshYears } = useFiscalYear()
 
   const [stepIdx, setStepIdx] = useState(0)
@@ -537,18 +537,76 @@ export default function SetupWizard() {
     }
   }
 
+  const autoMatchDefaults = () => {
+    const matched: Record<string, string> = { ...defaults }
+    const matchAccount = (criteria: { codes?: string[]; names?: string[]; type?: string }) => {
+      if (criteria.codes) {
+        const found = accounts.find((a) => criteria.codes?.includes(String(a.code)))
+        if (found) return String(found.id)
+      }
+      if (criteria.names) {
+        const found = accounts.find((a) =>
+          criteria.names?.some((n) => a.name.toLowerCase().includes(n.toLowerCase())) &&
+          (!criteria.type || a.type === criteria.type)
+        )
+        if (found) return String(found.id)
+      }
+      return ''
+    }
+
+    const rules: Record<string, { codes?: string[]; names?: string[]; type?: string }> = {
+      receivableAccount: { codes: ['1130'], names: ['receivable', 'debtor'], type: 'asset' },
+      payableAccount: { codes: ['2110'], names: ['payable', 'creditor'], type: 'liability' },
+      cashAccount: { codes: ['1110'], names: ['cash in hand', 'cash'], type: 'asset' },
+      bankAccount: { codes: ['1120'], names: ['bank', 'checking', 'savings'], type: 'asset' },
+      taxAccount: { codes: ['2100'], names: ['tax', 'vat'], type: 'liability' },
+      revenueAccount: { codes: ['4000'], names: ['revenue', 'sales', 'income'], type: 'income' },
+      expenseAccount: { codes: ['5000'], names: ['operating expense', 'expense', 'purchase'], type: 'expense' },
+      inventoryAccount: { codes: ['1100'], names: ['inventory', 'stock'], type: 'asset' },
+      cogsAccount: { codes: ['5000', '5100'], names: ['cost of goods', 'cogs', 'expense'], type: 'expense' },
+    }
+
+    let matchCount = 0
+    for (const d of CORE_DEFAULTS) {
+      if (!matched[d.key]) {
+        const id = matchAccount(rules[d.key] || {})
+        if (id) {
+          matched[d.key] = id
+          matchCount++
+        }
+      }
+    }
+    setDefaults(matched)
+    if (matchCount > 0) {
+      pushToast('success', `Auto-matched ${matchCount} standard default account(s)`)
+    } else {
+      pushToast('info', 'All standard default accounts already matched')
+    }
+  }
+
   const finish = () => navigate('/', { replace: true })
 
   if (!isIllaka && !tenantId) {
-    // Consolidated mode — no concrete tenant to set up.
+    // Consolidated mode — offer quick selection of available tenants.
     return (
       <div className="w-full py-10">
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">
-          <p className="font-medium">Select an ilaka (tenant) to set up</p>
-          <p className="mt-1 text-amber-700">
-            You are in consolidated mode. Use the tenant switcher in the header to pick the tenant
-            you want to onboard, then this wizard will set that tenant up.
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900 shadow-sm">
+          <h2 className="text-base font-semibold text-amber-950">Select an Ilaka / Branch to Onboard</h2>
+          <p className="mt-1 text-amber-800">
+            You are currently in consolidated (all illakas) mode. Please select a specific tenant below to configure company details, fiscal periods, and default accounts.
           </p>
+          <div className="mt-4 flex flex-wrap gap-2.5">
+            {tenants.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTenantId(t.id)}
+                className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-3.5 py-2 text-xs font-semibold text-amber-950 shadow-xs hover:bg-amber-100 hover:border-amber-400 transition"
+              >
+                <span>🏢</span> Configure {t.name} ({t.code})
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -1426,6 +1484,18 @@ export default function SetupWizard() {
                 </div>
               ) : (
                 <>
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <p className="text-xs text-slate-500">
+                      Map your core transaction accounts for automated posting.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={autoMatchDefaults}
+                      className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-xs cursor-pointer"
+                    >
+                      ⚡ Auto-fill standard defaults
+                    </button>
+                  </div>
                   {CORE_DEFAULTS.map((d) => (
                     <div key={d.key} className="flex items-center justify-between gap-4">
                       <label className="w-48 shrink-0 text-sm text-slate-600">{d.label}</label>

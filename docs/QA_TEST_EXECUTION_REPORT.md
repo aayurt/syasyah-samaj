@@ -33,6 +33,11 @@
 | 20 | Fiscal Year & Closed Period Lock Enforcement | `/app/settings/fiscal-years` & `/app/vouchers/new` | ✅ PASS | Attempting to post a back-dated invoice in closed FY 2025-26 returned HTTP 400 with explicit block: *"The fiscal year FY 2025-26 is closed — entries in this period are read-only"*. |
 | 21 | Transaction Health & Sync Queue Clear | `/app/reports/transaction-health` | ✅ PASS | Inspected and batch-discarded 12 test sync conflict items, restoring header sync indicator to clean green **"Synced"**. Double-entry verified on all posted documents; 0 unbalanced journals. |
 | 22 | Audit Trail & Entity Provenance | `/app/audit-log` & `/api/documents/6` | ✅ PASS | Verified full audit trail: ISO timestamps (`createdAt`, `postedAt`), user attribution, bidirectional document-journal links, and tenant relationships. |
+| 23 | Items CSV Import | `/app/inventory` | ✅ PASS | Uploaded `items-import-test.csv`. Successfully parsed and created `SOL-001` (Monocrystalline Solar Panel 450W) and `BAT-001` (Lithium Battery 48V 100Ah). Table automatically reloaded with new stock. |
+| 24 | Parties CSV Import & PAN Preview | `/app/parties` & `/app/vouchers/new` | ✅ PASS | Uploaded `parties-import-test.csv`. Auto-resolved default control accounts (`1130` AR / `2110` AP). Created customer `Everest Hardware Traders` and vendor `Apex Logistics Nepal`. Selecting Everest on Sales Invoice displays PAN badge `Customer · PAN: 600987654`. |
+| 25 | Line Items Keyboard Navigation & Column Alignment | `/app/vouchers/new?type=sales-invoice` | ✅ PASS | Searching "SOL" autocompletes by code to `SOL-001`. Auto-populates `4000 Revenue / Income`. Pressing Tab from rate/tax adds Row 2 with 100% pixel-perfect column alignment under headers. Removed redundant Sub-account column. |
+| 26 | Members CSV Import | `/app/members` | ✅ PASS | Uploaded `members-import-test.csv`. Parsed and created `Sita Maya Maharjan` and `Ram Bahadur Shrestha`. Successfully persisted under `tenant: 1` with 0 errors. Members table reloaded to display 2 members. |
+| 27 | Chart of Accounts CSV Import & Layout | `/app/accounts` | ✅ PASS | Uploaded `accounts-import-test.csv`. Created `1140 Security Deposits Paid` (Asset) and `5130 Community Event Expenses` (Expense). Verified in table view (18 accounts) and tree view with clean header and cell spacing. |
 
 ---
 
@@ -98,16 +103,48 @@
 - **Problem**: On `/app/fixed-assets` -> Reports tab, the view links omitted `/app` (`/fixed-assets?tab=register`), and passed `asChild` to `LiquidButton` which rendered invalid nested `<a>` inside `<button>` with console warnings.
 - **Fix Applied**: Replaced with clean SPA button click handlers calling `setActiveTab('register')` and `navigate('/reports/...')`.
 
+### Issue 16: Parties CSV Import Rejection Due to Missing Default Control Accounts
+- **Problem**: When importing parties via CSV, `Parties` collection enforces mandatory `receivableAccount` (for customers) and `payableAccount` (for vendors). Since external CSV files do not contain internal account IDs, the backend rejected imports with HTTP 400 Bad Request.
+- **Fix Applied**: Updated `src/collections/Parties/index.ts` in the `beforeValidate` hook to automatically lookup and populate default AR (`1130`) and AP (`2110`) accounts from `billing-settings` or Chart of Accounts when omitted.
+
+### Issue 17: Table Column Shift / Misalignment on Secondary Line in VoucherForm
+- **Problem**: If line 1 had an account selected, the table header conditionally rendered `<th ...>Sub-account</th>`. When line 2 was appended (which had no account selected yet), `TransactionLine` rendered `<td className="hidden" />` (display: none). This omitted the cell from the DOM and shifted all subsequent cells in row 2 (Qty appeared under Sub-account, Rate under Qty, etc.).
+- **Fix Applied**: Passed `showSubledger={showSubledgerCol}` to `TransactionLine`. When `showSubledgerCol` is true, every row renders a `<td>` (rendering `—` if no subledger is applicable). When false, no row renders the cell. Column alignment across all rows is 100% guaranteed.
+
+### Issue 18: Redundant Sub-Account Selector on Income/Expense Line Items
+- **Problem**: In `VoucherForm.tsx`, item-based lines already have an item picker. `subledgerSelectorForAccount` returned `'item'` for income/expense accounts, creating a redundant "Sub-account" column that prompted users to select an item a second time.
+- **Fix Applied**: Updated `subledgerSelectorForAccount(account, hasItemPicker = false)` so item-based lines suppress item subledgers. Income/expense accounts pair directly with the line's item, keeping the table clean and eliminating duplicate dropdowns.
+
+### Issue 19: Chart of Accounts Tree View `flex` on `<td>` Causing Word Overlap
+- **Problem**: In `apps/billing/src/components/AccountsTable.tsx`, table cells had `className="... flex items-center gap-2"`. Setting `display: flex` on a `<td>` breaks native table layout in browsers, causing the Class column ("Bank", "Cash") to render directly on top of the Account Name.
+- **Fix Applied**: Removed `flex` from `<td>` and placed it on an inner `<div>`. The Name and Class columns now render with clean, distinct columns.
+
+### Issue 20: Missing Cell in Chart of Accounts Heading Row (7 vs 8 Columns)
+- **Problem**: In `AccountsTable.tsx`, the `<thead>` declared 8 columns, but group heading rows only rendered 7 `<td>` cells (omitted Parent), causing Opening and Actions cells to shift left by one column.
+- **Fix Applied**: Added the missing `<td className="px-4 py-2 text-xs text-slate-500">—</td>` in heading rows so all rows match the 8-column header.
+
+### Issue 21: Entity-Agnostic Import Fallback on Dedicated Pages
+- **Problem**: When a user uploaded a file without the entity name in the filename (e.g. `test.csv` on the Members or Accounts page), `guessCollection` returned `'unknown'`, causing the preview modal to fail.
+- **Fix Applied**: Updated `parseImportFile(file, defaultCollection)` and passed page-specific defaults (`'gl-accounts'`, `'parties'`, `'items'`, `'members'`) on each entity page.
+
+### Issue 22: Overscroll & Min-Width Containment Across Dropdowns and Modals
+- **Problem**: Dropdowns and select popovers were squished on small viewports, and scrolling inside modals caused the outer page background to bounce (`overscroll`).
+- **Fix Applied**: Added base `min-width: 140px` and `min-w-[160px]` / `minWidth={300}` on `AccountSelect`, `SearchSelect`, and `Popover`. Added `overscroll-y-contain` across `ImportPreviewModal`, `ConflictDrawer`, `VoucherViewModal`, `ExportModal`, `Popover`, and the main application container.
+
 ---
 
-## 3. UI Updates Required / UX Improvements
+## 3. UI Updates & UX Improvements Implemented
 
-1. **Setup Wizard Consolidated Mode Gate**:
-   - In `/app/setup`, when in consolidated mode, it prompts: *"You are in consolidated mode. Use the tenant switcher in the header to pick the tenant you want to onboard."*
-   - **Improvement**: If there is only 1 tenant (or when the user belongs to only 1 tenant), auto-select that tenant instead of showing a blocking message.
-2. **Setup Checklist Direct Navigation**:
-   - The checklist on the Dashboard accurately redirects users to `/app/settings/company` and `/app/settings/default-accounts`. Once saved, the checklist automatically refreshes.
-3. **General Ledger Drill-Down Auto-Selection**:
-   - Implemented: When clicking on an account line inside `/app/trial-balance`, query parameter `?account=:id` is now supported by `/app/reports/general-ledger`.
-4. **Aging Buckets Party Statement Link**:
-   - On `/app/reports/receivables` and `/app/reports/payables`, clicking on a party name should open `/app/reports/party-statement?party=:id` for convenient reconciliation.
+1. **Setup Wizard Auto-Selection & 1-Click Seeding**:
+   - Implemented quick tenant buttons in consolidated mode and 1-click standard Chart of Accounts auto-matching (`autoMatchDefaults`), removing friction during cold setup.
+2. **Voucher Form Active Branch & PAN Badge**:
+   - Implemented `Posting into: [Tenant Name]` badge in `VoucherForm` to ensure branch context is unambiguous.
+   - Added instant party tax preview (`Customer · PAN: 600987654`) directly beneath the Party selector.
+3. **Item Lines Keyboard Navigation**:
+   - Added `Tab` navigation on line items (`onTabLast`), allowing fast continuous data entry without manual mouse clicks.
+4. **General Ledger Breadcrumbs**:
+   - Added `← Back to Trial Balance` breadcrumbs for seamless navigation.
+5. **Fixed Assets Useful Life Presets**:
+   - Added 1-click duration presets (e.g., Vehicles = 5 yrs, Computers = 3 yrs, Buildings = 20 yrs).
+6. **Horizontal Scroll Containment on Wide Tables**:
+   - Wrapped Item Lines and Chart of Accounts tables in `<div className="overflow-x-auto overscroll-x-contain">` to prevent content clipping on smaller screens.

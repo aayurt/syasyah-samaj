@@ -25,7 +25,7 @@ export default function VoucherViewModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[85vh] w-full overflow-y-auto rounded-lg bg-white p-5 shadow-xl"
+        className="max-h-[85vh] max-w-2xl w-full overflow-y-auto overscroll-y-contain rounded-lg bg-white p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between">

@@ -120,8 +120,8 @@ export default function ImportPreviewModal({
   const willImport = [...actions.values()].filter((a) => a !== 'skip').length
 
   return (
-    <div className="anim-fade-in fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-[8vh]">
-      <div className="anim-modal-in w-full rounded-lg border border-slate-200 bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div className="anim-fade-in fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-y-contain bg-black/40 p-4 pt-[6vh]">
+      <div className="anim-modal-in w-full max-w-2xl max-h-[88vh] flex flex-col rounded-lg border border-slate-200 bg-white shadow-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-3">
           <h2 className="text-sm font-semibold text-slate-800">
@@ -132,7 +132,7 @@ export default function ImportPreviewModal({
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto overscroll-y-contain flex-1">
           {loading && (
             <div className="flex items-center gap-3 py-8 text-sm text-slate-500">
               <Loader2 size={16} className="animate-spin" /> {t('importPreview.analyzing')}
@@ -162,7 +162,7 @@ export default function ImportPreviewModal({
 
               {/* New records */}
               {totalNew > 0 && (
-                <div className="mb-4 max-h-40 overflow-y-auto rounded border border-slate-200">
+                <div className="mb-4 max-h-40 overflow-y-auto overscroll-y-contain rounded border border-slate-200">
                   <div className="bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
                     {t('importPreview.newRecords').replace('{n}', String(totalNew))}
                   </div>
@@ -178,7 +178,7 @@ export default function ImportPreviewModal({
 
               {/* Similar records */}
               {totalSimilar > 0 && (
-                <div className="mb-4 max-h-60 overflow-y-auto rounded border border-amber-200">
+                <div className="mb-4 max-h-60 overflow-y-auto overscroll-y-contain rounded border border-amber-200">
                   <div className="bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
                     {t('importPreview.similarRecords').replace('{n}', String(totalSimilar))}
                   </div>
@@ -219,7 +219,7 @@ export default function ImportPreviewModal({
 
               {/* Exact duplicates */}
               {totalExact > 0 && (
-                <div className="mb-4 max-h-40 overflow-y-auto rounded border border-red-200">
+                <div className="mb-4 max-h-40 overflow-y-auto overscroll-y-contain rounded border border-red-200">
                   <div className="bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700">
                     {t('importPreview.exactDuplicates').replace('{n}', String(totalExact))}
                   </div>

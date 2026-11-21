@@ -3,6 +3,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { api } from './api'
+import { getActiveTenantId } from './tenant'
 import ExcelJS from 'exceljs'
 import {
   ENTITY_REGISTRY,
@@ -436,14 +437,14 @@ export function parseCsvText(text: string): Record<string, unknown>[] {
 }
 
 /** Parse an import file (JSON, CSV, or Excel). Returns parsed docs or throws. */
-export async function parseImportFile<T>(file: File): Promise<ParsedImport<T>> {
+export async function parseImportFile<T>(file: File, defaultCollection = 'unknown'): Promise<ParsedImport<T>> {
   const isExcel = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')
-  const text = await file.text()
-  const isCsv = file.name.toLowerCase().endsWith('.csv') || text.trim().startsWith('"') || text.includes(',')
-
   if (isExcel) {
     return parseEntityExcel<T>(file)
   }
+
+  const text = await file.text()
+  const isCsv = file.name.toLowerCase().endsWith('.csv') || text.trim().startsWith('"') || text.includes(',')
 
   if (isCsv) {
     try {
@@ -451,8 +452,9 @@ export async function parseImportFile<T>(file: File): Promise<ParsedImport<T>> {
       if (docs.length === 0) {
         throw new Error('CSV file is empty or has no data rows')
       }
+      const guessed = guessCollection(file.name)
       return {
-        collection: guessCollection(file.name),
+        collection: guessed !== 'unknown' ? guessed : defaultCollection,
         docs,
         meta: { count: docs.length, format: 'csv' },
       }
@@ -1293,6 +1295,10 @@ function prepareBody(
   const resolved = resolveFks(cfg, doc, ctx)
   coerceBooleans(cfg, resolved)
   const body = cfg?.mapForApi ? cfg.mapForApi(resolved, ctx) : resolved
+  const activeTenant = getActiveTenantId()
+  if (activeTenant && !body.tenant) {
+    body.tenant = Number(activeTenant) || activeTenant
+  }
   const errors = ctx.takeMissing()
   if (errors.length > 0) return { errors }
   return { body, errors: [] }

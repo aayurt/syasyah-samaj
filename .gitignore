@@ -48,4 +48,4 @@ graphify-data/
 
 # Local package store
 .pnpm-store/
-
+graphify-out/

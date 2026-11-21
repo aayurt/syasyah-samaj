@@ -313,7 +313,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   const navigate = useNavigate()
   const { id, docType: urlDocType } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { tenantId } = useTenant()
+  const { tenantId, tenants } = useTenant()
+  const activeTenant = tenants.find((t) => String(t.id) === String(tenantId))
   const tenantQuery = useTenantQuery()
   const { formatDate } = useCalendar()
   const docTypeLabels: Record<string, string> = {
@@ -655,6 +656,13 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   const docCalc = useMemo(() => calcDoc(lines), [lines])
   const lineTotals = docCalc.subtotal
 
+  const showSubledgerCol = useMemo(() => {
+    return lines.some((l) => {
+      const acct = accounts.find((a) => String(a.id) === String(l.account))
+      return subledgerSelectorForAccount(acct, true) !== null
+    })
+  }, [lines, accounts])
+
   const contraTotal = Number(contraAmount) || 0
 
   const tdsTaxType = taxTypes.find((t) => String(t.id) === tdsTypeId)
@@ -975,12 +983,16 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     <div className="w-full pb-28">
       {/* ── Header ──────────────────────────────────────────── */}
       {!embedded && (
-        <div className="flex items-center justify-between py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate('/vouchers')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><ArrowLeft size={18} /></button>
             <h1 className="text-lg font-semibold text-slate-900">
               {mode === 'edit' ? `${t('common.edit', 'Edit')} ${meta}` : t('vouchers.newTransaction', 'New Transaction')}
             </h1>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-xs">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            Posting into: <strong className="text-slate-900">{activeTenant ? `${activeTenant.name} (${activeTenant.code})` : (tenantId ? `Tenant #${tenantId}` : 'Consolidated / All Illakas')}</strong>
           </div>
         </div>
       )}
@@ -1082,12 +1094,20 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
             {(isItem || isCash) && !cashSimple && (
               <div className="sm:col-span-2">
                 <div ref={partyRef} className="relative">
-                  <label className="text-sm font-medium text-slate-700">
-                    {t('vouchers.partyLabel', 'Party')}{' '}
-                    {docType !== 'petty-cash-voucher' && (
-                      <span className="text-red-500">*</span>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-slate-700">
+                      {t('vouchers.partyLabel', 'Party')}{' '}
+                      {docType !== 'petty-cash-voucher' && (
+                        <span className="text-red-500">*</span>
+                      )}
+                    </label>
+                    {selectedParty && (
+                      <span className="text-xs text-slate-500 font-mono">
+                        {selectedParty.type === 'customer' ? 'Customer' : 'Vendor'}
+                        {selectedParty.taxId ? ` · PAN: ${selectedParty.taxId}` : ''}
+                      </span>
                     )}
-                  </label>
+                  </div>
                   <div className="relative mt-1">
                     <input
                       type="text"
@@ -1100,7 +1120,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     <ChevronDown className="pointer-events-none absolute right-2.5 top-[11px] h-4 w-4 text-slate-400" />
                   </div>
                   {showPartyDropdown && (
-                    <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                    <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto overscroll-y-contain rounded-lg border border-slate-200 bg-white shadow-lg">
                       {filteredParties.length === 0 && <div className="px-3 py-2 text-sm text-slate-400">No parties found</div>}
                       <button type="button" onClick={() => { setShowPartyPopup(true); setShowPartyDropdown(false) }}
                         className="w-full border-t border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
@@ -1172,65 +1192,66 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
           {/* ── Item Lines Table ────────────────────────────────── */}
           {isItem && (
             <EntryCard title={t('vouchers.itemLines', 'Item Lines')} subtitle={meta}>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                      <th className="w-10 px-2 py-3 text-center">#</th>
-                      <th className="w-24 px-2 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
-                      <th className="w-24 px-2 py-3 text-left">{t('vouchers.account', 'Account')}</th>
-                      {lines.some((l) => {
-                        const acct = accounts.find((a) => String(a.id) === String(l.account));
-                        return subledgerSelectorForAccount(acct) !== null;
-                      }) && (
-                        <th className="w-24 px-2 py-3 text-left">{t('vouchers.subAccount', 'Sub-account')}</th>
-                      )}
-                      <th className="w-20 px-2 py-3 text-right">{t('vouchers.qty', 'Qty')}</th>
-                      <th className="w-24 px-2 py-3 text-right">{t('vouchers.rate', 'Rate')}</th>
-                      <th className="w-24 px-2 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <span>{t('vouchers.discount', 'Discount')}</span>
-                          <button type="button" onClick={toggleDiscountMode}
-                            className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100">
-                            {discountMode === 'pct' ? 'Rs.' : '%'}
-                            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                          </button>
-                        </div>
-                      </th>
-                      <th className="w-24 px-2 py-3 text-right">{t('common.amount', 'Amount')}</th>
-                      <th className="w-28 px-2 py-3 text-left">{t('vouchers.taxCode', 'Tax Code')}</th>
-                      <th className="w-16 px-2 py-3 text-right">{t('vouchers.taxRate', 'Tax %')}</th>
-                      <th className="w-20 px-2 py-3 text-right">{t('vouchers.taxAmount', 'Tax Amt')}</th>
-                      <th className="w-24 px-2 py-3 text-right">{t('common.total', 'Total')}</th>
-                      <th className="w-8 px-2 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lines.map((l, i) => (
-                      <TransactionLine
-                        key={l.key}
-                        line={l}
-                        index={i}
-                        items={items}
-                        parties={parties}
-                        accounts={accounts}
-                        taxTypes={taxTypes}
-                        transactionType={resolvedTxType}
-                        onChange={(key, patch) => key && setLine(key, patch)}
-                        onRemove={(key) => key && removeLine(key)}
-                      />
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t border-slate-200 bg-slate-50">
-                      <td colSpan={5} className="px-4 py-3 text-right text-sm font-medium text-slate-600">{t('vouchers.subTotal', 'Sub Total')}</td>
-                      <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineTotals)}</td>
-                      <td colSpan={2}></td>
-                      <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(docCalc.taxTotal)}</td>
-                      <td className="px-2 py-3 text-right font-mono font-bold text-slate-900">{fmt(lineTotals + docCalc.taxTotal)}</td>
-                      <td></td>
-                    </tr>
-                  </tfoot>
-                </table>
+              <div className="overflow-x-auto overscroll-x-contain">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                        <th className="w-10 px-2 py-3 text-center">#</th>
+                        <th className="min-w-[220px] px-2 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
+                        <th className="min-w-[180px] px-2 py-3 text-left">{t('vouchers.account', 'Account')}</th>
+                        {showSubledgerCol && (
+                          <th className="min-w-[140px] px-2 py-3 text-left">{t('vouchers.subAccount', 'Sub-account')}</th>
+                        )}
+                        <th className="w-20 px-2 py-3 text-right">{t('vouchers.qty', 'Qty')}</th>
+                        <th className="w-28 px-2 py-3 text-right">{t('vouchers.rate', 'Rate')}</th>
+                        <th className="w-28 px-2 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <span>{t('vouchers.discount', 'Discount')}</span>
+                            <button type="button" onClick={toggleDiscountMode}
+                              className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100">
+                              {discountMode === 'pct' ? 'Rs.' : '%'}
+                              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                            </button>
+                          </div>
+                        </th>
+                        <th className="w-24 px-2 py-3 text-right">{t('common.amount', 'Amount')}</th>
+                        <th className="min-w-[140px] px-2 py-3 text-left">{t('vouchers.taxCode', 'Tax Code')}</th>
+                        <th className="w-20 px-2 py-3 text-right">{t('vouchers.taxRate', 'Tax %')}</th>
+                        <th className="w-24 px-2 py-3 text-right">{t('vouchers.taxAmount', 'Tax Amt')}</th>
+                        <th className="w-24 px-2 py-3 text-right">{t('common.total', 'Total')}</th>
+                        <th className="w-10 px-2 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lines.map((l, i) => (
+                        <TransactionLine
+                          key={l.key}
+                          line={l}
+                          index={i}
+                          items={items}
+                          parties={parties}
+                          accounts={accounts}
+                          taxTypes={taxTypes}
+                          transactionType={resolvedTxType}
+                          showSubledger={showSubledgerCol}
+                          onTabLast={i === lines.length - 1 ? () => setLines((ls) => [...ls, emptyLine()]) : undefined}
+                          onChange={(key, patch) => key && setLine(key, patch)}
+                          onRemove={(key) => key && removeLine(key)}
+                        />
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-slate-200 bg-slate-50">
+                        <td colSpan={showSubledgerCol ? 7 : 6} className="px-4 py-3 text-right text-sm font-medium text-slate-600">{t('vouchers.subTotal', 'Sub Total')}</td>
+                        <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineTotals)}</td>
+                        <td colSpan={2}></td>
+                        <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(docCalc.taxTotal)}</td>
+                        <td className="px-2 py-3 text-right font-mono font-bold text-slate-900">{fmt(lineTotals + docCalc.taxTotal)}</td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
                 <div className="border-t border-slate-100 px-4 py-2">
                   <button type="button" onClick={() => setLines((ls) => [...ls, emptyLine()])}
                     className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700">
@@ -1713,6 +1734,11 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                             <input type="text" inputMode="decimal" value={l.amount ?? ''}
                               onChange={(e) => setLine(l.key!, { amount: e.target.value })}
                               onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key!, { amount: r }) }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Tab' && !e.shiftKey && i === lines.length - 1) {
+                                  setLines((ls) => [...ls, emptyLine()])
+                                }
+                              }}
                               placeholder="0.00"
                               className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                           </td>

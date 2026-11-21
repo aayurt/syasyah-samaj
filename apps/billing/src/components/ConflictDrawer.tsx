@@ -282,7 +282,7 @@ export default function ConflictDrawer({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+        <div className="flex-1 overflow-y-auto overscroll-y-contain px-5 py-4">
           {conflicts.length === 0 ? (
             <p className="py-8 text-center text-sm text-slate-400">
               {t('sync.noConflicts', 'Nothing needs review.')}
@@ -372,7 +372,7 @@ export default function ConflictDrawer({ onClose }: { onClose: () => void }) {
       {viewEntry && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/50" />
-          <div className="relative z-10 max-h-[85vh] w-full overflow-y-auto rounded-xl bg-white shadow-2xl">
+          <div className="relative z-10 max-h-[85vh] w-full overflow-y-auto overscroll-y-contain rounded-xl bg-white shadow-2xl">
             <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
               <div>
                 <div className="text-base font-semibold text-slate-900">

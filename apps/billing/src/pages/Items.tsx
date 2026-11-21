@@ -263,7 +263,7 @@ export default function Items() {
           const file = e.target.files?.[0]
           if (!file) return
           try {
-            const parsed = await parseImportFile<Record<string, unknown>>(file)
+            const parsed = await parseImportFile<Record<string, unknown>>(file, 'items')
             setImportData({ collection: parsed.collection, docs: parsed.docs })
           } catch (err) {
             pushToast('error', 'Parse failed', err instanceof Error ? err.message : String(err))
@@ -682,7 +682,10 @@ export default function Items() {
           collection={importData.collection}
           docs={importData.docs}
           onClose={() => setImportData(null)}
-          onImported={() => setImportData(null)}
+          onImported={() => {
+            setImportData(null)
+            load()
+          }}
         />
       )}
     </div>

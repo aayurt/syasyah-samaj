@@ -11,6 +11,11 @@ import { api } from './api'
 
 const STORAGE_KEY = 'billing.tenant'
 
+export function getActiveTenantId(): string {
+  if (typeof window === 'undefined') return ''
+  return localStorage.getItem(STORAGE_KEY) || ''
+}
+
 export type TenantOption = {
   id: string
   code: string

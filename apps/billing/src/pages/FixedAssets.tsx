@@ -58,6 +58,16 @@ const CATEGORY_OPTIONS = [
   { value: 'other', label: 'Other' },
 ] as const
 
+const CATEGORY_USEFUL_LIFE_PRESETS: Record<string, string> = {
+  vehicle: '5',
+  equipment: '5',
+  furniture: '5',
+  computer: '3',
+  building: '20',
+  land: '0',
+  other: '5',
+}
+
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
   { value: 'disposed', label: 'Disposed' },
@@ -548,8 +558,18 @@ export default function FixedAssetsPage() {
               {t('fixedAssets.category', 'Category')}
               <select
                 value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500"
+                onChange={(e) => {
+                  const cat = e.target.value
+                  const presetYears = CATEGORY_USEFUL_LIFE_PRESETS[cat] ?? '5'
+                  setForm({
+                    ...form,
+                    category: cat,
+                    usefulLifeYears: !form.usefulLifeYears || form.usefulLifeYears === '5' || form.usefulLifeYears === '3'
+                      ? presetYears
+                      : form.usefulLifeYears,
+                  })
+                }}
+                className="mt-1 min-w-[160px] w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500"
               >
                 {CATEGORY_OPTIONS.map((c) => (
                   <option key={c.value} value={c.value}>

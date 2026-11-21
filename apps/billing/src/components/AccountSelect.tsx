@@ -56,7 +56,7 @@ export default function AccountSelect({ accounts, value, onChange, placeholder, 
         type="button"
         disabled={disabled}
         onClick={() => { if (!disabled) setOpen(!open) }}
-        className={`flex h-[36px] w-full items-center gap-2 rounded border px-3 text-left text-sm transition-colors ${
+        className={`flex h-[36px] min-w-[160px] w-full items-center gap-2 rounded border px-3 text-left text-sm transition-colors ${
           open ? 'border-crimson-400 ring-1 ring-crimson-200' : 'border-slate-300 hover:border-slate-400'
         } ${selected ? 'text-slate-800' : 'text-slate-400'} ${disabled ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}`}
       >
@@ -76,7 +76,7 @@ export default function AccountSelect({ accounts, value, onChange, placeholder, 
       </button>
 
       {/* Dropdown panel */}
-      <Popover open={open} onClose={() => setOpen(false)} anchorRef={wrapRef} className="overflow-hidden">
+      <Popover open={open} onClose={() => setOpen(false)} anchorRef={wrapRef} minWidth={300} className="overflow-hidden">
           {/* Search */}
           <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
             <Search size={14} className="shrink-0 text-slate-400" />
@@ -107,7 +107,7 @@ export default function AccountSelect({ accounts, value, onChange, placeholder, 
           )}
 
           {/* Options */}
-          <div className="max-h-56 overflow-y-auto">
+          <div className="max-h-56 overflow-y-auto overscroll-y-contain">
             {filtered.length === 0 ? (
               <p className="px-3 py-3 text-center text-xs text-slate-400">{t('accountSelect.noAccountsMatch')}</p>
             ) : (

@@ -73,17 +73,28 @@ import { DataOps } from './collections/DataOps'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-export const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: Number(process.env.REDIS_PORT) || 6379,
-  password: process.env.REDIS_PASSWORD,
-  lazyConnect: true,
-  enableOfflineQueue: false,
-  maxRetriesPerRequest: 0,
-})
-redis.on('error', () => {
-  // Silence unhandled connection errors in dev when Redis is not running
-})
+const createRedisClient = () => {
+  if (!process.env.REDIS_HOST && !process.env.REDIS_URL) {
+    return {
+      get: async () => null,
+      set: async () => 'OK',
+      del: async () => 0,
+      on: () => {},
+    } as unknown as Redis
+  }
+  const client = new Redis({
+    host: process.env.REDIS_HOST,
+    port: Number(process.env.REDIS_PORT) || 6379,
+    password: process.env.REDIS_PASSWORD,
+    lazyConnect: true,
+    enableOfflineQueue: false,
+    maxRetriesPerRequest: 0,
+    retryStrategy: () => null,
+  })
+  client.on('error', () => {})
+  return client
+}
+export const redis = createRedisClient()
 export default buildConfig({
   debug: true,
   admin: {

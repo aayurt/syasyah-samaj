@@ -175,7 +175,20 @@ export default function GeneralLedger() {
         ['Period', `${from || 'Earliest'} to ${to || 'Latest'}`],
       ]}
     >
-      <div className="mt-4">
+      <div className="flex items-center gap-2 px-2 pt-2 text-xs text-slate-500">
+        <button
+          type="button"
+          onClick={() => navigate('/trial-balance')}
+          className="hover:text-crimson-600 hover:underline flex items-center gap-1 font-medium"
+        >
+          ← Back to Trial Balance
+        </button>
+        <span>·</span>
+        <span className="text-slate-700 font-semibold">
+          {selectedAccount ? `${selectedAccount.code ? selectedAccount.code + ' · ' : ''}${selectedAccount.name}` : 'All Accounts'}
+        </span>
+      </div>
+      <div className="mt-3">
         {/* ── Account selector + filters ── */}
         <div className="flex flex-wrap items-end gap-4 px-2">
           <div className="flex flex-col gap-1">
@@ -187,7 +200,7 @@ export default function GeneralLedger() {
                 const acct = accounts.find((a) => a.id === id)
                 if (acct) handleSelect(acct)
               }}
-              className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-50 disabled:text-slate-400"
+              className="min-w-[240px] w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-50 disabled:text-slate-400"
               disabled={loading || accounts.length === 0}
             >
               <option value="">{t('reports.selectAccount', 'Select an account')}</option>

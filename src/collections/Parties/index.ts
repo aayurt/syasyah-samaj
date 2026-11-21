@@ -113,22 +113,80 @@ export const Parties: CollectionConfig = {
     beforeValidate: [
       assignTenant,
       // Conditional mandatory: customer→AR, vendor→AP, both→both.
-      // Non-zero opening balance requires the matching control account(s).
-      async ({ data, operation }) => {
+      // Auto-assign default AR/AP from billing-settings or Chart of Accounts if omitted.
+      async ({ data, req, operation }) => {
         if (operation !== 'create' && operation !== 'update') return data
         if (!data) return data
         const d = data as Record<string, unknown>
-        const errors: string[] = []
         const type = d.type as string | undefined
-        const receivable = d.receivableAccount
-        const payable = d.payableAccount
         const opening = Number(d.openingBalance || 0)
-        const hasAR = !!receivable
-        const hasAP = !!payable
+        let receivable = d.receivableAccount
+        let payable = d.payableAccount
+
         const needsAR = type === 'customer' || type === 'both' || opening !== 0
         const needsAP = type === 'vendor' || type === 'both' || opening !== 0
-        if (needsAR && !hasAR) errors.push('receivableAccount: AR account is required for this party type / opening balance')
-        if (needsAP && !hasAP) errors.push('payableAccount: AP account is required for this party type / opening balance')
+
+        // Auto-resolve default control accounts if not explicitly provided
+        if (req?.payload) {
+          const tenantId = d.tenant
+          if (needsAR && !receivable) {
+            try {
+              const settings = await req.payload.findGlobal({ slug: 'billing-settings' as any, req })
+              const defAR = settings?.receivableAccount
+              if (defAR) {
+                receivable = typeof defAR === 'object' ? (defAR as any).id : defAR
+                d.receivableAccount = receivable
+              } else {
+                const found = await req.payload.find({
+                  collection: 'gl-accounts',
+                  where: {
+                    and: [
+                      { code: { equals: '1130' } },
+                      ...(tenantId ? [{ tenant: { equals: tenantId } }] : []),
+                    ],
+                  },
+                  limit: 1,
+                  req,
+                })
+                if (found.docs.length > 0) {
+                  receivable = found.docs[0].id
+                  d.receivableAccount = receivable
+                }
+              }
+            } catch {}
+          }
+
+          if (needsAP && !payable) {
+            try {
+              const settings = await req.payload.findGlobal({ slug: 'billing-settings' as any, req })
+              const defAP = settings?.payableAccount
+              if (defAP) {
+                payable = typeof defAP === 'object' ? (defAP as any).id : defAP
+                d.payableAccount = payable
+              } else {
+                const found = await req.payload.find({
+                  collection: 'gl-accounts',
+                  where: {
+                    and: [
+                      { code: { equals: '2110' } },
+                      ...(tenantId ? [{ tenant: { equals: tenantId } }] : []),
+                    ],
+                  },
+                  limit: 1,
+                  req,
+                })
+                if (found.docs.length > 0) {
+                  payable = found.docs[0].id
+                  d.payableAccount = payable
+                }
+              }
+            } catch {}
+          }
+        }
+
+        const errors: string[] = []
+        if (needsAR && !receivable) errors.push('receivableAccount: AR account is required for this party type / opening balance')
+        if (needsAP && !payable) errors.push('payableAccount: AP account is required for this party type / opening balance')
         if (errors.length) throw new Error(errors.join('; '))
         return data
       },

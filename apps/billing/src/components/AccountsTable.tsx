@@ -152,30 +152,33 @@ export default function AccountsTable({
               {pageRows.length} account{pageRows.length === 1 ? '' : 's'}
             </span>
           </div>
-          <table className="w-full text-left text-sm table-fixed">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/40 text-xs uppercase tracking-wide text-slate-500 font-medium">
-                <th className="w-24 px-4 py-2">Code</th>
-                <th className="px-4 py-2">Account Name</th>
-                <th className="w-24 px-4 py-2">Type</th>
-                <th className="w-24 px-4 py-2">Group</th>
-                <th className="w-20 px-4 py-2">{t('accounts.currency', 'Currency')}</th>
-                <th className="w-28 px-4 py-2">Description</th>
-                <th className="w-28 px-4 py-2 text-right">Opening (FY)</th>
-                <th className="w-20 px-4 py-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pageRows.map((a) => {
-                const opening = openings[a.id] ?? a.openingBalance ?? 0
-                const g = typeof a.group === 'object' && a.group !== null ? a.group : groups.find((x) => x.id === a.group)
-                return (
-                  <tr key={a.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
-                    <td className="px-4 py-2 font-mono text-xs text-slate-500">{a.code || '—'}</td>
-                    <td className="px-4 py-2 text-slate-700 flex items-center gap-2">
-                      <FileText size={13} className="text-slate-300 shrink-0" />
-                      <span className="font-medium text-slate-800">{a.name}</span>
-                    </td>
+          <div className="overflow-x-auto overscroll-x-contain">
+            <table className="w-full text-left text-sm min-w-[760px]">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/40 text-xs uppercase tracking-wide text-slate-500 font-medium">
+                  <th className="w-24 px-4 py-2">Code</th>
+                  <th className="min-w-[180px] px-4 py-2">Account Name</th>
+                  <th className="w-24 px-4 py-2">Type</th>
+                  <th className="w-28 px-4 py-2">Group</th>
+                  <th className="w-20 px-4 py-2">{t('accounts.currency', 'Currency')}</th>
+                  <th className="min-w-[160px] px-4 py-2">Description</th>
+                  <th className="w-28 px-4 py-2 text-right">Opening (FY)</th>
+                  <th className="w-20 px-4 py-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.map((a) => {
+                  const opening = openings[a.id] ?? a.openingBalance ?? 0
+                  const g = typeof a.group === 'object' && a.group !== null ? a.group : groups.find((x) => x.id === a.group)
+                  return (
+                    <tr key={a.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
+                      <td className="px-4 py-2 font-mono text-xs text-slate-500">{a.code || '—'}</td>
+                      <td className="px-4 py-2 text-slate-700">
+                        <div className="flex items-center gap-2">
+                          <FileText size={13} className="text-slate-300 shrink-0" />
+                          <span className="font-medium text-slate-800">{a.name}</span>
+                        </div>
+                      </td>
                     <td className="px-4 py-2 text-xs text-slate-500 capitalize">{a.type}</td>
                     <td className="px-4 py-2 text-xs text-slate-500">{g?.name || '—'}</td>
                     <td className="px-4 py-2 text-xs text-slate-500">{a.currency || 'NPR'}</td>
@@ -203,6 +206,7 @@ export default function AccountsTable({
               })}
             </tbody>
           </table>
+          </div>
         </div>
       ) : (
         types.map((type) => {
@@ -240,19 +244,20 @@ export default function AccountsTable({
               </span>
             </div>
 
-            <table className="w-full text-left text-sm table-fixed">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/40 text-xs uppercase tracking-wide text-slate-500 font-medium">
-                  <th className="w-24 px-4 py-2">Code</th>
-                  <th className="px-4 py-2">Account Heading / Subheading</th>
-                  <th className="w-28 px-4 py-2">Class</th>
-                  <th className="w-20 px-4 py-2">{t('accounts.currency', 'Currency')}</th>
-                  <th className="w-24 px-4 py-2">Description</th>
-                  <th className="w-28 px-4 py-2">Parent</th>
-                  <th className="w-36 px-4 py-2 text-right">Opening (FY)</th>
-                  <th className="w-14 px-4 py-2 text-right">Actions</th>
-                </tr>
-              </thead>
+            <div className="overflow-x-auto overscroll-x-contain">
+              <table className="w-full text-left text-sm min-w-[850px]">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/40 text-xs uppercase tracking-wide text-slate-500 font-medium">
+                    <th className="w-24 px-4 py-2">Code</th>
+                    <th className="min-w-[220px] px-4 py-2">Account Heading / Subheading</th>
+                    <th className="w-28 px-4 py-2">Class</th>
+                    <th className="w-20 px-4 py-2">{t('accounts.currency', 'Currency')}</th>
+                    <th className="min-w-[160px] px-4 py-2">Description</th>
+                    <th className="w-28 px-4 py-2">Parent</th>
+                    <th className="w-36 px-4 py-2 text-right">Opening (FY)</th>
+                    <th className="w-14 px-4 py-2 text-right">Actions</th>
+                  </tr>
+                </thead>
               <tbody>
                 {/* 1. Grouped Headings */}
                 {typeGroups.map((group) => {
@@ -290,6 +295,7 @@ export default function AccountsTable({
                         </td>
                         <td className="px-4 py-2 text-xs text-slate-500">—</td>
                         <td className="px-4 py-2 text-xs text-slate-500">—</td>
+                        <td className="px-4 py-2 text-xs text-slate-500">—</td>
                         <td className="px-4 py-2 text-right font-mono text-xs font-medium text-slate-500">
                           {children.length > 0
                             ? groupTotalOpening.toLocaleString('en-US', { minimumFractionDigits: 2 })
@@ -323,9 +329,11 @@ export default function AccountsTable({
                               <td className="px-4 py-2 pl-6 font-mono text-xs text-slate-500">
                                 {a.code || '—'}
                               </td>
-                              <td className="px-4 py-2 pl-9 text-slate-700 flex items-center gap-2">
-                                <FileText size={13} className="text-slate-300 shrink-0" />
-                                <span className="font-medium text-slate-800">{a.name}</span>
+                              <td className="px-4 py-2 pl-9 text-slate-700">
+                                <div className="flex items-center gap-2">
+                                  <FileText size={13} className="text-slate-300 shrink-0" />
+                                  <span className="font-medium text-slate-800">{a.name}</span>
+                                </div>
                               </td>
                               <td className="px-4 py-2 text-xs text-slate-500 capitalize">
                                 {a.class || 'other'}
@@ -372,9 +380,11 @@ export default function AccountsTable({
                       <td className="px-4 py-2 font-mono text-xs text-slate-500">
                         {a.code || '—'}
                       </td>
-                      <td className="px-4 py-2 pl-4 text-slate-700 flex items-center gap-2">
-                        <FileText size={13} className="text-slate-300 shrink-0" />
-                        <span className="font-medium text-slate-800">{a.name}</span>
+                      <td className="px-4 py-2 pl-4 text-slate-700">
+                        <div className="flex items-center gap-2">
+                          <FileText size={13} className="text-slate-300 shrink-0" />
+                          <span className="font-medium text-slate-800">{a.name}</span>
+                        </div>
                       </td>
                       <td className="px-4 py-2 text-xs text-slate-500 capitalize">
                         {a.class || 'other'}
@@ -411,6 +421,7 @@ export default function AccountsTable({
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
         ))

@@ -1,0 +1,3 @@
+code,name,type,class,openingBalance,active
+1140,Security Deposits Paid,asset,other,0,true
+5130,Community Event Expenses,expense,other,0,true

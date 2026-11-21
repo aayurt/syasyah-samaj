@@ -31,6 +31,8 @@ interface TransactionLineProps {
   taxTypes: TaxType[]
   transactionType: 'sales' | 'purchase' | 'payment' | 'receipt' | 'journal' | 'other'
   disabled?: boolean
+  showSubledger?: boolean
+  onTabLast?: () => void
   onChange: (key: string | undefined, patch: Partial<LineInput>) => void
   onRemove: (key: string | undefined) => void
 }
@@ -54,7 +56,7 @@ function resolveTaxForItem(item: Item | undefined, transactionType: 'sales' | 'p
   return null
 }
 
-export function subledgerSelectorForAccount(account: Account | undefined): 'party' | 'item' | 'project' | null {
+export function subledgerSelectorForAccount(account: Account | undefined, hasItemPicker: boolean = false): 'party' | 'item' | 'project' | null {
   if (!account) return null
   switch (account.type) {
     case 'asset':
@@ -62,7 +64,7 @@ export function subledgerSelectorForAccount(account: Account | undefined): 'part
       return 'party'
     case 'income':
     case 'expense':
-      return 'item'
+      return hasItemPicker ? null : 'item'
     default:
       return null
   }
@@ -77,6 +79,8 @@ export default function TransactionLine({
   taxTypes,
   transactionType,
   disabled = false,
+  showSubledger = false,
+  onTabLast,
   onChange,
   onRemove,
 }: TransactionLineProps) {
@@ -93,6 +97,7 @@ export default function TransactionLine({
 
   const [subledgerOpen, setSubledgerOpen] = useState(false)
   const [subledgerQuery, setSubledgerQuery] = useState('')
+  const [itemDropdownOpen, setItemDropdownOpen] = useState(false)
   const [showAddItem, setShowAddItem] = useState(false)
   const [creating, setCreating] = useState(false)
   const [addItemError, setAddItemError] = useState('')
@@ -110,7 +115,7 @@ export default function TransactionLine({
     purchasePrice: '',
   })
 
-  const subledgerKind = useMemo(() => subledgerSelectorForAccount(selectedAccount), [selectedAccount])
+  const subledgerKind = useMemo(() => subledgerSelectorForAccount(selectedAccount, true), [selectedAccount])
 
   // When an item is picked, auto-fill account/rate/unit/description/tax.
   const handleItemChange = useCallback(
@@ -235,7 +240,7 @@ export default function TransactionLine({
       <td className="px-2 py-2 text-center text-slate-400">{index + 1}</td>
 
       {/* Item / description */}
-      <td className="w-24 px-2 py-2">
+      <td className="min-w-[220px] px-2 py-2">
         <div className="relative">
           <input
             type="text"
@@ -244,8 +249,15 @@ export default function TransactionLine({
               const q = e.target.value
               onChange(line.key, { description: q, item: '', account: '' })
               setSubledgerOpen(false)
+              setItemDropdownOpen(true)
             }}
-            onFocus={() => setSubledgerOpen(false)}
+            onFocus={() => {
+              setSubledgerOpen(false)
+              setItemDropdownOpen(true)
+            }}
+            onBlur={() => {
+              setTimeout(() => setItemDropdownOpen(false), 200)
+            }}
             placeholder={t('vouchers.enterItemName', 'Enter item')}
             className="w-full rounded border border-slate-200 px-2 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-50 disabled:text-slate-400"
             disabled={disabled}
@@ -259,17 +271,24 @@ export default function TransactionLine({
           >
             <Search size={14} />
           </button>
-          {/* Item results dropdown (simplified: show first 5 matches of description) */}
-          {(!selectedItem && line.description && line.description.length > 0) && (
-            <div className="absolute z-10 mt-1 max-h-44 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
+          {/* Item results dropdown (show matches by name or code) */}
+          {(itemDropdownOpen && !selectedItem && line.description && line.description.length > 0) && (
+            <div className="absolute z-10 mt-1 max-h-44 w-full overflow-y-auto overscroll-y-contain rounded border border-slate-200 bg-white shadow-lg">
               {allItems
-                .filter((it) => it.name.toLowerCase().includes(line.description!.toLowerCase()))
-                .slice(0, 5)
+                .filter((it) => {
+                  const q = line.description!.toLowerCase()
+                  return it.name.toLowerCase().includes(q) || (it.code && it.code.toLowerCase().includes(q))
+                })
+                .slice(0, 8)
                 .map((it) => (
                   <button
                     key={it.id}
                     type="button"
-                    onClick={() => handleItemChange(String(it.id))}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setItemDropdownOpen(false)
+                      handleItemChange(String(it.id))
+                    }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-slate-50"
                   >
                     {it.code ? <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-500">{it.code}</span> : null}
@@ -278,7 +297,11 @@ export default function TransactionLine({
                 ))}
               <button
                 type="button"
-                onClick={() => setShowAddItem(true)}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setItemDropdownOpen(false)
+                  setShowAddItem(true)
+                }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 border-t border-slate-100"
               >
                 <Plus size={14} /> {t('vouchers.addItem', 'Add Item')}
@@ -301,7 +324,7 @@ export default function TransactionLine({
       </td>
 
       {/* Account */}
-      <td className="w-24 px-2 py-2">
+      <td className="min-w-[180px] px-2 py-2">
         <AccountSelect
           accounts={accounts}
           value={String(line.account ?? '')}
@@ -311,50 +334,52 @@ export default function TransactionLine({
       </td>
 
       {/* Conditional subledger selector */}
-      {subledgerKind ? (
-        <td className="w-24 px-2 py-2">
-          {subledgerOpen ? (
-            <div className="relative">
-              <input
-                type="text"
-                value={subledgerQuery}
-                onChange={(e) => setSubledgerQuery(e.target.value)}
-                placeholder={t('vouchers.selectSubledger', 'Select subledger')}
-                className="w-full rounded border border-slate-200 px-2 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-50 disabled:text-slate-400"
-                disabled={disabled}
-              />
-              <div className="absolute z-10 mt-1 max-h-44 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
-                {subledgerOptions.length === 0 ? (
-                  <p className="px-3 py-3 text-center text-xs text-slate-400">{t('vouchers.noSubledgerMatch', 'No matches')}</p>
-                ) : (
-                  subledgerOptions.map((o) => (
-                    <button
-                      key={o.id}
-                      type="button"
-                      onClick={() => handleSubledgerChange(String(o.id))}
-                      className="flex w-full items-center px-3 py-2 text-left text-sm transition-colors hover:bg-slate-50"
-                    >
-                      <span className="flex-1 truncate">{o.label}</span>
-                    </button>
-                  ))
-                )}
+      {showSubledger && (
+        <td className="min-w-[140px] px-2 py-2">
+          {subledgerKind ? (
+            subledgerOpen ? (
+              <div className="relative">
+                <input
+                  type="text"
+                  value={subledgerQuery}
+                  onChange={(e) => setSubledgerQuery(e.target.value)}
+                  placeholder={t('vouchers.selectSubledger', 'Select subledger')}
+                  className="w-full rounded border border-slate-200 px-2 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-50 disabled:text-slate-400"
+                  disabled={disabled}
+                />
+                <div className="absolute z-10 mt-1 max-h-44 w-full overflow-y-auto overscroll-y-contain rounded border border-slate-200 bg-white shadow-lg">
+                  {subledgerOptions.length === 0 ? (
+                    <p className="px-3 py-3 text-center text-xs text-slate-400">{t('vouchers.noSubledgerMatch', 'No matches')}</p>
+                  ) : (
+                    subledgerOptions.map((o) => (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => handleSubledgerChange(String(o.id))}
+                        className="flex w-full items-center px-3 py-2 text-left text-sm transition-colors hover:bg-slate-50"
+                      >
+                        <span className="flex-1 truncate">{o.label}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSubledgerOpen(true)}
+                disabled={disabled}
+                className="flex items-center gap-1 px-2 py-2 rounded border border-slate-200 text-xs text-slate-500 hover:bg-slate-50 disabled:opacity-40"
+              >
+                {subledgerKind === 'party' ? <Users size={12} /> : subledgerKind === 'item' ? <Building2 size={12} /> : <Wallet size={12} />}
+                <span>{selectedSubAccountName || (subledgerKind === 'party' ? t('vouchers.party', 'Party') : subledgerKind === 'item' ? t('vouchers.item', 'Item') : t('vouchers.project', 'Project'))}</span>
+                <ChevronDown size={10} className="ml-0.5" />
+              </button>
+            )
           ) : (
-            <button
-              type="button"
-              onClick={() => setSubledgerOpen(true)}
-              disabled={disabled}
-              className="flex items-center gap-1 px-2 py-2 rounded border border-slate-200 text-xs text-slate-500 hover:bg-slate-50 disabled:opacity-40"
-            >
-              {subledgerKind === 'party' ? <Users size={12} /> : subledgerKind === 'item' ? <Building2 size={12} /> : <Wallet size={12} />}
-              <span>{selectedSubAccountName || (subledgerKind === 'party' ? t('vouchers.party', 'Party') : subledgerKind === 'item' ? t('vouchers.item', 'Item') : t('vouchers.project', 'Project'))}</span>
-              <ChevronDown size={10} className="ml-0.5" />
-            </button>
+            <span className="text-slate-300 text-xs">—</span>
           )}
         </td>
-      ) : (
-        <td className="hidden" />
       )}
 
       {/* Qty */}
@@ -378,6 +403,11 @@ export default function TransactionLine({
           min="0"
           value={String(line.rate ?? '')}
           onChange={(e) => onChange(line.key, { rate: e.target.value })}
+          onKeyDown={(e) => {
+            if (e.key === 'Tab' && !e.shiftKey && taxTypes.length === 0 && onTabLast) {
+              onTabLast()
+            }
+          }}
           className="w-full rounded border border-slate-200 px-2 py-2 text-sm text-right outline-none focus:border-slate-500 disabled:bg-slate-50 disabled:text-slate-400"
           disabled={disabled}
         />
@@ -420,6 +450,11 @@ export default function TransactionLine({
           min="0"
           value={String(line.taxRate ?? '')}
           onChange={(e) => onChange(line.key, { taxRate: e.target.value })}
+          onKeyDown={(e) => {
+            if (e.key === 'Tab' && !e.shiftKey && onTabLast) {
+              onTabLast()
+            }
+          }}
           className="w-full rounded border border-slate-200 px-2 py-2 text-sm text-right outline-none focus:border-slate-500 disabled:bg-slate-50 disabled:text-slate-400"
           disabled={disabled}
         />

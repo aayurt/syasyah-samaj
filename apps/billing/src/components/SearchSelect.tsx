@@ -74,7 +74,7 @@ export default function SearchSelect({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`flex h-[38px] w-full items-center gap-2 rounded border px-3 text-left text-sm transition-colors ${
+        className={`flex h-[38px] min-w-[160px] w-full items-center gap-2 rounded border px-3 text-left text-sm transition-colors ${
           open ? 'border-crimson-400 ring-1 ring-crimson-200' : 'border-slate-300 hover:border-slate-400'
         } ${selected ? 'text-slate-800' : 'text-slate-400'}`}
       >
@@ -92,7 +92,7 @@ export default function SearchSelect({
       </button>
 
       {/* Dropdown panel */}
-      <Popover open={open} onClose={() => setOpen(false)} anchorRef={wrapRef} className="overflow-hidden">
+      <Popover open={open} onClose={() => setOpen(false)} anchorRef={wrapRef} minWidth={260} className="overflow-hidden">
           {/* Search */}
           {options.length > 6 && (
             <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
@@ -125,7 +125,7 @@ export default function SearchSelect({
           )}
 
           {/* Options */}
-          <div className="max-h-56 overflow-y-auto">
+          <div className="max-h-56 overflow-y-auto overscroll-y-contain">
             {filtered.length === 0 ? (
               <p className="px-3 py-3 text-center text-xs text-slate-400">{t('searchSelect.noOptionsMatch')}</p>
             ) : (

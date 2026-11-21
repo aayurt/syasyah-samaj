@@ -75,14 +75,20 @@ export default function Popover({
 
   if (!open) return null
 
+  const popoverWidth = minWidth ? Math.max(pos.width, minWidth) : Math.max(pos.width, 240)
+  const safeLeft = typeof window !== 'undefined'
+    ? Math.min(pos.left, Math.max(8, window.innerWidth - popoverWidth - 16))
+    : pos.left
+
   return createPortal(
     <div
       ref={popoverRef}
-      className={`absolute z-50 mt-1 rounded-lg border border-slate-200 bg-white shadow-lg ${className}`}
+      className={`absolute z-50 mt-1 rounded-lg border border-slate-200 bg-white shadow-lg overscroll-y-contain ${className}`}
       style={{
         top: pos.top,
-        left: pos.left,
-        // width: minWidth ? Math.max(pos.width, minWidth) : pos.width,
+        left: safeLeft,
+        width: popoverWidth,
+        minWidth: minWidth ?? 240,
       }}
     >
       {children}
