@@ -944,30 +944,28 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       {/* ── Transaction Type (inline on the same page) ── */}
       {mode === 'create' && (
         <div className="rounded-lg border border-slate-200 bg-white px-5 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">
-                Transaction Type
-              </span>
-              <span className="text-sm font-semibold text-slate-800">{docTypeLabels[docType] || docType}</span>
-            </div>
-            {/* Doc type grid — icon buttons, active one highlighted */}
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {Object.entries(DOC_TYPE_META).map(([dt, m]) => (
-                  <button
-                    key={dt}
-                    onClick={() => updateDocType(dt as DocType)}
-                    className={`flex flex-col items-center gap-1.5 rounded border px-3 py-2.5 text-sm transition-colors ${
-                      docType === dt
-                        ? m.activeClasses
-                        : m.inactiveClasses
-                    }`}
-                  >
-                    {m.icon}
-                    <span className={`leading-tight ${m.textClasses}`}>{m.shortLabel}</span>
-                  </button>
-                ))}
-            </div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">
+              Transaction Type
+            </span>
+            <span className="text-sm font-semibold text-slate-800">{docTypeLabels[docType] || docType}</span>
+          </div>
+          {/* Doc type grid — icon buttons, active one highlighted */}
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(DOC_TYPE_META).map(([dt, m]) => (
+                <button
+                  key={dt}
+                  onClick={() => updateDocType(dt as DocType)}
+                  className={`flex flex-col items-center gap-1.5 rounded border px-3 py-2.5 text-sm transition-colors ${
+                    docType === dt
+                      ? m.activeClasses
+                      : m.inactiveClasses
+                  }`}
+                >
+                  {m.icon}
+                  <span className={`leading-tight ${m.textClasses}`}>{m.shortLabel}</span>
+                </button>
+              ))}
           </div>
           <p className="mt-1 text-xs text-slate-500">
             Pick a type — it stays in the URL ({`type=${docType}`}) and survives refresh.

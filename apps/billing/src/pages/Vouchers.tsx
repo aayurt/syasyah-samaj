@@ -987,7 +987,7 @@ export default function Vouchers() {
                 <Plus size={14} strokeWidth={2} />
                 Quick create
               </span>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              <div className="flex flex-wrap gap-2">
                 {Object.entries(DOC_TYPE_META).map(([dt, m]) => (
                   <button
                     key={dt}
