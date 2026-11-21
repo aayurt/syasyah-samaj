@@ -993,7 +993,7 @@ export default function Vouchers() {
                     key={dt}
                     onClick={() => openNewType(dt as DocType)}
                     aria-label={m.shortLabel}
-                    className={`flex flex-col items-center gap-1.5 rounded border px-3 py-2.5 text-sm transition-colors ${
+                    className={`flex flex-col items-center gap-1.5 rounded border w-28 px-3 py-2.5 text-sm transition-colors ${
                       'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >

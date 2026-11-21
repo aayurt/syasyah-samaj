@@ -956,7 +956,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                 <button
                   key={dt}
                   onClick={() => updateDocType(dt as DocType)}
-                  className={`flex flex-col items-center gap-1.5 rounded border px-3 py-2.5 text-sm transition-colors ${
+                  className={`flex flex-col items-center gap-1.5 rounded border w-28 px-3 py-2.5 text-sm transition-colors ${
                     docType === dt
                       ? m.activeClasses
                       : m.inactiveClasses
