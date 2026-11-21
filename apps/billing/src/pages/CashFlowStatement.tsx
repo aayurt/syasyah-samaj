@@ -6,18 +6,18 @@
  * ================================================================ */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, FileText, Printer, Download, Calculator } from 'lucide-react'
+import { Calculator } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { api, fmt, list } from '../lib/api'
+import { api, list } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { ReportLayout, DateFilter } from '../components/ReportLayout'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useT } from '../lib/i18n'
 import type { Account, LedgerRow } from '../lib/types'
-import NepaliDateInput from '../components/NepaliDateInput'
 
 const QUICK_RANGES = [
   { label: 'This Month', from: () => monthStart(0), to: () => monthEnd(0) },
@@ -41,7 +41,6 @@ export default function CashFlowStatement() {
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const t = useT()
-  const { formatDate } = useCalendar()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [cashAccounts, setCashAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(false)
@@ -75,7 +74,6 @@ export default function CashFlowStatement() {
     setLoading(true)
     setError('')
     try {
-      // Fetch ledger for all cash/bank accounts in parallel
       const ledgerPromises = cashAccounts.map((acct) => {
         const q: any = {
           account: String(acct.id),
@@ -87,7 +85,6 @@ export default function CashFlowStatement() {
       })
       const allLedgers = await Promise.all(ledgerPromises)
 
-      // Calculate opening balance for each cash account (before `from` date)
       let totalOpening = 0
       for (let i = 0; i < cashAccounts.length; i++) {
         const acct = cashAccounts[i]
@@ -102,7 +99,6 @@ export default function CashFlowStatement() {
       }
       setOpeningCash(totalOpening)
 
-      // Build cash flow sections
       const operating: { label: string; amount: number }[] = []
       const investing: { label: string; amount: number }[] = []
       const financing: { label: string; amount: number }[] = []
@@ -116,11 +112,7 @@ export default function CashFlowStatement() {
           const movement = row.debit - row.credit
           totalCashMovement += movement
 
-          // Simple classification based on counterparty account type
-          // In a full implementation, this would use account mappings
-          const label = `${acct.code} ${acct.name}: ${row.narration || '—'} (${row.docType || 'JV'} ${row.docNumber || ''})`.trim()
-          
-          // Default to operating for now; can be enhanced with account mappings
+          const label = `${acct.code} ${acct.name}: ${row.narration || '—'} (${row.docType || 'JV'} ${row.docNumber || '')}`.trim()
           operating.push({ label, amount: movement })
         }
       }
@@ -147,7 +139,6 @@ export default function CashFlowStatement() {
   const netChange = useMemo(() => sections.reduce((s, sec) => s + sec.total, 0), [sections])
 
   const exportCsv = () => {
-    const headers = ['', 'Description', 'Amount', '']
     const rows: (string | number)[][] = []
     rows.push(['Cash Flow Statement', '', '', ''])
     rows.push(['Period', `${from || 'Earliest'} to ${to || 'Latest'}`, '', ''])
@@ -165,7 +156,7 @@ export default function CashFlowStatement() {
     rows.push(['', t('reports.netChange', 'Net Change in Cash'), netChange, ''])
     rows.push(['', t('reports.closingCash', 'Closing Cash & Bank'), closingCash, ''])
 
-    downloadCsv(`cash-flow-${from || 'all'}-${to || 'all'}.csv`, headers, rows)
+    downloadCsv(`cash-flow-${from || 'all'}-${to || 'all'}.csv`, ['', 'Description', 'Amount', ''], rows)
   }
 
   const exportPdf = () => {
@@ -185,179 +176,146 @@ export default function CashFlowStatement() {
       meta: [
         ['Period', `${from || 'Earliest'} to ${to || 'Latest'}`],
         ['Generated', new Date().toLocaleString()],
-        ['Opening Cash', fmt(openingCash)],
-        ['Net Change', fmt(netChange)],
-        ['Closing Cash', fmt(closingCash)],
+        ['Opening Cash', String(openingCash)],
+        ['Net Change', String(netChange)],
+        ['Closing Cash', String(closingCash)],
       ],
       tables,
     })
   }
 
   return (
-    <div className="w-full pb-28">
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between py-4">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/reports')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="text-lg font-semibold text-slate-900">{t('reports.cashFlowStatement', 'Cash Flow Statement')}</h1>
-            <p className="text-sm text-slate-500">{t('reports.cashFlowDesc', 'Cash and bank movements by activity. Built from posted entries.')}</p>
+    <ReportLayout
+      title={t('reports.cashFlowStatement', 'Cash Flow Statement')}
+      titleKey="reports.cashFlowStatement"
+      description={t('reports.cashFlowDesc', 'Cash and bank movements by activity. Built from posted entries.')}
+      descriptionKey="reports.cashFlowDesc"
+      backTo="/reports"
+      loading={loading}
+      error={error}
+      hasData={sections.length > 0}
+      onExportCsv={exportCsv}
+      onExportPdf={exportPdf}
+      pdfTitle={t('reports.cashFlowStatement', 'Cash Flow Statement')}
+      pdfMeta={[
+        ['Period', `${from || 'Earliest'} to ${to || 'Latest'}`],
+        ['Generated', new Date().toLocaleString()],
+        ['Opening Cash', String(openingCash)],
+        ['Net Change', String(netChange)],
+        ['Closing Cash', String(closingCash)],
+      ]}
+    >
+      <div className="mt-4">
+        <DateFilter from={from} to={to} onFromChange={setFrom} onToChange={setTo} quickRanges={QUICK_RANGES} />
+
+        {loading && <ReportSkeleton sections={3} />}
+
+        {!loading && sections.length === 0 && !error && (
+          <div className="mt-6 rounded-lg border border-slate-200 bg-white px-6 py-12 text-center">
+            <Calculator size={18} className="mx-auto mb-2 text-slate-400" />
+            <p className="text-sm text-slate-500">{t('reports.noCashFlowData', 'No cash/bank movements for the selected period.')}</p>
           </div>
-        </div>
-        <div className="flex gap-2">
-          {sections.length > 0 && (
-            <>
-              <button onClick={exportCsv} className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <Download size={14} /> {t('common.export', 'Export')}
-              </button>
-              <button onClick={exportPdf} className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <FileText size={14} /> {t('common.pdf', 'PDF')}
-              </button>
-              <button onClick={() => window.print()} className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <Printer size={14} /> {t('common.print', 'Print')}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+        )}
 
-      {error && (
-        <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* ── Filters ── */}
-      <div className="mt-4 flex flex-wrap items-end gap-4 px-2">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-500">{t('reports.from', 'From')}</label>
-          <NepaliDateInput value={from} onChange={(v) => setFrom(v)} disabled={loading} />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-500">{t('reports.to', 'To')}</label>
-          <NepaliDateInput value={to} onChange={(v) => setTo(v)} disabled={loading} />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-500">{t('reports.quick', 'Quick')}</label>
-          <div className="flex gap-1">
-            {QUICK_RANGES.map((r) => (
-              <button key={r.label} type="button" onClick={() => { setFrom(r.from()); setTo(r.to()); }} disabled={loading} className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-40">
-                {r.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {loading && <ReportSkeleton sections={3} />}
-
-      {!loading && sections.length === 0 && !error && (
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white px-6 py-12 text-center">
-          <Calculator size={18} className="mx-auto mb-2 text-slate-400" />
-          <p className="text-sm text-slate-500">{t('reports.noCashFlowData', 'No cash/bank movements for the selected period.')}</p>
-        </div>
-      )}
-
-      {sections.length > 0 && (
-        <div className="mt-6 space-y-6">
-          {/* Summary cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-4">
-              <p className="text-xs text-emerald-700 font-medium">{t('reports.openingCash', 'Opening Cash & Bank')}</p>
-              <p className="text-2xl font-mono font-semibold text-emerald-900">{fmt(openingCash)}</p>
-            </div>
-            <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-              <p className="text-xs text-blue-700 font-medium">{t('reports.netChange', 'Net Change in Cash')}</p>
-              <p className="text-2xl font-mono font-semibold text-blue-900">{fmt(netChange)}</p>
-            </div>
-            <div className="rounded-lg border border-slate-100 bg-white p-4">
-              <p className="text-xs text-slate-700 font-medium">{t('reports.closingCash', 'Closing Cash & Bank')}</p>
-              <p className="text-2xl font-mono font-semibold text-slate-900">{fmt(closingCash)}</p>
-            </div>
-          </div>
-
-          {/* Sections */}
-          {sections.map((sec) => (
-            <div key={sec.title} className="rounded-lg border border-slate-200 bg-white overflow-x-auto">
-              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 font-medium text-slate-800">
-                {sec.title}
+        {!loading && sections.length > 0 && (
+          <div className="mt-6 space-y-6">
+            {/* Summary cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-4">
+                <p className="text-xs text-emerald-700 font-medium">{t('reports.openingCash', 'Opening Cash & Bank')}</p>
+                <p className="text-2xl font-mono font-semibold text-emerald-900">{openingCash.toFixed(2)}</p>
               </div>
-              {sec.items.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-slate-500">
-                  {t('reports.noItems', 'No items in this section.')}
+              <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                <p className="text-xs text-blue-700 font-medium">{t('reports.netChange', 'Net Change in Cash')}</p>
+                <p className="text-2xl font-mono font-semibold text-blue-900">{netChange.toFixed(2)}</p>
+              </div>
+              <div className="rounded-lg border border-slate-100 bg-white p-4">
+                <p className="text-xs text-slate-700 font-medium">{t('reports.closingCash', 'Closing Cash & Bank')}</p>
+                <p className="text-2xl font-mono font-semibold text-slate-900">{closingCash.toFixed(2)}</p>
+              </div>
+            </div>
+
+            {/* Sections */}
+            {sections.map((sec) => (
+              <div key={sec.title} className="rounded-lg border border-slate-200 bg-white overflow-x-auto">
+                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 font-medium text-slate-800">
+                  {sec.title}
                 </div>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                      <th className="px-3 py-3 text-left">{t('common.description', 'Description')}</th>
-                      <th className="px-3 py-3 text-right w-32 font-mono">{t('common.amount', 'Amount')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sec.items.map((item, idx) => (
-                      <tr key={idx} className="border-b border-slate-50">
-                        <td className="px-3 py-2 text-left text-sm text-slate-700 truncate max-w-md">{item.label}</td>
-                        <td className="px-3 py-2 text-right font-mono text-xs text-slate-700">{item.amount.toFixed(2)}</td>
+                {sec.items.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-slate-500">
+                    {t('reports.noItems', 'No items in this section.')}
+                  </div>
+                ) : (
+                  <table className="w-full text-sm min-w-[600px]">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                        <th className="px-3 py-3 text-left">{t('common.description', 'Description')}</th>
+                        <th className="px-3 py-3 text-right w-32 font-mono">{t('common.amount', 'Amount')}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="border-t border-slate-200 bg-slate-50">
-                    <tr>
-                      <td className="px-3 py-2 text-right text-sm font-semibold text-slate-800">{t('common.total', 'Total')}</td>
-                      <td className="px-3 py-2 text-right font-mono text-xs font-semibold text-slate-800">{sec.total.toFixed(2)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              )}
-            </div>
-          ))}
-
-          {/* Reconciliation */}
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">{t('reports.reconciliation', 'Reconciliation')}</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">{t('reports.openingCash', 'Opening Cash & Bank')}</span>
-                  <span className="font-mono font-medium">{fmt(openingCash)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">{t('reports.netOperating', 'Net Operating Activities')}</span>
-                  <span className="font-mono font-medium">{fmt(sections[0]?.total || 0)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">{t('reports.netInvesting', 'Net Investing Activities')}</span>
-                  <span className="font-mono font-medium">{fmt(sections[1]?.total || 0)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">{t('reports.netFinancing', 'Net Financing Activities')}</span>
-                  <span className="font-mono font-medium">{fmt(sections[2]?.total || 0)}</span>
-                </div>
-                <div className="border-t border-slate-200 pt-2 flex justify-between font-semibold">
-                  <span>{t('reports.closingCash', 'Closing Cash & Bank')}</span>
-                  <span className="font-mono">{fmt(closingCash)}</span>
-                </div>
+                    </thead>
+                    <tbody>
+                      {sec.items.map((item, idx) => (
+                        <tr key={idx} className="border-b border-slate-50">
+                          <td className="px-3 py-2 text-left text-sm text-slate-700 truncate max-w-md">{item.label}</td>
+                          <td className="px-3 py-2 text-right font-mono text-xs text-slate-700">{item.amount.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="border-t border-slate-200 bg-slate-50">
+                      <tr>
+                        <td className="px-3 py-2 text-right text-sm font-semibold text-slate-800">{t('common.total', 'Total')}</td>
+                        <td className="px-3 py-2 text-right font-mono text-xs font-semibold text-slate-800">{sec.total.toFixed(2)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                )}
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">{t('reports.netChange', 'Net Change in Cash')}</span>
-                  <span className="font-mono font-medium">{fmt(netChange)}</span>
+            ))}
+
+            {/* Reconciliation */}
+            <div className="rounded-lg border border-slate-200 bg-white p-4">
+              <h3 className="text-sm font-semibold text-slate-800 mb-3">{t('reports.reconciliation', 'Reconciliation')}</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">{t('reports.openingCash', 'Opening Cash & Bank')}</span>
+                    <span className="font-mono font-medium">{openingCash.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">{t('reports.netOperating', 'Net Operating Activities')}</span>
+                    <span className="font-mono font-medium">{sections[0]?.total.toFixed(2) || '0.00'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">{t('reports.netInvesting', 'Net Investing Activities')}</span>
+                    <span className="font-mono font-medium">{sections[1]?.total.toFixed(2) || '0.00'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">{t('reports.netFinancing', 'Net Financing Activities')}</span>
+                    <span className="font-mono font-medium">{sections[2]?.total.toFixed(2) || '0.00'}</span>
+                  </div>
+                  <div className="border-t border-slate-200 pt-2 flex justify-between font-semibold">
+                    <span>{t('reports.closingCash', 'Closing Cash & Bank')}</span>
+                    <span className="font-mono">{closingCash.toFixed(2)}</span>
+                  </div>
                 </div>
-                <div className="text-xs text-slate-500">
-                  {t('reports.reconciliationNote', 'Opening Cash + Net Change = Closing Cash')}
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">{t('reports.netChange', 'Net Change in Cash')}</span>
+                    <span className="font-mono font-medium">{netChange.toFixed(2)}</span>
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {t('reports.reconciliationNote', 'Opening Cash + Net Change = Closing Cash')}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="mt-2">
         <DataStatus />
       </div>
-    </div>
+    </ReportLayout>
   )
 }

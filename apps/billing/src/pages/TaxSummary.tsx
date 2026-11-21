@@ -5,18 +5,17 @@
  * ================================================================ */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Download, FileText, Printer } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api, fmt, list } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { ReportLayout, DateFilter } from '../components/ReportLayout'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useT } from '../lib/i18n'
 import type { Document, Party, TaxType } from '../lib/types'
-import NepaliDateInput from '../components/NepaliDateInput'
 
 const QUICK_RANGES = [
   { label: 'This Month', from: () => monthStart(0), to: () => monthEnd(0) },
@@ -78,6 +77,7 @@ export default function TaxSummary() {
       ])
       const taxTypeMap = new Map<number, TaxType>(tx.docs.map((t) => [t.id, t]))
       const summary = new Map<number, TaxSummaryRow>()
+
       for (const doc of d.docs) {
         if (doc.status !== 'posted') continue
         if (!doc.taxLines?.length) continue
@@ -140,114 +140,81 @@ export default function TaxSummary() {
   })
 
   return (
-    <div className="w-full pb-28">
-      <div className="flex items-center justify-between py-4">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/reports')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="text-lg font-semibold text-slate-900">{t('reports.taxSummary', 'Tax Summary')}</h1>
-            <p className="text-sm text-slate-500">{t('reports.taxSummaryDesc', 'Consolidated tax by type for sales and purchases')}</p>
+    <ReportLayout
+      title={t('reports.taxSummary', 'Tax Summary')}
+      titleKey="reports.taxSummary"
+      description={t('reports.taxSummaryDesc', 'Consolidated tax by type for sales and purchases')}
+      descriptionKey="reports.taxSummaryDesc"
+      backTo="/reports"
+      loading={loading}
+      error={error}
+      hasData={rows.length > 0}
+      onExportCsv={csv}
+      onExportPdf={pdf}
+      pdfTitle={t('reports.taxSummary', 'Tax Summary')}
+      pdfMeta={[['Period', `${from || 'Earliest'} to ${to || 'Latest'}`], ['Generated', new Date().toLocaleString()]]}
+    >
+      <div className="mt-4">
+        <DateFilter from={from} to={to} onFromChange={setFrom} onToChange={setTo} quickRanges={QUICK_RANGES} />
+
+        {loading && <ReportSkeleton sections={1} />}
+
+        {!loading && rows.length === 0 && !error && (
+          <div className="mt-6 rounded-lg border border-slate-200 bg-white px-6 py-12 text-center">
+            <p className="text-sm text-slate-500">{t('reports.noTaxData', 'No tax data for the selected period.')}</p>
           </div>
-        </div>
-        <div className="flex gap-2">
-          {rows.length > 0 && (
-            <>
-              <button onClick={csv} className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <Download size={14} /> {t('common.export', 'Export')}
-              </button>
-              <button onClick={pdf} className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <FileText size={14} /> {t('common.pdf', 'PDF')}
-              </button>
-              <button onClick={() => window.print()} className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <Printer size={14} /> {t('common.print', 'Print')}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+        )}
 
-      {error && <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">{error}</div>}
-
-      <div className="mt-4 flex flex-wrap items-end gap-4 px-2">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-500">{t('reports.from', 'From Date')}</label>
-          <NepaliDateInput value={from} onChange={(v) => setFrom(v)} disabled={loading} />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-500">{t('reports.to', 'To Date')}</label>
-          <NepaliDateInput value={to} onChange={(v) => setTo(v)} disabled={loading} />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-500">{t('reports.quick', 'Quick')}</label>
-          <div className="flex gap-1">
-            {QUICK_RANGES.map((r) => (
-              <button key={r.label} type="button" onClick={() => { setFrom(r.from()); setTo(r.to()); }} disabled={loading} className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-40">
-                {r.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {loading && <ReportSkeleton sections={1} />}
-
-      {!loading && rows.length === 0 && !error && (
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white px-6 py-12 text-center">
-          <p className="text-sm text-slate-500">{t('reports.noTaxData', 'No tax data for the selected period.')}</p>
-        </div>
-      )}
-
-      {rows.length > 0 && (
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-3 py-3">{t('reports.taxCode', 'Tax Code')}</th>
-                <th className="px-3 py-3">{t('reports.taxName', 'Tax Name')}</th>
-                <th className="px-3 py-3 text-right">{t('reports.rate', 'Rate')}</th>
-                <th className="px-3 py-3">{t('reports.nature', 'Nature')}</th>
-                <th className="px-3 py-3 text-right">{t('reports.salesBase', 'Sales Base')}</th>
-                <th className="px-3 py-3 text-right">{t('reports.salesTax', 'Sales Tax')}</th>
-                <th className="px-3 py-3 text-right">{t('reports.purchaseBase', 'Purchase Base')}</th>
-                <th className="px-3 py-3 text-right">{t('reports.purchaseTax', 'Purchase Tax')}</th>
-                <th className="px-3 py-3 text-right">{t('reports.netBase', 'Net Base')}</th>
-                <th className="px-3 py-3 text-right">{t('reports.netTax', 'Net Tax')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
-                  <td className="px-3 py-2">{r.taxType.code}</td>
-                  <td className="px-3 py-2">{r.taxType.name}</td>
-                  <td className="px-3 py-2 text-right font-mono">{r.taxType.rate}%</td>
-                  <td className="px-3 py-2 capitalize">{r.taxType.nature}</td>
-                  <td className="px-3 py-2 text-right font-mono">{fmt(r.salesBase)}</td>
-                  <td className="px-3 py-2 text-right font-mono">{fmt(r.salesTax)}</td>
-                  <td className="px-3 py-2 text-right font-mono">{fmt(r.purchaseBase)}</td>
-                  <td className="px-3 py-2 text-right font-mono">{fmt(r.purchaseTax)}</td>
-                  <td className="px-3 py-2 text-right font-mono">{fmt(r.netBase)}</td>
-                  <td className="px-3 py-2 text-right font-mono">{fmt(r.netTax)}</td>
+        {rows.length > 0 && (
+          <div className="mt-6 rounded-lg border border-slate-200 bg-white overflow-x-auto">
+            <table className="w-full text-sm min-w-[700px]">
+              <thead>
+                <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <th className="px-3 py-3">{t('reports.taxCode', 'Tax Code')}</th>
+                  <th className="px-3 py-3">{t('reports.taxName', 'Tax Name')}</th>
+                  <th className="px-3 py-3 text-right">{t('reports.rate', 'Rate')}</th>
+                  <th className="px-3 py-3">{t('reports.nature', 'Nature')}</th>
+                  <th className="px-3 py-3 text-right">{t('reports.salesBase', 'Sales Base')}</th>
+                  <th className="px-3 py-3 text-right">{t('reports.salesTax', 'Sales Tax')}</th>
+                  <th className="px-3 py-3 text-right">{t('reports.purchaseBase', 'Purchase Base')}</th>
+                  <th className="px-3 py-3 text-right">{t('reports.purchaseTax', 'Purchase Tax')}</th>
+                  <th className="px-3 py-3 text-right">{t('reports.netBase', 'Net Base')}</th>
+                  <th className="px-3 py-3 text-right">{t('reports.netTax', 'Net Tax')}</th>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot className="border-t border-slate-200 bg-slate-50">
-              <tr>
-                <td className="px-3 py-2 font-semibold" colSpan={4}>{t('common.total', 'Total')}</td>
-                <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.salesBase)}</td>
-                <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.salesTax)}</td>
-                <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.purchaseBase)}</td>
-                <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.purchaseTax)}</td>
-                <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.netBase)}</td>
-                <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.netTax)}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
+                    <td className="px-3 py-2">{r.taxType.code}</td>
+                    <td className="px-3 py-2">{r.taxType.name}</td>
+                    <td className="px-3 py-2 text-right font-mono">{r.taxType.rate}%</td>
+                    <td className="px-3 py-2 capitalize">{r.taxType.nature}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(r.salesBase)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(r.salesTax)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(r.purchaseBase)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(r.purchaseTax)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(r.netBase)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(r.netTax)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="border-t border-slate-200 bg-slate-50">
+                <tr>
+                  <td className="px-3 py-2 font-semibold" colSpan={4}>{t('common.total', 'Total')}</td>
+                  <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.salesBase)}</td>
+                  <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.salesTax)}</td>
+                  <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.purchaseBase)}</td>
+                  <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.purchaseTax)}</td>
+                  <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.netBase)}</td>
+                  <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.netTax)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
 
       <div className="mt-2"><DataStatus /></div>
-    </div>
+    </ReportLayout>
   )
 }

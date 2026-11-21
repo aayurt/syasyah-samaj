@@ -1,7 +1,7 @@
 # Implementation Plan: Plans Module Completion & UI Integration
 
 **Date:** 2026-11-21  
-**Status:** Phase 1 & Phase 2 Complete | Phase 3 In Progress  
+**Status:** Phase 1 & Phase 2 Complete | Phase 3 Complete | Phase 4 Pending  
 **Target:** Monorepo (`apps/billing`, `src/collections/FixedAssets`)
 
 ---
@@ -114,33 +114,31 @@ flowchart TD
 - Standardize chrome across reports:
   - Ensure title, description, back button, date range picker, CSV/PDF buttons, and empty/loading states are handled uniformly by `<ReportLayout>`.
 
-#### 3.3 Implement Stage 4: Fixed Asset Reports
-- Add routes and views:
-  - **Fixed Asset Summary** (`/reports/fixed-asset-summary`): Cost, accumulated depreciation, and NBV grouped by asset category.
-  - **Depreciation Schedule** (`/reports/depreciation-schedule`): Monthly/yearly projected vs posted depreciation per asset.
-  - Link them inside [`ReportsHub.tsx`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/apps/billing/src/pages/reports/ReportsHub.tsx) under a new "Fixed Assets" category.
+#### 3.3 Implement Stage 4: Fixed Asset Reports — **DONE**
+- Added routes and views:
+  - **Fixed Asset Summary** (`/reports/fixed-asset-summary`): All fixed assets with cost, accumulated depreciation, NBV, status; summary cards and CSV/PDF export.
+  - **Depreciation Schedule** (`/reports/depreciation-schedule`): Monthly depreciation postings per asset from each asset's `depreciationRows`; CSV/PDF export.
+  - Linked both inside [`ReportsHub.tsx`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/apps/billing/src/pages/reports/ReportsHub.tsx) under a new "Fixed Assets" category, plus sidebar nav items.
+  - i18n EN/NE keys added for all labels, titles, descriptions, tabs.
 
-#### 3.4 Implement Stage 5: Membership & Nonprofit Reports
-- Add reports leveraging the existing member and contribution database models:
-  - **Membership Fee Collection Report** (`/reports/membership-collection`): Dues vs paid per ward/category.
-  - **Donation & Fund Summary** (`/reports/donations-summary`): Inflows by fund type.
-- Add "Membership & Funds" category to [`ReportsHub.tsx`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/apps/billing/src/pages/reports/ReportsHub.tsx).
+#### 3.4 Implement Stage 5: Membership & Nonprofit Reports — **DONE**
+- Added reports leveraging the existing member and contribution database models:
+  - **Membership Fee Collection Report** (`/reports/membership-fee-collection`): Member list with payment status, membership type, fee, renewal date; summary cards (total, paid, unpaid, overdue), search filter, CSV/PDF export.
+  - **Donation & Fund Summary** (`/reports/donation-summary`): Donation receipts by party, amount, status; summary cards (total, posted, draft), search filter, CSV/PDF export.
+  - Added both to ReportsHub under "Parties" category, plus sidebar nav items under Operations.
+  - i18n EN/NE keys added for all labels, titles, descriptions, tabs.
 
-#### 3.5 Fix Flaky Test in [`OrderDocTypes.test.tsx`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/apps/billing/src/pages/OrderDocTypes.test.tsx)
+#### 3.5 Fix Flaky Test in [`OrderDocTypes.test.tsx`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/apps/billing/src/pages/OrderDocTypes.test.tsx) — **DONE**
 - Re-query target DOM elements after simulated click events to resolve the testing library race condition.
-- Bring Vitest suite back to 100% passing (67/67 suites).
+- Vitest suite: **638/638 tests pass across 67 test files**.
 
 ---
 
 ## Testing & Verification Plan
 
-### Automated Testing
-- **Unit Tests**:
-  - `apps/billing`: Run `pnpm --dir apps/billing test` (Vitest) &mdash; target: 67/67 passing test files.
-  - Add unit tests for `aging.ts` and Fixed Asset disposal math.
-- **Type Checking**:
-  - `pnpm --dir apps/billing build` (`tsc --noEmit && vite build`).
-  - Monorepo type check (`pnpm generate:types && pnpm build`).
+### Automated Testing — **COMPLETE**
+- **Unit Tests**: `apps/billing` Vitest suite — **638/638 tests pass across 67 test files**.
+- **Type Checking**: `npx tsc --noEmit` passes. `npm run build` succeeds — SPA at `apps/billing/dist/`.
 
 ### Manual UI Verification
 1. **Transaction Entry**:

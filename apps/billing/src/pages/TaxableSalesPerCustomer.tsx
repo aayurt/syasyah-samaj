@@ -5,20 +5,19 @@
  * ================================================================ */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Download, FileText, Printer, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api, fmt, list } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { ReportLayout, DateFilter } from '../components/ReportLayout'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useT } from '../lib/i18n'
 import type { Document, Party, TaxType } from '../lib/types'
-import NepaliDateInput from '../components/NepaliDateInput'
 import SearchBox from '../components/SearchBox'
-import React from 'react'
 
 const QUICK_RANGES = [
   { label: 'This Month', from: () => monthStart(0), to: () => monthEnd(0) },
@@ -128,7 +127,6 @@ export default function TaxableSalesPerCustomer() {
     totalTax: s.totalTax + r.totalTax,
   }), { totalBase: 0, totalTax: 0 }), [filtered])
 
-  // Collect all tax types for column headers
   const allTaxTypes = useMemo(() => {
     const set = new Set<number>()
     filtered.forEach((r) => r.taxBreakdown.forEach((_, id) => set.add(id)))
@@ -167,137 +165,104 @@ export default function TaxableSalesPerCustomer() {
   })
 
   return (
-    <div className="w-full pb-28">
-      <div className="flex items-center justify-between py-4">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/reports')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="text-lg font-semibold text-slate-900">{t('reports.taxableSalesPerCustomer', 'Taxable Sales per Customer')}</h1>
-            <p className="text-sm text-slate-500">{t('reports.taxableSalesPerCustomerDesc', 'Taxable sales and tax amounts broken down by customer and tax type')}</p>
+    <ReportLayout
+      title={t('reports.taxableSalesPerCustomer', 'Taxable Sales per Customer')}
+      titleKey="reports.taxableSalesPerCustomer"
+      description={t('reports.taxableSalesPerCustomerDesc', 'Taxable sales and tax amounts broken down by customer and tax type')}
+      descriptionKey="reports.taxableSalesPerCustomerDesc"
+      backTo="/reports"
+      loading={loading}
+      error={error}
+      hasData={filtered.length > 0}
+      onExportCsv={csv}
+      onExportPdf={pdf}
+      pdfTitle={t('reports.taxableSalesPerCustomer', 'Taxable Sales per Customer')}
+      pdfMeta={[['Period', `${from || 'Earliest'} to ${to || 'Latest'}`], ['Generated', new Date().toLocaleString()]]}
+    >
+      <div className="mt-4">
+        <DateFilter from={from} to={to} onFromChange={setFrom} onToChange={setTo} quickRanges={QUICK_RANGES} />
+
+        <div className="mt-4 px-2">
+          <SearchBox value={query} onChange={setQuery} placeholder={t('common.search', 'Search customers...')} />
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 px-2">
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs text-slate-500">{t('reports.customers', 'Customers')}</p>
+            <p className="text-lg font-mono font-semibold text-slate-900">{filtered.length}</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs text-slate-500">{t('reports.totalTaxable', 'Total Taxable')}</p>
+            <p className="text-lg font-mono font-semibold text-slate-900">{fmt(totals.totalBase)}</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs text-slate-500">{t('reports.totalTax', 'Total Tax')}</p>
+            <p className="text-lg font-mono font-semibold text-slate-900">{fmt(totals.totalTax)}</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          {filtered.length > 0 && (
-            <>
-              <button onClick={csv} className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <Download size={14} /> {t('common.export', 'Export')}
-              </button>
-              <button onClick={pdf} className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <FileText size={14} /> {t('common.pdf', 'PDF')}
-              </button>
-              <button onClick={() => window.print()} className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <Printer size={14} /> {t('common.print', 'Print')}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
 
-      {error && <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">{error}</div>}
+        {loading && <ReportSkeleton sections={1} />}
 
-      <div className="mt-4 flex flex-wrap items-end gap-4 px-2">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-500">{t('reports.from', 'From Date')}</label>
-          <NepaliDateInput value={from} onChange={(v) => setFrom(v)} disabled={loading} />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-500">{t('reports.to', 'To Date')}</label>
-          <NepaliDateInput value={to} onChange={(v) => setTo(v)} disabled={loading} />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-500">{t('reports.quick', 'Quick')}</label>
-          <div className="flex gap-1">
-            {QUICK_RANGES.map((r) => (
-              <button key={r.label} type="button" onClick={() => { setFrom(r.from()); setTo(r.to()); }} disabled={loading} className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-40">
-                {r.label}
-              </button>
-            ))}
+        {!loading && filtered.length === 0 && !error && (
+          <div className="mt-6 rounded-lg border border-slate-200 bg-white px-6 py-12 text-center">
+            <Search size={18} className="mx-auto mb-2 text-slate-400" />
+            <p className="text-sm text-slate-500">{t('reports.noData', 'No data for the selected period.')}</p>
           </div>
-        </div>
-      </div>
+        )}
 
-      <div className="mt-4 px-2">
-        <SearchBox value={query} onChange={setQuery} placeholder={t('common.search', 'Search customers...')} />
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 px-2">
-        <div className="rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs text-slate-500">{t('reports.customers', 'Customers')}</p>
-          <p className="text-lg font-mono font-semibold text-slate-900">{filtered.length}</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs text-slate-500">{t('reports.totalTaxable', 'Total Taxable')}</p>
-          <p className="text-lg font-mono font-semibold text-slate-900">{fmt(totals.totalBase)}</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs text-slate-500">{t('reports.totalTax', 'Total Tax')}</p>
-          <p className="text-lg font-mono font-semibold text-slate-900">{fmt(totals.totalTax)}</p>
-        </div>
-      </div>
-
-      {loading && <ReportSkeleton sections={1} />}
-
-      {!loading && filtered.length === 0 && !error && (
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white px-6 py-12 text-center">
-          <Search size={18} className="mx-auto mb-2 text-slate-400" />
-          <p className="text-sm text-slate-500">{t('reports.noData', 'No data for the selected period.')}</p>
-        </div>
-      )}
-
-      {filtered.length > 0 && (
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-3 py-3">{t('common.customer', 'Customer')}</th>
-                <th className="px-3 py-3 text-right">{t('reports.totalTaxable', 'Total Taxable')}</th>
-                <th className="px-3 py-3 text-right">{t('reports.totalTax', 'Total Tax')}</th>
-                {allTaxTypes.map((tt) => (
-                  <React.Fragment key={tt.id}>
-                    <th className="px-3 py-3 text-right">{tt.code} Base</th>
-                    <th className="px-3 py-3 text-right">{tt.code} Tax</th>
-                  </React.Fragment>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r, i) => (
-                <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
-                  <td className="px-3 py-2">{r.party.name}</td>
-                  <td className="px-3 py-2 text-right font-mono">{fmt(r.totalBase)}</td>
-                  <td className="px-3 py-2 text-right font-mono">{fmt(r.totalTax)}</td>
-                  {allTaxTypes.map((tt) => {
-                    const b = r.taxBreakdown.get(tt.id)
-                    return (
-                      <React.Fragment key={tt.id}>
-                        <td className="px-3 py-2 text-right font-mono">{b ? fmt(b.base) : '0.00'}</td>
-                        <td className="px-3 py-2 text-right font-mono">{b ? fmt(b.tax) : '0.00'}</td>
-                      </React.Fragment>
-                    )
-                  })}
+        {filtered.length > 0 && (
+          <div className="mt-6 rounded-lg border border-slate-200 bg-white overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <th className="px-3 py-3">{t('common.customer', 'Customer')}</th>
+                  <th className="px-3 py-3 text-right">{t('reports.totalTaxable', 'Total Taxable')}</th>
+                  <th className="px-3 py-3 text-right">{t('reports.totalTax', 'Total Tax')}</th>
+                  {allTaxTypes.map((tt) => (
+                    <React.Fragment key={tt.id}>
+                      <th className="px-3 py-3 text-right">{tt.code} Base</th>
+                      <th className="px-3 py-3 text-right">{tt.code} Tax</th>
+                    </React.Fragment>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-            <tfoot className="border-t border-slate-200 bg-slate-50">
-              <tr>
-                <td className="px-3 py-2 font-semibold text-right" colSpan={2}>{t('common.total', 'Total')}</td>
-                <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.totalBase)}</td>
-                <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.totalTax)}</td>
-                {allTaxTypes.map(() => (
-                  <React.Fragment>
-                    <td className="px-3 py-2 text-right font-mono font-semibold"></td>
-                    <td className="px-3 py-2 text-right font-mono font-semibold"></td>
-                  </React.Fragment>
+              </thead>
+              <tbody>
+                {filtered.map((r, i) => (
+                  <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
+                    <td className="px-3 py-2">{r.party.name}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(r.totalBase)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(r.totalTax)}</td>
+                    {allTaxTypes.map((tt) => {
+                      const b = r.taxBreakdown.get(tt.id)
+                      return (
+                        <React.Fragment key={tt.id}>
+                          <td className="px-3 py-2 text-right font-mono">{b ? fmt(b.base) : '0.00'}</td>
+                          <td className="px-3 py-2 text-right font-mono">{b ? fmt(b.tax) : '0.00'}</td>
+                        </React.Fragment>
+                      )
+                    })}
+                  </tr>
                 ))}
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      )}
+              </tbody>
+              <tfoot className="border-t border-slate-200 bg-slate-50">
+                <tr>
+                  <td className="px-3 py-2 font-semibold text-right" colSpan={2}>{t('common.total', 'Total')}</td>
+                  <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.totalBase)}</td>
+                  <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(totals.totalTax)}</td>
+                  {allTaxTypes.map(() => (
+                    <React.Fragment>
+                      <td className="px-3 py-2 text-right font-mono font-semibold"></td>
+                      <td className="px-3 py-2 text-right font-mono font-semibold"></td>
+                    </React.Fragment>
+                  ))}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
 
       <div className="mt-2"><DataStatus /></div>
-    </div>
+    </ReportLayout>
   )
 }

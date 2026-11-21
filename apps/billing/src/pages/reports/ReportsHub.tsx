@@ -21,6 +21,9 @@ import {
   Truck,
   Wallet,
   AlertTriangle,
+  Building2,
+  Users,
+  Heart,
 } from 'lucide-react'
 import SearchBox from '../../components/SearchBox'
 import DataStatus from '../../components/DataStatus'
@@ -42,6 +45,7 @@ const CATEGORIES = [
   'Inventory',
   'Income Expense',
   'Business Status',
+  'Fixed Assets',
   'Tax Reports',
 ] as const
 
@@ -55,6 +59,8 @@ const REPORTS: Record<Category, ReportCard[]> = {
     { title: 'Day Book', titleKey: 'reports.dayBook', desc: 'View all of your daily transactions', descKey: 'reports.dayBookDesc', icon: BookOpenText, to: '/daybooks' },
     { title: 'Profit And Loss', titleKey: 'reports.profitAndLoss', desc: 'View your profit & loss in a given time', descKey: 'reports.profitAndLossDesc', icon: BarChart3, to: '/reports/pnl' },
     { title: 'General Ledger', titleKey: 'reports.generalLedger', desc: 'Posted journal entries by account', descKey: 'reports.generalLedgerDesc', icon: LayoutList, to: '/reports/general-ledger' },
+    { title: 'Fixed Asset Summary', titleKey: 'reports.fixedAssetSummary', desc: 'All fixed assets with cost, depreciation, and net book value', descKey: 'reports.fixedAssetSummaryDesc', icon: Building2, to: '/reports/fixed-asset-summary' },
+    { title: 'Depreciation Schedule', titleKey: 'reports.depreciationSchedule', desc: 'Monthly depreciation postings per fixed asset', descKey: 'reports.depreciationScheduleDesc', icon: Clock3, to: '/reports/depreciation-schedule' },
   ],
   Parties: [
     { title: 'Party Statement', titleKey: 'reports.partyStatement', desc: 'Check the transactions of a certain party', descKey: 'reports.partyStatementDesc', icon: FileText, to: '/reports/party-statement' },
@@ -62,6 +68,8 @@ const REPORTS: Record<Category, ReportCard[]> = {
     { title: 'Receivables', titleKey: 'reports.receivables', desc: 'Customer outstanding balances by aging period', descKey: 'reports.receivablesDesc', icon: TrendingUp, to: '/reports/receivables' },
     { title: 'Payables', titleKey: 'reports.payables', desc: 'Vendor outstanding balances by aging period', descKey: 'reports.payablesDesc', icon: TrendingDown, to: '/reports/payables' },
     { title: 'Transaction Health', titleKey: 'reports.transactionHealth', desc: 'Diagnostic audit of transaction integrity', descKey: 'reports.transactionHealthDesc', icon: AlertTriangle, to: '/reports/transaction-health' },
+    { title: 'Membership Fee Collection', titleKey: 'reports.membershipFeeCollection', desc: 'Member fee payment status and renewal dates', descKey: 'reports.membershipFeeCollectionDesc', icon: Users, to: '/reports/membership-fee-collection' },
+    { title: 'Donation Summary', titleKey: 'reports.donationSummary', desc: 'Donation receipts with party, amount, and status', descKey: 'reports.donationSummaryDesc', icon: Heart, to: '/reports/donation-summary' },
   ],
   Inventory: [
     { title: 'Low Stock Summary', titleKey: 'reports.lowStockSummary', desc: 'View all items which are getting low on quantity', descKey: 'reports.lowStockSummaryDesc', icon: TrendingDown, to: '/reports/low-stock' },

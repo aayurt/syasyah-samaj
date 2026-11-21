@@ -36,6 +36,8 @@ import {
   AlertCircle,
   CircleAlert,
   ArrowRight,
+  Clock,
+  Heart,
   type LucideIcon,
 } from 'lucide-react'
 import { authClient, canAccessBilling, useOfflineSession } from './lib/auth'
@@ -51,7 +53,7 @@ import VoucherForm from './pages/VoucherForm'
 import Parties from './pages/Parties'
 import Aging from './pages/Aging'
 import Items from './pages/Items'
-import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase, VatRegister, CashStatement, BankStatement, ExpenseCategory, IncomeCategory, StockQuantity, InventoryValuation, BalanceSheet, ProfitLoss, GeneralLedger, CashFlowStatement, Receivables, Payables, TransactionHealth, TaxSummary, TaxReconciliation, TaxableSalesPerCustomer, TaxablePurchasesPerSupplier } from './pages/reports'
+import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase, VatRegister, CashStatement, BankStatement, ExpenseCategory, IncomeCategory, StockQuantity, InventoryValuation, BalanceSheet, ProfitLoss, GeneralLedger, CashFlowStatement, Receivables, Payables, TransactionHealth, TaxSummary, TaxReconciliation, TaxableSalesPerCustomer, TaxablePurchasesPerSupplier, FixedAssetSummary, DepreciationSchedule, MembershipFeeCollection, DonationSummary } from './pages/reports'
 import Daybooks from './pages/Daybooks'
 import BankReconciliation from './pages/BankReconciliation'
 import Settings from './pages/Settings'
@@ -119,6 +121,10 @@ const navGroups: { title?: string; titleKey?: string; items: NavItem[] }[] = [
       { to: '/inventory', label: 'Inventory', labelKey: 'nav.inventory', icon: Boxes },
       { to: '/bank-reconciliation', label: 'Bank Management', labelKey: 'nav.bankReconciliation', icon: Landmark, feature: 'bankReconciliationEnabled' },
       { to: '/fixed-assets', label: 'Fixed Assets', labelKey: 'nav.fixedAssets', icon: Building2 },
+      { to: '/reports/fixed-asset-summary', label: 'Fixed Asset Summary', labelKey: 'nav.fixedAssetSummary', icon: Building2 },
+      { to: '/reports/depreciation-schedule', label: 'Depreciation Schedule', labelKey: 'nav.depreciationSchedule', icon: Clock },
+      { to: '/reports/membership-fee-collection', label: 'Membership Fee Collection', labelKey: 'nav.membershipFeeCollection', icon: Users },
+      { to: '/reports/donation-summary', label: 'Donation Summary', labelKey: 'nav.donationSummary', icon: Heart },
     ],
   },
   {
@@ -509,6 +515,10 @@ function Shell({ email }: { email: string }) {
             <Route path="/reports/tax-reconciliation" element={<ErrorBoundary><TaxReconciliation /></ErrorBoundary>} />
             <Route path="/reports/taxable-sales-customer" element={<ErrorBoundary><TaxableSalesPerCustomer /></ErrorBoundary>} />
             <Route path="/reports/taxable-purchases-supplier" element={<ErrorBoundary><TaxablePurchasesPerSupplier /></ErrorBoundary>} />
+            <Route path="/reports/fixed-asset-summary" element={<ErrorBoundary><FixedAssetSummary /></ErrorBoundary>} />
+            <Route path="/reports/depreciation-schedule" element={<ErrorBoundary><DepreciationSchedule /></ErrorBoundary>} />
+            <Route path="/reports/membership-fee-collection" element={<ErrorBoundary><MembershipFeeCollection /></ErrorBoundary>} />
+            <Route path="/reports/donation-summary" element={<ErrorBoundary><DonationSummary /></ErrorBoundary>} />
             <Route path="/audit" element={<ErrorBoundary><AuditLog /></ErrorBoundary>} />
             <Route path="/activity" element={<RecentActivity />} />
             <Route path="/transfers" element={<Transfers />} />

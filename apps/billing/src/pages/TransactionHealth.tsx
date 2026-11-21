@@ -6,12 +6,13 @@
  * ================================================================ */
 
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, AlertCircle, CheckCircle, Download, FileText, Printer, AlertTriangle, Info } from 'lucide-react'
+import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { api, fmt, list } from '../lib/api'
+import { api, list } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { useTenant, useTenantQuery } from '../lib/tenant'
+import { ReportLayout } from '../components/ReportLayout'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useT } from '../lib/i18n'
@@ -289,103 +290,90 @@ export default function TransactionHealth() {
   }
 
   return (
-    <div className="w-full pb-28">
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between py-4">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/reports')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="text-lg font-semibold text-slate-900">{t('reports.transactionHealth', 'Transaction Health')}</h1>
-            <p className="text-sm text-slate-500">{t('reports.transactionHealthDesc', 'Diagnostic audit of transaction integrity')}</p>
+    <ReportLayout
+      title={t('reports.transactionHealth', 'Transaction Health')}
+      titleKey="reports.transactionHealth"
+      description={t('reports.transactionHealthDesc', 'Diagnostic audit of transaction integrity')}
+      descriptionKey="reports.transactionHealthDesc"
+      backTo="/reports"
+      loading={loading}
+      error={error}
+      hasData={issues.length > 0}
+      onExportCsv={exportCsv}
+      onExportPdf={exportPdf}
+      pdfTitle={t('reports.transactionHealth', 'Transaction Health')}
+      pdfMeta={[
+        ['Generated', new Date().toLocaleString()],
+        ['Total Issues', totalIssues.toString()],
+        ['Errors', errorCount.toString()],
+        ['Warnings', warningCount.toString()],
+        ['Info', infoCount.toString()],
+      ]}
+    >
+      <div className="mt-4">
+        {/* Summary cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-2">
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs text-slate-500">{t('health.totalIssues', 'Total Issues')}</p>
+            <p className="text-2xl font-mono font-semibold text-slate-900">{totalIssues}</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs text-slate-500">{t('health.errors', 'Errors')}</p>
+            <p className="text-2xl font-mono font-semibold text-red-600">{errorCount}</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs text-slate-500">{t('health.warnings', 'Warnings')}</p>
+            <p className="text-2xl font-mono font-semibold text-amber-600">{warningCount}</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs text-slate-500">{t('health.info', 'Info')}</p>
+            <p className="text-2xl font-mono font-semibold text-blue-600">{infoCount}</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          {issues.length > 0 && (
-            <>
-              <button onClick={exportCsv} className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <Download size={14} /> {t('common.export', 'Export')}
+
+        {loading && <ReportSkeleton sections={3} />}
+
+        {!loading && issues.length === 0 && !error && (
+          <div className="mt-6 rounded-lg border border-slate-200 bg-white px-6 py-12 text-center">
+            <CheckCircle size={48} className="mx-auto mb-2 text-emerald-500" />
+            <p className="text-sm text-slate-500">{t('health.noIssues', 'No issues detected. All transactions appear healthy.')}</p>
+          </div>
+        )}
+
+        {issues.length > 0 && (
+          <div className="mt-6 space-y-4 px-2">
+            {issues.map((issue) => (
+              <button
+                key={issue.id}
+                onClick={() => navigate(issue.route)}
+                className="w-full flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4 hover:bg-slate-50 transition-colors text-left"
+              >
+                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
+                  {issue.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-slate-900 truncate">{issue.title}</h3>
+                  <p className="text-xs text-slate-500 truncate">{issue.description}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                    issue.severity === 'error' ? 'bg-red-50 text-red-700' :
+                    issue.severity === 'warning' ? 'bg-amber-50 text-amber-700' :
+                    'bg-blue-50 text-blue-700'
+                  }`}>
+                    {issue.severity.toUpperCase()}
+                  </span>
+                  <span className="text-lg font-mono font-semibold text-slate-700">{issue.count}</span>
+                </div>
               </button>
-              <button onClick={exportPdf} className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <FileText size={14} /> {t('common.pdf', 'PDF')}
-              </button>
-              <button onClick={() => window.print()} className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <Printer size={14} /> {t('common.print', 'Print')}
-              </button>
-            </>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
-
-      {error && (
-        <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Summary cards */}
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 px-2">
-        <div className="rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs text-slate-500">{t('health.totalIssues', 'Total Issues')}</p>
-          <p className="text-2xl font-mono font-semibold text-slate-900">{totalIssues}</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs text-slate-500">{t('health.errors', 'Errors')}</p>
-          <p className="text-2xl font-mono font-semibold text-red-600">{errorCount}</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs text-slate-500">{t('health.warnings', 'Warnings')}</p>
-          <p className="text-2xl font-mono font-semibold text-amber-600">{warningCount}</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs text-slate-500">{t('health.info', 'Info')}</p>
-          <p className="text-2xl font-mono font-semibold text-blue-600">{infoCount}</p>
-        </div>
-      </div>
-
-      {loading && <ReportSkeleton sections={3} />}
-
-      {!loading && issues.length === 0 && !error && (
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white px-6 py-12 text-center">
-          <CheckCircle size={48} className="mx-auto mb-2 text-emerald-500" />
-          <p className="text-sm text-slate-500">{t('health.noIssues', 'No issues detected. All transactions appear healthy.')}</p>
-        </div>
-      )}
-
-      {issues.length > 0 && (
-        <div className="mt-6 space-y-4 px-2">
-          {issues.map((issue) => (
-            <button
-              key={issue.id}
-              onClick={() => navigate(issue.route)}
-              className="w-full flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4 hover:bg-slate-50 transition-colors text-left"
-            >
-              <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
-                {issue.icon}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-slate-900 truncate">{issue.title}</h3>
-                <p className="text-xs text-slate-500 truncate">{issue.description}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                  issue.severity === 'error' ? 'bg-red-50 text-red-700' :
-                  issue.severity === 'warning' ? 'bg-amber-50 text-amber-700' :
-                  'bg-blue-50 text-blue-700'
-                }`}>
-                  {issue.severity.toUpperCase()}
-                </span>
-                <span className="text-lg font-mono font-semibold text-slate-700">{issue.count}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
 
       <div className="mt-2">
         <DataStatus />
       </div>
-    </div>
+    </ReportLayout>
   )
 }
