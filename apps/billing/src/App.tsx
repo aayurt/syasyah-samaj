@@ -51,7 +51,7 @@ import VoucherForm from './pages/VoucherForm'
 import Parties from './pages/Parties'
 import Aging from './pages/Aging'
 import Items from './pages/Items'
-import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase, VatRegister, CashStatement, BankStatement, ExpenseCategory, IncomeCategory, StockQuantity, InventoryValuation, BalanceSheet, ProfitLoss } from './pages/reports'
+import { ReportsHub, SalesReport, PurchaseReport, PartyStatement, LowStockSummary, TaxSales, TaxPurchase, VatRegister, CashStatement, BankStatement, ExpenseCategory, IncomeCategory, StockQuantity, InventoryValuation, BalanceSheet, ProfitLoss, GeneralLedger, CashFlowStatement, Receivables, Payables, TransactionHealth, TaxSummary, TaxReconciliation, TaxableSalesPerCustomer, TaxablePurchasesPerSupplier } from './pages/reports'
 import Daybooks from './pages/Daybooks'
 import BankReconciliation from './pages/BankReconciliation'
 import Settings from './pages/Settings'
@@ -500,6 +500,15 @@ function Shell({ email }: { email: string }) {
             <Route path="/reports/inventory-valuation" element={<ErrorBoundary><InventoryValuation /></ErrorBoundary>} />
             <Route path="/reports/balance-sheet" element={<ErrorBoundary><BalanceSheet /></ErrorBoundary>} />
             <Route path="/reports/pnl" element={<ErrorBoundary><ProfitLoss /></ErrorBoundary>} />
+            <Route path="/reports/general-ledger" element={<ErrorBoundary><GeneralLedger /></ErrorBoundary>} />
+            <Route path="/reports/cash-flow" element={<ErrorBoundary><CashFlowStatement /></ErrorBoundary>} />
+            <Route path="/reports/receivables" element={<ErrorBoundary><Receivables /></ErrorBoundary>} />
+            <Route path="/reports/payables" element={<ErrorBoundary><Payables /></ErrorBoundary>} />
+            <Route path="/reports/transaction-health" element={<ErrorBoundary><TransactionHealth /></ErrorBoundary>} />
+            <Route path="/reports/tax-summary" element={<ErrorBoundary><TaxSummary /></ErrorBoundary>} />
+            <Route path="/reports/tax-reconciliation" element={<ErrorBoundary><TaxReconciliation /></ErrorBoundary>} />
+            <Route path="/reports/taxable-sales-customer" element={<ErrorBoundary><TaxableSalesPerCustomer /></ErrorBoundary>} />
+            <Route path="/reports/taxable-purchases-supplier" element={<ErrorBoundary><TaxablePurchasesPerSupplier /></ErrorBoundary>} />
             <Route path="/audit" element={<ErrorBoundary><AuditLog /></ErrorBoundary>} />
             <Route path="/activity" element={<RecentActivity />} />
             <Route path="/transfers" element={<Transfers />} />

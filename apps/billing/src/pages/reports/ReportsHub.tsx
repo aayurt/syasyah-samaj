@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Truck,
   Wallet,
+  AlertTriangle,
 } from 'lucide-react'
 import SearchBox from '../../components/SearchBox'
 import DataStatus from '../../components/DataStatus'
@@ -41,6 +42,7 @@ const CATEGORIES = [
   'Inventory',
   'Income Expense',
   'Business Status',
+  'Tax Reports',
 ] as const
 
 type Category = (typeof CATEGORIES)[number]
@@ -52,10 +54,14 @@ const REPORTS: Record<Category, ReportCard[]> = {
     { title: 'Purchase', titleKey: 'reports.purchase', desc: 'View your purchase data with payment tracking', descKey: 'reports.purchaseDesc', icon: ShoppingCart, to: '/reports/purchase' },
     { title: 'Day Book', titleKey: 'reports.dayBook', desc: 'View all of your daily transactions', descKey: 'reports.dayBookDesc', icon: BookOpenText, to: '/daybooks' },
     { title: 'Profit And Loss', titleKey: 'reports.profitAndLoss', desc: 'View your profit & loss in a given time', descKey: 'reports.profitAndLossDesc', icon: BarChart3, to: '/reports/pnl' },
+    { title: 'General Ledger', titleKey: 'reports.generalLedger', desc: 'Posted journal entries by account', descKey: 'reports.generalLedgerDesc', icon: LayoutList, to: '/reports/general-ledger' },
   ],
   Parties: [
     { title: 'Party Statement', titleKey: 'reports.partyStatement', desc: 'Check the transactions of a certain party', descKey: 'reports.partyStatementDesc', icon: FileText, to: '/reports/party-statement' },
     { title: 'All Party Report', titleKey: 'reports.allPartyReport', desc: 'Receivable/payable dues of every party', descKey: 'reports.allPartyReportDesc', icon: IndianRupee, to: '/aging' },
+    { title: 'Receivables', titleKey: 'reports.receivables', desc: 'Customer outstanding balances by aging period', descKey: 'reports.receivablesDesc', icon: TrendingUp, to: '/reports/receivables' },
+    { title: 'Payables', titleKey: 'reports.payables', desc: 'Vendor outstanding balances by aging period', descKey: 'reports.payablesDesc', icon: TrendingDown, to: '/reports/payables' },
+    { title: 'Transaction Health', titleKey: 'reports.transactionHealth', desc: 'Diagnostic audit of transaction integrity', descKey: 'reports.transactionHealthDesc', icon: AlertTriangle, to: '/reports/transaction-health' },
   ],
   Inventory: [
     { title: 'Low Stock Summary', titleKey: 'reports.lowStockSummary', desc: 'View all items which are getting low on quantity', descKey: 'reports.lowStockSummaryDesc', icon: TrendingDown, to: '/reports/low-stock' },
@@ -69,11 +75,18 @@ const REPORTS: Record<Category, ReportCard[]> = {
   ],
   'Business Status': [
     { title: 'Balance Sheet', titleKey: 'reports.balanceSheet', desc: 'Assets, liabilities & equity snapshot', descKey: 'reports.balanceSheetDesc', icon: Scale, to: '/reports/balance-sheet' },
+    { title: 'Cash Flow Statement', titleKey: 'reports.cashFlowStatement', desc: 'Cash and bank movements by activity', descKey: 'reports.cashFlowDesc', icon: ArrowLeftRight, to: '/reports/cash-flow' },
     { title: 'Cash In Hand Statement', titleKey: 'reports.cashInHandStatement', desc: 'Check all transactions made with cash', descKey: 'reports.cashInHandStatementDesc', icon: Wallet, to: '/reports/cash-statement' },
     { title: 'Bank Statement', titleKey: 'reports.bankStatement', desc: 'Check all the transactions made with bank', descKey: 'reports.bankStatementDesc', icon: CreditCard, to: '/reports/bank-statement' },
     { title: 'Tax Sales', titleKey: 'reports.taxSales', desc: 'Check report of all tax applicable sales', descKey: 'reports.taxSalesDesc', icon: Receipt, to: '/reports/tax-sales' },
     { title: 'Tax Purchase', titleKey: 'reports.taxPurchase', desc: 'Check report of all tax applicable purchase', descKey: 'reports.taxPurchaseDesc', icon: Truck, to: '/reports/tax-purchase' },
     { title: 'VAT Registers', titleKey: 'reports.vatRegisters', desc: 'Sales, purchase & return registers for VAT filing', descKey: 'reports.vatRegistersDesc', icon: BookOpenText, to: '/reports/vat-register' },
+  ],
+  'Tax Reports': [
+    { title: 'Tax Summary', titleKey: 'reports.taxSummary', desc: 'Consolidated tax by type for sales and purchases', descKey: 'reports.taxSummaryDesc', icon: Scale, to: '/reports/tax-summary' },
+    { title: 'Tax Reconciliation', titleKey: 'reports.taxReconciliation', desc: 'Reconcile tax report totals to tax control ledger accounts', descKey: 'reports.taxReconciliationDesc', icon: ArrowLeftRight, to: '/reports/tax-reconciliation' },
+    { title: 'Taxable Sales per Customer', titleKey: 'reports.taxableSalesPerCustomer', desc: 'Taxable sales and tax amounts by customer and tax type', descKey: 'reports.taxableSalesPerCustomerDesc', icon: TrendingUp, to: '/reports/taxable-sales-customer' },
+    { title: 'Taxable Purchases per Supplier', titleKey: 'reports.taxablePurchasesPerSupplier', desc: 'Taxable purchases and tax amounts by supplier and tax type', descKey: 'reports.taxablePurchasesPerSupplierDesc', icon: TrendingDown, to: '/reports/taxable-purchases-supplier' },
   ],
 }
 
