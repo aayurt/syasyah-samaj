@@ -45,3 +45,7 @@ apps/billing/playwright-report/
 .graphify/
 graphify-data/
 .graphify-cache/
+
+# Local package store
+.pnpm-store/
+

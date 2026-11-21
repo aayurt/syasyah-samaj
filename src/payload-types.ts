@@ -1445,6 +1445,30 @@ export interface Item {
    * Default purchase cost — also values the opening stock.
    */
   purchasePrice?: number | null;
+  /**
+   * Inventory items track stock; non-inventory items do not.
+   */
+  itemType: 'inventory' | 'non-inventory';
+  /**
+   * GL account credited on sales of this item.
+   */
+  salesAccount?: (number | null) | GlAccount;
+  /**
+   * GL account debited on purchases of this item.
+   */
+  purchaseAccount?: (number | null) | GlAccount;
+  /**
+   * Default tax code applied on sales of this item.
+   */
+  salesTaxCode?: (number | null) | TaxType;
+  /**
+   * Default tax code applied on purchases of this item.
+   */
+  purchaseTaxCode?: (number | null) | TaxType;
+  /**
+   * Default description pre-filled on transaction lines.
+   */
+  defaultDescription?: string | null;
   active?: boolean | null;
   tenant: number | Tenant;
   updatedAt: string;
@@ -4972,6 +4996,12 @@ export interface ItemsSelect<T extends boolean = true> {
   openingStock?: T;
   salePrice?: T;
   purchasePrice?: T;
+  itemType?: T;
+  salesAccount?: T;
+  purchaseAccount?: T;
+  salesTaxCode?: T;
+  purchaseTaxCode?: T;
+  defaultDescription?: T;
   active?: T;
   tenant?: T;
   updatedAt?: T;
@@ -6618,6 +6648,14 @@ export interface BillingSetting {
    */
   accumulatedDepreciationAccount?: (number | null) | GlAccount;
   /**
+   * Fixed Asset at Cost control account (credited on disposal).
+   */
+  fixedAssetCostAccount?: (number | null) | GlAccount;
+  /**
+   * Gain/Loss on Disposal account (balancing figure on disposal).
+   */
+  disposalGainLossAccount?: (number | null) | GlAccount;
+  /**
    * User-defined order of default account posting roles in the Settings UI.
    */
   defAccountOrder?:
@@ -6882,6 +6920,8 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   accruedPayableAccount?: T;
   depreciationAccount?: T;
   accumulatedDepreciationAccount?: T;
+  fixedAssetCostAccount?: T;
+  disposalGainLossAccount?: T;
   defAccountOrder?: T;
   dataEpoch?: T;
   updatedAt?: T;

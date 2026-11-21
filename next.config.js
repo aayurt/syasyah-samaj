@@ -30,6 +30,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: '*.syasyahsamaj.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'sysyah.local',
+      },
     ],
   },
   reactStrictMode: true,

@@ -2,6 +2,8 @@
 
 ## System Context
 
+See also: [Multi-Illaka Tenancy Architecture](MULTI_ILLAKA_TENANCY_ARCHITECTURE.md) for the organizational tenancy, branch scoping, and template-cloning model.
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        syasyah-samaj                            │

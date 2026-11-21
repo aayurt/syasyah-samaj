@@ -65,7 +65,7 @@ export default defineConfig(({ command }) => ({
   // asset URLs resolve regardless of the page path:
   //   - hosted under Payload → /app/ (set via VITE_BASE_PATH or the default)
   //   - bundled into Tauri   → /   (build.mjs sets VITE_BASE_PATH=/)
-  base: command === 'serve' ? '/' : process.env.VITE_BASE_PATH || '/app/',
+  base: '/app/',
   plugins: [react(), tailwindcss(), versionPlugin()],
   define: {
     __APP_VERSION__: JSON.stringify(VERSION),
@@ -81,7 +81,9 @@ export default defineConfig(({ command }) => ({
     },
   },
   server: {
+    host: '0.0.0.0',
     port: 5173,
+    allowedHosts: ['sysyah.local', 'localhost'],
     proxy: {
       // E2E boots a second API instance on its own port and points this proxy
       // at it via E2E_API_TARGET; the default keeps normal dev on :3000.
