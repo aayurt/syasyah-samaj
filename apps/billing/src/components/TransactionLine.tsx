@@ -15,8 +15,8 @@
  * ================================================================ */
 
 import { useCallback, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Trash2, ChevronDown, Users, Building2, Wallet, CreditCard } from 'lucide-react'
+import { Plus, Search, Trash2, ChevronDown, X, Users, Building2, Wallet, CreditCard } from 'lucide-react'
+import { api } from '../lib/api'
 import { calcLine, type LineInput, type LineResult } from '../lib/transactionCalc'
 import AccountSelect from './AccountSelect'
 import { useT } from '../lib/i18n'
@@ -83,7 +83,9 @@ export default function TransactionLine({
   const t = useT()
 
   const itemKey = String(line.item || '')
-  const selectedItem = items.find((it) => String(it.id) === itemKey)
+  const [createdItems, setCreatedItems] = useState<Item[]>([])
+  const allItems = useMemo(() => items.concat(createdItems), [items, createdItems])
+  const selectedItem = allItems.find((it) => String(it.id) === itemKey)
   const accountKey = String(line.account || '')
   const selectedAccount = accounts.find((a) => String(a.id) === accountKey)
   const taxKey = String(line.taxType || '')
@@ -91,15 +93,29 @@ export default function TransactionLine({
 
   const [subledgerOpen, setSubledgerOpen] = useState(false)
   const [subledgerQuery, setSubledgerQuery] = useState('')
-
-  const navigate = useNavigate()
+  const [showAddItem, setShowAddItem] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [addItemError, setAddItemError] = useState('')
+  const [addItemForm, setAddItemForm] = useState({
+    name: '',
+    code: '',
+    unit: '',
+    itemType: 'non-inventory' as ('non-inventory' | 'inventory'),
+    salesAccount: '',
+    purchaseAccount: '',
+    salesTaxCode: '',
+    purchaseTaxCode: '',
+    defaultDescription: '',
+    salePrice: '',
+    purchasePrice: '',
+  })
 
   const subledgerKind = useMemo(() => subledgerSelectorForAccount(selectedAccount), [selectedAccount])
 
   // When an item is picked, auto-fill account/rate/unit/description/tax.
   const handleItemChange = useCallback(
     (id: string) => {
-      const it = items.find((i) => String(i.id) === id)
+      const it = allItems.find((i) => String(i.id) === id)
       if (!it) return
       const acct = resolveAccountForItem(it, transactionType)
       const tax = resolveTaxForItem(it, transactionType)
@@ -118,7 +134,7 @@ export default function TransactionLine({
       }
       onChange(line.key, patch)
     },
-    [items, transactionType, line.key, onChange],
+    [allItems, transactionType, line.key, onChange],
   )
 
   // Re-resolve defaults when transactionType changes (e.g. sales→purchase).
@@ -147,13 +163,13 @@ export default function TransactionLine({
     if (subledgerKind === 'party') {
       pool = parties.map((p) => ({ id: p.id, label: p.name }))
     } else if (subledgerKind === 'item') {
-      pool = items.slice(0, 30).map((it) => ({ id: it.id, label: it.name }))
+      pool = allItems.slice(0, 30).map((it) => ({ id: it.id, label: it.name }))
     } else {
       pool = []
     }
     const q = subledgerQuery.toLowerCase()
     return pool.filter((o) => o.label.toLowerCase().includes(q))
-  }, [subledgerKind, subledgerQuery, items])
+  }, [subledgerKind, subledgerQuery, allItems])
 
   const selectedSubAccountName = useMemo(() => {
     if (!line.subAccount) return ''
@@ -168,7 +184,53 @@ export default function TransactionLine({
     return ''
   }, [line.subAccount, subledgerKind, parties, items])
 
-  return (
+  const emptyAddForm = {
+    name: '',
+    code: '',
+    unit: '',
+    itemType: 'non-inventory' as ('non-inventory' | 'inventory'),
+    salesAccount: '',
+    purchaseAccount: '',
+    salesTaxCode: '',
+    purchaseTaxCode: '',
+    defaultDescription: '',
+    salePrice: '',
+    purchasePrice: '',
+  }
+
+  const saveAddItem = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCreating(true)
+    setAddItemError('')
+    try {
+      const body: Record<string, unknown> = {
+        name: addItemForm.name,
+        code: addItemForm.code || undefined,
+        unit: addItemForm.unit || undefined,
+        itemType: addItemForm.itemType,
+        salesAccount: addItemForm.salesAccount ? Number(addItemForm.salesAccount) : undefined,
+        purchaseAccount: addItemForm.purchaseAccount ? Number(addItemForm.purchaseAccount) : undefined,
+        salesTaxCode: addItemForm.salesTaxCode ? Number(addItemForm.salesTaxCode) : undefined,
+        purchaseTaxCode: addItemForm.purchaseTaxCode ? Number(addItemForm.purchaseTaxCode) : undefined,
+        defaultDescription: addItemForm.defaultDescription || undefined,
+        salePrice: addItemForm.salePrice ? Number(addItemForm.salePrice) : undefined,
+        purchasePrice: addItemForm.purchasePrice ? Number(addItemForm.purchasePrice) : undefined,
+      }
+      const res = await api<{ doc: Item }>('/items', { method: 'POST', body })
+      const it = res.doc
+      setCreatedItems((prev) => [...prev, it])
+      setAddItemForm(emptyAddForm)
+      setShowAddItem(false)
+      setAddItemError('')
+      await handleItemChange(String(it.id))
+    } catch (err) {
+      setAddItemError(err instanceof Error ? err.message : 'Failed to create item')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  return (<>
     <tr key={line.key} className="border-b border-slate-50">
       <td className="px-2 py-2 text-center text-slate-400">{index + 1}</td>
 
@@ -200,7 +262,7 @@ export default function TransactionLine({
           {/* Item results dropdown (simplified: show first 5 matches of description) */}
           {(!selectedItem && line.description && line.description.length > 0) && (
             <div className="absolute z-10 mt-1 max-h-44 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
-              {items
+              {allItems
                 .filter((it) => it.name.toLowerCase().includes(line.description!.toLowerCase()))
                 .slice(0, 5)
                 .map((it) => (
@@ -216,7 +278,7 @@ export default function TransactionLine({
                 ))}
               <button
                 type="button"
-                onClick={() => navigate('/items')}
+                onClick={() => setShowAddItem(true)}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 border-t border-slate-100"
               >
                 <Plus size={14} /> {t('vouchers.addItem', 'Add Item')}
@@ -386,8 +448,164 @@ export default function TransactionLine({
         </button>
       </td>
     </tr>
-  )
-}
+    {showAddItem && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={t('items.addItem', 'Add Item')}>
+        <div className="max-w-lg w-full bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900">{t('items.addItem', 'Add Item')}</h2>
+            <button
+              type="button"
+              onClick={() => { setShowAddItem(false); setAddItemError('') }}
+              className="rounded p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-900"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <form onSubmit={saveAddItem} className="px-6 py-5 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('items.name', 'Item name')}</label>
+                <input
+                  name="name"
+                  value={addItemForm.name}
+                  onChange={(e) => setAddItemForm({ ...addItemForm, name: e.target.value })}
+                  className="w-full rounded border border-slate-200 bg-slate-50/50 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('items.code', 'Code')}</label>
+                <input
+                  name="code"
+                  value={addItemForm.code}
+                  onChange={(e) => setAddItemForm({ ...addItemForm, code: e.target.value })}
+                  className="w-full rounded border border-slate-200 bg-slate-50/50 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('items.unit', 'Unit')}</label>
+                <input
+                  name="unit"
+                  value={addItemForm.unit}
+                  onChange={(e) => setAddItemForm({ ...addItemForm, unit: e.target.value })}
+                  className="w-full rounded border border-slate-200 bg-slate-50/50 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('items.itemType', 'Item type')}</label>
+                <select
+                  name="itemType"
+                  value={addItemForm.itemType}
+                  onChange={(e) => setAddItemForm({ ...addItemForm, itemType: e.target.value as 'non-inventory' | 'inventory' })}
+                  className="w-full rounded border border-slate-200 bg-slate-50/50 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="non-inventory">{t('items.nonInventory', 'Non-inventory')}</option>
+                  <option value="inventory">{t('items.inventory', 'Inventory')}</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('items.salesAccount', 'Sales account')}</label>
+                <AccountSelect value={addItemForm.salesAccount} onChange={(v) => setAddItemForm({ ...addItemForm, salesAccount: v })} accounts={accounts} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('items.purchaseAccount', 'Purchase account')}</label>
+                <AccountSelect value={addItemForm.purchaseAccount} onChange={(v) => setAddItemForm({ ...addItemForm, purchaseAccount: v })} accounts={accounts} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('items.salesTaxCode', 'Sales tax')}</label>
+                <select
+                  name="salesTaxCode"
+                  value={addItemForm.salesTaxCode}
+                  onChange={(e) => setAddItemForm({ ...addItemForm, salesTaxCode: e.target.value })}
+                  className="w-full rounded border border-slate-200 bg-slate-50/50 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">{t('items.none', 'None')}</option>
+                  {taxTypes.map((t) => (
+                    <option key={String(t.id)} value={String(t.id)}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('items.purchaseTaxCode', 'Purchase tax')}</label>
+                <select
+                  name="purchaseTaxCode"
+                  value={addItemForm.purchaseTaxCode}
+                  onChange={(e) => setAddItemForm({ ...addItemForm, purchaseTaxCode: e.target.value })}
+                  className="w-full rounded border border-slate-200 bg-slate-50/50 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">{t('items.none', 'None')}</option>
+                  {taxTypes.map((t) => (
+                    <option key={String(t.id)} value={String(t.id)}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">{t('items.defaultDescription', 'Default description')}</label>
+              <textarea
+                name="defaultDescription"
+                value={addItemForm.defaultDescription}
+                onChange={(e) => setAddItemForm({ ...addItemForm, defaultDescription: e.target.value })}
+                rows={2}
+                className="w-full rounded border border-slate-200 bg-slate-50/50 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder={t('items.defaultDescriptionPlaceholder', 'e.g. Consulting service')}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('items.salePrice', 'Sale price')}</label>
+                <input
+                  name="salePrice"
+                  type="number"
+                  step="0.01"
+                  value={addItemForm.salePrice}
+                  onChange={(e) => setAddItemForm({ ...addItemForm, salePrice: e.target.value })}
+                  className="w-full rounded border border-slate-200 bg-slate-50/50 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('items.purchasePrice', 'Purchase price')}</label>
+                <input
+                  name="purchasePrice"
+                  type="number"
+                  step="0.01"
+                  value={addItemForm.purchasePrice}
+                  onChange={(e) => setAddItemForm({ ...addItemForm, purchasePrice: e.target.value })}
+                  className="w-full rounded border border-slate-200 bg-slate-50/50 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            {addItemError && (
+              <div className="rounded bg-red-50 border border-red-100 px-3 py-2 text-sm text-red-700">{addItemError}</div>
+            )}
+            <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => { setShowAddItem(false); setAddItemError('') }}
+                disabled={creating}
+                className="px-4 py-2 rounded border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {t('vouchers.cancel', 'Cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={creating || !addItemForm.name}
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {creating ? t('vouchers.creating', 'Creating…') : t('vouchers.save', 'Save')}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+  </>
+)}
 
 /* ================================================================
  * Document-level total row (shared).
