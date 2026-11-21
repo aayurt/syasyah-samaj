@@ -34,6 +34,8 @@ import NepaliDateInput from '../components/NepaliDateInput'
 import OutstandingInvoices from '../components/OutstandingInvoices'
 import AccountSelect from '../components/AccountSelect'
 import TransactionLine from '../components/TransactionLine'
+import EntryCard from '../components/EntryCard'
+import VoucherNotesCard from '../components/VoucherNotesCard'
 import { useBalanceSnap } from '../components/BalanceBar'
 import { api, fmt, useSyncState } from '../lib/api'
 import { useT } from '../lib/i18n'
@@ -1137,9 +1139,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
           {/* ── Item Lines Table ────────────────────────────────── */}
           {isItem && (
-            <>
-              <hr className="mt-4 border-slate-200" />
-              <div className="mt-4 rounded-lg border border-slate-200 bg-white">
+            <EntryCard title={t('vouchers.itemLines', 'Item Lines')} subtitle={meta}>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -1398,34 +1398,14 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     </div>
                   )}
                 </div>
-
-              </div>
-            </>
+            </EntryCard>
           )}
         </div>
 
-        {/* ── Notes (collapsible) ─────────────────────────────── */}
-        {/* ── Attach Images ───────────────────────────────────── */}
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
-          <textarea rows={4} value={narration} onChange={(e) => setNarration(e.target.value)}
-            placeholder={t('vouchers.notePlaceholder', 'Enter note or description...')}
-            className="w-full resize-none rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" />
-
-          {/* ── Attach Images ───────────────────────────────────── */}
-          <div className="mt-4">
-            <label className="text-sm font-medium text-slate-700">{t('vouchers.attachImages', 'Attach Images')}</label>
-            <div className="mt-2 flex items-center gap-3">
-              <button type="button"
-                className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-500">
-                <Camera size={24} />
-              </button>
-              <span className="text-xs text-slate-400">{t('vouchers.uploadHint', 'Upload receipts, invoices, or supporting documents')}</span>
-            </div>
-          </div>
-        </div>
+        <VoucherNotesCard narration={narration} onChange={setNarration} />
         {/* ── Item Summary Card ─────────────────────────────── */}
         {isItem && (
-          <div className="mt-4 rounded-lg border border-slate-200 bg-white">
+          <EntryCard title={t('vouchers.itemSummary', 'Item Summary')}>
             <div className="border-b border-slate-100 px-5 py-3">
               <h3 className="text-sm font-semibold text-slate-700">{t('vouchers.itemSummary', 'Item Summary')}</h3>
             </div>
@@ -1470,12 +1450,12 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                 )}
               </div>
             </div>
-          </div>
+          </EntryCard>
         )}
 
         {/* ── Journal Lines ───────────────────────────────────── */}
         {isJournal && (
-          <div className="mt-4 rounded-lg border border-slate-200 bg-white">
+          <EntryCard title="Journal Lines">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -1536,12 +1516,12 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                 </span>
               </div>
             </div>
-          </div>
+          </EntryCard>
         )}
 
         {/* ── Contra Fields ───────────────────────────────────── */}
         {isContra && (
-          <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+          <EntryCard title="Contra Entry">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="text-sm text-slate-700">
                 {t('vouchers.fromAccount', 'From account (credited)')} <span className="text-red-500">*</span>
@@ -1567,7 +1547,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                   className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 font-mono text-sm outline-none focus:border-slate-500" placeholder="0.00" />
               </label>
             </div>
-          </div>
+          </EntryCard>
         )}
 
         {/* ── Outstanding Invoices (receipt/payment only) ────── */}
@@ -1589,10 +1569,10 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
         {/* ── Cash Flow Panel (receipt/payment) ───────────────── */}
         {isCash && (
-          <>
+          <EntryCard title="Cash / Bank" accent="amber">
             {/* Simplified: one tactile 3-field strip for counter cashiers */}
             {cashSimple && (
-              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+              <div className="mt-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <label className="text-sm text-slate-700">
                     {docType === 'receipt-voucher'
@@ -1662,20 +1642,20 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
             {/* Detailed mode: full line-item table + tax/TDS for split accounting */}
             {!cashSimple && (
-              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/60 p-5">
+              <div className="mt-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-sm font-medium text-amber-700">
+                  <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
                     <ListCollapse size={14} /> {t('vouchers.detailedLineItemsMode', 'Detailed Line Items mode')}
                   </div>
                   <button type="button" onClick={() => setCashDetailed(false)}
-                    className="rounded border border-amber-300 bg-white px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100">
+                    className="rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">
                     {t('vouchers.backToSimple', '← Back to simple mode')}
                   </button>
                 </div>
                 <div className="mt-3">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-amber-200/80 text-left text-xs uppercase tracking-wide text-amber-700">
+                      <tr className="border-b border-slate-200/80 text-left text-xs uppercase tracking-wide text-slate-700">
                         <th className="w-10 px-2 py-2 text-center">#</th>
                         <th className="px-2 py-2">{t('common.description', 'Description')}</th>
                         <th className="w-28 px-2 py-2 text-right">{t('common.amount', 'Amount')}</th>
@@ -1684,7 +1664,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     </thead>
                     <tbody>
                       {lines.map((l, i) => (
-                        <tr key={l.key} className="anim-enter-row border-b border-amber-100">
+                        <tr key={l.key} className="anim-enter-row border-b border-slate-100">
                           <td className="px-2 py-2 text-center text-slate-400">{i + 1}</td>
                           <td className="px-2 py-2">
                             <input type="text" value={l.description}
@@ -1711,7 +1691,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     <Plus size={14} /> {t('vouchers.addLine', 'Add line')}
                   </button>
                 </div>
-                <div className="mt-3 flex items-center justify-between border-t border-amber-200/80 pt-3">
+                <div className="mt-3 flex items-center justify-between border-t border-slate-200/80 pt-3">
                   <span className="text-sm font-medium text-slate-600">{t('vouchers.total', 'Total')}</span>
                   <span className="font-mono text-base font-bold text-slate-900">Rs. {fmt(lineTotals)}</span>
                 </div>
@@ -1720,7 +1700,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
             {/* Cash/Bank account strip for detailed mode (kept out of the table) */}
             {!cashSimple && (
-              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+              <div className="mt-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <label className="text-sm text-slate-700">
                     {t('vouchers.paymentMethod', 'Payment Method')}
@@ -1771,7 +1751,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                 </div>
               </div>
             )}
-          </>
+          </EntryCard>
         )}
 
         {/* ── Payment Fields (collapsible for cash types) ─────── */}
@@ -1808,163 +1788,6 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
 
 
-        {/* ── Invoice Preview ──────────────────────────────────── */}
-        <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
-          {/* Header */}
-          {(() => {
-            const isSimplified = simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold
-            return (
-              <div className="border-b border-slate-200 bg-slate-50 px-6 py-4 text-center">
-                <h1 className="text-lg font-bold tracking-tight text-slate-900">{t('sidebar.orgName', 'स्यस्यः धुकू')}</h1>
-                <p className="text-[10px] uppercase tracking-widest text-slate-400">
-                  {isSimplified ? 'Tax Invoice (VAT Inclusive)' : 'Tax Invoice / Transaction'}
-                </p>
-              </div>
-            )
-          })()}
-
-          {/* Info bar */}
-          <div className="flex items-center justify-between border-b border-slate-200 px-6 py-3">
-            <div>
-              <span className="text-sm font-bold text-slate-900">{meta}</span>
-              <span className="ml-2 font-mono text-xs text-slate-500">{invoicePrefix}-{manualNumber || '...'}</span>
-            </div>
-            <div className="text-right">
-              <span className="text-sm text-slate-600">{formatDate(date)}</span>
-            </div>
-          </div>
-
-          {/* Party */}
-          {(isItem || isCash) && (
-            <div className="border-b border-slate-200 px-6 py-3">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{t('vouchers.billTo', 'Bill To')}</span>
-              <p className="mt-0.5 text-sm font-semibold text-slate-900">{selectedParty?.name || partySearch || '—'}</p>
-            </div>
-          )}
-
-          {/* Items table */}
-          {isItem && lines.some((l) => l.item || l.description) && (
-            <div className="px-6 py-4">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-slate-200 text-left text-[10px] uppercase tracking-wide text-slate-400">
-                    <th className="w-8 py-2">#</th>
-                    <th className="py-2">{t('vouchers.item', 'Item')}</th>
-                    <th className="w-16 py-2 text-right">{t('vouchers.qty', 'Qty')}</th>
-                    <th className="w-24 py-2 text-right">{t('vouchers.rate', 'Rate')}</th>
-                    <th className="w-28 py-2 text-right">{t('common.amount', 'Amount')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lines.filter((l) => l.item || l.description).map((l, i) => {
-                    const base = l.amount !== '' ? Number(l.amount) || 0 : (Number(l.qty) || 0) * (Number(l.rate) || 0)
-                    const discPct = Number(l.discountPct) || 0
-                    const discAmt = Number(l.discountAmt) || 0
-                    const afterPct = discPct > 0 ? base * (1 - discPct / 100) : base
-                    const finalAmt = afterPct - discAmt
-                    return (
-                      <tr key={l.key} className="border-b border-slate-50">
-                        <td className="py-2 text-center text-slate-400">{i + 1}</td>
-                        <td className="py-2 font-medium text-slate-800">{l.description || '—'}</td>
-                        <td className="py-2 text-right font-mono text-slate-600">{l.qty || '—'}</td>
-                        <td className="py-2 text-right font-mono text-slate-600">{l.rate ? fmt(Number(l.rate)) : '—'}</td>
-                        <td className="py-2 text-right font-mono font-medium text-slate-800">{fmt(Math.max(finalAmt, 0))}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Journal lines */}
-          {isJournal && journalLines.some((l) => l.account) && (
-            <div className="px-6 py-4">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-slate-200 text-left text-[10px] uppercase tracking-wide text-slate-400">
-                    <th className="py-2">{t('common.account', 'Account')}</th>
-                    <th className="w-28 py-2 text-right">{t('common.debit', 'Debit')}</th>
-                    <th className="w-28 py-2 text-right">{t('common.credit', 'Credit')}</th>
-                    <th className="py-2">{t('common.memo', 'Memo')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {journalLines.filter((l) => l.account).map((l) => {
-                    const a = accounts.find((x) => String(x.id) === l.account)
-                    return (
-                      <tr key={l.key} className="border-b border-slate-50">
-                        <td className="py-2 text-slate-700">{a ? `${a.code ? a.code + ' · ' : ''}${a.name}` : '—'}</td>
-                        <td className="py-2 text-right font-mono text-slate-800">{l.debit ? fmt(Number(l.debit)) : ''}</td>
-                        <td className="py-2 text-right font-mono text-slate-800">{l.credit ? fmt(Number(l.credit)) : ''}</td>
-                        <td className="py-2 text-slate-500">{l.memo || ''}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Summary */}
-          {(() => {
-            const isSimplified = simplifiedInv.enabled && grandTotal > 0 && grandTotal < simplifiedInv.threshold
-            return (
-              <div className="border-t border-slate-200 px-6 py-4">
-                {isSimplified ? (
-                  /* ── Simplified: VAT Inclusive ────────────── */
-                  <div className="text-center">
-                    <div className="text-sm text-slate-500">{t('vouchers.totalAmountVatInclusive', 'Total Amount (VAT Inclusive)')}</div>
-                    <div className="mt-1 font-mono text-2xl font-bold text-slate-900">Rs. {fmt(grandTotal)}</div>
-                    <p className="mt-2 text-sm font-medium text-slate-600">
-                      {t('vouchers.inWords', 'In words:')} {amountInWordsFor(grandTotal)}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-400">{t('vouchers.includesAllTaxes', 'Includes all applicable taxes')}</p>
-                  </div>
-                ) : (
-                  /* ── Full breakdown ──────────────────────── */
-                  <div className="ml-auto w-64 space-y-1.5 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">{t('vouchers.subTotal', 'Sub Total')}</span>
-                      <span className="font-mono text-slate-700">{fmt(isContra ? contraTotal : lineTotals)}</span>
-                    </div>
-                    {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Discount</span>
-                        <span className="font-mono text-red-600">−{fmt(globalDiscountAmount)}</span>
-                      </div>
-                    )}
-                    {isItem && globalDiscountEnabled && globalDiscountAmount > 0 && (
-                      <div className="flex justify-between border-t border-slate-200 pt-1.5">
-                        <span className="text-slate-500">Taxable Amount</span>
-                        <span className="font-mono text-slate-700">{fmt(lineTotals - globalDiscountAmount)}</span>
-                      </div>
-                    )}
-                    {vatTotal > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">{t('vouchers.tax', 'Tax')}</span>
-                        <span className="font-mono text-slate-700">+{fmt(vatTotal)}</span>
-                      </div>
-                    )}
-                    {tdsEnabled && tdsAmount > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">TDS</span>
-                        <span className="font-mono text-red-600">−{fmt(tdsAmount)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between border-t-2 border-slate-300 pt-2 text-base">
-                      <span className="font-bold text-slate-900">{t('vouchers.total', 'Total')}</span>
-                      <span className="font-mono font-bold text-slate-900">Rs. {fmt(grandTotal)}</span>
-                    </div>
-                    <p className="pt-2 text-sm font-medium text-slate-600">
-                      In words: {amountInWordsFor(grandTotal)}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )
-          })()}
-        </div>
 
         {/* ── Floating Bottom Bar ─────────────────────────────── */}
         <div className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white/95 backdrop-blur px-6 py-3 print:hidden z-40">
