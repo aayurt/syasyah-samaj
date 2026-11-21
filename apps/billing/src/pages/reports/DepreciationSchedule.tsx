@@ -15,6 +15,8 @@ import ReportLayout from '../../components/ReportLayout'
 import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
 import { useT } from '../../lib/i18n'
+import ReportFilterBar from '../../components/ReportFilterBar'
+import { ReportMetricGauge } from '../../components/ReportCharts'
 
 interface ScheduleRow {
   assetId: string
@@ -33,6 +35,8 @@ export default function DepreciationSchedule() {
   const [schedule, setSchedule] = useState<ScheduleRow[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -69,12 +73,20 @@ export default function DepreciationSchedule() {
 
   useEffect(() => { load() }, [load])
 
-  const total = schedule.reduce((s, r) => s + r.amount, 0)
+  const filteredSchedule = useMemo(() => {
+    return schedule.filter((r) => {
+      if (from && r.date && r.date < from) return false
+      if (to && r.date && r.date > to) return false
+      return true
+    })
+  }, [schedule, from, to])
+
+  const total = filteredSchedule.reduce((s, r) => s + r.amount, 0)
 
   const exportCsv = () => {
     downloadCsv('depreciation-schedule.csv',
       ['Asset Code', 'Asset Name', 'Date', 'Amount', 'Journal Entry'],
-      schedule.map((r) => [r.assetCode, r.assetName, r.date, r.amount.toFixed(2), r.journalEntry ?? '']),
+      filteredSchedule.map((r) => [r.assetCode, r.assetName, r.date, r.amount.toFixed(2), r.journalEntry ?? '']),
     )
   }
 
@@ -86,7 +98,7 @@ export default function DepreciationSchedule() {
       meta: [['Generated', new Date().toLocaleString()]],
       tables: [{
         columns: ['Asset Code', 'Asset Name', 'Date', 'Amount', 'Journal Entry'],
-        rows: schedule.map((r) => [r.assetCode, r.assetName, r.date, r.amount.toFixed(2), r.journalEntry ?? '']),
+        rows: filteredSchedule.map((r) => [r.assetCode, r.assetName, r.date, r.amount.toFixed(2), r.journalEntry ?? '']),
         totals: ['TOTAL', '', '', total.toFixed(2), ''],
       }],
     })
@@ -108,6 +120,14 @@ export default function DepreciationSchedule() {
       pdfMeta={[['Generated', new Date().toLocaleString()]]}
     >
       <div className="mt-4 px-2">
+        <ReportFilterBar
+          from={from}
+          to={to}
+          onFromChange={setFrom}
+          onToChange={setTo}
+          className="mb-4"
+        />
+
         <div className="rounded-lg border border-slate-200 bg-white p-3">
           <p className="text-xs text-slate-500">{t('reports.totalDepreciation', 'Total Depreciation Posted')}</p>
           <p className="text-lg font-mono font-semibold text-slate-900">{total.toFixed(2)}</p>
@@ -115,13 +135,13 @@ export default function DepreciationSchedule() {
 
         {loading && <ReportSkeleton sections={1} />}
 
-        {!loading && schedule.length === 0 && !error && (
+        {!loading && filteredSchedule.length === 0 && !error && (
           <div className="mt-6 rounded-lg border border-slate-200 bg-white px-6 py-12 text-center">
             <p className="text-sm text-slate-500">{t('reports.noDepreciationSchedule', 'No depreciation schedule entries found.')}</p>
           </div>
         )}
 
-        {schedule.length > 0 && (
+        {filteredSchedule.length > 0 && (
           <div className="mt-6 rounded-lg border border-slate-200 bg-white overflow-x-auto">
             <table className="w-full text-sm min-w-[700px]">
               <thead>
@@ -134,7 +154,7 @@ export default function DepreciationSchedule() {
                 </tr>
               </thead>
               <tbody>
-                {schedule.map((r, i) => (
+                {filteredSchedule.map((r, i) => (
                   <tr key={r.assetId + '|' + r.date + '|' + i} className="border-b border-slate-50 hover:bg-slate-50">
                     <td className="px-3 py-2 text-left text-sm text-slate-700">{r.assetCode}</td>
                     <td className="px-3 py-2 text-left text-sm text-slate-700">{r.assetName}</td>

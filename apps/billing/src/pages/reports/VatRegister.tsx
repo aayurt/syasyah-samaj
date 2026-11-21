@@ -22,26 +22,8 @@ import {
   type VatRegisterMode,
   type VatRow,
 } from './vatShared'
-
-const QUICK_RANGES = [
-  { label: 'This Month', from: () => monthStart(0), to: () => monthEnd(0) },
-  { label: 'Last Month', from: () => monthStart(-1), to: () => monthEnd(-1) },
-  { label: 'This FY', from: () => fyStart(), to: () => fyEnd() },
-  { label: 'All Time', from: () => '', to: () => '' },
-]
-
-function monthStart(offset: number): string {
-  const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + offset); return d.toISOString().slice(0, 10)
-}
-function monthEnd(offset: number): string {
-  const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + offset + 1, 0); return d.toISOString().slice(0, 10)
-}
-function fyStart(): string {
-  const now = new Date(); const y = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1; return `${y}-07-16`
-}
-function fyEnd(): string {
-  const now = new Date(); const y = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear(); return `${y}-07-15`
-}
+import ReportFilterBar from '../../components/ReportFilterBar'
+import { ReportBreakdownBar, ReportMetricGauge } from '../../components/ReportCharts'
 
 const fmtSigned = (n: number) => (n < 0 ? `(${fmt(-n)})` : fmt(n))
 
@@ -182,28 +164,54 @@ export default function VatRegister() {
       </div>
 
       {/* Filters */}
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <NepaliDateInput compact value={from} onChange={(v) => setFrom(v)} />
-        <span className="text-xs text-slate-400">to</span>
-        <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
-        {QUICK_RANGES.map((r) => (
-          <button
-            key={r.label}
-            onClick={() => { setFrom(r.from()); setTo(r.to()) }}
-            className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
-          >
-            {t(`reports.${r.label === 'This Month' ? 'thisMonth' : r.label === 'Last Month' ? 'lastMonth' : r.label === 'This FY' ? 'thisFY' : r.label === 'This Week' ? 'thisWeek' : r.label === 'Today' ? 'today' : r.label === 'This Year' ? 'thisYear' : 'allTime'}`, r.label)}
-          </button>
-        ))}
-        <label className="ml-auto flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600">
-          <input type="checkbox" checked={vatOnly} onChange={(e) => setVatOnly(e.target.checked)} className="h-3.5 w-3.5 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500" />
-          VAT only
-        </label>
-      </div>
+      <ReportFilterBar
+        from={from}
+        to={to}
+        onFromChange={setFrom}
+        onToChange={setTo}
+        className="mt-4"
+        extraControls={
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-slate-600">
+            <input
+              type="checkbox"
+              checked={vatOnly}
+              onChange={(e) => setVatOnly(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-slate-300 text-crimson-600 focus:ring-crimson-500"
+            />
+            <span>VAT only</span>
+          </label>
+        }
+      />
 
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {loading && rows.length === 0 ? <ReportSkeleton sections={1} /> : (
         <>
+          {/* Visual VAT Structure Chart */}
+          {(totals.taxable > 0 || totals.vat > 0) && (
+            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <ReportBreakdownBar
+                  title={t('reports.vatComposition', 'Taxable Base vs Statutory VAT')}
+                  totalLabel={t('reports.grossVatTotal', 'Total Transaction Volume')}
+                  segments={[
+                    { label: t('reports.taxableAmount', 'Taxable Base (87%)'), value: totals.taxable, color: 'bg-blue-500' },
+                    { label: t('reports.vatTax', 'VAT Component (13%)'), value: totals.vat, color: 'bg-amber-500' },
+                  ]}
+                />
+              </div>
+              <div>
+                <ReportMetricGauge
+                  label={t('reports.effectiveTaxRate', 'Effective Tax Rate')}
+                  value={`${totals.taxable > 0 ? ((totals.vat / totals.taxable) * 100).toFixed(1) : 0}%`}
+                  percentage={totals.taxable > 0 ? (totals.vat / totals.taxable) * 100 : 0}
+                  statusColor="text-amber-700"
+                  barColor="bg-amber-500"
+                  description={`${t('reports.standardNepalRate', 'Standard IRD statutory VAT rate is 13.0%')}`}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div className="rounded-lg border border-slate-200 bg-white p-4">
               <div className="text-xs uppercase tracking-wide text-slate-500">Entries</div>

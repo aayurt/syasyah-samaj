@@ -17,6 +17,8 @@ import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
 import { useT } from '../../lib/i18n'
 import SearchBox from '../../components/SearchBox'
+import ReportFilterBar from '../../components/ReportFilterBar'
+import { ReportBreakdownBar, ReportMetricGauge } from '../../components/ReportCharts'
 
 interface MemberRow {
   id: string
@@ -41,16 +43,21 @@ export default function MembershipFeeCollection() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all')
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const [members, types] = await Promise.all([
-        api<any[]>('/members', { query: { ...tenantQuery, sort: 'fullName', limit: 1000 } }),
-        api<any[]>('/membership-types', { query: { ...tenantQuery, sort: 'name', limit: 1000 } }),
+      const [membersRes, typesRes] = await Promise.all([
+        api<any>('/members', { query: { ...tenantQuery, sort: 'fullName', limit: 1000 } }),
+        api<any>('/membership-types', { query: { ...tenantQuery, sort: 'name', limit: 1000 } }),
       ])
-      const typeMap = new Map<string, any>((types as any[]).map((t) => [String(t.id), t]))
+      const members: any[] = Array.isArray(membersRes) ? membersRes : (membersRes?.docs || [])
+      const types: any[] = Array.isArray(typesRes) ? typesRes : (typesRes?.docs || [])
+      const typeMap = new Map<string, any>(types.map((t) => [String(t.id), t]))
       const memberRows: MemberRow[] = members.map((m) => {
         const typeId = typeof m.membershipType === 'number' || typeof m.membershipType === 'string'
           ? String(m.membershipType)
@@ -79,8 +86,14 @@ export default function MembershipFeeCollection() {
   useEffect(() => { load() }, [load])
 
   const filtered = useMemo(() =>
-    rows.filter((r) => !query || `${r.fullName} ${r.memberId} ${r.email} ${r.phoneNumber}`.toLowerCase().includes(query.toLowerCase())),
-    [rows, query]
+    rows.filter((r) => {
+      if (from && r.joinedDate && r.joinedDate < from) return false
+      if (to && r.joinedDate && r.joinedDate > to) return false
+      if (paymentStatusFilter !== 'all' && r.paymentStatus !== paymentStatusFilter) return false
+      if (query && !`${r.fullName} ${r.memberId} ${r.email} ${r.phoneNumber}`.toLowerCase().includes(query.toLowerCase())) return false
+      return true
+    }),
+    [rows, query, from, to, paymentStatusFilter]
   )
 
   const totals = useMemo(() => {
@@ -136,6 +149,56 @@ export default function MembershipFeeCollection() {
       pdfMeta={[['Generated', new Date().toLocaleString()]]}
     >
       <div className="mt-4 px-2">
+        <ReportFilterBar
+          from={from}
+          to={to}
+          onFromChange={setFrom}
+          onToChange={setTo}
+          className="mb-4"
+          extraControls={
+            <div className="flex flex-wrap items-center gap-2">
+              <SearchBox value={query} onChange={setQuery} placeholder={t('common.search', 'Search members...')} />
+              <select
+                value={paymentStatusFilter}
+                onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:outline-hidden"
+              >
+                <option value="all">All Payment Status</option>
+                <option value="paid">Paid</option>
+                <option value="unpaid">Unpaid</option>
+                <option value="overdue">Overdue</option>
+              </select>
+            </div>
+          }
+        />
+
+        {/* Visual Fee Collection Status Chart */}
+        {totals.totalMembers > 0 && (
+          <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <ReportBreakdownBar
+                title={t('reports.collectionStatus', 'Membership Dues Collection Status')}
+                totalLabel={t('reports.memberRoster', 'Total Members')}
+                segments={[
+                  { label: t('reports.paid', 'Paid Up-to-date'), value: totals.paid, color: 'bg-emerald-500' },
+                  { label: t('reports.unpaid', 'Unpaid Current'), value: totals.unpaid, color: 'bg-amber-500' },
+                  { label: t('reports.overdue', 'Overdue Arrears'), value: totals.overdue, color: 'bg-rose-500' },
+                ]}
+              />
+            </div>
+            <div>
+              <ReportMetricGauge
+                label={t('reports.collectionRate', 'Fee Recovery Rate')}
+                value={`${totals.totalMembers > 0 ? ((totals.paid / totals.totalMembers) * 100).toFixed(1) : 0}%`}
+                percentage={totals.totalMembers > 0 ? (totals.paid / totals.totalMembers) * 100 : 0}
+                statusColor="text-emerald-700"
+                barColor="bg-emerald-500"
+                description={`${totals.paid} of ${totals.totalMembers} active roster members current on dues`}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Summary cards */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div className="rounded-lg border border-slate-200 bg-white p-3">
@@ -154,10 +217,6 @@ export default function MembershipFeeCollection() {
             <p className="text-xs text-slate-500">{t('reports.overdue', 'Overdue')}</p>
             <p className="text-lg font-mono font-semibold text-red-700">{totals.overdue}</p>
           </div>
-        </div>
-
-        <div className="mt-4 px-2">
-          <SearchBox value={query} onChange={setQuery} placeholder={t('common.search', 'Search members...')} />
         </div>
 
         {loading && <ReportSkeleton sections={1} />}

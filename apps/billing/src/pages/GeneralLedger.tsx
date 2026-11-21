@@ -8,7 +8,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { api, list } from '../lib/api'
+import { api, fmt, list } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { useCalendar } from '../lib/calendar'
@@ -18,17 +18,7 @@ import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useT } from '../lib/i18n'
 import type { Account, LedgerRow } from '../lib/types'
-
-const QUICK_RANGES = [
-  { label: 'This Month', from: () => monthStart(0), to: () => monthEnd(0) },
-  { label: 'Last Month', from: () => monthStart(-1), to: () => monthEnd(-1) },
-  { label: 'This FY', from: () => fyStart(), to: () => fyEnd() },
-  { label: 'All Time', from: () => '', to: () => '' },
-]
-function monthStart(o: number): string { const d = new Date(); d.setMonth(d.getMonth() + o, 1); return d.toISOString().slice(0, 10) }
-function monthEnd(o: number): string { const d = new Date(); d.setMonth(d.getMonth() + o + 1, 0); return d.toISOString().slice(0, 10) }
-function fyStart(): string { const n = new Date(); return (n.getMonth() >= 6 ? n.getFullYear() : n.getFullYear() - 1) + '-07-16' }
-function fyEnd(): string { const n = new Date(); return (n.getMonth() >= 6 ? n.getFullYear() + 1 : n.getFullYear()) + '-07-15' }
+import { ReportBreakdownBar, ReportMetricGauge } from '../components/ReportCharts'
 
 const TABLE_COLS = [
   { label: 'Date', key: 'date', align: 'left' as const },
@@ -211,7 +201,7 @@ export default function GeneralLedger() {
               ))}
             </select>
           </div>
-          <DateFilter from={from} to={to} onFromChange={setFrom} onToChange={setTo} quickRanges={QUICK_RANGES} />
+          <DateFilter from={from} to={to} onFromChange={setFrom} onToChange={setTo} />
         </div>
 
         {!selectedAccount && (
@@ -223,6 +213,32 @@ export default function GeneralLedger() {
 
         {selectedAccount && (
           <>
+            {/* Visual Movement Chart */}
+            {(totalDebit > 0 || totalCredit > 0) && (
+              <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                  <ReportBreakdownBar
+                    title={t('reports.activityVolume', 'Account Transaction Activity')}
+                    totalLabel={t('reports.grossTurnover', 'Gross Turnover')}
+                    segments={[
+                      { label: t('vouchers.debit', 'Total Debits (Dr)'), value: totalDebit, color: 'bg-blue-500' },
+                      { label: t('vouchers.credit', 'Total Credits (Cr)'), value: totalCredit, color: 'bg-emerald-500' },
+                    ]}
+                  />
+                </div>
+                <div>
+                  <ReportMetricGauge
+                    label={t('reports.netMovement', 'Net Period Movement')}
+                    value={fmt(Math.abs(totalDebit - totalCredit))}
+                    percentage={totalDebit + totalCredit > 0 ? (Math.abs(totalDebit - totalCredit) / (totalDebit + totalCredit)) * 100 : 0}
+                    statusColor={totalDebit >= totalCredit ? 'text-blue-700' : 'text-emerald-700'}
+                    barColor={totalDebit >= totalCredit ? 'bg-blue-500' : 'bg-emerald-500'}
+                    description={totalDebit >= totalCredit ? 'Net Debit activity expansion' : 'Net Credit activity expansion'}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* ── Ledger table ── */}
             <div className="mt-6 rounded-lg border border-slate-200 bg-white overflow-x-auto">
               <table className="w-full text-sm min-w-[700px]">

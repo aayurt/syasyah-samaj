@@ -12,6 +12,8 @@ import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
 import { useT } from '../../lib/i18n'
 import NepaliDateInput from '../../components/NepaliDateInput'
+import ReportFilterBar from '../../components/ReportFilterBar'
+import { ReportBreakdownBar, ReportMetricGauge } from '../../components/ReportCharts'
 
 interface BsRow {
   account: { id: number | null; code?: string; name: string }
@@ -25,15 +27,6 @@ interface BsResponse {
   totals: { assets: number; liabilities: number; equity: number; liabilitiesEquity: number }
   balanced: boolean
 }
-
-const QUICK_RANGES = [
-  { label: 'As of Today', from: () => '', to: todayAD },
-  { label: 'End of FY', from: () => '', to: () => fyEnd() },
-  { label: 'Last FY End', from: () => '', to: () => lastFyEnd() },
-  { label: 'All Time', from: () => '', to: () => '' },
-]
-function fyEnd(): string { const n = new Date(); return (n.getMonth() >= 6 ? n.getFullYear() + 1 : n.getFullYear()) + '-07-15' }
-function lastFyEnd(): string { const n = new Date(); return (n.getMonth() >= 6 ? n.getFullYear() : n.getFullYear() - 1) + '-07-15' }
 
 export default function BalanceSheet() {
   const navigate = useNavigate()
@@ -165,14 +158,15 @@ export default function BalanceSheet() {
         </div>
       </div>
       <div className="mt-2"><DataStatus /></div>
-      <div className="mt-4 flex items-center gap-3">
-        <NepaliDateInput compact value={from} onChange={(v) => setFrom(v)} />
-        <span className="text-xs text-slate-400">to</span>
-        <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
-        <div className="flex gap-1">
-          {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{t(`reports.${r.label === 'As of Today' ? 'asOfToday' : r.label === 'End of FY' ? 'endOfFY' : r.label === 'Last FY End' ? 'lastFYEnd' : 'allTime'}`, r.label)}</button>))}
-        </div>
-      </div>
+
+      <ReportFilterBar
+        from={from}
+        to={to}
+        onFromChange={setFrom}
+        onToChange={setTo}
+        className="mt-4"
+      />
+
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {loading && !data ? <ReportSkeleton sections={3} /> : data && (
         <>
@@ -180,6 +174,33 @@ export default function BalanceSheet() {
           <div className={`mt-4 rounded-lg border px-4 py-3 text-sm font-medium ${data.balanced ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
             {data.balanced ? '✓ Assets = Liabilities + Equity — balance sheet is balanced.' : `✗ Out of balance — Assets ${fmt(data.totals.assets)} vs Liabilities+Equity ${fmt(data.totals.liabilitiesEquity)}.`}
           </div>
+
+          {/* Visual Balance Sheet Capital Structure Chart */}
+          {(Math.abs(data.totals.assets) > 0 || Math.abs(data.totals.liabilities) > 0 || Math.abs(data.totals.equity) > 0) && (
+            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <ReportBreakdownBar
+                  title={t('reports.capitalStructure', 'Balance Sheet Structure & Solvency')}
+                  totalLabel={t('reports.totalClaims', 'Total Liabilities & Equity')}
+                  segments={[
+                    { label: t('reports.assets', 'Assets'), value: data.totals.assets, color: 'bg-blue-500' },
+                    { label: t('reports.liabilities', 'Liabilities'), value: data.totals.liabilities, color: 'bg-rose-400' },
+                    { label: t('reports.equity', 'Equity'), value: data.totals.equity, color: 'bg-purple-500' },
+                  ]}
+                />
+              </div>
+              <div>
+                <ReportMetricGauge
+                  label={t('reports.equityRatio', 'Equity Ratio')}
+                  value={data.totals.equity}
+                  percentage={data.totals.assets > 0 ? (data.totals.equity / data.totals.assets) * 100 : undefined}
+                  statusColor="text-purple-700"
+                  barColor="bg-purple-500"
+                  description={`${t('reports.equityOfAssets', 'Equity capitalization proportion of total assets')}`}
+                />
+              </div>
+            </div>
+          )}
 
           {/* KPI summary */}
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">

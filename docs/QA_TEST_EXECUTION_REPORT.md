@@ -38,6 +38,9 @@
 | 25 | Line Items Keyboard Navigation & Column Alignment | `/app/vouchers/new?type=sales-invoice` | ✅ PASS | Searching "SOL" autocompletes by code to `SOL-001`. Auto-populates `4000 Revenue / Income`. Pressing Tab from rate/tax adds Row 2 with 100% pixel-perfect column alignment under headers. Removed redundant Sub-account column. |
 | 26 | Members CSV Import | `/app/members` | ✅ PASS | Uploaded `members-import-test.csv`. Parsed and created `Sita Maya Maharjan` and `Ram Bahadur Shrestha`. Successfully persisted under `tenant: 1` with 0 errors. Members table reloaded to display 2 members. |
 | 27 | Chart of Accounts CSV Import & Layout | `/app/accounts` | ✅ PASS | Uploaded `accounts-import-test.csv`. Created `1140 Security Deposits Paid` (Asset) and `5130 Community Event Expenses` (Expense). Verified in table view (18 accounts) and tree view with clean header and cell spacing. |
+| 28 | Reports Suite Live Audit & Unified Filter Bar | `/app/reports/*` | ✅ PASS | Audited all 9 reports live. Deployed unified `ReportFilterBar` supporting Fiscal Year selector, 12 Bikram Sambat months (Shrawan–Asar), Day filters (`Today`, `Yesterday`), Quarters (`Q1`–`Q4`), Full FY, and dual BS/AD `NepaliDateInput` pickers. |
+| 29 | Visual Analytics & Financial Breakdown Charts | `/app/reports/pnl`, `/app/reports/sales`, `/app/reports/balance-sheet`, `/app/reports/vat-register`, `/app/reports/membership-fee-collection` | ✅ PASS | Deployed pure CSS/SVG `ReportBreakdownBar` and `ReportMetricGauge` widgets across reports. Verified live in browser: P&L revenue vs COGS breakdown, Sales settlement distribution, Balance Sheet capital structure, VAT statutory proportion, and Membership dues recovery status. |
+| 30 | Playwright E2E Test Suite Automation | `apps/billing/e2e/specs/reports-filters-charts.spec.ts` | ✅ PASS | Authored dedicated Playwright E2E test suite covering report filtering, Bikram Sambat quarter navigation, quick period pills, and chart verification. Vitest unit tests expanded to 645 tests across 68 files (100% passing). |
 
 ---
 
@@ -131,6 +134,14 @@
 - **Problem**: Dropdowns and select popovers were squished on small viewports, and scrolling inside modals caused the outer page background to bounce (`overscroll`).
 - **Fix Applied**: Added base `min-width: 140px` and `min-w-[160px]` / `minWidth={300}` on `AccountSelect`, `SearchSelect`, and `Popover`. Added `overscroll-y-contain` across `ImportPreviewModal`, `ConflictDrawer`, `VoucherViewModal`, `ExportModal`, `Popover`, and the main application container.
 
+### Issue 23: `types.map is not a function` in MembershipFeeCollection & DonationSummary
+- **Problem**: In `MembershipFeeCollection.tsx` and `DonationSummary.tsx`, `api('/membership-types')` returned `{ docs: [...], totalDocs: ... }` rather than a flat array, throwing `TypeError: types.map is not a function`.
+- **Fix Applied**: Unpacked `Array.isArray(res) ? res : (res?.docs || [])`.
+
+### Issue 24: Negative Balance Sheet Totals Suppressing Capital Structure Visual Bar
+- **Problem**: In `BalanceSheet.tsx`, the chart guard checked `data.totals.assets > 0`. Because accumulated depreciation on an uncapitalized test tenant yielded negative net assets (`-75,333.34`), the capital structure bar failed to render.
+- **Fix Applied**: Updated guard to check `Math.abs(data.totals.assets) > 0` and enabled `ReportBreakdownBar` to calculate absolute magnitude proportions, gracefully rendering visual solvency bars even with negative equity or accumulated losses.
+
 ---
 
 ## 3. UI Updates & UX Improvements Implemented
@@ -148,3 +159,7 @@
    - Added 1-click duration presets (e.g., Vehicles = 5 yrs, Computers = 3 yrs, Buildings = 20 yrs).
 6. **Horizontal Scroll Containment on Wide Tables**:
    - Wrapped Item Lines and Chart of Accounts tables in `<div className="overflow-x-auto overscroll-x-contain">` to prevent content clipping on smaller screens.
+7. **Unified ReportFilterBar Across Reporting Suite**:
+   - Added standardized filtering with Fiscal Year dropdown, Bikram Sambat 12-month sequence (Shrawan to Asar), Day presets (`Today`, `Yesterday`), Quarters (`Q1`-`Q4`), and dual BS/AD `NepaliDateInput` date pickers.
+8. **Interactive Visual Analytics & Metric Gauges**:
+   - Added lightweight, responsive SVG/CSS segmented breakdown bars (`ReportBreakdownBar`) and ratio gauges (`ReportMetricGauge`) across P&L, Sales, Balance Sheet, VAT Register, Fixed Assets, and Membership reports.

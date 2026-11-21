@@ -14,28 +14,10 @@ import { StatusPill } from '../Dashboard'
 import type { BillingSettings, Currency, Document, Party } from '../../lib/types'
 import { baseCurrencyOf, effectiveAmount, toBaseCurrency } from '../../lib/types'
 import NepaliDateInput from '../../components/NepaliDateInput'
+import ReportFilterBar from '../../components/ReportFilterBar'
+import { ReportBreakdownBar, ReportMetricGauge } from '../../components/ReportCharts'
 
 type StatusFilter = 'all' | 'draft' | 'posted' | 'void'
-
-const QUICK_RANGES = [
-  { label: 'This Month', from: () => monthStart(0), to: () => monthEnd(0) },
-  { label: 'Last Month', from: () => monthStart(-1), to: () => monthEnd(-1) },
-  { label: 'This FY', from: () => fyStart(), to: () => fyEnd() },
-  { label: 'All Time', from: () => '', to: () => '' },
-]
-
-function monthStart(offset: number): string {
-  const d = new Date(); d.setMonth(d.getMonth() + offset, 1); return d.toISOString().slice(0, 10)
-}
-function monthEnd(offset: number): string {
-  const d = new Date(); d.setMonth(d.getMonth() + offset + 1, 0); return d.toISOString().slice(0, 10)
-}
-function fyStart(): string {
-  const now = new Date(); const y = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1; return `${y}-07-16`
-}
-function fyEnd(): string {
-  const now = new Date(); const y = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear(); return `${y}-07-15`
-}
 
 /** Compute payment map: for each invoice, sum matching receipt amounts. */
 function computePayments(
@@ -164,6 +146,7 @@ export default function SalesReport() {
   }, [invoices, creditNotes, paymentMap, statusFilter, query, parties])
 
   const totalSales = invoices.reduce((s, d) => s + effectiveAmount(d), 0)
+  const totalReturns = creditNotes.reduce((s, d) => s + effectiveAmount(d), 0)
   const totalReceived = invoices.reduce((s, d) => s + (paymentMap.get(d.id) || 0), 0)
   const totalUnpaid = totalSales - totalReceived
   const totalSalesBase = invoices.reduce((s, d) => s + toBaseCurrency(effectiveAmount(d), d, base), 0)
@@ -205,30 +188,60 @@ export default function SalesReport() {
       </div>
       <div className="mt-2"><DataStatus /></div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <SearchBox value={query} onChange={setQuery} placeholder="Search invoices…" />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-slate-500">
-          <option value="all">All Status</option>
-          <option value="posted">Posted</option>
-          <option value="draft">Draft</option>
-          <option value="void">Void</option>
-        </select>
-        <div className="flex items-center gap-2">
-          <NepaliDateInput compact value={from} onChange={(v) => setFrom(v)} />
-          <span className="text-xs text-slate-400">to</span>
-          <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
-        </div>
-        <div className="flex gap-1">
-          {QUICK_RANGES.map((r) => (
-            <button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{t(`reports.${r.label === 'This Month' ? 'thisMonth' : r.label === 'Last Month' ? 'lastMonth' : r.label === 'This FY' ? 'thisFY' : r.label === 'This Week' ? 'thisWeek' : r.label === 'Today' ? 'today' : r.label === 'This Year' ? 'thisYear' : 'allTime'}`, r.label)}</button>
-          ))}
-        </div>
-      </div>
+      <ReportFilterBar
+        from={from}
+        to={to}
+        onFromChange={setFrom}
+        onToChange={setTo}
+        className="mt-4"
+        extraControls={
+          <div className="flex flex-wrap items-center gap-2">
+            <SearchBox value={query} onChange={setQuery} placeholder="Search invoices…" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:outline-hidden"
+            >
+              <option value="all">All Status</option>
+              <option value="posted">Posted</option>
+              <option value="draft">Draft</option>
+              <option value="void">Void</option>
+            </select>
+          </div>
+        }
+      />
 
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       {loading && invoices.length === 0 ? <ReportSkeleton sections={1} /> : (
         <>
+          {/* Visual Sales & Collections Chart */}
+          {(totalSales > 0 || totalReturns > 0) && (
+            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <ReportBreakdownBar
+                  title={t('reports.settlementStatus', 'Settlement & Payment Status')}
+                  totalLabel={t('reports.grossInvoiced', 'Total Gross Sales')}
+                  segments={[
+                    { label: t('reports.collected', 'Paid / Collected'), value: totalReceived, color: 'bg-emerald-500' },
+                    { label: t('reports.receivable', 'Outstanding Balance'), value: totalUnpaid, color: 'bg-amber-500' },
+                    { label: t('reports.returns', 'Credit Returns'), value: totalReturns, color: 'bg-rose-400' },
+                  ]}
+                />
+              </div>
+              <div>
+                <ReportMetricGauge
+                  label={t('reports.collectionEfficiency', 'Collection Rate')}
+                  value={totalReceived}
+                  percentage={totalSales > 0 ? (totalReceived / totalSales) * 100 : 0}
+                  statusColor="text-emerald-700"
+                  barColor="bg-emerald-500"
+                  description={`${t('reports.receivedOfSales', 'Realized cash/bank receipts of gross billed sales')}`}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
             {kpis.map((k) => k.href ? (
               <button key={k.label} onClick={() => navigate(k.href!)} className="rounded-lg border border-slate-200 bg-white p-4 text-left transition-colors hover:border-crimson-200 hover:bg-crimson-50/30">

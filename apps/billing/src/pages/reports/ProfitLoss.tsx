@@ -12,17 +12,8 @@ import { useT } from '../../lib/i18n'
 import LedgerModal from '../../components/LedgerModal'
 import type { PnlResponse, PnlRow } from '../../lib/types'
 import NepaliDateInput from '../../components/NepaliDateInput'
-
-const QUICK_RANGES = [
-  { label: 'This Month', from: () => monthStart(0), to: () => monthEnd(0) },
-  { label: 'Last Month', from: () => monthStart(-1), to: () => monthEnd(-1) },
-  { label: 'This FY', from: () => fyStart(), to: () => fyEnd() },
-  { label: 'All Time', from: () => '', to: () => '' },
-]
-function monthStart(o: number): string { const d = new Date(); d.setMonth(d.getMonth() + o, 1); return d.toISOString().slice(0, 10) }
-function monthEnd(o: number): string { const d = new Date(); d.setMonth(d.getMonth() + o + 1, 0); return d.toISOString().slice(0, 10) }
-function fyStart(): string { const n = new Date(); return (n.getMonth() >= 6 ? n.getFullYear() : n.getFullYear() - 1) + '-07-16' }
-function fyEnd(): string { const n = new Date(); return (n.getMonth() >= 6 ? n.getFullYear() + 1 : n.getFullYear()) + '-07-15' }
+import ReportFilterBar from '../../components/ReportFilterBar'
+import { ReportBreakdownBar, ReportMetricGauge } from '../../components/ReportCharts'
 
 export default function ProfitLoss() {
   const navigate = useNavigate()
@@ -150,14 +141,7 @@ export default function ProfitLoss() {
         </div>
       </div>
       <div className="mt-2"><DataStatus /></div>
-      <div className="mt-4 flex items-center gap-3">
-        <NepaliDateInput compact value={from} onChange={(v) => setFrom(v)} />
-        <span className="text-xs text-slate-400">to</span>
-        <NepaliDateInput compact value={to} onChange={(v) => setTo(v)} />
-        <div className="flex gap-1">
-          {QUICK_RANGES.map((r) => (<button key={r.label} onClick={() => { setFrom(r.from()); setTo(r.to()) }} className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50">{t(`reports.${r.label === 'This Month' ? 'thisMonth' : r.label === 'Last Month' ? 'lastMonth' : r.label === 'This FY' ? 'thisFY' : 'allTime'}`, r.label)}</button>))}
-        </div>
-      </div>
+      <ReportFilterBar from={from} to={to} onFromChange={setFrom} onToChange={setTo} className="mt-4" />
       {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {loading && !data ? <ReportSkeleton sections={2} /> : data && (
         <>
@@ -167,6 +151,41 @@ export default function ProfitLoss() {
               ? `✓ ${t('reports.netProfit', 'Net Profit')}: ${fmt(data.totals.netProfit)}`
               : `✗ ${t('reports.netLoss', 'Net Loss')}: ${fmt(Math.abs(data.totals.netProfit))}`}
           </div>
+
+          {/* Visual Breakdown Chart */}
+          {(data.totals.income > 0 || data.totals.cogs > 0 || data.totals.otherExpense > 0) && (
+            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <ReportBreakdownBar
+                  title={t('reports.pnlBreakdown', 'Revenue & Expense Distribution')}
+                  totalLabel={t('reports.totalActivity', 'Total Operating Volume')}
+                  segments={[
+                    { label: t('dashboard.income', 'Income'), value: data.totals.income, color: 'bg-emerald-500' },
+                    { label: t('reports.costOfGoodsSold', 'Cost of Goods Sold'), value: data.totals.cogs, color: 'bg-rose-500' },
+                    { label: t('reports.operatingExpenses', 'Operating Expenses'), value: data.totals.otherExpense, color: 'bg-amber-500' },
+                  ]}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                <ReportMetricGauge
+                  label={t('reports.grossMargin', 'Gross Margin')}
+                  value={data.totals.grossProfit}
+                  percentage={data.totals.income > 0 ? (data.totals.grossProfit / data.totals.income) * 100 : undefined}
+                  statusColor={data.totals.grossProfit >= 0 ? 'text-emerald-700' : 'text-red-600'}
+                  barColor={data.totals.grossProfit >= 0 ? 'bg-emerald-500' : 'bg-red-500'}
+                  description={`${t('reports.grossOfIncome', 'Gross profit as % of total revenue')}`}
+                />
+                <ReportMetricGauge
+                  label={t('reports.netMargin', 'Net Profit Margin')}
+                  value={data.totals.netProfit}
+                  percentage={data.totals.income > 0 ? (data.totals.netProfit / data.totals.income) * 100 : undefined}
+                  statusColor={data.totals.netProfit >= 0 ? 'text-emerald-700' : 'text-red-600'}
+                  barColor={data.totals.netProfit >= 0 ? 'bg-emerald-500' : 'bg-red-500'}
+                  description={`${t('reports.netOfIncome', 'Net earnings as % of revenue')}`}
+                />
+              </div>
+            </div>
+          )}
 
           {/* KPI summary */}
           <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">

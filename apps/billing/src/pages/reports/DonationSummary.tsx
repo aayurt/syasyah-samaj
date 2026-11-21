@@ -16,6 +16,8 @@ import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
 import { useT } from '../../lib/i18n'
 import SearchBox from '../../components/SearchBox'
+import ReportFilterBar from '../../components/ReportFilterBar'
+import { ReportBreakdownBar, ReportMetricGauge } from '../../components/ReportCharts'
 
 interface DonationRow {
   id: string
@@ -36,12 +38,15 @@ export default function DonationSummary() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const res = await api<any[]>('/documents', {
+      const res = await api<any>('/documents', {
         query: {
           ...tenantQuery,
           where: JSON.stringify({ docType: { equals: 'donation-receipt' } }),
@@ -50,7 +55,8 @@ export default function DonationSummary() {
           depth: 1,
         },
       })
-      const donationRows: DonationRow[] = (res as any[]).map((d) => ({
+      const docs: any[] = Array.isArray(res) ? res : (res?.docs || [])
+      const donationRows: DonationRow[] = docs.map((d) => ({
         id: d.id,
         number: d.number || '',
         date: d.date || '',
@@ -68,8 +74,14 @@ export default function DonationSummary() {
   useEffect(() => { load() }, [load])
 
   const filtered = useMemo(() =>
-    rows.filter((r) => !query || `${r.number} ${r.party?.name} ${r.narration}`.toLowerCase().includes(query.toLowerCase())),
-    [rows, query]
+    rows.filter((r) => {
+      if (from && r.date && r.date < from) return false
+      if (to && r.date && r.date > to) return false
+      if (statusFilter !== 'all' && r.status !== statusFilter) return false
+      if (query && !`${r.number} ${r.party?.name} ${r.narration}`.toLowerCase().includes(query.toLowerCase())) return false
+      return true
+    }),
+    [rows, query, from, to, statusFilter]
   )
 
   const totals = useMemo(() => ({
@@ -115,6 +127,54 @@ export default function DonationSummary() {
       pdfMeta={[['Generated', new Date().toLocaleString()]]}
     >
       <div className="mt-4 px-2">
+        <ReportFilterBar
+          from={from}
+          to={to}
+          onFromChange={setFrom}
+          onToChange={setTo}
+          className="mb-4"
+          extraControls={
+            <div className="flex flex-wrap items-center gap-2">
+              <SearchBox value={query} onChange={setQuery} placeholder={t('common.search', 'Search donations...')} />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:outline-hidden"
+              >
+                <option value="all">All Status</option>
+                <option value="posted">Posted</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
+          }
+        />
+
+        {/* Visual Donations Status Chart */}
+        {totals.total > 0 && (
+          <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <ReportBreakdownBar
+                title={t('reports.donationDistribution', 'Donations Realization Status')}
+                totalLabel={t('reports.grossDonations', 'Total Philanthropic Inflow')}
+                segments={[
+                  { label: t('reports.posted', 'Posted Receipts'), value: totals.posted, color: 'bg-emerald-500' },
+                  { label: t('reports.draft', 'Draft Receipts'), value: totals.draft, color: 'bg-amber-400' },
+                ]}
+              />
+            </div>
+            <div>
+              <ReportMetricGauge
+                label={t('reports.postingRate', 'Posting Ratio')}
+                value={totals.posted}
+                percentage={totals.total > 0 ? (totals.posted / totals.total) * 100 : 0}
+                statusColor="text-emerald-700"
+                barColor="bg-emerald-500"
+                description={`${totals.total > 0 ? ((totals.posted / totals.total) * 100).toFixed(1) : 0}% of contributions verified and posted to general ledger`}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Summary cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="rounded-lg border border-slate-200 bg-white p-3">
@@ -129,10 +189,6 @@ export default function DonationSummary() {
             <p className="text-xs text-slate-500">{t('reports.draft', 'Draft')}</p>
             <p className="text-lg font-mono font-semibold text-amber-700">{totals.draft.toFixed(2)}</p>
           </div>
-        </div>
-
-        <div className="mt-4 px-2">
-          <SearchBox value={query} onChange={setQuery} placeholder={t('common.search', 'Search donations...')} />
         </div>
 
         {loading && <ReportSkeleton sections={1} />}

@@ -155,53 +155,44 @@ export default function ReportLayout({
   )
 }
 
+import ReportFilterBar, { type ReportFilterBarProps } from './ReportFilterBar'
+
 /* ================================================================
  * Shared date-range filter row.
  * ================================================================ */
 
-interface DateFilterProps {
+export interface DateFilterProps {
   from: string
   to: string
   onFromChange: (v: string) => void
   onToChange: (v: string) => void
   quickRanges?: { label: string; from: () => string; to: () => string }[]
+  asOfOnly?: boolean
+  extraControls?: React.ReactNode
 }
 
-export function DateFilter({ from, to, onFromChange, onToChange, quickRanges }: DateFilterProps) {
-  const t = useT()
+export function DateFilter({
+  from,
+  to,
+  onFromChange,
+  onToChange,
+  asOfOnly = false,
+  extraControls,
+}: DateFilterProps) {
   return (
-    <div className="mt-4 flex flex-wrap items-end gap-4 px-2">
-      <div className="flex flex-col gap-1">
-        <label className="text-xs text-slate-500">{t('reports.from', 'From')}</label>
-        <NepaliDateInput value={from} onChange={(v) => onFromChange(v)} />
-      </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-xs text-slate-500">{t('reports.to', 'To')}</label>
-        <NepaliDateInput value={to} onChange={(v) => onToChange(v)} />
-      </div>
-      {quickRanges && quickRanges.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-500">{t('reports.quick', 'Quick')}</label>
-          <div className="flex gap-1">
-            {quickRanges.map((r) => (
-              <button
-                key={r.label}
-                type="button"
-                onClick={() => {
-                  onFromChange(r.from())
-                  onToChange(r.to())
-                }}
-                className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+    <ReportFilterBar
+      from={from}
+      to={to}
+      onFromChange={onFromChange}
+      onToChange={onToChange}
+      asOfOnly={asOfOnly}
+      extraControls={extraControls}
+      className="mt-4"
+    />
   )
 }
+
+export { ReportFilterBar }
 
 /* ================================================================
  * Shared report table header + row.
