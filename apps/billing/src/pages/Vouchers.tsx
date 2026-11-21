@@ -190,7 +190,6 @@ export default function Vouchers() {
   const [searchParams, setSearchParams] = useSearchParams()
   const initialTab = (searchParams.get('tab') as 'new' | 'all') || 'new'
   const [activeTab, setActiveTab] = useState<'new' | 'all'>(initialTab)
-  const [quickCat, setQuickCat] = useState<string>('sales')
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || '')
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
   const [dateFrom, setDateFrom] = useState(searchParams.get('from') || '')
@@ -983,35 +982,13 @@ export default function Vouchers() {
         ) : (
           <>
             {/* Quick create — open a new transaction directly from the all-transactions page */}
-            <div className="mt-4 flex w-fit rounded-lg border border-slate-200 bg-white p-1" role="tablist" aria-label="Quick create transaction type">
+            <div className="mt-4 flex w-fit items-center gap-3">
               <span className="text-xs uppercase tracking-wider font-semibold text-slate-400 px-3 py-2 flex items-center gap-2">
                 <Plus size={14} strokeWidth={2} />
                 Quick create
               </span>
-              {[
-                { key: 'sales', label: 'Sales' },
-                { key: 'purchase', label: 'Purchase' },
-                { key: 'cash', label: 'Cash' },
-                { key: 'stock', label: 'Stock' },
-                { key: 'journal', label: 'Journal' },
-              ].map((cat) => (
-                <button
-                  key={cat.key}
-                  onClick={() => setQuickCat(cat.key)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                    quickCat === cat.key
-                      ? 'bg-crimson-600 text-white shadow-sm'
-                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {Object.entries(DOC_TYPE_META)
-                .filter(([, m]) => m.category === quickCat)
-                .map(([dt, m]) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {Object.entries(DOC_TYPE_META).map(([dt, m]) => (
                   <button
                     key={dt}
                     onClick={() => openNewType(dt as DocType)}
@@ -1024,6 +1001,7 @@ export default function Vouchers() {
                     <span className={`leading-tight text-xs font-medium ${m.textClasses}`}>{m.shortLabel}</span>
                   </button>
                 ))}
+              </div>
             </div>
 
             {/* Filter toolbar — single row: status pills · search · type/date dropdowns */}
