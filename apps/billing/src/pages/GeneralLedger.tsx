@@ -7,7 +7,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api, list } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
@@ -42,6 +42,7 @@ const TABLE_COLS = [
 
 export default function GeneralLedger() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const t = useT()
@@ -54,8 +55,9 @@ export default function GeneralLedger() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
-  const totalDebit = useMemo(() => rows.reduce((s, r) => s + r.debit, 0), [rows])
-  const totalCredit = useMemo(() => rows.reduce((s, r) => s + r.credit, 0), [rows])
+  const rowsList = Array.isArray(rows) ? rows : []
+  const totalDebit = useMemo(() => rowsList.reduce((s, r) => s + (r.debit || 0), 0), [rowsList])
+  const totalCredit = useMemo(() => rowsList.reduce((s, r) => s + (r.credit || 0), 0), [rowsList])
   const closing = useMemo(() => totalDebit - totalCredit, [totalDebit, totalCredit])
 
   useEffect(() => {
@@ -67,12 +69,18 @@ export default function GeneralLedger() {
           limit: 1000,
           ...tenantQuery,
         })
-        setAccounts(res.docs)
+        const docs = res.docs || []
+        setAccounts(docs)
+        const accountParam = searchParams.get('account')
+        if (accountParam) {
+          const matched = docs.find((a) => String(a.id) === accountParam || a.code === accountParam)
+          if (matched) setSelectedAccount(matched)
+        }
       } catch {
         // Non-fatal: account selector will be empty until data loads.
       }
     })()
-  }, [tenantId])
+  }, [tenantId, searchParams])
 
   const load = useCallback(async () => {
     if (!selectedAccount) return
@@ -85,8 +93,9 @@ export default function GeneralLedger() {
       }
       if (from) q.from = from
       if (to) q.to = to
-      const res = await api<LedgerRow[]>('/journal-entries/ledger', { query: q })
-      setRows(res)
+      const res = await api<any>('/journal-entries/ledger', { query: q })
+      const list = Array.isArray(res) ? res : res?.docs || []
+      setRows(list)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load ledger')
       setRows([])
@@ -179,7 +188,7 @@ export default function GeneralLedger() {
                 if (acct) handleSelect(acct)
               }}
               className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-50 disabled:text-slate-400"
-              disabled={loading || !rows.length && !selectedAccount}
+              disabled={loading || accounts.length === 0}
             >
               <option value="">{t('reports.selectAccount', 'Select an account')}</option>
               {accounts.map((a) => (

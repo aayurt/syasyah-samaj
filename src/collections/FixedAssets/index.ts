@@ -196,15 +196,19 @@ export const FixedAssets: CollectionConfig = {
         const lastPosted = rows[rows.length - 1]?.date
         const from =
           lastPosted || (asset.purchaseDate ? String(asset.purchaseDate).slice(0, 10) : asOf)
-        const months = wholeMonths(from, asOf)
+        let months = wholeMonths(from, asOf)
+        // Cap at the remaining depreciable base.
+        const remaining = Math.max(0, round2(depreciableBase - alreadyDepreciated))
+        // If the asset has never been depreciated and is active in the current period, allow at least 1 month
+        if (months <= 0 && rows.length === 0 && remaining > 0) {
+          months = 1
+        }
         if (months <= 0 || monthly <= 0) {
           return Response.json(
             { error: 'Nothing to depreciate for this period.' },
             { status: 409 },
           )
         }
-        // Cap at the remaining depreciable base.
-        const remaining = Math.max(0, round2(depreciableBase - alreadyDepreciated))
         const allowed = Math.min(months, Math.ceil(remaining / monthly))
         if (allowed <= 0) {
           return Response.json(
@@ -335,7 +339,10 @@ export const FixedAssets: CollectionConfig = {
 
             const lastPosted = rows[rows.length - 1]?.date
             const from = lastPosted || (asset.purchaseDate ? String(asset.purchaseDate).slice(0, 10) : asOf)
-            const months = wholeMonths(from, asOf)
+            let months = wholeMonths(from, asOf)
+            if (months <= 0 && rows.length === 0 && remaining > 0) {
+              months = 1
+            }
             if (months <= 0) continue
 
             const allowed = Math.min(months, Math.ceil(remaining / monthly))

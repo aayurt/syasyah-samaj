@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useCallback } from 'react'
 import { en } from './i18n/en'
 import { ne } from './i18n/ne'
 
 export type Lang = 'en' | 'ne'
 
 const STORAGE_KEY = 'ui-lang'
-const DEFAULT_LANG: Lang = 'ne'
+const DEFAULT_LANG: Lang = 'en'
 
 type LangContextValue = {
   lang: Lang
@@ -70,64 +70,67 @@ export function useT() {
   const { lang } = useLang()
   const dict = lang === 'ne' ? ne : en
 
-  return (key: string, fallback?: string): string => {
-    // Split key into namespace + path (first dot separates them)
-    const dotIdx = key.indexOf('.')
-    if (dotIdx < 0) {
-      // No namespace — try as top-level key directly
-      const current = (dict as Record<string, unknown>)[key]
-      if (typeof current === 'string') return current
-      if (fallback) return fallback
-      const enVal = (en as Record<string, unknown>)[key]
-      if (typeof enVal === 'string') return enVal
-      return key
-    }
-
-    const ns = key.slice(0, dotIdx) as keyof typeof dict
-    const path = key.slice(dotIdx + 1)
-    const nsDict = dict[ns]
-    if (!nsDict || typeof nsDict !== 'object') {
-      if (fallback) return fallback
-      const enNs = en[ns]
-      if (enNs && typeof enNs === 'object') {
-        const enVal = (enNs as Record<string, unknown>)[path]
+  return useCallback(
+    (key: string, fallback?: string): string => {
+      // Split key into namespace + path (first dot separates them)
+      const dotIdx = key.indexOf('.')
+      if (dotIdx < 0) {
+        // No namespace — try as top-level key directly
+        const current = (dict as Record<string, unknown>)[key]
+        if (typeof current === 'string') return current
+        if (fallback) return fallback
+        const enVal = (en as Record<string, unknown>)[key]
         if (typeof enVal === 'string') return enVal
+        return key
       }
-      return key
-    }
 
-    // Navigate the path through the nested dict
-    const segments = path.split('.')
-    let val: unknown = nsDict
-    for (const seg of segments) {
-      if (val && typeof val === 'object' && seg in val) {
-        val = (val as Record<string, unknown>)[seg]
-      } else {
-        val = undefined
-        break
+      const ns = key.slice(0, dotIdx) as keyof typeof dict
+      const path = key.slice(dotIdx + 1)
+      const nsDict = dict[ns]
+      if (!nsDict || typeof nsDict !== 'object') {
+        if (fallback) return fallback
+        const enNs = en[ns]
+        if (enNs && typeof enNs === 'object') {
+          const enVal = (enNs as Record<string, unknown>)[path]
+          if (typeof enVal === 'string') return enVal
+        }
+        return key
       }
-    }
 
-    if (typeof val === 'string') return val
-    if (fallback) return fallback
-
-    // Fallback to English
-    const enNs = en[ns]
-    if (enNs && typeof enNs === 'object') {
-      let enVal: unknown = enNs
+      // Navigate the path through the nested dict
+      const segments = path.split('.')
+      let val: unknown = nsDict
       for (const seg of segments) {
-        if (enVal && typeof enVal === 'object' && seg in enVal) {
-          enVal = (enVal as Record<string, unknown>)[seg]
+        if (val && typeof val === 'object' && seg in val) {
+          val = (val as Record<string, unknown>)[seg]
         } else {
-          enVal = undefined
+          val = undefined
           break
         }
       }
-      if (typeof enVal === 'string') return enVal
-    }
 
-    return key
-  }
+      if (typeof val === 'string') return val
+      if (fallback) return fallback
+
+      // Fallback to English
+      const enNs = en[ns]
+      if (enNs && typeof enNs === 'object') {
+        let enVal: unknown = enNs
+        for (const seg of segments) {
+          if (enVal && typeof enVal === 'object' && seg in enVal) {
+            enVal = (enVal as Record<string, unknown>)[seg]
+          } else {
+            enVal = undefined
+            break
+          }
+        }
+        if (typeof enVal === 'string') return enVal
+      }
+
+      return key
+    },
+    [dict],
+  )
 }
 
 /**

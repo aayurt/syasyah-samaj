@@ -18,7 +18,7 @@ import { downloadCsv } from '../lib/csv'
 import { pushToast } from '../lib/toast'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useT } from '../lib/i18n'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import SearchBox from '../components/SearchBox'
 import SortableTh from '../components/SortableTh'
@@ -74,7 +74,7 @@ const emptyForm = {
   name: '',
   code: '',
   category: 'equipment',
-  purchaseDate: '',
+  purchaseDate: new Date().toISOString().slice(0, 10),
   purchaseCost: '',
   salvageValue: '0',
   usefulLifeYears: '5',
@@ -112,11 +112,11 @@ const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: 'reports', label: 'Reports', icon: Calendar },
 ]
 
-function TabButton({ key, label, icon: Icon, active, onClick }: { key: Tab; label: string; icon: React.ElementType; active: boolean; onClick: (k: Tab) => void }) {
+function TabButton({ tabKey, label, icon: Icon, active, onClick }: { tabKey: Tab; label: string; icon: React.ElementType; active: boolean; onClick: (k: Tab) => void }) {
   return (
     <button
       type="button"
-      onClick={() => onClick(key)}
+      onClick={() => onClick(tabKey)}
       className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
         active
           ? 'bg-slate-100 text-slate-900 border border-slate-200'
@@ -134,6 +134,7 @@ function TabButton({ key, label, icon: Icon, active, onClick }: { key: Tab; labe
  * ================================================================ */
 
 export default function FixedAssetsPage() {
+  const navigate = useNavigate()
   const { cacheVersion } = useSyncState()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
@@ -252,7 +253,7 @@ export default function FixedAssetsPage() {
     e.preventDefault()
     setSaving(true)
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         name: form.name.trim(),
         code: form.code.trim() || undefined,
         category: form.category,
@@ -262,6 +263,7 @@ export default function FixedAssetsPage() {
         usefulLifeYears: Number(form.usefulLifeYears) || 0,
         location: form.location.trim() || undefined,
         status: form.status,
+        ...(tenantId ? { tenant: Number(tenantId) || tenantId } : {}),
       }
       if (editing != null) {
         await api(`/fixed-assets/${editing}`, {
@@ -269,14 +271,14 @@ export default function FixedAssetsPage() {
           body: payload,
           immediate: true,
         })
-        pushToast('success', t('common.saved', 'Saved'), payload.name)
+        pushToast('success', t('common.saved', 'Saved'), String(payload.name))
       } else {
         await api('/fixed-assets', {
           method: 'POST',
           body: payload,
           immediate: true,
         })
-        pushToast('success', t('common.created', 'Created'), payload.name)
+        pushToast('success', t('common.created', 'Created'), String(payload.name))
       }
       setShowForm(false)
       setEditing(null)
@@ -1011,33 +1013,33 @@ export default function FixedAssetsPage() {
           <h4 className="mb-2 text-sm font-semibold text-slate-800">{t('fixedAssets.assetRegister', 'Fixed Asset Register')}</h4>
           <p className="mb-3 text-xs text-slate-500">{t('fixedAssets.assetRegisterDesc', 'Complete asset register with cost, depreciation, and NBV.')}</p>
           <LiquidButton
-            asChild
             variant="outline"
             size="sm"
+            onClick={() => setActiveTab('register')}
           >
-            <a href="/fixed-assets?tab=register">{t('common.view', 'View')}</a>
+            {t('common.view', 'View')}
           </LiquidButton>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <h4 className="mb-2 text-sm font-semibold text-slate-800">{t('fixedAssets.assetSummary', 'Fixed Asset Summary')}</h4>
           <p className="mb-3 text-xs text-slate-500">{t('fixedAssets.assetSummaryDesc', 'Cost, accumulated depreciation, and NBV by category.')}</p>
           <LiquidButton
-            asChild
             variant="outline"
             size="sm"
+            onClick={() => navigate('/reports/fixed-asset-summary')}
           >
-            <a href="/reports/fixed-asset-summary">{t('common.view', 'View')}</a>
+            {t('common.view', 'View')}
           </LiquidButton>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <h4 className="mb-2 text-sm font-semibold text-slate-800">{t('fixedAssets.depreciationSchedule', 'Depreciation Schedule')}</h4>
           <p className="mb-3 text-xs text-slate-500">{t('fixedAssets.depreciationScheduleDesc', 'Monthly posted depreciation per asset.')}</p>
           <LiquidButton
-            asChild
             variant="outline"
             size="sm"
+            onClick={() => navigate('/reports/depreciation-schedule')}
           >
-            <a href="/reports/depreciation-schedule">{t('common.view', 'View')}</a>
+            {t('common.view', 'View')}
           </LiquidButton>
         </div>
       </div>
@@ -1074,7 +1076,10 @@ export default function FixedAssetsPage() {
       <div className="flex flex-wrap gap-1 mb-4">
         {TABS.map((tab) => (
           <TabButton
-            {...tab}
+            key={tab.key}
+            tabKey={tab.key}
+            label={tab.label}
+            icon={tab.icon}
             active={activeTab === tab.key}
             onClick={setActiveTab}
           />

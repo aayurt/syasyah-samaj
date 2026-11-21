@@ -801,14 +801,6 @@ export default function Vouchers() {
   const fyFrom = !dateFrom && selectedYear?.startDate ? String(selectedYear.startDate).slice(0, 10) : dateFrom
   const fyTo = !dateTo && selectedYear?.endDate ? String(selectedYear.endDate).slice(0, 10) : dateTo
 
-  const filtered = docs.filter(
-    (d) =>
-      (!typeFilter || d.docType === typeFilter) &&
-      (!statusFilter || effectiveStatusOf(d) === statusFilter) &&
-      (!fyFrom || (d.date && d.date >= fyFrom)) &&
-      (!fyTo || (d.date && d.date <= fyTo + 'T23:59:59')),
-  )
-
   const partyName = (d: Document) => {
     if (d.party && typeof d.party === 'object') return d.party.name
     // Optimistic (pre-sync) rows carry party as a raw id — fall back to the
@@ -828,6 +820,14 @@ export default function Vouchers() {
 
   /** The status a document is really in, for filtering and display. */
   const effectiveStatusOf = (d: Document): string => orderStatusOf(d) ?? d.status
+
+  const filtered = docs.filter(
+    (d) =>
+      (!typeFilter || d.docType === typeFilter) &&
+      (!statusFilter || effectiveStatusOf(d) === statusFilter) &&
+      (!fyFrom || (d.date && d.date >= fyFrom)) &&
+      (!fyTo || (d.date && d.date <= fyTo + 'T23:59:59')),
+  )
 
   /** Calculate payment status for a sales/purchase invoice from loaded docs */
   const getPaymentStatus = (inv: Document): { status: 'paid' | 'partial' | 'unpaid'; paid: number; outstanding: number } => {

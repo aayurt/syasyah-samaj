@@ -98,6 +98,15 @@ export function isItemDocType(docType: string): boolean {
 const fmtQty = (n: number) =>
   Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0'
 
+function safeRelId(v: unknown): number | string | undefined {
+  if (v == null || v === '') return undefined
+  if (typeof v === 'object' && 'id' in v) return safeRelId((v as { id: unknown }).id)
+  const n = Number(v)
+  if (!Number.isNaN(n) && Number.isFinite(n)) return n
+  const str = String(v).trim()
+  return str || undefined
+}
+
 export const DOC_TYPE_META: Record<string, {
   icon: React.ReactNode
   activeClasses: string
@@ -760,25 +769,35 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   /* ── Submit ─────────────────────────────────────────────────── */
   const buildBody = () => {
     const finalNumber = numberManual ? manualNumber : nextNumberPreview
+    const partyId = safeRelId(party)
+    const tenantRelId = safeRelId(tenantId)
     const base: Record<string, unknown> = {
       docType, date, narration: narration || undefined,
-      party: party ? Number(party) : undefined, status: 'draft',
+      ...(partyId !== undefined ? { party: partyId } : {}),
+      status: 'draft',
       number: finalNumber || undefined,
-      ...(tenantId ? { tenant: tenantId } : {}),
+      ...(tenantRelId !== undefined ? { tenant: tenantRelId } : {}),
       ...(currency && currency !== 'NPR' ? { currency } : {}),
       ...(exchangeRate != null && exchangeRate > 0 ? { exchangeRate } : {}),
     }
     if (isItem) {
-      base.lines = lines.map((l) => ({
-        ...(l.key ? { id: l.key } : {}),
-        item: l.item ? Number(l.item) : undefined, description: l.description, unit: l.unit || undefined,
-        qty: l.qty !== '' ? Number(l.qty) : undefined,
-        rate: l.rate !== '' ? Number(l.rate) : undefined,
-        taxRate: l.taxRate !== '' ? Number(l.taxRate) : undefined,
-        amount: l.amount !== '' ? Number(l.amount) : undefined,
-        ...(l.account ? { account: Number(l.account) } : {}),
-        ...(l.subAccount ? { subAccount: Number(l.subAccount) } : {}),
-      }))
+      base.lines = lines.map((l) => {
+        const itemId = safeRelId(l.item)
+        const accId = safeRelId(l.account)
+        const subAccId = safeRelId(l.subAccount)
+        return {
+          ...(l.key ? { id: l.key } : {}),
+          ...(itemId !== undefined ? { item: itemId } : {}),
+          description: l.description,
+          unit: l.unit || undefined,
+          qty: l.qty !== '' && !Number.isNaN(Number(l.qty)) ? Number(l.qty) : undefined,
+          rate: l.rate !== '' && !Number.isNaN(Number(l.rate)) ? Number(l.rate) : undefined,
+          taxRate: l.taxRate !== '' && !Number.isNaN(Number(l.taxRate)) ? Number(l.taxRate) : undefined,
+          amount: l.amount !== '' && !Number.isNaN(Number(l.amount)) ? Number(l.amount) : undefined,
+          ...(accId !== undefined ? { account: accId } : {}),
+          ...(subAccId !== undefined ? { subAccount: subAccId } : {}),
+        }
+      })
       base.taxRate = Number(taxRate) || 0
       if (globalDiscountEnabled && globalDiscountAmount > 0) {
         base.discountTotal = globalDiscountAmount
@@ -786,16 +805,22 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
         base.discountValue = Number(globalDiscountValue) || 0
       }
     } else if (isContra) {
-      base.fromAccount = fromAccount ? Number(fromAccount) : undefined
-      base.toAccount = toAccount ? Number(toAccount) : undefined
+      const fromId = safeRelId(fromAccount)
+      const toId = safeRelId(toAccount)
+      if (fromId !== undefined) base.fromAccount = fromId
+      if (toId !== undefined) base.toAccount = toId
       base.netTotal = contraTotal; base.grossTotal = contraTotal; base.taxTotal = 0; base.taxRate = 0
     } else if (isJournal) {
-      base.journalLines = journalLines.map((l) => ({
-        ...(l.id ? { id: l.id } : {}), account: Number(l.account),
-        debit: l.debit ? Number(l.debit) : undefined,
-        credit: l.credit ? Number(l.credit) : undefined,
-        memo: l.memo || undefined,
-      }))
+      base.journalLines = journalLines.map((l) => {
+        const accId = safeRelId(l.account)
+        return {
+          ...(l.id ? { id: l.id } : {}),
+          ...(accId !== undefined ? { account: accId } : {}),
+          debit: l.debit && !Number.isNaN(Number(l.debit)) ? Number(l.debit) : undefined,
+          credit: l.credit && !Number.isNaN(Number(l.credit)) ? Number(l.credit) : undefined,
+          memo: l.memo || undefined,
+        }
+      })
     }
     const allTaxLines = [...taxLines]
     // Non-profit-making organisations do not charge VAT — skip all tax lines.
@@ -832,13 +857,20 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       allTaxLines.push({ key: '__tds__', taxType: tdsTypeId, nature: 'withholding' as TaxNature, rate: String(tdsRate) })
     }
     if (allTaxLines.length > 0) {
-      base.taxLines = allTaxLines.map((tl) => ({
-        ...(tl.id ? { id: tl.id } : {}), taxType: Number(tl.taxType), nature: tl.nature, rate: Number(tl.rate) || 0,
-      }))
+      base.taxLines = allTaxLines.map((tl) => {
+        const tId = safeRelId(tl.taxType)
+        return {
+          ...(tl.id ? { id: tl.id } : {}),
+          ...(tId !== undefined ? { taxType: tId } : {}),
+          nature: tl.nature,
+          rate: Number(tl.rate) || 0,
+        }
+      })
     }
     if (isCash) {
       base.paymentMethod = paymentMethod || 'bank'
-      if (bankAccount) base.bankAccount = Number(bankAccount)
+      const bAccId = safeRelId(bankAccount)
+      if (bAccId !== undefined) base.bankAccount = bAccId
       // For receipt/payment: send the amounts as line(s). Simple mode has a
       // single amount line; detailed mode sends every filled line so the
       // server's recompute (net = sum of line amounts) matches the form.

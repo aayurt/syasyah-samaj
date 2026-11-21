@@ -84,6 +84,12 @@ export default defineConfig(({ command }) => ({
     host: '0.0.0.0',
     port: 5173,
     allowedHosts: ['sysyah.local', 'localhost'],
+    // Polling watcher so file edits on the host are detected inside Docker
+    watch: { usePolling: true, interval: 1000 },
+    // Allow serving fonts/assets from pnpm store (.pnpm directories)
+    fs: {
+      allow: ['..', '../../..', '/app/node_modules', '/app/.pnpm'],
+    },
     proxy: {
       // E2E boots a second API instance on its own port and points this proxy
       // at it via E2E_API_TARGET; the default keeps normal dev on :3000.

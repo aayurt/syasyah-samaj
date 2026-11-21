@@ -1,4 +1,5 @@
 import { isAdmin } from '@/access/admin'
+import { isBillingUser } from '@/access/tenantScoped'
 import type { CollectionConfig } from 'payload'
 
 /**
@@ -32,7 +33,7 @@ export const AccountGroups: CollectionConfig = {
   },
   access: {
     create: isAdmin,
-    read: isAdmin,
+    read: ({ req }) => isBillingUser(req.user),
     update: isAdmin,
     delete: isAdmin,
   },

@@ -74,6 +74,8 @@ export default function CashFlowStatement() {
     setLoading(true)
     setError('')
     try {
+      const getDocs = (res: any): LedgerRow[] => (Array.isArray(res) ? res : res?.docs || [])
+
       const ledgerPromises = cashAccounts.map((acct) => {
         const q: any = {
           account: String(acct.id),
@@ -81,21 +83,24 @@ export default function CashFlowStatement() {
         }
         if (from) q.from = from
         if (to) q.to = to
-        return api<LedgerRow[]>('/journal-entries/ledger', { query: q })
+        return api<any>('/journal-entries/ledger', { query: q })
       })
       const allLedgers = await Promise.all(ledgerPromises)
 
       let totalOpening = 0
-      for (let i = 0; i < cashAccounts.length; i++) {
-        const acct = cashAccounts[i]
-        const openingQ: any = {
-          account: String(acct.id),
-          ...tenantQuery,
-          to: from ? new Date(from).toISOString().slice(0, 10) : undefined,
+      if (from) {
+        for (let i = 0; i < cashAccounts.length; i++) {
+          const acct = cashAccounts[i]
+          const openingQ: any = {
+            account: String(acct.id),
+            ...tenantQuery,
+            to: new Date(new Date(from).getTime() - 86400000).toISOString().slice(0, 10),
+          }
+          const openingRes = await api<any>('/journal-entries/ledger', { query: openingQ })
+          const openingDocs = getDocs(openingRes)
+          const openingBal = openingDocs.reduce((sum, r) => sum + (r.debit || 0) - (r.credit || 0), 0)
+          totalOpening += openingBal
         }
-        const openingRes = await api<LedgerRow[]>('/journal-entries/ledger', { query: openingQ })
-        const openingBal = openingRes.reduce((sum, r) => sum + r.debit - r.credit, 0)
-        totalOpening += openingBal
       }
       setOpeningCash(totalOpening)
 
@@ -107,9 +112,9 @@ export default function CashFlowStatement() {
 
       for (let i = 0; i < cashAccounts.length; i++) {
         const acct = cashAccounts[i]
-        const rows = allLedgers[i]
+        const rows = getDocs(allLedgers[i])
         for (const row of rows) {
-          const movement = row.debit - row.credit
+          const movement = (row.debit || 0) - (row.credit || 0)
           totalCashMovement += movement
 
           const label = `${acct.code} ${acct.name}: ${row.narration || '—'} (${row.docType || 'JV'} ${row.docNumber || ''})`.trim()
@@ -132,7 +137,7 @@ export default function CashFlowStatement() {
     } finally {
       setLoading(false)
     }
-  }, [cashAccounts, from, to, tenantId, tenantQuery, t])
+  }, [cashAccounts, from, to, tenantId])
 
   useEffect(() => { load() }, [load])
 

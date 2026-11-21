@@ -85,6 +85,7 @@ const CORE_DEFAULTS: { key: keyof BillingSettings; label: string }[] = [
   { key: 'inventoryAccount', label: 'Inventory' },
   { key: 'revenueAccount', label: 'Revenue' },
   { key: 'expenseAccount', label: 'Expenses' },
+  { key: 'cogsAccount', label: 'Cost of Goods Sold (COGS)' },
 ]
 
 export default function SetupWizard() {

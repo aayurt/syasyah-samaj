@@ -77,6 +77,12 @@ export const redis = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: Number(process.env.REDIS_PORT) || 6379,
   password: process.env.REDIS_PASSWORD,
+  lazyConnect: true,
+  enableOfflineQueue: false,
+  maxRetriesPerRequest: 0,
+})
+redis.on('error', () => {
+  // Silence unhandled connection errors in dev when Redis is not running
 })
 export default buildConfig({
   debug: true,
