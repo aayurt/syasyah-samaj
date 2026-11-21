@@ -15,6 +15,7 @@
  * ================================================================ */
 
 import { useCallback, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus, Search, Trash2, ChevronDown, Users, Building2, Wallet, CreditCard } from 'lucide-react'
 import { calcLine, type LineInput, type LineResult } from '../lib/transactionCalc'
 import AccountSelect from './AccountSelect'
@@ -90,6 +91,8 @@ export default function TransactionLine({
 
   const [subledgerOpen, setSubledgerOpen] = useState(false)
   const [subledgerQuery, setSubledgerQuery] = useState('')
+
+  const navigate = useNavigate()
 
   const subledgerKind = useMemo(() => subledgerSelectorForAccount(selectedAccount), [selectedAccount])
 
@@ -211,6 +214,13 @@ export default function TransactionLine({
                     <span className="flex-1 truncate">{it.name}</span>
                   </button>
                 ))}
+              <button
+                type="button"
+                onClick={() => navigate('/items')}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 border-t border-slate-100"
+              >
+                <Plus size={14} /> {t('vouchers.addItem', 'Add Item')}
+              </button>
             </div>
           )}
         </div>
