@@ -1144,7 +1144,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                   <thead>
                     <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
                       <th className="w-10 px-2 py-3 text-center">#</th>
-                      <th className="min-w-[180px] px-3 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
+                      <th className="w-24 px-2 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
                       <th className="w-24 px-2 py-3 text-left">{t('vouchers.account', 'Account')}</th>
                       {lines.some((l) => {
                         const acct = accounts.find((a) => String(a.id) === String(l.account));

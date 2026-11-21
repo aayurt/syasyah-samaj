@@ -152,12 +152,25 @@ export default function TransactionLine({
     return pool.filter((o) => o.label.toLowerCase().includes(q))
   }, [subledgerKind, subledgerQuery, items])
 
+  const selectedSubAccountName = useMemo(() => {
+    if (!line.subAccount) return ''
+    if (subledgerKind === 'party') {
+      const p = parties.find((p) => String(p.id) === String(line.subAccount))
+      return p ? p.name : ''
+    }
+    if (subledgerKind === 'item') {
+      const it = items.find((it) => String(it.id) === String(line.subAccount))
+      return it ? it.name : ''
+    }
+    return ''
+  }, [line.subAccount, subledgerKind, parties, items])
+
   return (
     <tr key={line.key} className="border-b border-slate-50">
       <td className="px-2 py-2 text-center text-slate-400">{index + 1}</td>
 
       {/* Item / description */}
-      <td className="px-2 py-2">
+      <td className="w-24 px-2 py-2">
         <div className="relative">
           <input
             type="text"
@@ -216,7 +229,7 @@ export default function TransactionLine({
       </td>
 
       {/* Account */}
-      <td className="px-2 py-2">
+      <td className="w-24 px-2 py-2">
         <AccountSelect
           accounts={accounts}
           value={String(line.account ?? '')}
@@ -227,7 +240,7 @@ export default function TransactionLine({
 
       {/* Conditional subledger selector */}
       {subledgerKind ? (
-        <td className="px-2 py-2">
+        <td className="w-24 px-2 py-2">
           {subledgerOpen ? (
             <div className="relative">
               <input
@@ -263,7 +276,7 @@ export default function TransactionLine({
               className="flex items-center gap-1 px-2 py-2 rounded border border-slate-200 text-xs text-slate-500 hover:bg-slate-50 disabled:opacity-40"
             >
               {subledgerKind === 'party' ? <Users size={12} /> : subledgerKind === 'item' ? <Building2 size={12} /> : <Wallet size={12} />}
-              <span>{subledgerKind === 'party' ? t('vouchers.party', 'Party') : subledgerKind === 'item' ? t('vouchers.item', 'Item') : t('vouchers.project', 'Project')}</span>
+              <span>{selectedSubAccountName || (subledgerKind === 'party' ? t('vouchers.party', 'Party') : subledgerKind === 'item' ? t('vouchers.item', 'Item') : t('vouchers.project', 'Project'))}</span>
               <ChevronDown size={10} className="ml-0.5" />
             </button>
           )}
