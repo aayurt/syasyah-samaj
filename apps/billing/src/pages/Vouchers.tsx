@@ -52,7 +52,7 @@ import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
 import { exportInvoicePdf, isTemporaryReceipt } from '../lib/pdf'
 import PrintVoucher from '../components/PrintVoucher'
-import VoucherForm from './VoucherForm'
+import VoucherForm, { DOC_TYPE_META } from './VoucherForm'
 interface DocTypeMeta {
   value: DocType
   label: string
@@ -190,6 +190,7 @@ export default function Vouchers() {
   const [searchParams, setSearchParams] = useSearchParams()
   const initialTab = (searchParams.get('tab') as 'new' | 'all') || 'new'
   const [activeTab, setActiveTab] = useState<'new' | 'all'>(initialTab)
+  const [quickCat, setQuickCat] = useState<string>('sales')
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || '')
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
   const [dateFrom, setDateFrom] = useState(searchParams.get('from') || '')
@@ -206,6 +207,15 @@ export default function Vouchers() {
     if (dateTo) params.set('to', dateTo); else params.delete('to')
     setSearchParams(params, { replace: true })
   }, [activeTab, typeFilter, statusFilter, dateFrom, dateTo]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Open the new-transaction form pre-filled with a doc type, straight from the all-transactions page. */
+  const openNewType = (dt: DocType) => {
+    const params = new URLSearchParams(searchParams)
+    params.set('type', dt)
+    setSearchParams(params, { replace: true })
+    setActiveTab('new')
+  }
+
   const { formatDate, formatDateTime } = useCalendar()
   const [printDoc, setPrintDoc] = useState<Document | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -972,6 +982,50 @@ export default function Vouchers() {
           <TableSkeleton rows={7} />
         ) : (
           <>
+            {/* Quick create — open a new transaction directly from the all-transactions page */}
+            <div className="mt-4 flex w-fit rounded-lg border border-slate-200 bg-white p-1" role="tablist" aria-label="Quick create transaction type">
+              <span className="text-xs uppercase tracking-wider font-semibold text-slate-400 px-3 py-2 flex items-center gap-2">
+                <Plus size={14} strokeWidth={2} />
+                Quick create
+              </span>
+              {[
+                { key: 'sales', label: 'Sales' },
+                { key: 'purchase', label: 'Purchase' },
+                { key: 'cash', label: 'Cash' },
+                { key: 'stock', label: 'Stock' },
+                { key: 'journal', label: 'Journal' },
+              ].map((cat) => (
+                <button
+                  key={cat.key}
+                  onClick={() => setQuickCat(cat.key)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                    quickCat === cat.key
+                      ? 'bg-crimson-600 text-white shadow-sm'
+                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {Object.entries(DOC_TYPE_META)
+                .filter(([, m]) => m.category === quickCat)
+                .map(([dt, m]) => (
+                  <button
+                    key={dt}
+                    onClick={() => openNewType(dt as DocType)}
+                    aria-label={m.shortLabel}
+                    className={`flex flex-col items-center gap-1.5 rounded border px-3 py-2.5 text-sm transition-colors ${
+                      'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    {m.icon}
+                    <span className={`leading-tight text-xs font-medium ${m.textClasses}`}>{m.shortLabel}</span>
+                  </button>
+                ))}
+            </div>
+
             {/* Filter toolbar — single row: status pills · search · type/date dropdowns */}
             <div data-tour="voucher-filters" className="mt-4 flex flex-wrap items-center gap-2">
               {/* Status pills */}

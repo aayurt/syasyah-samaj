@@ -559,7 +559,9 @@ export const FixedAssets: CollectionConfig = {
             req: { transactionID },
           })
 
-          await req.payload.db.commitTransaction(transactionID)
+          if (transactionID) {
+            await req.payload.db.commitTransaction(transactionID)
+          }
 
           return Response.json({
             assetId: asset.id,
@@ -573,7 +575,9 @@ export const FixedAssets: CollectionConfig = {
             journalEntry: entry.id,
           })
         } catch (err) {
-          await req.payload.db.rollbackTransaction(transactionID)
+          if (transactionID) {
+            await req.payload.db.rollbackTransaction(transactionID)
+          }
           const message = err instanceof Error ? err.message : 'Disposal failed'
           return Response.json({ error: message }, { status: 400 })
         }

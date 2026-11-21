@@ -57,11 +57,26 @@ beforeEach(() => {
   apiMock.mockImplementation(async (url: string, options?: { method?: string }) => handler(url, options))
 })
 
-/** Pick the document type from the select dropdown. Waits for the party input to confirm the form mounted. */
+/** Pick the document type from the grid buttons (category tab + type card).
+ * The party field only renders after a type is chosen, so select first, then wait. */
 async function chooseType(value: string) {
-  const select = screen.getAllByRole('combobox')[0]
-  fireEvent.change(select, { target: { value } })
-  await waitFor(() => screen.getByPlaceholderText(/Search for party/i))
+  const catByType: Record<string, string> = {
+    'sales-order': 'Sales & Invoicing',
+    'purchase-order': 'Purchases & Expenses',
+    'sales-invoice': 'Sales & Invoicing',
+  }
+  const labelByType: Record<string, string> = {
+    'sales-order': 'Sales Order',
+    'purchase-order': 'Purchase Order',
+    'sales-invoice': 'Sales Invoice',
+  }
+  const catLabel = catByType[value]
+  if (catLabel) {
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(catLabel, 'i') }))
+  }
+  const label = labelByType[value] || value
+  fireEvent.click(screen.getByRole('button', { name: new RegExp(`^${label}$`, 'i') }))
+  await waitFor(() => screen.getByPlaceholderText(/Search for party/i), { timeout: 5000 })
 }
 
 /** Open the party dropdown and pick Himal Builders. */
@@ -119,12 +134,15 @@ async function fillLine() {
 }
 
 describe('VoucherForm — order document types', () => {
-  it('offers Sales Order and Purchase Order as select options', async () => {
+  it('offers Sales Order and Purchase Order as type buttons', async () => {
     const { default: VoucherForm } = await import('./VoucherForm')
     renderWithProviders(<VoucherForm mode="create" />)
 
-    expect(screen.getByRole('option', { name: /Sales Order/i })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: /Purchase Order/i })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Sales & Invoicing/i }))
+    expect(screen.getByRole('button', { name: /Sales Order/i })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /Purchases & Expenses/i }))
+    expect(screen.getByRole('button', { name: /Purchase Order/i })).toBeInTheDocument()
   })
 
   it('confirms a sales order instead of posting it', async () => {

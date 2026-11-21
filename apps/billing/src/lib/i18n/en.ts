@@ -909,7 +909,6 @@ export const en = {
     disposalRunPosted: 'Asset disposed',
     cost: 'Cost',
     accumulatedDepreciation: 'Accumulated Depreciation',
-    netBookValue: 'Net Book Value',
     selectAccount: 'Select account…',
     monthlyDepreciation: 'Monthly Depn',
     periods: 'Periods',

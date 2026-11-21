@@ -89,7 +89,7 @@ const ORDER_TYPES = ['sales-order', 'purchase-order']
 const fmtQty = (n: number) =>
   Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0'
 
-const DOC_TYPE_META: Record<string, {
+export const DOC_TYPE_META: Record<string, {
   icon: React.ReactNode
   activeClasses: string
   inactiveClasses: string
@@ -351,11 +351,14 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   // Form state
   const urlType = searchParams.get('type') as DocType | null
   const [docType, setDocType] = useState<DocType>(urlType || (urlDocType as DocType) || 'journal-voucher')
+  const defaultCat = (Object.entries(DOC_TYPE_META).find(([dt]) => dt === docType)?.[1]?.category) || 'sales'
+  const [activeCat, setActiveCat] = useState<string>(defaultCat)
   const updateDocType = (dt: DocType) => {
     setDocType(dt)
     setInvoicePrefix(DOC_PREFIXES[dt] || 'INV')
     setManualNumber('')
     setNumberManual(false)
+    setActiveCat((Object.entries(DOC_TYPE_META).find(([d]) => d === dt)?.[1]?.category) || 'sales')
     // Keep the choice in the URL so it survives refresh
     if (!id && !embedded) {
       setSearchParams({ type: dt }, { replace: true })
@@ -636,14 +639,14 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   const docCalc = useMemo(() => calcDoc(lines), [lines])
   const lineTotals = docCalc.subtotal
 
-  const contraTotal = parseFloat(contraAmount) || 0
+  const contraTotal = Number(contraAmount) || 0
 
   const tdsTaxType = taxTypes.find((t) => String(t.id) === tdsTypeId)
   const tdsRate = tdsTaxType ? Number(tdsTaxType.rate) || 0 : 0
 
   const jTotals = useMemo(() => {
     let debit = 0; let credit = 0
-    for (const l of journalLines) { debit += parseFloat(l.debit) || 0; credit += parseFloat(l.credit) || 0 }
+    for (const l of journalLines) { debit += Number(l.debit) || 0; credit += Number(l.credit) || 0 }
     return { debit, credit, diff: debit - credit }
   }, [journalLines])
   const journalBalanced = Math.abs(jTotals.diff) < 0.001
@@ -651,7 +654,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
   const globalDiscountAmount = useMemo(() => {
     if (!globalDiscountEnabled) return 0
-    const v = parseFloat(globalDiscountValue) || 0
+    const v = Number(globalDiscountValue) || 0
     if (globalDiscountMode === 'pct') {
       return lineTotals * (v / 100)
     }
@@ -666,7 +669,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     for (const tl of taxLines) {
       if (tl.nature === 'additive') {
         const txType = taxTypes.find((t) => String(t.id) === tl.taxType)
-        const rate = txType ? Number(txType.rate) || parseFloat(tl.rate) || 0 : parseFloat(tl.rate) || 0
+        const rate = txType ? Number(txType.rate) || Number(tl.rate) || 0 : Number(tl.rate) || 0
         total += (Math.max(taxable, 0) * rate) / 100
       }
     }
@@ -678,7 +681,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   }, [taxLines, taxTypes, lineTotals, globalDiscountAmount, docCalc.taxTotal, isProfitMaking])
 
   const tdsAutoAmount = lineTotals > 0 && tdsRate > 0 ? (lineTotals * tdsRate) / 100 : 0
-  const tdsAmount = tdsAmountManual ? parseFloat(tdsAmountManual) || 0 : tdsAutoAmount
+  const tdsAmount = tdsAmountManual ? Number(tdsAmountManual) || 0 : tdsAutoAmount
 
   const grandTotal = isContra ? contraTotal : lineTotals + vatTotal - globalDiscountAmount - tdsAmount
 
@@ -712,7 +715,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     }
     items.push({ label: 'Date', filled: !!date })
     if (isItem) {
-      items.push({ label: 'Items', filled: lines.some((l) => (l.item || l.description) && (parseFloat(l.qty) || 0) > 0) })
+      items.push({ label: 'Items', filled: lines.some((l) => (l.item || l.description) && (Number(l.qty) || 0) > 0) })
     }
     if (isCash) {
       items.push({ label: 'Payment Method', filled: !!paymentMethod })
@@ -733,13 +736,13 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   const toggleDiscountMode = () => {
     const next = discountMode === 'pct' ? 'amt' : 'pct'
     setLines((ls) => ls.map((l) => {
-      const base = (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
+      const base = (Number(l.qty) || 0) * (Number(l.rate) || 0)
       if (next === 'amt') {
-        const pct = parseFloat(l.discountPct) || 0
+        const pct = Number(l.discountPct) || 0
         const amt = base > 0 && pct > 0 ? base * (pct / 100) : 0
         return { ...l, discountAmt: amt > 0 ? amt.toFixed(2) : '', discountPct: '' }
       } else {
-        const amt = parseFloat(l.discountAmt) || 0
+        const amt = Number(l.discountAmt) || 0
         const pct = base > 0 && amt > 0 ? (amt / base) * 100 : 0
         return { ...l, discountPct: pct > 0 ? (Math.round(pct * 100) / 100) + '' : '', discountAmt: '' }
       }
@@ -760,7 +763,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     }
     if (isItem) {
       base.lines = lines.map((l) => ({
-        ...(l.id ? { id: l.id } : {}),
+        ...(l.key ? { id: l.key } : {}),
         item: l.item ? Number(l.item) : undefined, description: l.description, unit: l.unit || undefined,
         qty: l.qty !== '' ? Number(l.qty) : undefined,
         rate: l.rate !== '' ? Number(l.rate) : undefined,
@@ -769,11 +772,11 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
         ...(l.account ? { account: Number(l.account) } : {}),
         ...(l.subAccount ? { subAccount: Number(l.subAccount) } : {}),
       }))
-      base.taxRate = parseFloat(taxRate) || 0
+      base.taxRate = Number(taxRate) || 0
       if (globalDiscountEnabled && globalDiscountAmount > 0) {
         base.discountTotal = globalDiscountAmount
         base.discountMode = globalDiscountMode
-        base.discountValue = parseFloat(globalDiscountValue) || 0
+        base.discountValue = Number(globalDiscountValue) || 0
       }
     } else if (isContra) {
       base.fromAccount = fromAccount ? Number(fromAccount) : undefined
@@ -782,8 +785,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     } else if (isJournal) {
       base.journalLines = journalLines.map((l) => ({
         ...(l.id ? { id: l.id } : {}), account: Number(l.account),
-        debit: l.debit ? parseFloat(l.debit) : undefined,
-        credit: l.credit ? parseFloat(l.credit) : undefined,
+        debit: l.debit ? Number(l.debit) : undefined,
+        credit: l.credit ? Number(l.credit) : undefined,
         memo: l.memo || undefined,
       }))
     }
@@ -796,11 +799,11 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     if (!allTaxLines.some((tl) => tl.nature === 'additive')) {
       const lineTaxGroup = new Map<string, { rate: number; taxType?: string }>()
       for (const l of lines) {
-        const r = parseFloat(l.taxRate) || 0
+        const r = Number(l.taxRate) || 0
         if (r > 0) {
-          const key = l.taxType || String(r)
+          const key = String(l.taxType ?? r)
           if (!lineTaxGroup.has(key)) {
-            lineTaxGroup.set(key, { rate: r, taxType: l.taxType })
+            lineTaxGroup.set(key, { rate: r, taxType: String(l.taxType ?? '') })
           }
         }
       }
@@ -823,7 +826,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     }
     if (allTaxLines.length > 0) {
       base.taxLines = allTaxLines.map((tl) => ({
-        ...(tl.id ? { id: tl.id } : {}), taxType: Number(tl.taxType), nature: tl.nature, rate: parseFloat(tl.rate) || 0,
+        ...(tl.id ? { id: tl.id } : {}), taxType: Number(tl.taxType), nature: tl.nature, rate: Number(tl.rate) || 0,
       }))
     }
     if (isCash) {
@@ -835,9 +838,9 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       if (!isItem && lines.length > 0) {
         const filled = cashSimple
           ? lines.slice(0, 1)
-          : lines.filter((l) => l.amount !== '' && (parseFloat(l.amount) || 0) > 0)
+          : lines.filter((l) => l.amount !== '' && (Number(l.amount) || 0) > 0)
         if (filled.length > 0 && filled.some((l) => l.amount)) {
-          const amt = filled.reduce((s, l) => s + (parseFloat(l.amount) || 0), 0)
+          const amt = filled.reduce((s, l) => s + (Number(l.amount) || 0), 0)
           base.lines = filled.map((l) => ({
             description: l.description || (docType === 'receipt-voucher' ? 'Receipt' : 'Payment'),
             amount: Number(l.amount), qty: 1, rate: Number(l.amount),
@@ -951,28 +954,48 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
               </span>
               <span className="text-sm font-semibold text-slate-800">{docTypeLabels[docType] || docType}</span>
             </div>
-            <select
-              value={docType}
-              onChange={(e) => updateDocType(e.target.value as DocType)}
-              className="rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500 bg-white"
-            >
+            {/* Category tabs */}
+            <div className="mt-3 flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
               {[
                 { key: 'sales', label: 'Sales & Invoicing' },
                 { key: 'purchase', label: 'Purchases & Expenses' },
                 { key: 'cash', label: 'Cash & Banking' },
                 { key: 'stock', label: 'Inventory & Movement' },
                 { key: 'journal', label: 'Adjustments & Journal' },
-              ].map((cat) => {
-                const types = Object.entries(DOC_TYPE_META).filter(([, m]) => m.category === cat.key)
-                return (
-                  <optgroup key={cat.key} label={cat.label}>
-                    {types.map(([dt, m]) => (
-                      <option key={dt} value={dt}>{m.shortLabel}</option>
-                    ))}
-                  </optgroup>
-                )
-              })}
-            </select>
+              ].map((cat) => (
+                <button
+                  key={cat.key}
+                  onClick={() => setActiveCat(cat.key)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                    activeCat === cat.key
+                      ? 'bg-crimson-600 text-white shadow-sm'
+                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Doc type grid — icon buttons, active one highlighted */}
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {Object.entries(DOC_TYPE_META)
+                .filter(([, m]) => m.category === activeCat)
+                .map(([dt, m]) => (
+                  <button
+                    key={dt}
+                    onClick={() => updateDocType(dt as DocType)}
+                    className={`flex flex-col items-center gap-1.5 rounded border px-3 py-2.5 text-sm transition-colors ${
+                      docType === dt
+                        ? m.activeClasses
+                        : m.inactiveClasses
+                    }`}
+                  >
+                    {m.icon}
+                    <span className={`leading-tight ${m.textClasses}`}>{m.shortLabel}</span>
+                  </button>
+                ))}
+            </div>
           </div>
           <p className="mt-1 text-xs text-slate-500">
             Pick a type — it stays in the URL ({`type=${docType}`}) and survives refresh.
@@ -1171,8 +1194,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                       accounts={accounts}
                       taxTypes={taxTypes}
                       transactionType={resolvedTxType}
-                      onChange={(key, patch) => setLine(key, patch)}
-                      onRemove={removeLine}
+                      onChange={(key, patch) => key && setLine(key, patch)}
+                      onRemove={(key) => key && removeLine(key)}
                     />
                   ))}
                 </tbody>
@@ -1243,7 +1266,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                       )}
                     </div>
                     <span className="text-xs text-slate-400">
-                      = {fmt(globalDiscountMode === 'pct' ? lineTotals * ((parseFloat(globalDiscountValue) || 0) / 100) : parseFloat(globalDiscountValue) || 0)}
+                      = {fmt(globalDiscountMode === 'pct' ? lineTotals * ((Number(globalDiscountValue) || 0) / 100) : Number(globalDiscountValue) || 0)}
                     </span>
                   </div>
                 )}
@@ -1276,7 +1299,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                         </div>
                         {taxLines.filter((tl) => tl.nature === 'additive').map((tl) => {
                           const txType = taxTypes.find((t) => String(t.id) === tl.taxType)
-                          const rate = txType ? Number(txType.rate) || parseFloat(tl.rate) || 0 : parseFloat(tl.rate) || 0
+                          const rate = txType ? Number(txType.rate) || Number(tl.rate) || 0 : Number(tl.rate) || 0
                           const taxAmt = (lineTotals * rate) / 100
                           return (
                             <div key={tl.key} className="flex items-center gap-2">
@@ -1358,7 +1381,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                                   setTdsTypeId('')
                                 } else {
                                   // Find or create a matching tax type
-                                  const existing = taxTypes.find((t) => t.nature === 'withholding' && Number(t.rate) === parseFloat(val))
+                                  const existing = taxTypes.find((t) => t.nature === 'withholding' && Number(t.rate) === Number(val))
                                   if (existing) setTdsTypeId(String(existing.id))
                                 }
                               }}
@@ -1661,19 +1684,19 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                             <td className="px-2 py-2 text-center text-slate-400">{i + 1}</td>
                             <td className="px-2 py-2">
                               <input type="text" value={l.description}
-                                onChange={(e) => setLine(l.key, { description: e.target.value })}
+                                onChange={(e) => setLine(l.key!, { description: e.target.value })}
                                 placeholder={t('vouchers.lineDescription', 'e.g. rent, salary, utility…')}
                                 className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" />
                             </td>
                             <td className="px-2 py-2">
-                              <input type="text" inputMode="decimal" value={l.amount}
-                                onChange={(e) => setLine(l.key, { amount: e.target.value })}
-                                onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { amount: r }) }}
+                              <input type="text" inputMode="decimal" value={l.amount ?? ''}
+                                onChange={(e) => setLine(l.key!, { amount: e.target.value })}
+                                onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key!, { amount: r }) }}
                                 placeholder="0.00"
                                 className="w-full rounded border border-slate-200 px-2 min-h-[40px] py-2.5 text-right font-mono text-sm outline-none focus:border-slate-500" />
                             </td>
                             <td className="px-2 py-2 text-center">
-                              <button type="button" onClick={() => removeLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                              <button type="button" onClick={() => removeLine(l.key!)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
                             </td>
                           </tr>
                         ))}
@@ -1851,9 +1874,9 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                   </thead>
                   <tbody>
                     {lines.filter((l) => l.item || l.description).map((l, i) => {
-                      const base = l.amount !== '' ? parseFloat(l.amount) || 0 : (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
-                      const discPct = parseFloat(l.discountPct) || 0
-                      const discAmt = parseFloat(l.discountAmt) || 0
+                      const base = l.amount !== '' ? Number(l.amount) || 0 : (Number(l.qty) || 0) * (Number(l.rate) || 0)
+                      const discPct = Number(l.discountPct) || 0
+                      const discAmt = Number(l.discountAmt) || 0
                       const afterPct = discPct > 0 ? base * (1 - discPct / 100) : base
                       const finalAmt = afterPct - discAmt
                       return (
@@ -1861,7 +1884,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                           <td className="py-2 text-center text-slate-400">{i + 1}</td>
                           <td className="py-2 font-medium text-slate-800">{l.description || '—'}</td>
                           <td className="py-2 text-right font-mono text-slate-600">{l.qty || '—'}</td>
-                          <td className="py-2 text-right font-mono text-slate-600">{l.rate ? fmt(parseFloat(l.rate)) : '—'}</td>
+                          <td className="py-2 text-right font-mono text-slate-600">{l.rate ? fmt(Number(l.rate)) : '—'}</td>
                           <td className="py-2 text-right font-mono font-medium text-slate-800">{fmt(Math.max(finalAmt, 0))}</td>
                         </tr>
                       )
@@ -1889,8 +1912,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                       return (
                         <tr key={l.key} className="border-b border-slate-50">
                           <td className="py-2 text-slate-700">{a ? `${a.code ? a.code + ' · ' : ''}${a.name}` : '—'}</td>
-                          <td className="py-2 text-right font-mono text-slate-800">{l.debit ? fmt(parseFloat(l.debit)) : ''}</td>
-                          <td className="py-2 text-right font-mono text-slate-800">{l.credit ? fmt(parseFloat(l.credit)) : ''}</td>
+                          <td className="py-2 text-right font-mono text-slate-800">{l.debit ? fmt(Number(l.debit)) : ''}</td>
+                          <td className="py-2 text-right font-mono text-slate-800">{l.credit ? fmt(Number(l.credit)) : ''}</td>
                           <td className="py-2 text-slate-500">{l.memo || ''}</td>
                         </tr>
                       )

@@ -62,6 +62,7 @@ const REPORTS: Record<Category, ReportCard[]> = {
     { title: 'Fixed Asset Summary', titleKey: 'reports.fixedAssetSummary', desc: 'All fixed assets with cost, depreciation, and net book value', descKey: 'reports.fixedAssetSummaryDesc', icon: Building2, to: '/reports/fixed-asset-summary' },
     { title: 'Depreciation Schedule', titleKey: 'reports.depreciationSchedule', desc: 'Monthly depreciation postings per fixed asset', descKey: 'reports.depreciationScheduleDesc', icon: Clock3, to: '/reports/depreciation-schedule' },
   ],
+  'Fixed Assets': [],
   Parties: [
     { title: 'Party Statement', titleKey: 'reports.partyStatement', desc: 'Check the transactions of a certain party', descKey: 'reports.partyStatementDesc', icon: FileText, to: '/reports/party-statement' },
     { title: 'All Party Report', titleKey: 'reports.allPartyReport', desc: 'Receivable/payable dues of every party', descKey: 'reports.allPartyReportDesc', icon: IndianRupee, to: '/aging' },

@@ -1074,7 +1074,6 @@ export default function FixedAssetsPage() {
       <div className="flex flex-wrap gap-1 mb-4">
         {TABS.map((tab) => (
           <TabButton
-            key={tab.key}
             {...tab}
             active={activeTab === tab.key}
             onClick={setActiveTab}

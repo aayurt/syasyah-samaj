@@ -5,7 +5,7 @@
  * Draft/pending entries never appear here.
  * ================================================================ */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api, list } from '../lib/api'
@@ -13,7 +13,7 @@ import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
-import { ReportLayout, DateFilter, ReportTableHeader, ReportTableRow } from '../components/ReportLayout'
+import ReportLayout, { DateFilter, ReportTableHeader, ReportTableRow } from '../components/ReportLayout'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useT } from '../lib/i18n'
@@ -204,13 +204,11 @@ export default function GeneralLedger() {
             {/* ── Ledger table ── */}
             <div className="mt-6 rounded-lg border border-slate-200 bg-white overflow-x-auto">
               <table className="w-full text-sm min-w-[700px]">
-                <ReportTableHeader cols={TABLE_COLS.map((c) => ({ label: t(`vouchers.${c.key}` as any, c.label), key: c.key, align: c.align }))} />
+                {ReportTableHeader(TABLE_COLS.map((c) => ({ label: t(`vouchers.${c.key}` as any, c.label), key: c.key, align: c.align })))}
                 <tbody className="divide-y divide-slate-50">
                   {rows.map((r) => (
-                    <ReportTableRow
-                      key={r.id}
-                      cols={TABLE_COLS.map((c) => ({ key: c.key, align: c.align }))}
-                      values={{
+                    <React.Fragment key={r.id}>
+                      {ReportTableRow(TABLE_COLS.map((c) => ({ key: c.key, align: c.align })), {
                         date: formatDate ? formatDate(r.date) : r.date,
                         docType: r.docType || '—',
                         docNumber: r.docNumber || '—',
@@ -218,8 +216,8 @@ export default function GeneralLedger() {
                         debit: r.debit,
                         credit: r.credit,
                         balance: r.balance,
-                      }}
-                    />
+                      })}
+                    </React.Fragment>
                   ))}
                   {rows.length === 0 && (
                     <tr>

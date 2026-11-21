@@ -4,6 +4,8 @@
  * Lists each customer with their taxable sales, tax amounts by tax type.
  * ================================================================ */
 
+import React from 'react'
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -12,7 +14,7 @@ import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
-import { ReportLayout, DateFilter } from '../components/ReportLayout'
+import ReportLayout, { DateFilter } from '../components/ReportLayout'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useT } from '../lib/i18n'

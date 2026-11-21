@@ -13,7 +13,7 @@ import { downloadCsv } from '../lib/csv'
 import { exportReportPdf } from '../lib/pdf'
 import { useCalendar } from '../lib/calendar'
 import { useTenant, useTenantQuery } from '../lib/tenant'
-import { ReportLayout, DateFilter } from '../components/ReportLayout'
+import ReportLayout, { DateFilter } from '../components/ReportLayout'
 import { ReportSkeleton } from '../components/Skeleton'
 import DataStatus from '../components/DataStatus'
 import { useT } from '../lib/i18n'
@@ -112,7 +112,7 @@ export default function CashFlowStatement() {
           const movement = row.debit - row.credit
           totalCashMovement += movement
 
-          const label = `${acct.code} ${acct.name}: ${row.narration || '—'} (${row.docType || 'JV'} ${row.docNumber || '')}`.trim()
+          const label = `${acct.code} ${acct.name}: ${row.narration || '—'} (${row.docType || 'JV'} ${row.docNumber || ''})`.trim()
           operating.push({ label, amount: movement })
         }
       }
