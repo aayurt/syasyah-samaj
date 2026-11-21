@@ -33,7 +33,7 @@ import {
 import NepaliDateInput from '../components/NepaliDateInput'
 import OutstandingInvoices from '../components/OutstandingInvoices'
 import AccountSelect from '../components/AccountSelect'
-import TransactionLine from '../components/TransactionLine'
+import TransactionLine, { subledgerSelectorForAccount } from '../components/TransactionLine'
 import EntryCard from '../components/EntryCard'
 import VoucherNotesCard from '../components/VoucherNotesCard'
 import { useBalanceSnap } from '../components/BalanceBar'
@@ -1146,7 +1146,12 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                       <th className="w-10 px-2 py-3 text-center">#</th>
                       <th className="min-w-[180px] px-3 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
                       <th className="w-24 px-2 py-3 text-left">{t('vouchers.account', 'Account')}</th>
-                      <th className="w-24 px-2 py-3 text-left">{t('vouchers.subAccount', 'Sub-account')}</th>
+                      {lines.some((l) => {
+                        const acct = accounts.find((a) => String(a.id) === String(l.account));
+                        return subledgerSelectorForAccount(acct) !== null;
+                      }) && (
+                        <th className="w-24 px-2 py-3 text-left">{t('vouchers.subAccount', 'Sub-account')}</th>
+                      )}
                       <th className="w-20 px-2 py-3 text-right">{t('vouchers.qty', 'Qty')}</th>
                       <th className="w-24 px-2 py-3 text-right">{t('vouchers.rate', 'Rate')}</th>
                       <th className="w-24 px-2 py-3 text-right">

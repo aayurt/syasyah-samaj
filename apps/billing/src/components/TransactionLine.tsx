@@ -53,7 +53,7 @@ function resolveTaxForItem(item: Item | undefined, transactionType: 'sales' | 'p
   return null
 }
 
-function subledgerSelectorForAccount(account: Account | undefined): 'party' | 'item' | 'project' | null {
+export function subledgerSelectorForAccount(account: Account | undefined): 'party' | 'item' | 'project' | null {
   if (!account) return null
   switch (account.type) {
     case 'asset':
