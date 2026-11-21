@@ -33,6 +33,7 @@ import {
 import NepaliDateInput from '../components/NepaliDateInput'
 import OutstandingInvoices from '../components/OutstandingInvoices'
 import AccountSelect from '../components/AccountSelect'
+import TransactionLine from '../components/TransactionLine'
 import { useBalanceSnap } from '../components/BalanceBar'
 import { api, fmt, useSyncState } from '../lib/api'
 import { useT } from '../lib/i18n'
@@ -40,6 +41,7 @@ import { useCachedList } from '../lib/useCachedList'
 import { useCalendar } from '../lib/calendar'
 import { calcEval } from '../lib/calcEval'
 import { focusCell, handleGridKeyDown } from '../lib/gridNav'
+import { calcDoc, type LineInput } from '../lib/transactionCalc'
 import { useTenant, useTenantQuery } from '../lib/tenant'
 import { useFiscalYear } from '../lib/fiscalYear'
 import { todayAD } from '../lib/nepaliDate'
@@ -62,13 +64,7 @@ import {
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
-interface LineDraft {
-  key: string; id?: string; item: string; description: string
-  unit: string; qty: string; rate: string; taxType: string; taxRate: string; amount: string
-  discountPct: string; discountAmt: string
-  account: string            // GL account for this line
-  subAccount: string         // child account when parent account chosen without item
-}
+type LineDraft = LineInput
 interface JLineDraft {
   key: string; id?: string; account: string; debit: string; credit: string; memo: string
 }
@@ -76,7 +72,7 @@ interface TaxLineDraft {
   key: string; id?: string; taxType: string; nature: TaxNature; rate: string
 }
 
-const emptyLine = (): LineDraft => ({
+const emptyLine = (): LineInput => ({
   key: crypto.randomUUID(), item: '', description: '', unit: '', qty: '', rate: '', taxType: '', taxRate: '', amount: '',
   discountPct: '', discountAmt: '', account: '', subAccount: '',
 })
@@ -340,8 +336,6 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       .catch(() => { })
     return () => { alive = false }
   }, [tenantId, cacheVersion])
-  const levelFor = (itemId: string) =>
-    levels.find((lv) => String(lv.item.id) === itemId)
   const [saving, setSaving] = useState(false)
   const [posted, setPosted] = useState(false)
   const [error, setError] = useState('')
@@ -440,21 +434,6 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
   // Discount mode
   const [discountMode, setDiscountMode] = useState<'pct' | 'amt'>('pct')
-
-  // Item search per row
-  const [itemSearchRow, setItemSearchRow] = useState<string | null>(null)
-  const [itemSearchText, setItemSearchText] = useState('')
-  const [subAccountRow, setSubAccountRow] = useState<string | null>(null)
-
-  // Add item popup
-  const [showItemPopup, setShowItemPopup] = useState(false)
-  const [newItemName, setNewItemName] = useState('')
-  const [newItemCode, setNewItemCode] = useState('')
-  const [newItemUnit, setNewItemUnit] = useState('')
-  const [newItemSalePrice, setNewItemSalePrice] = useState('')
-  const [newItemPurchasePrice, setNewItemPurchasePrice] = useState('')
-  const [newItemSaving, setNewItemSaving] = useState(false)
-  const [newItemTargetLine, setNewItemTargetLine] = useState<string | null>(null)
 
   // Collapsible sections state
   const [taxSectionOpen, setTaxSectionOpen] = useState(false)
@@ -561,10 +540,6 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
     focusCell(r, c)
   }, [lines, journalLines])
 
-  const appendItemRow = () => {
-    setLines((ls) => [...ls, emptyLine()])
-    pendingCell.current = [lines.length, 0]
-  }
   const appendJLine = () => {
     setJournalLines((ls) => [...ls, emptyJLine()])
     pendingCell.current = [journalLines.length, 0]
@@ -574,7 +549,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || e.key !== 'Enter') return
-      if (showPartyPopup || showItemPopup) return
+      if (showPartyPopup) return
       e.preventDefault()
       if (!saving && !(mode === 'edit' && isClosedYear)) {
         if (docType !== 'sales-quote' && allRequiredFilled && !setupBlocked) submit(true)
@@ -612,10 +587,25 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   const cashSimple = isCash && !cashDetailed
   const isInventory = INVENTORY_TYPES.includes(docType)
 
-  // Inventory entry toggle — when ON, every line uses item selection
-  // (catalog, stock levels, AVCO cost). When OFF, lines use plain description.
-  // Defaults to true for inventory doc types, false otherwise.
-  const [useInventoryEntry, setUseInventoryEntry] = useState(isInventory)
+  // Derive transaction type for TransactionLine component.
+  const resolvedTxType = useMemo(() => {
+    switch (docType) {
+      case 'sales-invoice':
+      case 'sales-order':
+      case 'sales-quote':
+      case 'credit-note':
+      case 'receipt-voucher':
+        return 'sales'
+      case 'purchase-invoice':
+      case 'purchase-order':
+      case 'debit-note':
+      case 'payment-voucher':
+        return 'purchase'
+      default:
+        return 'journal'
+    }
+  }, [docType])
+
   const isTaxable = ['sales-invoice', 'purchase-invoice', 'payment-voucher', 'receipt-voucher'].includes(docType)
   const bankAccounts = accounts.filter((a) => a.class === 'bank')
   const cashBankAccounts = accounts.filter((a) => a.class === 'cash' || a.class === 'bank')
@@ -642,40 +632,9 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
   const selectedParty = parties.find((p) => String(p.id) === party)
 
-  // Line calculations
-  const lineCalculations = useMemo(() => {
-    let subTotal = 0
-    let totalTax = 0
-    const calculatedLines = lines.map((l) => {
-      const base = l.amount !== '' ? parseFloat(l.amount) || 0 : (parseFloat(l.qty) || 0) * (parseFloat(l.rate) || 0)
-      const discPct = parseFloat(l.discountPct) || 0
-      const discAmt = parseFloat(l.discountAmt) || 0
-      const afterPct = discPct > 0 ? base * (1 - discPct / 100) : base
-      const finalAmt = Math.max(afterPct - discAmt, 0)
-
-      const lineTaxRate = parseFloat(l.taxRate) || 0
-      const lineTaxAmt = (finalAmt * lineTaxRate) / 100
-      const lineTotal = finalAmt + lineTaxAmt
-
-      subTotal += finalAmt
-      totalTax += lineTaxAmt
-
-      return {
-        base,
-        finalAmt,
-        lineTaxRate,
-        lineTaxAmt,
-        lineTotal,
-      }
-    })
-    return {
-      subTotal,
-      totalTax,
-      lines: calculatedLines,
-    }
-  }, [lines])
-
-  const lineTotals = lineCalculations.subTotal
+  // Line calculations via shared engine
+  const docCalc = useMemo(() => calcDoc(lines), [lines])
+  const lineTotals = docCalc.subtotal
 
   const contraTotal = parseFloat(contraAmount) || 0
 
@@ -712,11 +671,11 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       }
     }
     // If no manual document-level additive tax lines are specified, use line-level tax total
-    if (total === 0 && lineCalculations.totalTax > 0) {
-      return lineCalculations.totalTax
+    if (total === 0 && docCalc.taxTotal > 0) {
+      return docCalc.taxTotal
     }
     return total
-  }, [taxLines, taxTypes, lineTotals, globalDiscountAmount, lineCalculations.totalTax, isProfitMaking])
+  }, [taxLines, taxTypes, lineTotals, globalDiscountAmount, docCalc.taxTotal, isProfitMaking])
 
   const tdsAutoAmount = lineTotals > 0 && tdsRate > 0 ? (lineTotals * tdsRate) / 100 : 0
   const tdsAmount = tdsAmountManual ? parseFloat(tdsAmountManual) || 0 : tdsAutoAmount
@@ -724,7 +683,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   const grandTotal = isContra ? contraTotal : lineTotals + vatTotal - globalDiscountAmount - tdsAmount
 
   const effectiveBillingTotal = isItem
-    ? lineCalculations.subTotal + lineCalculations.totalTax
+    ? docCalc.subtotal + docCalc.taxTotal
     : isContra
       ? contraTotal
       : isCash
@@ -1172,24 +1131,6 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
             </div>
           </div>
 
-          {isItem && (
-            <div className={`mt-4 flex items-center gap-2 px-3 py-2 rounded border ${useInventoryEntry ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
-              <input
-                type="checkbox"
-                id="use-inventory-entry"
-                checked={useInventoryEntry}
-                onChange={(e) => setUseInventoryEntry(e.target.checked)}
-                className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-              />
-              <label htmlFor="use-inventory-entry" className="text-sm font-medium text-slate-700 cursor-pointer">
-                {t('vouchers.inventoryEntryToggle', 'Inventory entry mode')}
-              </label>
-              <span className="text-xs text-slate-500">
-                {useInventoryEntry ? t('vouchers.inventoryEntryOn', 'Item selection + stock tracking') : t('vouchers.inventoryEntryOff', 'Description only')}
-              </span>
-            </div>
-          )}
-
           {/* ── Item Lines Table ────────────────────────────────── */}
           {isItem && (
             <div className="mt-4 rounded-lg border border-slate-200 bg-white">
@@ -1221,225 +1162,27 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                   </tr>
                 </thead>
                 <tbody>
-                  {lines.map((l, i) => {
-                    const calc = lineCalculations.lines[i] || {
-                      base: 0,
-                      finalAmt: 0,
-                      lineTaxRate: 0,
-                      lineTaxAmt: 0,
-                      lineTotal: 0,
-                    }
-                    const finalAmt = calc.finalAmt
-                    // Cost / margin hint for inventory lines.
-                    const lv = l.item ? levelFor(l.item) : undefined
-                    const selectedItem = l.item ? items.find((it) => String(it.id) === l.item) : undefined
-                    const accountLocked = Boolean(l.item && selectedItem?.accountId)
-                    const lineQty = parseFloat(l.qty) || 0
-                    const lineCost = lv ? lv.avgCost : 0
-                    const isPurchaseLine = docType === 'purchase-invoice' || docType === 'grn'
-                    const isReturnLine = docType === 'credit-note'
-                    const estCostTotal = lineCost > 0 ? lineQty * lineCost : 0
-                    const estProfit = finalAmt - estCostTotal
-                    const marginPct = finalAmt > 0 ? (estProfit / finalAmt) * 100 : 0
-                    return (
-                      <tr key={l.key} className="anim-enter-row border-b border-slate-50">
-                        <td className="px-2 py-2 text-center text-slate-400">{i + 1}</td>
-                        <td className="px-2 py-2">
-                          {useInventoryEntry ? (
-                            <div className="relative">
-                              <input
-                                type="text"
-                                value={itemSearchRow === l.key ? itemSearchText : (items.find((it) => String(it.id) === l.item)?.name || '')}
-                                onChange={(e) => {
-                                  setItemSearchRow(l.key); setItemSearchText(e.target.value)
-                                  setLine(l.key, { item: '', description: e.target.value, account: '', subAccount: '' })
-                                }}
-                                onFocus={() => { setItemSearchRow(l.key); setItemSearchText('') }}
-                                onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                                data-grid-cell={`${i}:0`}
-                                placeholder={t('vouchers.enterItemName', 'Enter Item name')}
-                                className="w-full rounded border border-slate-200 px-2 min-h-[38px] py-2 text-sm outline-none focus:border-slate-500"
-                              />
-                              {itemSearchRow === l.key && (
-                                <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
-                                  <button type="button" onClick={() => { setNewItemTargetLine(l.key); setShowItemPopup(true); setItemSearchRow(null) }}
-                                    className="w-full border-b border-slate-100 px-3 py-2 text-left text-sm font-medium text-emerald-600 hover:bg-emerald-50">
-                                    {t('vouchers.addNewItem', '+ Add new item')}
-                                  </button>
-                                  {itemSearchText && items.filter((it) => it.name.toLowerCase().includes(itemSearchText.toLowerCase())).slice(0, 5).map((it) => (
-                                    <button key={it.id} type="button" onClick={() => {
-                                      const selectedUnit = items.find((it) => String(it.id) === l.item)?.unit
-                                      setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || ''), unit: selectedUnit || '', account: String(it.accountId || ''), subAccount: '' })
-                                      setItemSearchRow(null); setItemSearchText('')
-                                    }} className="block w-full px-2 py-1.5 text-left text-sm hover:bg-slate-50">
-                                      {it.code ? `${it.code} · ` : ''}{it.name}
-                                    </button>
-                                  ))}
-                                  {!itemSearchText && items.slice(0, 5).map((it) => (
-                                    <button key={it.id} type="button" onClick={() => {
-                                      const selectedUnit = items.find((it) => String(it.id) === l.item)?.unit
-                                      setLine(l.key, { item: String(it.id), description: it.name, rate: String(it.salePrice || ''), unit: selectedUnit || '', account: String(it.accountId || ''), subAccount: '' })
-                                      setItemSearchRow(null); setItemSearchText('')
-                                    }} className="block w-full px-2 py-1.5 text-left text-sm hover:bg-slate-50">
-                                      {it.code ? `${it.code} · ` : ''}{it.name}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <input
-                              type="text" value={l.description}
-                              onChange={(e) => setLine(l.key, { description: e.target.value })}
-                              onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 0, rows: lines.length, cols: 6, onAppendRow: appendItemRow })}
-                              data-grid-cell={`${i}:0`}
-                              placeholder={t('vouchers.enterItemName', 'Enter Item name')}
-                              className="w-full rounded border border-slate-200 px-2 min-h-[38px] py-2 text-sm outline-none focus:border-slate-500"
-                            />
-                          )}
-                          {lv && (
-                            <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
-                              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">
-                                {t('vouchers.onHand', 'on hand')} {fmtQty(lv.onHand)}
-                              </span>
-                              {isPurchaseLine ? (
-                                <span className="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-blue-700">
-                                  {t('vouchers.inventoryAt', '→ Inventory @')} {fmt(lv.avgCost)}
-                                </span>
-                              ) : isReturnLine ? (
-                                <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700">
-                                  {t('vouchers.restockAt', 'restock @')} {fmt(lv.avgCost)}
-                                </span>
-                              ) : (
-                                <>
-                                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">
-                                    {t('vouchers.costLabel', 'cost')} {lineQty > 0 ? fmt(estCostTotal) : '—'}
-                                  </span>
-                                  {lineQty > 0 && lv.onHand >= 0 && (
-                                    <span className={`rounded px-1.5 py-0.5 font-medium ${estProfit >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-                                      {estProfit >= 0 ? '+' : ''}{fmt(estProfit)} ({marginPct.toFixed(1)}%)
-                                    </span>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-1 py-2">
-                          <AccountSelect
-                            accounts={accounts}
-                            value={l.account}
-                            onChange={(id) => {
-                              setLine(l.key, { account: id })
-                              if (!l.item) {
-                                const children = accounts.filter((a) => a.parent !== null && Number(a.parent) === Number(id))
-                                setSubAccountRow(children.length > 0 ? l.key : null)
-                              } else {
-                                setSubAccountRow(null)
-                              }
-                            }}
-                            placeholder={t('vouchers.selectAccount', 'Select account')}
-                            disabled={accountLocked}
-                          />
-                        </td>
-                        <td className="px-1 py-2">
-                          <input type="number" min="0" step="any" value={l.qty}
-                            onChange={(e) => setLine(l.key, { qty: e.target.value })}
-                            onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 1, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
-                            data-grid-cell={`${i}:1`}
-                            className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                        </td>
-                        {!l.item && l.account && accounts.some((a) => a.parent !== null && Number(a.parent) === Number(l.account)) ? (
-                          <td className="px-1 py-2" key="subacct">
-                            <AccountSelect
-                              accounts={accounts.filter((a) => a.parent !== null && Number(a.parent) === Number(l.account))}
-                              value={l.subAccount}
-                              onChange={(id) => setLine(l.key, { subAccount: id })}
-                              placeholder={t('vouchers.selectSubAccount', 'Sub-account')}
-                            />
-                          </td>
-                        ) : null}
-                        <td className="px-1 py-2">
-                          <input type="number" min="0" step="0.01" value={l.rate}
-                            onChange={(e) => setLine(l.key, { rate: e.target.value })}
-                            onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { rate: r }) }}
-                            onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 2, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
-                            data-grid-cell={`${i}:2`}
-                            className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                        </td>
-                        <td className="px-1 py-2">
-                          <div className="flex items-center">
-                            {discountMode === 'pct' ? (
-                              <>
-                                <input type="number" min="0" max="100" step="0.01" value={l.discountPct}
-                                  onChange={(e) => setLine(l.key, { discountPct: e.target.value, discountAmt: '' })}
-                                  onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountPct: r, discountAmt: '' }) }}
-                                  onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
-                                  data-grid-cell={`${i}:3`}
-                                  className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                                <span className="ml-0.5 text-xs text-slate-400">%</span>
-                              </>
-                            ) : (
-                              <>
-                                <input type="number" min="0" step="0.01" value={l.discountAmt}
-                                  onChange={(e) => setLine(l.key, { discountAmt: e.target.value, discountPct: '' })}
-                                  onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { discountAmt: r, discountPct: '' }) }}
-                                  onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 3, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
-                                  data-grid-cell={`${i}:3`}
-                                  className="w-full rounded border border-slate-200 px-1 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                              </>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-2 py-2 text-right font-mono font-medium text-slate-800">
-                          {fmt(calc.finalAmt)}
-                        </td>
-                        <td className="px-1 py-2">
-                          <select
-                            value={l.taxType || ''}
-                            onChange={(e) => {
-                              const selectedTax = taxTypes.find((tx) => String(tx.id) === e.target.value)
-                              setLine(l.key, {
-                                taxType: e.target.value,
-                                taxRate: selectedTax ? String(selectedTax.rate) : l.taxRate,
-                              })
-                            }}
-                            className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-xs outline-none focus:border-slate-500 bg-white"
-                          >
-                            <option value="">{t('vouchers.noTax', 'None')}</option>
-                            {taxTypes.filter((tx) => tx.nature === 'additive' && tx.active !== false).map((tx) => (
-                              <option key={tx.id} value={tx.id}>{tx.code || tx.name} ({tx.rate}%)</option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="px-1 py-2 text-right">
-                          <input type="number" min="0" step="0.01" value={l.taxRate}
-                            onChange={(e) => setLine(l.key, { taxRate: e.target.value })}
-                            onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setLine(l.key, { taxRate: r }) }}
-                            onKeyDown={(e) => handleGridKeyDown(e, { row: i, col: 4, rows: lines.length, cols: 5, onAppendRow: appendItemRow })}
-                            data-grid-cell={`${i}:4`}
-                            className="w-full rounded border border-slate-200 px-1.5 min-h-[38px] py-2 text-right font-mono text-sm outline-none focus:border-slate-500" />
-                        </td>
-                        <td className="px-2 py-2 text-right font-mono text-xs text-slate-600">
-                          {fmt(calc.lineTaxAmt)}
-                        </td>
-                        <td className="px-2 py-2 text-right font-mono font-semibold text-slate-900">
-                          {fmt(calc.lineTotal)}
-                        </td>
-                        <td className="px-1 py-2 text-center">
-                          <button type="button" onClick={() => removeLine(l.key)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
-                        </td>
-                      </tr>
-                    )
-                  })}
+                  {lines.map((l, i) => (
+                    <TransactionLine
+                      key={l.key}
+                      line={l}
+                      index={i}
+                      items={items}
+                      accounts={accounts}
+                      taxTypes={taxTypes}
+                      transactionType={resolvedTxType}
+                      onChange={(key, patch) => setLine(key, patch)}
+                      onRemove={removeLine}
+                    />
+                  ))}
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-slate-200 bg-slate-50">
                     <td colSpan={5} className="px-4 py-3 text-right text-sm font-medium text-slate-600">{t('vouchers.subTotal', 'Sub Total')}</td>
                     <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineTotals)}</td>
                     <td colSpan={2}></td>
-                    <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(lineCalculations.totalTax)}</td>
-                    <td className="px-2 py-3 text-right font-mono font-bold text-slate-900">{fmt(lineTotals + lineCalculations.totalTax)}</td>
+                    <td className="px-2 py-3 text-right font-mono font-semibold text-slate-800">{fmt(docCalc.taxTotal)}</td>
+                    <td className="px-2 py-3 text-right font-mono font-bold text-slate-900">{fmt(lineTotals + docCalc.taxTotal)}</td>
                     <td></td>
                   </tr>
                 </tfoot>
@@ -2412,91 +2155,6 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
         </div>
       )}
 
-      {/* ── Add Item Popup ────────────────────────────────── */}
-      {showItemPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-slate-900">{t('vouchers.addNewItemTitle', 'Add New Item')}</h2>
-            <p className="mt-1 text-sm text-slate-500">{t('vouchers.addNewItemDesc', 'Create a new inventory item')}</p>
-            <div className="mt-4 space-y-3">
-              <label className="text-sm text-slate-700">
-                {t('vouchers.nameRequired', 'Name *')}
-                <input type="text" required value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  placeholder={t('vouchers.itemNamePlaceholder', 'Item name')} autoFocus />
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="text-sm text-slate-700">
-                  {t('settings.code', 'Code')}
-                  <input type="text" value={newItemCode}
-                    onChange={(e) => setNewItemCode(e.target.value)}
-                    className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                    placeholder={t('vouchers.skuCode', 'SKU / code')} />
-                </label>
-                <label className="text-sm text-slate-700">
-                  {t('vouchers.unitLabel', 'Unit')}
-                  <input type="text" value={newItemUnit}
-                    onChange={(e) => setNewItemUnit(e.target.value)}
-                    className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                    placeholder={t('vouchers.unitHint', 'e.g. pcs, kg')} />
-                </label>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="text-sm text-slate-700">
-                  {t('items.salePrice', 'Sale Price')}
-                  <input type="number" min="0" step="0.01" value={newItemSalePrice}
-                    onChange={(e) => setNewItemSalePrice(e.target.value)}
-                    className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 font-mono text-sm outline-none focus:border-slate-500"
-                    placeholder="0.00" />
-                </label>
-                <label className="text-sm text-slate-700">
-                  {t('items.purchasePrice', 'Purchase Price')}
-                  <input type="number" min="0" step="0.01" value={newItemPurchasePrice}
-                    onChange={(e) => setNewItemPurchasePrice(e.target.value)}
-                    className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 font-mono text-sm outline-none focus:border-slate-500"
-                    placeholder="0.00" />
-                </label>
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <button type="button" onClick={() => { setShowItemPopup(false); setNewItemName(''); setNewItemCode(''); setNewItemUnit(''); setNewItemSalePrice(''); setNewItemPurchasePrice('') }}
-                className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">{t('common.cancel', 'Cancel')}</button>
-              <button type="button" disabled={!newItemName || newItemSaving}
-                onClick={async () => {
-                  setNewItemSaving(true)
-                  try {
-                    const created = await api<{ doc: Item }>('/items', {
-                      method: 'POST',
-                      body: {
-                        name: newItemName,
-                        code: newItemCode || undefined,
-                        unit: newItemUnit || undefined,
-                        salePrice: newItemSalePrice ? Number(newItemSalePrice) : undefined,
-                        purchasePrice: newItemPurchasePrice ? Number(newItemPurchasePrice) : undefined,
-                        ...(tenantId ? { tenant: tenantId } : {}),
-                      },
-                    })
-                    setItems((is) => [...is, created.doc])
-                    if (newItemTargetLine) {
-                      setLine(newItemTargetLine, {
-                        item: String(created.doc.id),
-                        description: created.doc.name,
-                        rate: String(created.doc.salePrice || ''),
-                      })
-                    }
-                    setShowItemPopup(false)
-                    setNewItemName(''); setNewItemCode(''); setNewItemUnit(''); setNewItemSalePrice(''); setNewItemPurchasePrice('')
-                  } catch (err: unknown) { setError(err instanceof Error ? err.message : t('vouchers.failedToCreateItem', 'Failed to create item')) }
-                  setNewItemSaving(false)
-                }}
-                className="rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-50">
-                {newItemSaving ? t('vouchers.creating', 'Creating…') : t('vouchers.createItem', 'Create Item')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

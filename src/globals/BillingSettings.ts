@@ -327,6 +327,18 @@ export const BillingSettings: GlobalConfig = {
           relationTo: 'gl-accounts',
           admin: { description: 'Accumulated depreciation contra-asset (asset management).' },
         },
+        {
+          name: 'fixedAssetCostAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Fixed Asset at Cost control account (credited on disposal).' },
+        },
+        {
+          name: 'disposalGainLossAccount',
+          type: 'relationship',
+          relationTo: 'gl-accounts',
+          admin: { description: 'Gain/Loss on Disposal account (balancing figure on disposal).' },
+        },
       ],
     },
     {

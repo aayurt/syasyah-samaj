@@ -272,6 +272,313 @@ export const FixedAssets: CollectionConfig = {
         }
       },
     },
+    {
+      // Batch depreciation run: posts one journal entry per eligible asset
+      // for elapsed periods since its last depreciation posting.
+      // Request body: { asOf?: string, dryRun?: boolean }
+      path: '/depreciation-run',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user || !isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const { searchParams } = new URL(req.url || '/')
+        const tenant = resolveScopedTenant(req, searchParams.get('tenant'))
+        let asOf = new Date().toISOString().slice(0, 10)
+        let dryRun = false
+        try {
+          const body = (await req.json!()) as any
+          if (body?.asOf) asOf = String(body.asOf).slice(0, 10)
+          if (body?.dryRun !== undefined) dryRun = Boolean(body.dryRun)
+        } catch {
+          // no body
+        }
+
+        const where: any = { status: { equals: 'active' } }
+        if (tenant) where.tenant = { equals: tenant }
+        const res = await req.payload.find({
+          collection: 'fixed-assets',
+          where,
+          limit: 1000,
+          depth: 0,
+          sort: 'purchaseDate',
+        })
+
+        const settings = await getBillingSettings(req.payload)
+        const depreciationAccount = settings?.depreciationAccount
+        const accumulatedAccount = settings?.accumulatedDepreciationAccount
+        if (!depreciationAccount || !accumulatedAccount) {
+          return Response.json(
+            { error: 'Depreciation accounts not configured in Billing Settings.' },
+            { status: 409 },
+          )
+        }
+
+        const results: any[] = []
+        const transactionID = dryRun ? undefined : (await req.payload.db.beginTransaction()) ?? undefined
+
+        try {
+          for (const asset of (res.docs as any[])) {
+            const cost = toNum(asset.purchaseCost)
+            const salvage = toNum(asset.salvageValue)
+            const lifeYears = toNum(asset.usefulLifeYears)
+            if (lifeYears <= 0 || cost <= 0) continue
+
+            const rows: DepreciationRow[] = asset.depreciationRows || []
+            const alreadyDepreciated = round2(rows.reduce((s, r) => s + toNum(r.amount), 0))
+            const depreciableBase = Math.max(0, cost - salvage)
+            const remaining = Math.max(0, round2(depreciableBase - alreadyDepreciated))
+            if (remaining <= 0) continue
+
+            const monthly = round2(depreciableBase / (lifeYears * 12))
+            if (monthly <= 0) continue
+
+            const lastPosted = rows[rows.length - 1]?.date
+            const from = lastPosted || (asset.purchaseDate ? String(asset.purchaseDate).slice(0, 10) : asOf)
+            const months = wholeMonths(from, asOf)
+            if (months <= 0) continue
+
+            const allowed = Math.min(months, Math.ceil(remaining / monthly))
+            if (allowed <= 0) continue
+
+            const totalAmount = round2(monthly * allowed)
+            const created: any[] = []
+
+            if (!dryRun) {
+              for (let i = 0; i < allowed; i++) {
+                const periodDate = new Date(from)
+                periodDate.setMonth(periodDate.getMonth() + i + 1)
+                const date = periodDate.toISOString().slice(0, 10)
+                const entry = await req.payload.create({
+                  collection: 'journal-entries',
+                  data: {
+                    date,
+                    narration: `Depreciation — ${asset.name} (${String(date).slice(0, 7)})`,
+                    status: 'posted',
+                    lines: [
+                      { account: depreciationAccount, debit: monthly },
+                      { account: accumulatedAccount, credit: monthly },
+                    ],
+                    tenant: asset.tenant,
+                  },
+                  req: { transactionID },
+                })
+                created.push({ date, amount: monthly, journalEntry: entry.id })
+              }
+
+              await req.payload.update({
+                collection: 'fixed-assets',
+                id: asset.id,
+                data: { depreciationRows: [...rows, ...created] },
+                req: { transactionID },
+              })
+            }
+
+            results.push({
+              assetId: asset.id,
+              name: asset.name,
+              code: asset.code,
+              category: asset.category,
+              postings: allowed,
+              totalAmount,
+              monthly,
+              from,
+              to: asOf,
+            })
+          }
+
+          if (transactionID) {
+            await req.payload.db.commitTransaction(transactionID)
+          }
+
+          return Response.json({
+            dryRun,
+            asOf,
+            processed: results.length,
+            totalAmount: round2(results.reduce((s, r) => s + r.totalAmount, 0)),
+            results,
+          })
+        } catch (err) {
+          if (transactionID) {
+            await req.payload.db.rollbackTransaction(transactionID)
+          }
+          const message = err instanceof Error ? err.message : 'Depreciation run failed'
+          return Response.json({ error: message }, { status: 400 })
+        }
+      },
+    },
+    {
+      // Asset disposal: calculate depreciation up to disposal date, compute
+      // NBV and gain/loss, post compound journal entry, mark asset disposed.
+      // Request body: { disposalDate: string, disposalType: 'sale' | 'retirement' | 'write_off' | 'donation',
+      //   proceeds: number, proceedsAccount?: number, remarks?: string }
+      path: '/:id/dispose',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user || !isBillingUser(req.user)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string
+        if (!id) {
+          return Response.json({ error: 'Missing asset id' }, { status: 400 })
+        }
+        const asset = (await req.payload.findByID({
+          collection: 'fixed-assets',
+          id,
+          depth: 0,
+        })) as any
+        if (!asset) {
+          return Response.json({ error: 'Asset not found' }, { status: 404 })
+        }
+        if (asset.status === 'disposed') {
+          return Response.json({ error: 'Asset is already disposed.' }, { status: 409 })
+        }
+
+        let disposalDate = new Date().toISOString().slice(0, 10)
+        let disposalType = 'sale'
+        let proceeds = 0
+        let proceedsAccount: number | string | null = null
+        let remarks = ''
+        try {
+          const body = (await req.json!()) as any
+          if (body?.disposalDate) disposalDate = String(body.disposalDate).slice(0, 10)
+          if (body?.disposalType) disposalType = String(body.disposalType)
+          if (body?.proceeds != null) proceeds = Number(body.proceeds) || 0
+          if (body?.proceedsAccount != null) proceedsAccount = body.proceedsAccount
+          if (body?.remarks) remarks = String(body.remarks)
+        } catch {
+          // no body
+        }
+
+        const settings = await getBillingSettings(req.payload)
+        const costAccount = settings?.fixedAssetCostAccount
+        const accumulatedAccount = settings?.accumulatedDepreciationAccount
+        const gainLossAccount = settings?.disposalGainLossAccount
+        if (!costAccount || !accumulatedAccount || !gainLossAccount) {
+          return Response.json(
+            {
+              error:
+                'Fixed asset disposal accounts not configured. Set Fixed Asset at Cost, Accumulated Depreciation, and Gain/Loss on Disposal in Billing Settings.',
+            },
+            { status: 409 },
+          )
+        }
+
+        const cost = toNum(asset.purchaseCost)
+        const salvage = toNum(asset.salvageValue)
+        const rows: DepreciationRow[] = asset.depreciationRows || []
+        const accumulated = round2(rows.reduce((s, r) => s + toNum(r.amount), 0))
+        const nbv = round2(cost - accumulated)
+        const gainLoss = round2(proceeds - nbv)
+
+        const transactionID = (await req.payload.db.beginTransaction()) ?? undefined
+        try {
+          // Post depreciation up to disposal date (straight-line, remaining months).
+          const lifeYears = toNum(asset.usefulLifeYears)
+          let depreciationPosted = 0
+          if (lifeYears > 0) {
+            const depreciableBase = Math.max(0, cost - salvage)
+            const monthly = depreciableBase === 0 ? 0 : round2(depreciableBase / (lifeYears * 12))
+            const remaining = Math.max(0, round2(depreciableBase - accumulated))
+            const lastPosted = rows[rows.length - 1]?.date
+            const from = lastPosted || (asset.purchaseDate ? String(asset.purchaseDate).slice(0, 10) : disposalDate)
+            const months = wholeMonths(from, disposalDate)
+            const allowed = months > 0 ? Math.min(months, Math.ceil(remaining / monthly)) : 0
+            if (allowed > 0 && monthly > 0) {
+              const created: any[] = []
+              for (let i = 0; i < allowed; i++) {
+                const periodDate = new Date(from)
+                periodDate.setMonth(periodDate.getMonth() + i + 1)
+                const date = periodDate.toISOString().slice(0, 10)
+                if (date > disposalDate) break
+                const entry = await req.payload.create({
+                  collection: 'journal-entries',
+                  data: {
+                    date,
+                    narration: `Depreciation — ${asset.name} (${String(date).slice(0, 7)})`,
+                    status: 'posted',
+                    lines: [
+                      { account: settings?.depreciationAccount, debit: monthly },
+                      { account: accumulatedAccount, credit: monthly },
+                    ],
+                    tenant: asset.tenant,
+                  },
+                  req: { transactionID },
+                })
+                created.push({ date, amount: monthly, journalEntry: entry.id })
+                depreciationPosted += monthly
+              }
+              await req.payload.update({
+                collection: 'fixed-assets',
+                id: asset.id,
+                data: { depreciationRows: [...rows, ...created] },
+                req: { transactionID },
+              })
+            }
+          }
+
+          const finalAccumulated = round2(accumulated + depreciationPosted)
+          const finalNbv = round2(cost - finalAccumulated)
+          const finalGainLoss = round2(proceeds - finalNbv)
+
+          // Compound disposal journal entry:
+          // Dr. Proceeds Account      proceeds
+          // Dr. Accumulated Depreciation  finalAccumulated
+          //   Cr. Fixed Asset at Cost       cost
+          //   Cr./Dr. Gain/Loss on Disposal  finalGainLoss (positive = credit gain, negative = debit loss)
+          const lines: any[] = []
+          if (proceeds > 0 && proceedsAccount) {
+            lines.push({ account: proceedsAccount, debit: proceeds })
+          }
+          if (finalAccumulated > 0) {
+            lines.push({ account: accumulatedAccount, debit: finalAccumulated })
+          }
+          lines.push({ account: costAccount, credit: cost })
+          if (finalGainLoss > 0) {
+            lines.push({ account: gainLossAccount, credit: finalGainLoss })
+          } else if (finalGainLoss < 0) {
+            lines.push({ account: gainLossAccount, debit: Math.abs(finalGainLoss) })
+          }
+
+          const entry = await req.payload.create({
+            collection: 'journal-entries',
+            data: {
+              date: disposalDate,
+              narration: `Disposal — ${asset.name} (${disposalType})${remarks ? ': ' + remarks : ''}`,
+              status: 'posted',
+              lines,
+              tenant: asset.tenant,
+            },
+            req: { transactionID },
+          })
+
+          await req.payload.update({
+            collection: 'fixed-assets',
+            id: asset.id,
+            data: { status: 'disposed' },
+            req: { transactionID },
+          })
+
+          await req.payload.db.commitTransaction(transactionID)
+
+          return Response.json({
+            assetId: asset.id,
+            disposalDate,
+            disposalType,
+            proceeds,
+            cost,
+            accumulatedDepreciation: finalAccumulated,
+            netBookValue: finalNbv,
+            gainLoss: finalGainLoss,
+            journalEntry: entry.id,
+          })
+        } catch (err) {
+          await req.payload.db.rollbackTransaction(transactionID)
+          const message = err instanceof Error ? err.message : 'Disposal failed'
+          return Response.json({ error: message }, { status: 400 })
+        }
+      },
+    },
   ],
   hooks: {
     beforeValidate: [

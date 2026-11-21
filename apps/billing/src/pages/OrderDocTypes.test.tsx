@@ -57,19 +57,10 @@ beforeEach(() => {
   apiMock.mockImplementation(async (url: string, options?: { method?: string }) => handler(url, options))
 })
 
-/** A type chip, located by its visible label (e.g. "Sales Order"). */
-function chip(label: string) {
-  const btn = screen.getByRole('button', { name: new RegExp(label, 'i') })
-  return btn
-}
-
-/** Pick the document type chip. Waits for the party input to confirm the form mounted. */
+/** Pick the document type from the select dropdown. Waits for the party input to confirm the form mounted. */
 async function chooseType(value: string) {
-  const label = value === 'sales-order' ? 'Sales Order'
-    : value === 'purchase-order' ? 'Purchase Order'
-    : value === 'sales-invoice' ? 'Sales Invoice'
-    : value
-  fireEvent.click(chip(label))
+  const select = screen.getAllByRole('combobox')[0]
+  fireEvent.change(select, { target: { value } })
   await waitFor(() => screen.getByPlaceholderText(/Search for party/i))
 }
 
@@ -95,31 +86,45 @@ function waitForEl<T>(fn: () => T | undefined, timeout = 2000): Promise<T | unde
 
 /** The item lines table. Present immediately in single-UI mode. */
 function lineTable() {
-  return screen.queryAllByRole('table').find((t) => t.querySelector('input'))
+  return screen.queryAllByRole('table').find((t) =>
+    t.querySelector('tbody tr input[type="number"]')
+  )
 }
 
-/** Fill the single line row. */
+/** Fill the single line row from the item lines table. */
 async function fillLine() {
-  const table = lineTable()
+  // wait for the lines table to render after party selection
+  await waitFor(() => {
+    const t = screen.queryAllByRole('table').find((t) => t.querySelector('tbody tr input[type="number"]'))
+    if (!t) throw new Error('still waiting for lines table')
+  })
+  const table = screen.queryAllByRole('table').find((t) =>
+    t.querySelector('tbody tr input[type="number"]')
+  )
   if (!table) throw new Error('line table not found')
-  const row = Array.from(table.querySelectorAll('tbody tr')).find((r) => r.querySelector('input'))
+  const row = Array.from(table.querySelectorAll('tbody tr')).find((r) => r.querySelector('input[type="number"]'))
   if (!row) throw new Error('line row not found')
-  const description = row.querySelector('input[placeholder*="Item name"]') as HTMLInputElement | null
+  const description = row.querySelector('input[type="text"]') as HTMLInputElement | null
   const numbers = Array.from(row.querySelectorAll('input[type="number"]')) as HTMLInputElement[]
   if (!description || !numbers[0] || !numbers[1]) throw new Error('line inputs not found')
   const [qty, rate] = numbers
-  fireEvent.change(description, { target: { value: 'Steel rods 100kg' } })
+  // Type to match mock item 'Steel Rod 12mm', pick from dropdown so item/account get set.
+  fireEvent.change(description, { target: { value: 'Steel Rod' } })
+  await waitFor(() =>
+    Array.from(row.querySelectorAll('button[type="button"]')).some((b) => b.textContent?.includes('Steel Rod 12mm'))
+  )
+  fireEvent.click(Array.from(row.querySelectorAll('button[type="button"]')).find((b) => b.textContent?.includes('Steel Rod 12mm'))!)
   fireEvent.change(qty, { target: { value: '100' } })
   fireEvent.change(rate, { target: { value: '95' } })
 }
 
 describe('VoucherForm — order document types', () => {
-  it('offers Sales Order and Purchase Order as type chips', async () => {
+  it('offers Sales Order and Purchase Order as select options', async () => {
     const { default: VoucherForm } = await import('./VoucherForm')
     renderWithProviders(<VoucherForm mode="create" />)
 
-    expect(screen.getByRole('button', { name: /Sales Order/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Purchase Order/i })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /Sales Order/i })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /Purchase Order/i })).toBeInTheDocument()
   })
 
   it('confirms a sales order instead of posting it', async () => {

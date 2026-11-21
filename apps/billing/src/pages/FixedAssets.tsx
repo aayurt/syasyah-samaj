@@ -1,5 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Building2, Download, Pencil, Plus, RefreshCw, Trash2, TrendingDown } from 'lucide-react'
+import {
+  Building2,
+  Calendar,
+  ChevronDown,
+  Download,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+  TrendingDown,
+  User,
+  Wallet,
+} from 'lucide-react'
 import { LiquidButton } from '../components/ui/LiquidButton'
 import { api, fmt, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
@@ -51,6 +63,13 @@ const STATUS_OPTIONS = [
   { value: 'disposed', label: 'Disposed' },
 ] as const
 
+const DISPOSAL_TYPE_OPTIONS = [
+  { value: 'sale', label: 'Sale' },
+  { value: 'retirement', label: 'Retirement' },
+  { value: 'write_off', label: 'Write-off' },
+  { value: 'donation', label: 'Donation' },
+] as const
+
 const emptyForm = {
   name: '',
   code: '',
@@ -67,12 +86,7 @@ function categoryLabel(value: string): string {
   return CATEGORY_OPTIONS.find((c) => c.value === value)?.label ?? value
 }
 
-/**
- * Monthly straight-line depreciation, mirroring the server engine
- * (src/collections/FixedAssets/index.ts): (cost - salvage) / (life in months).
- * Returned as null when the asset cannot depreciate yet (no purchase date,
- * zero life, or fully depreciated).
- */
+/** Monthly straight-line depreciation, mirroring the server engine. */
 export function monthlyDepreciation(
   cost: number,
   salvage: number,
@@ -85,12 +99,49 @@ export function monthlyDepreciation(
   return base / (life * 12)
 }
 
+/* ================================================================
+ * Tab navigation
+ * ================================================================ */
+
+type Tab = 'register' | 'depreciation' | 'disposal' | 'reports'
+
+const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
+  { key: 'register', label: 'Register', icon: Building2 },
+  { key: 'depreciation', label: 'Depreciation Run', icon: TrendingDown },
+  { key: 'disposal', label: 'Disposals', icon: Trash2 },
+  { key: 'reports', label: 'Reports', icon: Calendar },
+]
+
+function TabButton({ key, label, icon: Icon, active, onClick }: { key: Tab; label: string; icon: React.ElementType; active: boolean; onClick: (k: Tab) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(key)}
+      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+        active
+          ? 'bg-slate-100 text-slate-900 border border-slate-200'
+          : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 border border-transparent'
+      }`}
+    >
+      <Icon size={14} />
+      {label}
+    </button>
+  )
+}
+
+/* ================================================================
+ * Fixed Assets Page
+ * ================================================================ */
+
 export default function FixedAssetsPage() {
   const { cacheVersion } = useSyncState()
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const t = useT()
 
+  const [activeTab, setActiveTab] = useState<Tab>('register')
+
+  /* ── Register state ── */
   const [rows, setRows] = useState<FixedAssetRegisterRow[]>([])
   const [totals, setTotals] = useState<FixedAssetRegisterTotals | null>(null)
   const [loading, setLoading] = useState(false)
@@ -249,9 +300,7 @@ export default function FixedAssetsPage() {
   }
 
   /**
-   * Post depreciation for elapsed periods. The server writes one journal
-   * entry per month and refuses when the billing settings are missing the
-   * depreciation / accumulated-depreciation accounts.
+   * Post depreciation for elapsed periods of a single asset.
    */
   const depreciate = async (row: FixedAssetRegisterRow) => {
     setDepreciatingId(row.id)
@@ -338,33 +387,124 @@ export default function FixedAssetsPage() {
     [totals, t],
   )
 
-  return (
-    <div className="w-full">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-lg font-semibold text-slate-900">
-          {t('fixedAssets.title', 'Fixed Assets')}
-        </h1>
-        <div className="flex items-center gap-2">
-          <LiquidButton onClick={load} variant="outline" size="sm" disabled={loading}>
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            {t('common.refresh', 'Refresh')}
-          </LiquidButton>
-          <LiquidButton onClick={exportCsv} variant="outline" size="sm" disabled={visible.length === 0}>
-            <Download size={14} /> CSV
-          </LiquidButton>
-          <LiquidButton onClick={openNew} variant="accent" size="sm">
-            <Plus size={14} />
-            {t('fixedAssets.newAsset', 'New asset')}
-          </LiquidButton>
-        </div>
-      </div>
+  /* ── Depreciation Run state ── */
+  const [depRunLoading, setDepRunLoading] = useState(false)
+  const [depRunPreview, setDepRunPreview] = useState<any[]>([])
+  const [depRunTotal, setDepRunTotal] = useState(0)
+  const [depRunAsOf, setDepRunAsOf] = useState<string>('')
+  const [depRunDryRun, setDepRunDryRun] = useState(true)
+  const [depRunPosting, setDepRunPosting] = useState(false)
 
-      {error && (
-        <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
+  const runDepreciationPreview = async () => {
+    setDepRunLoading(true)
+    try {
+      const res = await api<{ dryRun: boolean; asOf: string; processed: number; totalAmount: number; results: any[] }>(
+        '/fixed-assets/depreciation-run',
+        {
+          method: 'POST',
+          body: { asOf: depRunAsOf || undefined, dryRun: true },
+          immediate: true,
+        },
+      )
+      setDepRunPreview(res.results ?? [])
+      setDepRunTotal(res.totalAmount ?? 0)
+    } catch (err: unknown) {
+      pushToast('error', t('common.error', 'Error'), err instanceof Error ? err.message : String(err))
+    } finally {
+      setDepRunLoading(false)
+    }
+  }
 
+  const postDepreciationRun = async () => {
+    setDepRunPosting(true)
+    try {
+      const res = await api<{ dryRun: boolean; asOf: string; processed: number; totalAmount: number; results: any[] }>(
+        '/fixed-assets/depreciation-run',
+        {
+          method: 'POST',
+          body: { asOf: depRunAsOf || undefined, dryRun: false },
+          immediate: true,
+        },
+      )
+      pushToast(
+        'success',
+        t('fixedAssets.depreciationRunPosted', 'Depreciation run posted'),
+        `${res.processed} asset(s), ${fmt(res.totalAmount)}`,
+      )
+      setDepRunPreview([])
+      setDepRunTotal(0)
+      await load()
+    } catch (err: unknown) {
+      pushToast('error', t('common.error', 'Error'), err instanceof Error ? err.message : String(err))
+    } finally {
+      setDepRunPosting(false)
+    }
+  }
+
+  /* ── Disposal state ── */
+  const [disposalLoading, setDisposalLoading] = useState(false)
+  const [disposingId, setDisposingId] = useState<number | null>(null)
+  const [disposalDialog, setDisposalDialog] = useState<FixedAssetRegisterRow | null>(null)
+  const [disposalForm, setDisposalForm] = useState({
+    disposalDate: '',
+    disposalType: 'sale' as const,
+    proceeds: '',
+    proceedsAccount: '',
+    remarks: '',
+  })
+
+  const openDisposal = (row: FixedAssetRegisterRow) => {
+    setDisposalDialog(row)
+    setDisposalForm({
+      disposalDate: new Date().toISOString().slice(0, 10),
+      disposalType: 'sale',
+      proceeds: '',
+      proceedsAccount: '',
+      remarks: '',
+    })
+  }
+
+  const closeDisposal = () => {
+    setDisposalDialog(null)
+    setDisposalForm({
+      disposalDate: '',
+      disposalType: 'sale',
+      proceeds: '',
+      proceedsAccount: '',
+      remarks: '',
+    })
+  }
+
+  const submitDisposal = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!disposalDialog) return
+    setDisposingId(disposalDialog.id)
+    try {
+      await api(`/fixed-assets/${disposalDialog.id}/dispose`, {
+        method: 'POST',
+        body: {
+          disposalDate: disposalForm.disposalDate || undefined,
+          disposalType: disposalForm.disposalType,
+          proceeds: Number(disposalForm.proceeds) || 0,
+          proceedsAccount: disposalForm.proceedsAccount || undefined,
+          remarks: disposalForm.remarks || undefined,
+        },
+        immediate: true,
+      })
+      pushToast('success', t('fixedAssets.disposed', 'Asset disposed'), disposalDialog.name)
+      closeDisposal()
+      await load()
+    } catch (err: unknown) {
+      pushToast('error', t('common.error', 'Error'), err instanceof Error ? err.message : String(err))
+    } finally {
+      setDisposingId(null)
+    }
+  }
+
+  /* ── Render helpers ── */
+
+  const renderRegister = () => (
+    <>
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {cards.map((c) => (
           <div key={c.label} className="rounded-lg border border-slate-200 bg-white p-4">
@@ -589,12 +729,24 @@ export default function FixedAssetsPage() {
                         onClick={() => depreciate(r)}
                         variant="outline"
                         size="sm"
-                        disabled={depreciatingId === r.id}
+                        disabled={depreciatingId === r.id || r.status === 'disposed'}
                         title={t('fixedAssets.postDepreciation', 'Post depreciation')}
                       >
                         <TrendingDown size={14} />
                         {depreciatingId === r.id ? '…' : t('fixedAssets.depreciate', 'Depreciate')}
                       </LiquidButton>
+                      {r.status === 'active' && (
+                        <LiquidButton
+                          onClick={() => openDisposal(r)}
+                          variant="outline"
+                          size="sm"
+                          disabled={disposingId === r.id}
+                          title={t('fixedAssets.disposeAsset', 'Dispose asset')}
+                        >
+                          <Trash2 size={14} />
+                          {disposingId === r.id ? '…' : t('fixedAssets.dispose', 'Dispose')}
+                        </LiquidButton>
+                      )}
                       <ActionMenu
                         items={[
                           { label: t('common.edit', 'Edit'), icon: <Pencil size={13} />, onClick: () => openEdit(r) },
@@ -609,6 +761,331 @@ export default function FixedAssetsPage() {
           </table>
         )}
       </div>
+    </>
+  )
+
+  const renderDepreciationRun = () => (
+    <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+      <h3 className="mb-4 text-sm font-semibold text-slate-700">
+        {t('fixedAssets.depreciationRunTitle', 'Batch Depreciation Run')}
+      </h3>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <label className="text-sm text-slate-700">
+          {t('fixedAssets.asOfDate', 'As-of date')} *
+          <input
+            type="date"
+            required
+            value={depRunAsOf}
+            onChange={(e) => setDepRunAsOf(e.target.value)}
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+          />
+        </label>
+        <label className="text-sm text-slate-700">
+          {t('fixedAssets.dryRun', 'Dry run (preview only)')}
+          <select
+            value={depRunDryRun ? 'true' : 'false'}
+            onChange={(e) => setDepRunDryRun(e.target.value === 'true')}
+            className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500"
+          >
+            <option value="true">{t('fixedAssets.yes', 'Yes')}</option>
+            <option value="false">{t('fixedAssets.no', 'No')}</option>
+          </select>
+        </label>
+        <div className="flex items-end gap-2">
+          <LiquidButton
+            onClick={runDepreciationPreview}
+            variant="outline"
+            size="sm"
+            disabled={depRunLoading}
+          >
+            <RefreshCw size={14} /> {t('fixedAssets.preview', 'Preview')}
+          </LiquidButton>
+          <LiquidButton
+            onClick={postDepreciationRun}
+            variant="accent"
+            size="sm"
+            disabled={depRunPosting || depRunPreview.length === 0 || depRunDryRun}
+          >
+            {depRunPosting ? t('common.posting', 'Posting…') : t('fixedAssets.postRun', 'Post Depreciation')}
+          </LiquidButton>
+        </div>
+      </div>
+
+      {depRunLoading && <p className="mt-2 text-sm text-slate-500">{t('common.calculating', 'Calculating…')}</p>}
+
+      {depRunPreview.length > 0 && (
+        <div className="mt-4 rounded-lg border border-slate-200 bg-white overflow-x-auto">
+          <table className="w-full min-w-[700px] text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50">
+              <tr>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">{t('fixedAssets.asset', 'Asset')}</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">{t('fixedAssets.category', 'Category')}</th>
+                <th className="px-3 py-2 text-right text-xs font-semibold text-slate-500">{t('fixedAssets.monthlyDepreciation', 'Monthly Depn')}</th>
+                <th className="px-3 py-2 text-right text-xs font-semibold text-slate-500">{t('fixedAssets.periods', 'Periods')}</th>
+                <th className="px-3 py-2 text-right text-xs font-semibold text-slate-500">{t('fixedAssets.totalAmount', 'Total Amount')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {depRunPreview.map((r) => (
+                <tr key={r.assetId} className="hover:bg-slate-50">
+                  <td className="px-3 py-2">
+                    <div className="font-medium text-slate-800">{r.name}</div>
+                    {r.code && <div className="text-xs text-slate-400 font-mono">{r.code}</div>}
+                  </td>
+                  <td className="px-3 py-2 text-slate-600">{categoryLabel(r.category)}</td>
+                  <td className="px-3 py-2 tabular-nums text-right">{fmt(r.monthly)}</td>
+                  <td className="px-3 py-2 tabular-nums text-right">{r.postings}</td>
+                  <td className="px-3 py-2 tabular-nums text-right font-medium">{fmt(r.totalAmount)}</td>
+                </tr>
+              ))}
+              <tr className="border-t border-slate-200 bg-slate-50">
+                <td colSpan={4} className="px-3 py-2 text-right font-medium text-slate-700">
+                  {t('fixedAssets.runTotal', 'Run total')}
+                </td>
+                <td className="px-3 py-2 tabular-nums text-right font-semibold text-slate-900">
+                  {fmt(depRunTotal)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+
+  const renderDisposal = () => (
+    <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+      <h3 className="mb-4 text-sm font-semibold text-slate-700">
+        {t('fixedAssets.disposalTitle', 'Asset Disposal')}
+      </h3>
+      <p className="mb-4 text-sm text-slate-500">
+        {t('fixedAssets.disposalDesc', 'Dispose of an asset: sale, retirement, write-off, or donation. The system calculates depreciation up to the disposal date, net book value, and gain or loss.')}
+      </p>
+
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        {disposalLoading && <TableSkeleton rows={5} />}
+        {!disposalLoading && (
+          <table className="w-full min-w-[700px] text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50">
+              <tr>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">{t('fixedAssets.code', 'Code')}</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">{t('fixedAssets.name', 'Name')}</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">{t('fixedAssets.category', 'Category')}</th>
+                <th className="px-3 py-2 text-right text-xs font-semibold text-slate-500">{t('fixedAssets.purchaseCost', 'Cost')}</th>
+                <th className="px-3 py-2 text-right text-xs font-semibold text-slate-500">{t('fixedAssets.netBookValue', 'Net Book Value')}</th>
+                <th className="px-3 py-2 text-right">{t('common.actions', 'Actions')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.filter((r) => r.status === 'active').map((r) => (
+                <tr key={r.id} className="hover:bg-slate-50">
+                  <td className="px-3 py-2 font-mono text-xs text-slate-500">{r.code || '—'}</td>
+                  <td className="px-3 py-2 font-medium text-slate-800">{r.name}</td>
+                  <td className="px-3 py-2 text-slate-600">{categoryLabel(r.category)}</td>
+                  <td className="px-3 py-2 tabular-nums text-right">{fmt(r.purchaseCost)}</td>
+                  <td className="px-3 py-2 tabular-nums text-right">{fmt(r.netBookValue)}</td>
+                  <td className="px-3 py-2 text-right">
+                    <LiquidButton
+                      onClick={() => openDisposal(r)}
+                      variant="outline"
+                      size="sm"
+                      disabled={disposingId === r.id}
+                    >
+                      {disposingId === r.id ? '…' : t('fixedAssets.dispose', 'Dispose')}
+                    </LiquidButton>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {disposalDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-slate-900">
+              {t('fixedAssets.disposeAsset', 'Dispose Asset')} — {disposalDialog.name}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {t('fixedAssets.disposalPreview', 'Disposal preview')}
+            </p>
+            <form onSubmit={submitDisposal} className="mt-4 space-y-3">
+              <label className="text-sm text-slate-700">
+                {t('fixedAssets.disposalDate', 'Disposal date')} *
+                <input
+                  type="date"
+                  required
+                  value={disposalForm.disposalDate}
+                  onChange={(e) => setDisposalForm({ ...disposalForm, disposalDate: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                />
+              </label>
+              <label className="text-sm text-slate-700">
+                {t('fixedAssets.disposalType', 'Disposal type')}
+                <select
+                  value={disposalForm.disposalType}
+                  onChange={(e) => setDisposalForm({ ...disposalForm, disposalType: e.target.value as any })}
+                  className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500"
+                >
+                  {DISPOSAL_TYPE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-sm text-slate-700">
+                {t('fixedAssets.proceeds', 'Proceeds')}
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={disposalForm.proceeds}
+                  onChange={(e) => setDisposalForm({ ...disposalForm, proceeds: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                />
+              </label>
+              <label className="text-sm text-slate-700">
+                {t('fixedAssets.proceedsAccount', 'Proceeds account (cash/bank)')}
+                <select
+                  value={disposalForm.proceedsAccount}
+                  onChange={(e) => setDisposalForm({ ...disposalForm, proceedsAccount: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500"
+                >
+                  <option value="">{t('fixedAssets.selectAccount', 'Select account…')}</option>
+                </select>
+              </label>
+              <label className="text-sm text-slate-700">
+                {t('fixedAssets.remarks', 'Remarks')}
+                <input
+                  value={disposalForm.remarks}
+                  onChange={(e) => setDisposalForm({ ...disposalForm, remarks: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                />
+              </label>
+              <div className="mt-4 p-3 rounded bg-slate-50 border border-slate-100">
+                <div className="flex justify-between text-sm">
+                  <span>{t('fixedAssets.cost', 'Cost')}</span>
+                  <span className="font-mono text-right">{fmt(disposalDialog.purchaseCost)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>{t('fixedAssets.accumulatedDepreciation', 'Accumulated Depreciation')}</span>
+                  <span className="font-mono text-right text-amber-700">{fmt(disposalDialog.accumulatedDepreciation)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>{t('fixedAssets.netBookValue', 'Net Book Value')}</span>
+                  <span className="font-mono text-right font-medium">{fmt(disposalDialog.netBookValue)}</span>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <LiquidButton type="button" variant="outline" size="sm" onClick={closeDisposal}>
+                  {t('common.cancel', 'Cancel')}
+                </LiquidButton>
+                <LiquidButton
+                  type="submit"
+                  variant="accent"
+                  size="sm"
+                  disabled={disposingId === disposalDialog.id || !disposalForm.proceedsAccount}
+                >
+                  {disposingId === disposalDialog.id ? t('common.processing', 'Processing…') : t('fixedAssets.confirmDispose', 'Confirm Disposal')}
+                </LiquidButton>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const renderReports = () => (
+    <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+      <h3 className="mb-4 text-sm font-semibold text-slate-700">
+        {t('fixedAssets.reportsTitle', 'Fixed Asset Reports')}
+      </h3>
+      <p className="mb-4 text-sm text-slate-500">
+        {t('fixedAssets.reportsDesc', 'Fixed asset reports reconcile with the General Ledger.')}
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <h4 className="mb-2 text-sm font-semibold text-slate-800">{t('fixedAssets.assetRegister', 'Fixed Asset Register')}</h4>
+          <p className="mb-3 text-xs text-slate-500">{t('fixedAssets.assetRegisterDesc', 'Complete asset register with cost, depreciation, and NBV.')}</p>
+          <LiquidButton
+            asChild
+            variant="outline"
+            size="sm"
+          >
+            <a href="/fixed-assets?tab=register">{t('common.view', 'View')}</a>
+          </LiquidButton>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <h4 className="mb-2 text-sm font-semibold text-slate-800">{t('fixedAssets.assetSummary', 'Fixed Asset Summary')}</h4>
+          <p className="mb-3 text-xs text-slate-500">{t('fixedAssets.assetSummaryDesc', 'Cost, accumulated depreciation, and NBV by category.')}</p>
+          <LiquidButton
+            asChild
+            variant="outline"
+            size="sm"
+          >
+            <a href="/reports/fixed-asset-summary">{t('common.view', 'View')}</a>
+          </LiquidButton>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <h4 className="mb-2 text-sm font-semibold text-slate-800">{t('fixedAssets.depreciationSchedule', 'Depreciation Schedule')}</h4>
+          <p className="mb-3 text-xs text-slate-500">{t('fixedAssets.depreciationScheduleDesc', 'Monthly posted depreciation per asset.')}</p>
+          <LiquidButton
+            asChild
+            variant="outline"
+            size="sm"
+          >
+            <a href="/reports/depreciation-schedule">{t('common.view', 'View')}</a>
+          </LiquidButton>
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="w-full">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <h1 className="text-lg font-semibold text-slate-900">
+          {t('fixedAssets.title', 'Fixed Assets')}
+        </h1>
+        <div className="flex items-center gap-2">
+          <LiquidButton onClick={load} variant="outline" size="sm" disabled={loading}>
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            {t('common.refresh', 'Refresh')}
+          </LiquidButton>
+          <LiquidButton onClick={exportCsv} variant="outline" size="sm" disabled={visible.length === 0 && activeTab === 'register'}>
+            <Download size={14} /> CSV
+          </LiquidButton>
+          <LiquidButton onClick={openNew} variant="accent" size="sm" disabled={activeTab !== 'register'}>
+            <Plus size={14} />
+            {t('fixedAssets.newAsset', 'New asset')}
+          </LiquidButton>
+        </div>
+      </div>
+
+      {error && (
+        <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      )}
+
+      <div className="flex flex-wrap gap-1 mb-4">
+        {TABS.map((tab) => (
+          <TabButton
+            key={tab.key}
+            {...tab}
+            active={activeTab === tab.key}
+            onClick={setActiveTab}
+          />
+        ))}
+      </div>
+
+      {activeTab === 'register' && renderRegister()}
+      {activeTab === 'depreciation' && renderDepreciationRun()}
+      {activeTab === 'disposal' && renderDisposal()}
+      {activeTab === 'reports' && renderReports()}
     </div>
   )
 }
