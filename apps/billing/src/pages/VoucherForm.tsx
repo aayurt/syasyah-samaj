@@ -86,6 +86,13 @@ const INVENTORY_TYPES = ['sales-invoice', 'delivery-challan', 'grn', 'purchase-i
 const CASH_TYPES = ['payment-voucher', 'receipt-voucher']
 /** Order document types — confirmed, never posted (see the server's /post handler). */
 const ORDER_TYPES = ['sales-order', 'purchase-order']
+
+/** Document types that render the item line table (Item / Account / Sub-account / Qty / Rate).
+ * Receipt / payment are cash types and use the cash panel instead; journal / contra use their own UI. */
+export function isItemDocType(docType: string): boolean {
+  return ['sales-quote', 'sales-order', 'sales-invoice', 'purchase-order', 'purchase-invoice',
+    'credit-note', 'debit-note', 'petty-cash-voucher', 'grn', 'delivery-challan'].includes(docType)
+}
 const fmtQty = (n: number) =>
   Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0'
 
@@ -571,9 +578,10 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
   /* ── Derived ────────────────────────────────────────────────── */
   const meta = docTypeLabels[docType] || DOC_TYPE_LABELS[docType] || docType
-  const isItem = ['sales-quote', 'sales-order', 'sales-invoice', 'purchase-order', 'purchase-invoice',
-    'credit-note', 'debit-note', 'petty-cash-voucher', 'grn', 'delivery-challan',
-    'receipt-voucher', 'payment-voucher'].includes(docType)
+  // Item-based document types use the item line table (Item / Account / Sub-account / Qty / Rate).
+  // Receipt / payment are cash types — they use the cash panel, not the item table.
+  // Journal / contra use their own line-entry UI and are already excluded.
+  const isItem = isItemDocType(docType)
   const isContra = docType === 'contra'
   const isJournal = docType === 'journal-voucher'
   const isCash = CASH_TYPES.includes(docType)
@@ -872,12 +880,17 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       return
     }
     setSaving(true); setError('')
-    // Validate: each line needs Item or Account; parent Account without Item needs Sub-account
-    for (const l of lines) {
-      if (!l.item && !l.account) { setError('Each line needs an Item or Account'); setSaving(false); return }
-      if (!l.item && l.account) {
-        const hasChildren = accounts.some((a) => a.parent !== null && Number(a.parent) === Number(l.account))
-        if (hasChildren && !l.subAccount) { setError('Select a Sub-account for this Account'); setSaving(false); return }
+    // Validate: each line needs Item or Account; parent Account without Item needs Sub-account.
+    // Only item-based document types use `lines` as their primary line entry with item/account.
+    // Cash-simple receipt/payment carries description+amount (no item/account) — exempt.
+    // Journal uses journalLines; contra uses fromAccount/toAccount — exempt.
+    if (isItem) {
+      for (const l of lines) {
+        if (!l.item && !l.account) { setError('Each line needs an Item or Account'); setSaving(false); return }
+        if (!l.item && l.account) {
+          const hasChildren = accounts.some((a) => a.parent !== null && Number(a.parent) === Number(l.account))
+          if (hasChildren && !l.subAccount) { setError('Select a Sub-account for this Account'); setSaving(false); return }
+        }
       }
     }
     try {
@@ -1125,7 +1138,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
           {/* ── Item Lines Table ────────────────────────────────── */}
           {isItem && (
             <>
-              <hr />
+              <hr className="mt-4 border-slate-200" />
               <div className="mt-4 rounded-lg border border-slate-200 bg-white">
                 <table className="w-full text-sm">
                   <thead>
@@ -1393,16 +1406,10 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
         {/* ── Notes (collapsible) ─────────────────────────────── */}
         {/* ── Attach Images ───────────────────────────────────── */}
-        <div className="mt-4 bg-white p-5">
-          <CollapsibleSection
-            title={t('vouchers.notesRemarks', 'Notes / Remarks')}
-            open={notesSectionOpen}
-            onToggle={() => setNotesSectionOpen((o) => !o)}
-          >
-            <textarea rows={4} value={narration} onChange={(e) => setNarration(e.target.value)}
-              placeholder={t('vouchers.notePlaceholder', 'Enter note or description...')}
-              className="w-full resize-none rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" />
-          </CollapsibleSection>
+        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+          <textarea rows={4} value={narration} onChange={(e) => setNarration(e.target.value)}
+            placeholder={t('vouchers.notePlaceholder', 'Enter note or description...')}
+            className="w-full resize-none rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500" />
 
           {/* ── Attach Images ───────────────────────────────────── */}
           <div className="mt-4">

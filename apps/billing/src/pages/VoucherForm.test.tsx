@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { isItemDocType } from './VoucherForm'
 
 /**
  * Inventory entry toggle tests.
@@ -118,5 +119,25 @@ describe('account / sub-account line behavior', () => {
   it('rejects line with neither item nor account', () => {
     const line = { item: '', account: '', subAccount: '' }
     expect(Boolean(line.item || line.account)).toBe(false)
+  })
+})
+
+describe('item-line gating per doc type', () => {
+  const ITEM_TYPES = [
+    'sales-quote', 'sales-order', 'sales-invoice', 'purchase-order', 'purchase-invoice',
+    'credit-note', 'debit-note', 'petty-cash-voucher', 'grn', 'delivery-challan',
+  ]
+  const NON_ITEM_TYPES = ['receipt-voucher', 'payment-voucher', 'journal-voucher', 'contra']
+
+  it('returns true for item-based document types', () => {
+    for (const t of ITEM_TYPES) {
+      expect(isItemDocType(t)).toBe(true)
+    }
+  })
+
+  it('returns false for cash types (receipt / payment)', () => {
+    for (const t of NON_ITEM_TYPES) {
+      expect(isItemDocType(t)).toBe(false)
+    }
   })
 })
