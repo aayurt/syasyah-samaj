@@ -148,12 +148,13 @@ export const Parties: CollectionConfig = {
                   limit: 1,
                   req,
                 })
-                if (found.docs.length > 0) {
-                  receivable = found.docs[0].id
+                const firstAR = found.docs[0]
+                if (firstAR) {
+                  receivable = firstAR.id
                   d.receivableAccount = receivable
                 }
               }
-            } catch {}
+            } catch { }
           }
 
           if (needsAP && !payable) {
@@ -175,12 +176,13 @@ export const Parties: CollectionConfig = {
                   limit: 1,
                   req,
                 })
-                if (found.docs.length > 0) {
-                  payable = found.docs[0].id
+                const firstAP = found.docs[0]
+                if (firstAP) {
+                  payable = firstAP.id
                   d.payableAccount = payable
                 }
               }
-            } catch {}
+            } catch { }
           }
         }
 

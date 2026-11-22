@@ -1160,8 +1160,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/components/CoaSetupModal.tsx": {
-    "mtime": 1795332504.6576872,
-    "ast_hash": "33a15a3bc9a6242cc78db970964aa0a7",
+    "mtime": 1795335516.1648371,
+    "ast_hash": "7298f82d6d24414e22f3341e86154b65",
     "semantic_hash": ""
   },
   "apps/billing/src/components/CommandPalette.test.tsx": {
@@ -1230,13 +1230,13 @@
     "semantic_hash": ""
   },
   "apps/billing/src/components/FiscalYearSwitcher.test.tsx": {
-    "mtime": 1793534198.216154,
-    "ast_hash": "b6c54e525daf409f05f20956e54e0a5d",
+    "mtime": 1795335766.659839,
+    "ast_hash": "4d31bbf1459d039ebfd49af727ad2bf4",
     "semantic_hash": ""
   },
   "apps/billing/src/components/FiscalYearSwitcher.tsx": {
-    "mtime": 1793849844.9794848,
-    "ast_hash": "80b6bb83cab421faa626958e0f8c6e24",
+    "mtime": 1795335745.4334729,
+    "ast_hash": "815e30d3030a327e2a8909ab0ee8c38e",
     "semantic_hash": ""
   },
   "apps/billing/src/components/IllakaSwitcher.test.tsx": {
@@ -1290,8 +1290,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/components/NepaliDateInput.tsx": {
-    "mtime": 1795217241.4309382,
-    "ast_hash": "1a1bf30bd974ddd2b2d1fbeddf55f331",
+    "mtime": 1795335339.437212,
+    "ast_hash": "bf0e8015124437eb4619f2caa4722450",
     "semantic_hash": ""
   },
   "apps/billing/src/components/OutstandingInvoices.test.tsx": {
@@ -1865,8 +1865,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Accounts.tsx": {
-    "mtime": 1795332993.9142609,
-    "ast_hash": "79d1c492322a5f4a1d37976bc9f237f1",
+    "mtime": 1795333977.153902,
+    "ast_hash": "0a71fd018c0d2c9e5943fdfba2149614",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Aging.tsx": {
@@ -1905,8 +1905,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Items.tsx": {
-    "mtime": 1795291292.9226162,
-    "ast_hash": "ab4c546fb8a8df2dd212e88b1f55cb84",
+    "mtime": 1795335536.327746,
+    "ast_hash": "66bf8e5abbbcac14aa7daf376d476386",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Journal.tsx": {
@@ -1925,8 +1925,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Members.tsx": {
-    "mtime": 1795333127.776265,
-    "ast_hash": "08e4f8dcdc3576e8e130b788b61eebe5",
+    "mtime": 1795335483.2670972,
+    "ast_hash": "e831f79209401324c73a700c3da8b5ea",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/MembershipTypes.tsx": {
@@ -1935,8 +1935,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Parties.tsx": {
-    "mtime": 1795291278.8356333,
-    "ast_hash": "7dd18666f0ba7a94428428ca2b9704ca",
+    "mtime": 1795335527.7667317,
+    "ast_hash": "007f00d3a63429f5a217f74841182ec5",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Payroll.test.tsx": {
@@ -2005,8 +2005,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Settings.tsx": {
-    "mtime": 1795332875.0832224,
-    "ast_hash": "a6acc255fa5690080a46482faa9c4950",
+    "mtime": 1795335583.692249,
+    "ast_hash": "6399527a9b75a0962c7c77e551122dee",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/SetupOpeningBalances.tsx": {
@@ -2015,8 +2015,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/SetupWizard.tsx": {
-    "mtime": 1795265900.329485,
-    "ast_hash": "9c5a356aa17bfdfa71c5691260607e6a",
+    "mtime": 1795335545.4677508,
+    "ast_hash": "fd1adeb24a95a4605311a3d4358cb45b",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Transfers.tsx": {
@@ -2030,8 +2030,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/VoucherForm.tsx": {
-    "mtime": 1795331463.702387,
-    "ast_hash": "5fb3f609ec9c12b1124d84aceda5f839",
+    "mtime": 1795335458.6841705,
+    "ast_hash": "0fd0743f776d55a00e44c9c4a0610fdb",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Vouchers.tsx": {
@@ -3095,8 +3095,8 @@
     "semantic_hash": ""
   },
   "src/collections/Parties/index.ts": {
-    "mtime": 1795272725.2921524,
-    "ast_hash": "6f1f730e3dd1709154b8cd593e9e8c6d",
+    "mtime": 1795337568.0489519,
+    "ast_hash": "92d37eef3dfbd856107b9d71d201552c",
     "semantic_hash": ""
   },
   "src/collections/PayGroups.ts": {
@@ -5155,8 +5155,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/FixedAssets.tsx": {
-    "mtime": 1795267119.3144336,
-    "ast_hash": "d37091df6a3a88fbee90dc8864dc6e61",
+    "mtime": 1795335627.1216617,
+    "ast_hash": "91d01de1b361bb20c56205e4cc65c3e1",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/GeneralLedger.tsx": {
@@ -5265,8 +5265,8 @@
     "semantic_hash": ""
   },
   "scripts/seed-local.ts": {
-    "mtime": 1794933985.1576102,
-    "ast_hash": "bcf6160aa64fd3390d4540064942a4fb",
+    "mtime": 1795338808.75718,
+    "ast_hash": "39f290a9f1efd5d6a6203661f3da54bb",
     "semantic_hash": ""
   },
   "scripts/seeds/chart-of-accounts.json": {
@@ -5290,8 +5290,8 @@
     "semantic_hash": ""
   },
   "scripts/seeds/users.json": {
-    "mtime": 1795257723.624791,
-    "ast_hash": "73dbeb07e3dd8aaf9940e82098caa424",
+    "mtime": 1795338252.8123858,
+    "ast_hash": "4ee2109ed2a51d06c53b0cd1f971e05a",
     "semantic_hash": ""
   },
   "src/collections/Accounts/index.test.ts": {
@@ -5637,6 +5637,11 @@
   "apps/billing/src/components/PageGuide.tsx": {
     "mtime": 1795332849.2205696,
     "ast_hash": "f3bbc0dc2a28d17a2f6f049c3b0bd9c2",
+    "semantic_hash": ""
+  },
+  "apps/billing/src/components/AddFiscalYearModal.tsx": {
+    "mtime": 1795335676.0415475,
+    "ast_hash": "ed2a18785e1e36c8f599a5b3a7c55bce",
     "semantic_hash": ""
   }
 }

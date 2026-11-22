@@ -25,7 +25,7 @@ if (process.env.NODE_ENV === 'production') {
   console.error('seed-local refuses to run with NODE_ENV=production.')
   process.exit(1)
 }
-process.env.PAYLOAD_MIGRATING = 'false'
+process.env.PAYLOAD_MIGRATING = 'true'
 // Lets the Users beforeChange hook keep the roles declared in users.json.
 // Never set this in the web process — only trusted seed data uses it.
 process.env.SEED_LOCAL = 'true'
@@ -134,8 +134,8 @@ for (const u of users) {
   // ── better-auth credential so the user can sign in with email/password ──
 // payload.db.pool gives raw Postgres access to the accounts table
 // better-auth stores credential as ${salt}:${scryptHash}
-  if (u.password) {
-    const hash = await hashPassword(u.password)
+  if (u.password || u.passwordHash) {
+    const hash = u.passwordHash || (await hashPassword(u.password))
     const existing = await payload.db.pool.query(
       "SELECT id FROM accounts WHERE user_id = $1::integer AND provider_id = 'credential'",
       [userId]
@@ -155,6 +155,36 @@ for (const u of users) {
       console.log(`credential created for ${u.email}`)
     }
   }
+}
+
+// ── 5. Billing settings defaults ──
+const activeFy = await payload.find({
+  collection: 'fiscal-years',
+  where: { isActive: { equals: true }, tenant: { equals: tenantId } },
+  limit: 1,
+})
+const activeFyId = activeFy.docs[0]?.id
+
+const settingsPatch: Record<string, unknown> = {}
+if (activeFyId) settingsPatch.activeFiscalYear = activeFyId
+if (accountByCode.get('1130')) settingsPatch.receivableAccount = accountByCode.get('1130')
+if (accountByCode.get('2110')) settingsPatch.payableAccount = accountByCode.get('2110')
+if (accountByCode.get('1110')) settingsPatch.cashAccount = accountByCode.get('1110')
+if (accountByCode.get('1120')) settingsPatch.bankAccount = accountByCode.get('1120')
+if (accountByCode.get('4000')) settingsPatch.revenueAccount = accountByCode.get('4000')
+if (accountByCode.get('4100')) settingsPatch.membershipFeeAccount = accountByCode.get('4100')
+if (accountByCode.get('4200')) settingsPatch.donationAccount = accountByCode.get('4200')
+if (accountByCode.get('5000')) settingsPatch.expenseAccount = accountByCode.get('5000')
+
+try {
+  await payload.updateGlobal({
+    slug: 'billing-settings',
+    data: settingsPatch,
+    overrideAccess: true,
+  })
+  console.log('billing-settings defaults configured')
+} catch (e) {
+  console.warn('Could not update billing-settings:', e)
 }
 
 console.log('seed-local — done')

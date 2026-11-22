@@ -48,4 +48,8 @@ graphify-data/
 
 # Local package store
 .pnpm-store/
+
+# Database dumps
+*.dump
+
 graphify-out/

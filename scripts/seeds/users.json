@@ -1,5 +1,12 @@
 [
   {
+    "email": "aayurtshrestha@gmail.com",
+    "name": "Aayurt Shrestha",
+    "role": "super-admin",
+    "phoneNumber": "+977-9800000000",
+    "passwordHash": "67efacc3d50ae714ae025a22edaf8ef2:5de98f4f928f30e1846f48bdcfe8431249653894fb128b10171decccb90bed6ed24b498134bdb7493ff90b99d568a1bfb21fdb64e6c0fc33197b84e63dc1eeb6"
+  },
+  {
     "email": "admin@syasyahsamaj.com",
     "name": "Samaj Administrator",
     "role": "admin",
