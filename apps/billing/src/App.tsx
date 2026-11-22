@@ -86,6 +86,7 @@ import { TenantProvider } from './lib/tenant'
 import { useBackgroundSync } from './lib/BackgroundSync'
 import { CalendarProvider } from './lib/calendar'
 import { FiscalYearProvider } from './lib/fiscalYear'
+import { TooltipsProvider } from './hooks/useTooltips'
 import { LangProvider, useT } from './lib/i18n'
 import { api } from './lib/api'
 import { useDataEpochWatcher } from './lib/dataOps'
@@ -231,13 +232,15 @@ function AppShell() {
   }
 
   return (
-    <TenantProvider>
-      <CalendarProvider>
-        <FiscalYearProvider>
-          <Shell email={session.user.email} />
-        </FiscalYearProvider>
-      </CalendarProvider>
-    </TenantProvider>
+    <TooltipsProvider>
+      <TenantProvider>
+        <CalendarProvider>
+          <FiscalYearProvider>
+            <Shell email={session.user.email} />
+          </FiscalYearProvider>
+        </CalendarProvider>
+      </TenantProvider>
+    </TooltipsProvider>
   )
 }
 

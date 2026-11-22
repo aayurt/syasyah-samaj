@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { Account, AccountGroup, AccountType } from '../lib/types'
 import ActionMenu from './ActionMenu'
-import { Pencil, Trash2, ChevronRight, ChevronDown, Folder, FileText, Plus } from 'lucide-react'
+import { Pencil, Trash2, ChevronRight, ChevronDown, Folder, FileText, Plus, Sparkles } from 'lucide-react'
 import { useT } from '../lib/i18n'
 import { usePagination } from '../lib/usePagination'
 import { Pagination } from './ui/Pagination'
@@ -14,6 +14,8 @@ type AccountsTableProps = {
   onEditGroup: (group: AccountGroup) => void
   onDelete: (id: number, isGroup?: boolean) => void
   onConfigureCoa?: () => void
+  onSeedCoa?: () => void
+  seeding?: boolean
   className?: string
   view?: 'tree' | 'table'
 }
@@ -42,6 +44,8 @@ export default function AccountsTable({
   onEditGroup,
   onDelete,
   onConfigureCoa,
+  onSeedCoa,
+  seeding = false,
   className,
   view = 'tree',
 }: AccountsTableProps) {
@@ -91,17 +95,27 @@ export default function AccountsTable({
         <p className="mx-auto mt-2 max-w-md text-sm text-slate-500 leading-relaxed">
           Chart of Accounts must be configured before recording transactions or setting up Opening Balances. You can initialize the standard accounts structure or create your own custom headings and subheadings.
         </p>
-        {onConfigureCoa && (
-          <div className="mt-6 flex justify-center">
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          {onSeedCoa && (
+            <button
+              type="button"
+              onClick={onSeedCoa}
+              disabled={seeding}
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            >
+              <Sparkles size={16} /> {seeding ? 'Initializing…' : 'Seed Recommended Chart'}
+            </button>
+          )}
+          {onConfigureCoa && (
             <button
               type="button"
               onClick={onConfigureCoa}
-              className="inline-flex items-center gap-2 rounded-lg bg-crimson-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-crimson-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
             >
-              <Plus size={16} /> Configure Chart of Accounts
+              <Plus size={16} /> Configure Manually
             </button>
-          </div>
-        )}
+          )}
+        </div>
       {pagState.total > 0 && (
         <div className="mt-4 flex items-center justify-between gap-2">
           <span className="text-xs text-slate-500">

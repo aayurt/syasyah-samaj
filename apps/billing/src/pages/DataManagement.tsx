@@ -28,6 +28,7 @@ import { buildMasterWorkbook } from '../lib/excel/masterWorkbook'
 import { parseMasterWorkbook, importMasterWorkbook } from '../lib/excel/masterWorkbook.import'
 import { ENTITY_REGISTRY } from '../lib/excel/entities'
 import ImportPreviewModal from '../components/ImportPreviewModal'
+import PageGuide from '../components/PageGuide'
 
 /**
  * Data Management — bulk operations that shape a tenant's books.
@@ -221,6 +222,18 @@ export default function DataManagement() {
           {t('dataManagement.subtitle', "Destroy or bootstrap a tenant's transactional data. Masters (ilakas, accounts, parties, items, tax types, years) are never touched.")}
         </p>
       </div>
+
+      <PageGuide
+        storageKey="data-management-page"
+        title="Data Lifecycle & Safety Guide"
+        description="Data Management provides tools to safely cleanup transaction rows or reset an Illaka back to initial state. The system is designed with strict data isolation and user safety."
+        tips={[
+          "User accounts, credentials, and passwords are NEVER touched by cleanup or reset operations.",
+          "Operations are strictly isolated to the selected Illaka — central data and other branches are unaffected.",
+          "Cleanup Transactions removes operational vouchers and resets numbering while preserving your Chart of Accounts.",
+          "Full Reset wipes branch masters if you need to re-import accounts or start an Illaka completely fresh."
+        ]}
+      />
 
       {/* ── Cleanup ─────────────────────────────────────────────── */}
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

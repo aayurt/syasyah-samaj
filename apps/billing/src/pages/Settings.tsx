@@ -414,6 +414,7 @@ export default function Settings() {
   const [demoSeedEnabled, setDemoSeedEnabled] = useState(true)
   const [nepaliDigitsEnabled, setNepaliDigitsEnabled] = useState(false)
   const [nepaliWordsOnPrintEnabled, setNepaliWordsOnPrintEnabled] = useState(false)
+  const { setEnabled: setContextTooltips } = useTooltips()
   const [tooltipEnabled, setTooltipEnabled] = useState(() => {
     const stored = localStorage.getItem('ui-tooltips-enabled')
     return stored !== 'false' // default ON
@@ -2096,17 +2097,16 @@ export default function Settings() {
               </div>
             </label>
 
-            {/* Tooltip toggle */}
+            {/* Contextual Guidance & Tooltips toggle */}
             <label className="flex items-center gap-3 cursor-pointer">
               <div className="relative">
                 <input
                   type="checkbox"
                   checked={tooltipEnabled}
                   onChange={(e) => {
-                    setTooltipEnabled(e.target.checked)
-                    localStorage.setItem('ui-tooltips-enabled', String(e.target.checked))
-                    // Notify any TooltipsProvider listeners
-                    window.dispatchEvent(new StorageEvent('storage', { key: 'ui-tooltips-enabled' }))
+                    const next = e.target.checked
+                    setTooltipEnabled(next)
+                    setContextTooltips(next)
                   }}
                   className="peer sr-only"
                 />
@@ -2114,11 +2114,13 @@ export default function Settings() {
                 <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
               </div>
               <div>
-                <div className="text-sm text-slate-700">{t('settings.showTooltips', 'Show tooltips')}</div>
-                <div className="text-xs text-slate-400">
+                <div className="text-sm font-medium text-slate-800">
+                  {t('settings.contextGuidance', 'Contextual Guidance, Helpers & Tooltips')}
+                </div>
+                <div className="text-xs text-slate-500">
                   {tooltipEnabled
-                    ? t('settings.showTooltipsHintOn', 'Enabled — hover or focus elements to see help text')
-                    : t('settings.showTooltipsHint', 'Show contextual help on hover/focus')}
+                    ? t('settings.contextGuidanceOn', 'Enabled by default — displays tutorial banners, workflow tips, and field tooltips across each page.')
+                    : t('settings.contextGuidanceOff', 'Disabled — hides tutorial banners and extra contextual tooltips for an expert-only view.')}
                 </div>
               </div>
             </label>

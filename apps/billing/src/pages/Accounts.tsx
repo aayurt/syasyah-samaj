@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LiquidButton } from '../components/ui/LiquidButton'
-import { Download, Pencil, Plus, Trash2, Upload } from 'lucide-react'
+import { Download, Pencil, Plus, Sparkles, Trash2, Upload } from 'lucide-react'
 import { api, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { parseImportFile, validateImportRows, type ValidationError } from '../lib/importExport'
@@ -10,6 +10,7 @@ import { pushToast } from '../lib/toast'
 import DataStatus from '../components/DataStatus'
 import AccountsTable from '../components/AccountsTable'
 import CoaSetupModal from '../components/CoaSetupModal'
+import PageGuide from '../components/PageGuide'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import { useSearchParams } from 'react-router-dom'
 import { useT } from '../lib/i18n'
@@ -55,9 +56,30 @@ export default function Accounts() {
   const [importData, setImportData] = useState<{ collection: string; docs: Record<string, unknown>[]; rowErrors: ValidationError[] } | null>(null)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCoaSetup, setShowCoaSetup] = useState(false)
+  const [seedingCoa, setSeedingCoa] = useState(false)
   const [view, setView] = useState<'tree' | 'table'>('tree')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { selectedYear } = useFiscalYear()
+
+  const seedRecommendedCoa = async () => {
+    setSeedingCoa(true)
+    try {
+      await api('/data-ops/seed-demo', {
+        method: 'POST',
+        body: {
+          chartOnly: true,
+          seeds: ['accountGroups', 'accounts', 'taxTypes'],
+          tenant: tenantId ? String(tenantId) : undefined,
+        },
+      })
+      pushToast('success', 'Chart of Accounts Initialized', 'Recommended standard accounts and groups loaded.')
+      await load()
+    } catch (err) {
+      pushToast('error', 'Initialization failed', err instanceof Error ? err.message : String(err))
+    } finally {
+      setSeedingCoa(false)
+    }
+  }
 
   const load = async () => {
     setLoading(true)
@@ -281,9 +303,20 @@ export default function Accounts() {
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-lg font-semibold text-slate-900">{t('accounts.title', 'Chart of Accounts')}</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {accounts.length === 0 && (
+            <LiquidButton
+              onClick={seedRecommendedCoa}
+              disabled={seedingCoa}
+              variant="primary"
+              size="sm"
+              className="!bg-emerald-600 hover:!bg-emerald-700 !border-emerald-600"
+            >
+              <Sparkles size={14} /> {seedingCoa ? 'Initializing…' : 'Seed Recommended Chart'}
+            </LiquidButton>
+          )}
           <LiquidButton
             onClick={() => fileInputRef.current?.click()}
             variant="outline"
@@ -307,6 +340,20 @@ export default function Accounts() {
             New account
           </LiquidButton>
         </div>
+      </div>
+
+      <div className="mt-3">
+        <PageGuide
+          storageKey="accounts-page"
+          title="Chart of Accounts Guide"
+          description="The Chart of Accounts organizes your financial records into 5 standard classes: Assets, Liabilities, Equity, Income, and Expenses. Groups define broad headings, while accounts track double-entry transaction balances."
+          tips={[
+            "Click 'Seed Recommended Chart' to populate standard organization groups & accounts in 1 click.",
+            "Switch between Tree and Table view to inspect hierarchical account structures.",
+            "Assign default accounts in Settings to enable automated posting for Sales, Purchases, and Receipts.",
+            "Use Excel Import/Export to manage or backup your chart of accounts."
+          ]}
+        />
       </div>
 
       <div className="mt-3 flex items-center gap-2 text-xs">
@@ -514,6 +561,8 @@ export default function Accounts() {
             onEditGroup={handleEditGroup}
             onDelete={remove}
             onConfigureCoa={() => setShowCoaSetup(true)}
+            onSeedCoa={seedRecommendedCoa}
+            seeding={seedingCoa}
             view={view}
           />
         </div>

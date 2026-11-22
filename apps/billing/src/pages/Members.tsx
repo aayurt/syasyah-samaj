@@ -20,6 +20,7 @@ import { DISTRICTS } from '../lib/districts'
 import MemberViewModal from '../components/MemberViewModal'
 import { parseImportFile } from '../lib/importExport'
 import ImportPreviewModal from '../components/ImportPreviewModal'
+import PageGuide from '../components/PageGuide'
 
 /* ─────────────────────────────────────────────────────────────
    Types
@@ -1215,6 +1216,17 @@ export default function Members() {
           )}
         </div>
       </div>
+
+      <PageGuide
+        storageKey="members-page"
+        title="Community Members & Registration Guide"
+        description="Register and manage community members, membership categories, photo ID uploads, and validity periods. Members remain safely preserved across all data cleanup routines."
+        tips={[
+          "Switch to 'Application Form' view to register a new member with photo upload.",
+          "Use the Table view to filter by membership tier (General, Permanent, Lifetime) or search by phone/name.",
+          "Member records and ID cards are securely preserved even during tenant data resets."
+        ]}
+      />
 
       {/* ═══ APPLICATION FORM VIEW ══════════════════════════ */}
       {viewMode === 'application' && (

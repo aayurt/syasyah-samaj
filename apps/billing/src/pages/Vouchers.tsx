@@ -24,6 +24,7 @@ import {
 import { api, fmt, getEngine, list, useSyncState } from '../lib/api'
 import { useT, docTypeLabel } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
+import PageGuide from '../components/PageGuide'
 import { todayAD } from '../lib/nepaliDate'
 import { type SortState, useSortSearch } from '../lib/useSortSearch'
 import type { OutboxEntry } from '../lib/offline/types'
@@ -981,6 +982,20 @@ export default function Vouchers() {
             {t('vouchers.tabAllTransactions', 'All Transactions')}
           </button>
         </div>
+      </div>
+
+      <div className="mt-3">
+        <PageGuide
+          storageKey="vouchers-page"
+          title="Transactions & Vouchers Guide"
+          description="Create and track financial vouchers including Sales Invoices, Purchase Bills, Receipts, Payments, Contra, and Journal entries. Posted vouchers immediately update the General Ledger, VAT Register, and Stock Ledgers."
+          tips={[
+            "Click 'New Transaction' to draft and post entries (invoices, expenses, transfers).",
+            "Switch the Fiscal Year in the top header to audit historical periods (closed years are read-only).",
+            "Attach bills or receipts using the camera upload in Notes & Remarks.",
+            "Use the 3-dots menu on any row to View, Print, Export PDF, or Void posted transactions."
+          ]}
+        />
       </div>
 
       {selectedYear?.status === 'closed' && (
