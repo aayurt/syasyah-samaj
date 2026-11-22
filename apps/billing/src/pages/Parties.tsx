@@ -287,7 +287,7 @@ export default function Parties() {
           </h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <label className="text-sm text-slate-700">
-              {t('parties.nameRequired', 'Name *')}
+              {t('common.name', 'Name')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
               <input
                 required
                 value={form.name}
@@ -299,7 +299,7 @@ export default function Parties() {
               {formErrors.name && <span className="mt-1 text-xs text-red-600">{formErrors.name}</span>}
             </label>
             <label className="text-sm text-slate-700">
-              {t('common.type', 'Type')}
+              {t('common.type', 'Type')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
               <select
                 value={form.type}
                 onChange={(e) =>

@@ -299,7 +299,7 @@ export default function Items() {
           </h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <label className="text-sm text-slate-700">
-              {t('items.name', 'Name')} *
+              {t('items.name', 'Name')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
               <input
                 required
                 value={form.name}

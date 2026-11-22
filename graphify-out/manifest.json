@@ -1120,8 +1120,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/App.tsx": {
-    "mtime": 1795265834.391475,
-    "ast_hash": "ecad3260f82c57cc1b501cb265baa871",
+    "mtime": 1795332809.2151299,
+    "ast_hash": "317fc0815788080d5dfb1cd498c86afe",
     "semantic_hash": ""
   },
   "apps/billing/src/components/AIWorkspaceModal.tsx": {
@@ -1140,8 +1140,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/components/AccountsTable.tsx": {
-    "mtime": 1795293875.3044407,
-    "ast_hash": "80e7c5c56fac815aa3c1df3105b919de",
+    "mtime": 1795332916.7697,
+    "ast_hash": "4899f473686ce64a946332e8e0f569fb",
     "semantic_hash": ""
   },
   "apps/billing/src/components/ActionMenu.tsx": {
@@ -1160,8 +1160,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/components/CoaSetupModal.tsx": {
-    "mtime": 1794308640.3270628,
-    "ast_hash": "98ec9aad4bf94eab3733ef8082a84f31",
+    "mtime": 1795332504.6576872,
+    "ast_hash": "33a15a3bc9a6242cc78db970964aa0a7",
     "semantic_hash": ""
   },
   "apps/billing/src/components/CommandPalette.test.tsx": {
@@ -1865,8 +1865,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Accounts.tsx": {
-    "mtime": 1795291269.9406836,
-    "ast_hash": "247db46727fd83047776ed2addee8756",
+    "mtime": 1795332993.9142609,
+    "ast_hash": "79d1c492322a5f4a1d37976bc9f237f1",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Aging.tsx": {
@@ -1890,8 +1890,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/DataManagement.tsx": {
-    "mtime": 1794774672.88919,
-    "ast_hash": "9ea1d986f1c867f7e8eb4e72dd1f531d",
+    "mtime": 1795333051.7376285,
+    "ast_hash": "07908ed30af22fec34f508ff28589883",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Daybooks.tsx": {
@@ -1925,8 +1925,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Members.tsx": {
-    "mtime": 1795291302.1388044,
-    "ast_hash": "3bc82d8ac1be179183ab9a99c107cb81",
+    "mtime": 1795333127.776265,
+    "ast_hash": "08e4f8dcdc3576e8e130b788b61eebe5",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/MembershipTypes.tsx": {
@@ -2005,8 +2005,8 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Settings.tsx": {
-    "mtime": 1795183922.616872,
-    "ast_hash": "be318ed4f4532fbdf93f01044953a95a",
+    "mtime": 1795332875.0832224,
+    "ast_hash": "a6acc255fa5690080a46482faa9c4950",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/SetupOpeningBalances.tsx": {
@@ -2030,13 +2030,13 @@
     "semantic_hash": ""
   },
   "apps/billing/src/pages/VoucherForm.tsx": {
-    "mtime": 1795329690.7263637,
-    "ast_hash": "805d7c53cadc4581d12ffa97d5af718a",
+    "mtime": 1795331463.702387,
+    "ast_hash": "5fb3f609ec9c12b1124d84aceda5f839",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/Vouchers.tsx": {
-    "mtime": 1795261425.580835,
-    "ast_hash": "5b1213f8e590a381a01316532a5749f6",
+    "mtime": 1795333022.4519534,
+    "ast_hash": "87488a3508ea982936ddc9a388141c23",
     "semantic_hash": ""
   },
   "apps/billing/src/pages/reports/BalanceSheet.tsx": {
@@ -2970,8 +2970,8 @@
     "semantic_hash": ""
   },
   "src/collections/DataOps/index.ts": {
-    "mtime": 1795180381.569974,
-    "ast_hash": "36aba6686686eb7b99d3be13926c6da1",
+    "mtime": 1795332466.7110283,
+    "ast_hash": "3c3efe3a086c9268a63cff9083e69960",
     "semantic_hash": ""
   },
   "src/collections/DocSequences/index.ts": {
@@ -2980,8 +2980,8 @@
     "semantic_hash": ""
   },
   "src/collections/Documents/index.ts": {
-    "mtime": 1795329569.3445232,
-    "ast_hash": "ab3493f89f0e0873755883263b6207f1",
+    "mtime": 1795331228.1531558,
+    "ast_hash": "a68741409d0b7c236c3108eed8a227e2",
     "semantic_hash": ""
   },
   "src/collections/Elders.ts": {
@@ -5632,6 +5632,11 @@
   "apps/billing/src/pages/reports/PartyStatement.test.tsx": {
     "mtime": 1795328443.6768625,
     "ast_hash": "efce05b8bbd1829f3f88d963e07d237b",
+    "semantic_hash": ""
+  },
+  "apps/billing/src/components/PageGuide.tsx": {
+    "mtime": 1795332849.2205696,
+    "ast_hash": "f3bbc0dc2a28d17a2f6f049c3b0bd9c2",
     "semantic_hash": ""
   }
 }

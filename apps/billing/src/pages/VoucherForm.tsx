@@ -37,6 +37,7 @@ import AccountSelect from '../components/AccountSelect'
 import TransactionLine, { subledgerSelectorForAccount } from '../components/TransactionLine'
 import EntryCard from '../components/EntryCard'
 import VoucherNotesCard from '../components/VoucherNotesCard'
+import PageGuide from '../components/PageGuide'
 import { useBalanceSnap } from '../components/BalanceBar'
 import { api, fmt, useSyncState } from '../lib/api'
 import { useT } from '../lib/i18n'
@@ -227,6 +228,124 @@ export const DOC_TYPE_META: Record<string, {
     textClasses: 'text-orange-700',
     shortLabel: 'Contra Entry',
     category: 'cash',
+  },
+}
+
+export const DOC_TYPE_GUIDES: Record<string, { title: string; description: string; tips: string[] }> = {
+  'sales-invoice': {
+    title: 'Sales Invoice Form',
+    description: 'Issue tax-compliant sales invoices to customers or members. Posting debits Accounts Receivable or Cash, credits Sales Revenue, and tracks 13% VAT output where applicable.',
+    tips: [
+      'Select a customer/party to automatically track their ledger balance and outstanding receivables.',
+      'Add items, specify quantities and unit rates, and assign VAT or discount if applicable.',
+      'Click "Save draft" to prepare without affecting General Ledger, or "Save & post" to finalize.',
+    ],
+  },
+  'sales-order': {
+    title: 'Sales Order Form',
+    description: 'Acknowledge confirmed customer purchase commitments before billing or dispatching inventory.',
+    tips: [
+      'Orders do not post to the General Ledger until converted to a Sales Invoice.',
+      'Confirming an order reserves inventory and generates delivery tracking lines.',
+    ],
+  },
+  'sales-quote': {
+    title: 'Sales Quotation Form',
+    description: 'Draft price estimates and formal quotations for prospective clients or members without financial commitment.',
+    tips: [
+      'Quotations never post to the General Ledger.',
+      'Once accepted by the client, easily convert into a Sales Order or Sales Invoice.',
+    ],
+  },
+  'purchase-invoice': {
+    title: 'Purchase Bill Form',
+    description: 'Record vendor bills for inventory, supplies, or services. Debits expense/inventory accounts and credits Accounts Payable or Cash.',
+    tips: [
+      'Attach a photo or scan of the physical vendor bill using the camera upload in Notes for audit compliance.',
+      'Enter the vendor bill reference number in the Reference field for bank reconciliation.',
+      'Apply TDS deduction if required under Nepal IRD withholding tax regulations.',
+    ],
+  },
+  'purchase-order': {
+    title: 'Purchase Order Form',
+    description: 'Issue procurement orders to suppliers and vendors specifying items, expected prices, and terms.',
+    tips: [
+      'Does not create accounting liabilities until goods are received and billed.',
+      'Track fulfillment against Goods Received Notes (GRN).',
+    ],
+  },
+  'receipt-voucher': {
+    title: 'Receipt Voucher Form',
+    description: 'Record money received into Cash in Hand or Bank accounts from members, customers, donors, or other income sources.',
+    tips: [
+      'Choose the receiving Cash or Bank account where funds were deposited.',
+      'Select the paying customer or member party to settle outstanding invoices.',
+      'Record cheque number, mobile banking transaction ID, or bank reference in transaction notes.',
+    ],
+  },
+  'payment-voucher': {
+    title: 'Payment Voucher Form',
+    description: 'Disburse funds from Cash or Bank to pay vendor bills, office expenses, utilities, or reimbursements.',
+    tips: [
+      'Select the source payment account (Cash Drawer or Bank Account).',
+      'Select the payee party or target expense account (e.g., Office Rent, Electricity).',
+      'Attach payment receipt or signed voucher slip for internal audit.',
+    ],
+  },
+  'contra': {
+    title: 'Contra Voucher Form',
+    description: 'Internal transfer of funds strictly between Cash and Bank accounts (e.g. depositing cash to bank, bank-to-bank transfer).',
+    tips: [
+      'Contra vouchers never affect Profit & Loss (Income or Expenses) — only cash/bank balances.',
+      'Select the Source Account (money out) and Destination Account (money in).',
+      'For third-party payments or receipts, use Payment or Receipt vouchers instead.',
+    ],
+  },
+  'contra-voucher': {
+    title: 'Contra Voucher Form',
+    description: 'Internal transfer of funds strictly between Cash and Bank accounts (e.g. depositing cash to bank, bank-to-bank transfer).',
+    tips: [
+      'Contra vouchers never affect Profit & Loss (Income or Expenses) — only cash/bank balances.',
+      'Select the Source Account (money out) and Destination Account (money in).',
+      'For third-party payments or receipts, use Payment or Receipt vouchers instead.',
+    ],
+  },
+  'journal-voucher': {
+    title: 'Journal Voucher Form',
+    description: 'Manual double-entry adjusting entries for depreciation, accruals, prepayments, correction of errors, or opening balances.',
+    tips: [
+      'Accounting Golden Rule: Total Debits (Dr) must exactly equal Total Credits (Cr) before posting.',
+      'Each line must specify an account and either a Debit or Credit amount.',
+      'Use the memo field on individual lines for detailed audit context.',
+    ],
+  },
+  'credit-note': {
+    title: 'Credit Note Form',
+    description: 'Issue credit notes for sales returns, overbilling corrections, or customer discounts.',
+    tips: [
+      'Reduces customer accounts receivable and reverses previously recognized sales revenue and VAT.',
+    ],
+  },
+  'debit-note': {
+    title: 'Debit Note Form',
+    description: 'Issue debit notes to vendors for returned goods or supplier price adjustments.',
+    tips: [
+      'Reduces vendor accounts payable and reverses inventory or expense balances.',
+    ],
+  },
+  'delivery-challan': {
+    title: 'Delivery Challan Form',
+    description: 'Generate physical delivery slips accompanying shipped goods to verify delivery receipt.',
+    tips: [
+      'Tracks physical movement of inventory across locations or to customer sites.',
+    ],
+  },
+  'grn': {
+    title: 'Goods Received Note (GRN) Form',
+    description: 'Record incoming physical inventory shipments at the warehouse before bill receipt.',
+    tips: [
+      'Increases warehouse stock levels and verifies shipment quantities against the purchase order.',
+    ],
   },
 }
 
@@ -1019,6 +1138,21 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
         </div>
       )}
 
+      {/* ── Contextual Page Guide for Transaction ── */}
+      <div className="mb-4">
+        <PageGuide
+          storageKey={`voucher-form-${docType}`}
+          title={DOC_TYPE_GUIDES[docType]?.title || `${docTypeLabels[docType] || 'Transaction'} Helper`}
+          description={DOC_TYPE_GUIDES[docType]?.description || 'Create and record financial transactions with automated double-entry ledger posting and audit trails.'}
+          tips={DOC_TYPE_GUIDES[docType]?.tips || [
+            'Fill required fields marked with an asterisk (*).',
+            'Save draft to review later, or Save & post to update the General Ledger immediately.',
+            'Attach physical bills or receipts for audit compliance.',
+          ]}
+          badge="Voucher Guidance"
+        />
+      </div>
+
       {/* ── Doc Type Cards ── */}
       {/* ── Transaction Type (inline on the same page) ── */}
       {mode === 'create' && (
@@ -1118,7 +1252,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     <label className="text-sm font-medium text-slate-700">
                       {t('vouchers.partyLabel', 'Party')}{' '}
                       {docType !== 'petty-cash-voucher' && (
-                        <span className="text-red-500">*</span>
+                        <span className="text-crimson-600 font-bold ml-0.5">*</span>
                       )}
                     </label>
                     {selectedParty && (
@@ -1217,7 +1351,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     <thead>
                       <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
                         <th className="w-10 px-2 py-3 text-center">#</th>
-                        <th className="min-w-[220px] px-2 py-3">{t('common.name', 'Name')} <span className="text-red-500">*</span></th>
+                        <th className="min-w-[220px] px-2 py-3">{t('common.name', 'Name')} <span className="text-crimson-600 font-bold ml-0.5">*</span></th>
                         <th className="min-w-[180px] px-2 py-3 text-left">{t('vouchers.account', 'Account')}</th>
                         {showSubledgerCol && (
                           <th className="min-w-[140px] px-2 py-3 text-left">{t('vouchers.subAccount', 'Sub-account')}</th>
@@ -1537,7 +1671,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-3">{t('common.account', 'Account')} <span className="text-red-500">*</span></th>
+                  <th className="px-4 py-3">{t('common.account', 'Account')} <span className="text-crimson-600 font-bold ml-0.5">*</span></th>
                   <th className="w-32 px-4 py-3 text-right">{t('common.debit', 'Debit')}</th>
                   <th className="w-32 px-4 py-3 text-right">{t('common.credit', 'Credit')}</th>
                   <th className="px-4 py-3">{t('common.memo', 'Memo')}</th>
@@ -1602,7 +1736,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
           <EntryCard title="Contra Entry">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="text-sm text-slate-700">
-                {t('vouchers.fromAccount', 'From account (credited)')} <span className="text-red-500">*</span>
+                {t('vouchers.fromAccount', 'From account (credited)')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
                 <select value={fromAccount} onChange={(e) => setFromAccount(e.target.value)}
                   className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
                   <option value="">— select —</option>
@@ -1610,7 +1744,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                 </select>
               </label>
               <label className="text-sm text-slate-700">
-                {t('vouchers.toAccount', 'To account (debited)')} <span className="text-red-500">*</span>
+                {t('vouchers.toAccount', 'To account (debited)')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
                 <select value={toAccount} onChange={(e) => setToAccount(e.target.value)}
                   className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
                   <option value="">— select —</option>
@@ -1618,7 +1752,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                 </select>
               </label>
               <label className="text-sm text-slate-700">
-                {t('common.amount', 'Amount')} <span className="text-red-500">*</span>
+                {t('common.amount', 'Amount')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
                 <input type="number" min="0" step="0.01" value={contraAmount}
                   onChange={(e) => setContraAmount(e.target.value)}
                   onBlur={(e) => { const r = calcEval(e.target.value); if (r !== e.target.value) setContraAmount(r) }}
@@ -1656,7 +1790,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     {docType === 'receipt-voucher'
                       ? t('vouchers.receivedFrom', 'Received From')
                       : t('vouchers.paidTo', 'Paid To')}
-                    <span className="text-red-500"> *</span>
+                    <span className="text-crimson-600 font-bold ml-0.5">*</span>
                     <select value={party} onChange={(e) => {
                       const pid = e.target.value
                       setParty(pid)
@@ -1669,7 +1803,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     </select>
                   </label>
                   <label className="text-sm text-slate-700">
-                    {t('common.amount', 'Amount')} <span className="text-red-500">*</span>
+                    {t('common.amount', 'Amount')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
                     <div className="relative mt-1">
                       <span className="pointer-events-none absolute left-3 top-[13px] text-sm text-slate-400">Rs.</span>
                       <input ref={cashAmountRef} type="text" inputMode="decimal"
@@ -2028,14 +2162,14 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
             <p className="mt-1 text-sm text-slate-500">{t('vouchers.addNewPartyDesc', 'Create a new customer or vendor')}</p>
             <div className="mt-4 space-y-3">
               <label className="text-sm text-slate-700">
-                {t('vouchers.nameRequired', 'Name *')}
+                {t('common.name', 'Name')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
                 <input type="text" required value={newPartyName}
                   onChange={(e) => setNewPartyName(e.target.value)}
                   className="mt-1 h-[42px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
                   placeholder={t('vouchers.partyNamePlaceholder', 'Party name')} autoFocus />
               </label>
               <label className="text-sm text-slate-700">
-                {t('common.type', 'Type')} *
+                {t('common.type', 'Type')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
                 <select value={newPartyType} onChange={(e) => setNewPartyType(e.target.value as 'customer' | 'vendor')}
                   className="mt-1 w-full rounded border border-slate-300 px-3 min-h-[40px] py-2.5 text-sm outline-none focus:border-slate-500">
                   <option value="customer">{t('parties.customer', 'Customer')}</option>

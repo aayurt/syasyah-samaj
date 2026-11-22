@@ -117,13 +117,11 @@ describe('FiscalYearSwitcher', () => {
     expect(refreshMock).toHaveBeenCalled()
   })
 
-  it('navigates to the setup wizard when Add Year is clicked', () => {
+  it('opens the add fiscal year modal when Add Year is clicked', () => {
     renderSwitcher()
     fireEvent.click(screen.getByTitle('Add new fiscal year'))
-    expect(refreshMock).toHaveBeenCalled()
-    expect(navigateMock).toHaveBeenCalledWith('/setup', {
-      state: { startStep: 'fiscalYear' },
-    })
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText(/Add new fiscal year/i)).toBeInTheDocument()
   })
 
   it('bumps the cache version on beforeunload', () => {

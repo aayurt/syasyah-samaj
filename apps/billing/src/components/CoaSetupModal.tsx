@@ -176,7 +176,7 @@ export default function CoaSetupModal({ isOpen, onClose, onSuccess, groupToEdit,
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Edit Account Heading (Group)</span>
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
-                  <label className="text-xs text-slate-600">Heading Name *</label>
+                  <label className="text-xs text-slate-600">Heading Name <span className="text-crimson-600 font-bold ml-0.5">*</span></label>
                   <input
                     required
                     value={groupName}
@@ -186,7 +186,7 @@ export default function CoaSetupModal({ isOpen, onClose, onSuccess, groupToEdit,
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-600">Type *</label>
+                  <label className="text-xs text-slate-600">Type <span className="text-crimson-600 font-bold ml-0.5">*</span></label>
                   <select
                     value={editGroup!.type}
                     onChange={(e) => setGroupType(e.target.value as AccountType)}
@@ -248,7 +248,7 @@ export default function CoaSetupModal({ isOpen, onClose, onSuccess, groupToEdit,
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">1. Account Heading (Group)</span>
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
-                  <label className="text-xs text-slate-600">Heading Name *</label>
+                  <label className="text-xs text-slate-600">Heading Name <span className="text-crimson-600 font-bold ml-0.5">*</span></label>
                   <input
                     required
                     value={groupName}
@@ -258,7 +258,7 @@ export default function CoaSetupModal({ isOpen, onClose, onSuccess, groupToEdit,
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-600">Type *</label>
+                  <label className="text-xs text-slate-600">Type <span className="text-crimson-600 font-bold ml-0.5">*</span></label>
                   <select
                     value={groupType}
                     onChange={(e) => setGroupType(e.target.value as AccountType)}
@@ -278,7 +278,7 @@ export default function CoaSetupModal({ isOpen, onClose, onSuccess, groupToEdit,
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">2. Subheading (Account)</span>
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
-                  <label className="text-xs text-slate-600">Account Name *</label>
+                  <label className="text-xs text-slate-600">Account Name <span className="text-crimson-600 font-bold ml-0.5">*</span></label>
                   <input
                     required
                     value={accountName}

@@ -1254,7 +1254,9 @@ export default function Members() {
               )}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-500">Full Name *</label>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">
+                    Full Name <span className="text-crimson-600 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     value={formName} onChange={(e) => setFormName(e.target.value)}
                     placeholder="e.g. Aayurt Shrestha"
@@ -1262,7 +1264,9 @@ export default function Members() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-500">Email *</label>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">
+                    Email <span className="text-crimson-600 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)}
                     placeholder="e.g. aayurt@example.com"
@@ -1331,14 +1335,18 @@ export default function Members() {
               )}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-500">Full Name *</label>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">
+                    Full Name <span className="text-crimson-600 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     value={editName} onChange={(e) => setEditName(e.target.value)}
                     className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-500">Email *</label>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">
+                    Email <span className="text-crimson-600 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)}
                     className="h-[38px] w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"

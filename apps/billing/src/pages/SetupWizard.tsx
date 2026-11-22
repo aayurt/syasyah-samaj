@@ -765,7 +765,9 @@ export default function SetupWizard() {
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <label className="text-xs font-medium text-slate-600">Organization name *</label>
+                  <label className="text-xs font-medium text-slate-600">
+                    Organization name <span className="text-crimson-600 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     value={company.companyName}
                     onChange={(e) => setCompany({ ...company, companyName: e.target.value })}

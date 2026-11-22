@@ -285,7 +285,7 @@ export default function NepaliDateInput({
       {label && (
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-slate-700">
-            {label} {required && <span className="text-red-500">*</span>}
+            {label} {required && <span className="text-crimson-600 font-bold ml-0.5">*</span>}
           </label>
           {value && (
             <span className="text-xs font-mono text-slate-400">

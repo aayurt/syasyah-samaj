@@ -1806,11 +1806,15 @@ export default function Settings() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-sm text-slate-600">{t("settings.startDate")}</label>
+                  <label className="mb-1.5 block text-sm text-slate-600">
+                    {t("settings.startDate")} <span className="text-crimson-600 font-bold ml-0.5">*</span>
+                  </label>
                   <NepaliDateInput compact value={fyForm.startDate} onChange={(v) => setFyForm((f) => ({ ...f, startDate: v }))} />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm text-slate-600">{t("settings.endDate")}</label>
+                  <label className="mb-1.5 block text-sm text-slate-600">
+                    {t("settings.endDate")} <span className="text-crimson-600 font-bold ml-0.5">*</span>
+                  </label>
                   <NepaliDateInput compact value={fyForm.endDate} onChange={(v) => setFyForm((f) => ({ ...f, endDate: v }))} />
                 </div>
               </div>
@@ -2611,7 +2615,7 @@ export default function Settings() {
               {/* Doc Type — required */}
               <div>
                 <label className="mb-1.5 block text-sm text-slate-600">
-                  Document Type <span className="text-red-500">*</span>
+                  Document Type <span className="text-crimson-600 font-bold ml-0.5">*</span>
                 </label>
                 <SearchSelect
                   value={seriesForm.docType}
@@ -2765,7 +2769,7 @@ export default function Settings() {
             <form onSubmit={handleSaveTenant} className="space-y-4">
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Name <span className="text-red-500">*</span>
+                  Name <span className="text-crimson-600 font-bold ml-0.5">*</span>
                 </label>
                 <input
                   type="text"
@@ -2808,7 +2812,7 @@ export default function Settings() {
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Slug (URL identifier) <span className="text-red-500">*</span>
+                  Slug (URL identifier) <span className="text-crimson-600 font-bold ml-0.5">*</span>
                 </label>
                 <input
                   type="text"

@@ -538,7 +538,7 @@ export default function FixedAssetsPage() {
           </h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <label className="text-sm text-slate-700">
-              {t('fixedAssets.name', 'Name')} *
+              {t('fixedAssets.name', 'Name')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
               <input
                 required
                 value={form.name}
@@ -596,7 +596,7 @@ export default function FixedAssetsPage() {
               />
             </label>
             <label className="text-sm text-slate-700">
-              {t('fixedAssets.purchaseCost', 'Purchase Cost')} *
+              {t('fixedAssets.purchaseCost', 'Purchase Cost')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
               <input
                 required
                 type="number"
@@ -793,7 +793,7 @@ export default function FixedAssetsPage() {
       </h3>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <label className="text-sm text-slate-700">
-          {t('fixedAssets.asOfDate', 'As-of date')} *
+          {t('fixedAssets.asOfDate', 'As-of date')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
           <input
             type="date"
             required
@@ -934,7 +934,7 @@ export default function FixedAssetsPage() {
             </p>
             <form onSubmit={submitDisposal} className="mt-4 space-y-3">
               <label className="text-sm text-slate-700">
-                {t('fixedAssets.disposalDate', 'Disposal date')} *
+                {t('fixedAssets.disposalDate', 'Disposal date')} <span className="text-crimson-600 font-bold ml-0.5">*</span>
                 <input
                   type="date"
                   required
