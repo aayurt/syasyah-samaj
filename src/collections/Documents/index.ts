@@ -1160,6 +1160,11 @@ export async function postDocument(
       (DOC_TYPES.find((t) => t.value === doc.docType)?.label || doc.docType)
 
     const fiscalYear = await findFiscalYearForDate(payload, doc.date, doc.tenant)
+    if (fiscalYear && fiscalYear.status === 'closed') {
+      throw new Error(
+        `The fiscal year ${fiscalYear.label || ''} is closed — entries in this period cannot be posted. Reopen it in Settings → Fiscal Years to post.`,
+      )
+    }
     const number = await nextNumber(
       payload,
       doc.docType,
@@ -1672,6 +1677,15 @@ export const Documents: CollectionConfig = {
               { status: 409 },
             )
           }
+          const fy = await findFiscalYearForDate(req.payload, doc.date, doc.tenant)
+          if (fy && fy.status === 'closed') {
+            return Response.json(
+              {
+                error: `The fiscal year ${fy.label || ''} is closed — transactions in this period cannot be voided. Reopen it in Settings → Fiscal Years first.`,
+              },
+              { status: 400 },
+            )
+          }
           const entry = (await req.payload.findByID({
             collection: 'journal-entries',
             id: doc.journalEntry,
@@ -1813,6 +1827,15 @@ export const Documents: CollectionConfig = {
           }
           if (doc.status !== 'posted') {
             return Response.json({ error: 'Only posted documents can be partially voided.' }, { status: 409 })
+          }
+          const fy = await findFiscalYearForDate(req.payload, doc.date, doc.tenant)
+          if (fy && fy.status === 'closed') {
+            return Response.json(
+              {
+                error: `The fiscal year ${fy.label || ''} is closed — transactions in this period cannot be voided. Reopen it in Settings → Fiscal Years first.`,
+              },
+              { status: 400 },
+            )
           }
 
           const lines: any[] = doc.lines || []
@@ -1985,6 +2008,15 @@ export const Documents: CollectionConfig = {
             return Response.json(
               { error: 'Only posted documents can be reopened.' },
               { status: 409 },
+            )
+          }
+          const fy = await findFiscalYearForDate(req.payload, doc.date, doc.tenant)
+          if (fy && fy.status === 'closed') {
+            return Response.json(
+              {
+                error: `The fiscal year ${fy.label || ''} is closed — transactions in this period cannot be reopened. Reopen it in Settings → Fiscal Years first.`,
+              },
+              { status: 400 },
             )
           }
 
@@ -2342,6 +2374,20 @@ export const Documents: CollectionConfig = {
             ],
           })
         }
+        if (doc?.date) {
+          const fy = await findFiscalYearForDate(req.payload, doc.date, doc.tenant)
+          if (fy && fy.status === 'closed') {
+            throw new ValidationError({
+              collection: 'documents',
+              errors: [
+                {
+                  message: `The fiscal year ${fy.label || ''} is closed — entries in this period cannot be deleted.`,
+                  path: 'id',
+                },
+              ],
+            })
+          }
+        }
       },
     ],
     beforeValidate: [
@@ -2353,11 +2399,6 @@ export const Documents: CollectionConfig = {
         if (operation !== 'create' && operation !== 'update') return data
         const d = data as any
         if (!d.date) return data
-        // Posting a draft only changes status — the date was already
-        // validated at creation time. Allow post/void/reopen transitions
-        // through their endpoints (context flag set there).
-        const transition = (req as any)?.context?.docStatusTransition
-        if (transition && operation === 'update') return data
         const fy = await findFiscalYearForDate(req.payload, d.date, d.tenant)
         if (fy && fy.status === 'closed') {
           throw new Error(

@@ -18,6 +18,7 @@ import {
   Trash2,
   ToggleLeft,
   ToggleRight,
+  Lock,
   X,
 } from 'lucide-react'
 import { api, fmt, getEngine, list, useSyncState } from '../lib/api'
@@ -178,6 +179,7 @@ export default function Vouchers() {
   const { tenantId } = useTenant()
   const tenantQuery = useTenantQuery()
   const { selectedYear } = useFiscalYear()
+  const isClosedYear = selectedYear?.status === 'closed'
   const [docs, setDocs] = useState<Document[]>([])
   const [parties, setParties] = useState<Party[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -196,6 +198,13 @@ export default function Vouchers() {
   const [dateTo, setDateTo] = useState(searchParams.get('to') || '')
   const [loading, setLoading] = useState(false)
 
+  // Automatically flip away from new transaction tab if viewing a closed fiscal year
+  useEffect(() => {
+    if (isClosedYear && activeTab === 'new') {
+      setActiveTab('all')
+    }
+  }, [isClosedYear, activeTab])
+
   // Sync type/status filters to URL search params
   useEffect(() => {
     const params = new URLSearchParams(searchParams)
@@ -209,6 +218,10 @@ export default function Vouchers() {
 
   /** Open the new-transaction form pre-filled with a doc type, straight from the all-transactions page. */
   const openNewType = (dt: DocType) => {
+    if (isClosedYear) {
+      pushToast('warning', 'Closed Fiscal Year', 'Transactions cannot be created in a closed fiscal year.')
+      return
+    }
     const params = new URLSearchParams(searchParams)
     params.set('type', dt)
     setSearchParams(params, { replace: true })
@@ -735,6 +748,10 @@ export default function Vouchers() {
   }
 
   const bulkPost = async () => {
+    if (isClosedYear) {
+      setError('Transactions cannot be posted in a closed fiscal year.')
+      return
+    }
     const drafts = visible.filter((d) => selected.has(d.id) && d.status === 'draft')
     if (drafts.length === 0) return
     if (!window.confirm(`Post ${drafts.length} draft transaction(s)?`)) return
@@ -752,6 +769,10 @@ export default function Vouchers() {
   }
 
   const bulkVoid = async () => {
+    if (isClosedYear) {
+      setError('Transactions cannot be voided in a closed fiscal year.')
+      return
+    }
     const posted = visible.filter((d) => selected.has(d.id) && d.status === 'posted')
     if (posted.length === 0) return
     if (!window.confirm(`Void ${posted.length} posted voucher(s)? This posts reversals and cannot be undone.`)) return
@@ -927,11 +948,23 @@ export default function Vouchers() {
             type="button"
             role="tab"
             aria-selected={activeTab === 'new'}
-            onClick={() => setActiveTab('new')}
-            className={`rounded-md px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all ${activeTab === 'new'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-              }`}
+            disabled={isClosedYear}
+            onClick={() => !isClosedYear && setActiveTab('new')}
+            title={
+              isClosedYear
+                ? t(
+                    'vouchers.closedYearCannotCreate',
+                    'Cannot create transactions in a closed fiscal year. Switch to an active year in the header or reopen it in Settings.',
+                  )
+                : undefined
+            }
+            className={`rounded-md px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all ${
+              isClosedYear
+                ? 'cursor-not-allowed opacity-40 text-slate-400'
+                : activeTab === 'new'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
             {t('vouchers.tabNewTransaction', 'New Transaction')}
           </button>
@@ -1120,23 +1153,31 @@ export default function Vouchers() {
                 <span className="text-sm font-medium text-blue-700">
                   {selected.size} {t('vouchers.selected', 'selected')}
                 </span>
-                {visible.some((d) => selected.has(d.id) && d.status === 'draft') && (
-                  <button
-                    onClick={bulkPost}
-                    disabled={bulkLoading}
-                    className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
-                  >
-                    {bulkLoading ? 'Posting…' : `Post ${visible.filter((d) => selected.has(d.id) && d.status === 'draft').length} Draft(s)`}
-                  </button>
-                )}
-                {visible.some((d) => selected.has(d.id) && d.status === 'posted') && (
-                  <button
-                    onClick={bulkVoid}
-                    disabled={bulkLoading}
-                    className="rounded border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
-                  >
-                    {bulkLoading ? 'Voiding…' : `Void ${visible.filter((d) => selected.has(d.id) && d.status === 'posted').length} Posted`}
-                  </button>
+                {isClosedYear ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-amber-800 font-medium bg-amber-100/70 border border-amber-300 rounded px-2.5 py-1">
+                    <Lock size={12} /> Closed Fiscal Year — batch operations disabled
+                  </span>
+                ) : (
+                  <>
+                    {visible.some((d) => selected.has(d.id) && d.status === 'draft') && (
+                      <button
+                        onClick={bulkPost}
+                        disabled={bulkLoading}
+                        className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
+                      >
+                        {bulkLoading ? 'Posting…' : `Post ${visible.filter((d) => selected.has(d.id) && d.status === 'draft').length} Draft(s)`}
+                      </button>
+                    )}
+                    {visible.some((d) => selected.has(d.id) && d.status === 'posted') && (
+                      <button
+                        onClick={bulkVoid}
+                        disabled={bulkLoading}
+                        className="rounded border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
+                      >
+                        {bulkLoading ? 'Voiding…' : `Void ${visible.filter((d) => selected.has(d.id) && d.status === 'posted').length} Posted`}
+                      </button>
+                    )}
+                  </>
                 )}
                 <button
                   onClick={() => setSelected(new Set())}
@@ -1289,7 +1330,12 @@ export default function Vouchers() {
                                   <Eye size={13} />
                                   {t('vouchers.view', 'View')}
                                 </button>
-                                {d.status === 'draft' && (
+                                {isClosedYear && (
+                                  <div className="border-t border-slate-100 bg-amber-50/60 px-3 py-1.5 text-xs text-amber-800 font-medium italic">
+                                    Closed Period (Read-Only)
+                                  </div>
+                                )}
+                                {!isClosedYear && d.status === 'draft' && (
                                   <button
                                     onClick={() => editDraft(d)}
                                     className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
@@ -1298,7 +1344,7 @@ export default function Vouchers() {
                                     {t('vouchers.editDraft', 'Edit draft')}
                                   </button>
                                 )}
-                                {d.status === 'draft' && (
+                                {!isClosedYear && d.status === 'draft' && (
                                   <button
                                     onClick={() => {
                                       setMenuFor(null)
@@ -1322,7 +1368,7 @@ export default function Vouchers() {
                                     {t('vouchers.exportPdf', 'Export PDF')}
                                   </button>
                                 )}
-                                {d.status === 'posted' && (
+                                {!isClosedYear && d.status === 'posted' && (
                                   <>
                                     <button
                                       onClick={() => {
@@ -1781,17 +1827,23 @@ export default function Vouchers() {
               {/* ── Action Bar ─────────────────────────────── */}
               <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-8 py-4 rounded-b-xl print:hidden">
                 <div>
-                  {viewDoc.status === 'draft' && (
-                    <div className="flex gap-2">
-                      <button onClick={() => { setViewDoc(null); deleteDoc(viewDoc.id) }}
-                        className="rounded border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">
-                        Delete
-                      </button>
-                      <button onClick={() => editDraft(viewDoc)}
-                        className="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                        {t('vouchers.editDraft', 'Edit Draft')}
-                      </button>
-                    </div>
+                  {isClosedYear ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">
+                      <Lock size={12} /> Closed Fiscal Year · Read-Only
+                    </span>
+                  ) : (
+                    viewDoc.status === 'draft' && (
+                      <div className="flex gap-2">
+                        <button onClick={() => { setViewDoc(null); deleteDoc(viewDoc.id) }}
+                          className="rounded border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">
+                          Delete
+                        </button>
+                        <button onClick={() => editDraft(viewDoc)}
+                          className="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                          {t('vouchers.editDraft', 'Edit Draft')}
+                        </button>
+                      </div>
+                    )
                   )}
                 </div>
                 <div className="flex gap-2">
@@ -1801,25 +1853,27 @@ export default function Vouchers() {
                         className="flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
                         <Printer size={14} /> {t('common.print', 'Print')}
                       </button>
-                      <button
-                        onClick={async () => {
-                          if (!window.confirm('Reopen (unpost) this transaction? This will delete the journal entry and clear the transaction number. You can then edit and re-post it.')) return
-                          try {
-                            await api(`/documents/${viewDoc.id}/reopen`, { method: 'POST' })
-                            pushToast('success', 'Transaction reopened — edit and re-post when ready')
-                            setViewDoc(null)
-                            navigate(`/vouchers/edit/${viewDoc.id}`)
-                          } catch (err) {
-                            pushToast('error', 'Reopen failed', err instanceof Error ? err.message : String(err))
-                          }
-                        }}
-                        className="flex items-center gap-1.5 rounded border border-amber-300 px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-50"
-                      >
-                        Reopen
-                      </button>
+                      {!isClosedYear && (
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm('Reopen (unpost) this transaction? This will delete the journal entry and clear the transaction number. You can then edit and re-post it.')) return
+                            try {
+                              await api(`/documents/${viewDoc.id}/reopen`, { method: 'POST' })
+                              pushToast('success', 'Transaction reopened — edit and re-post when ready')
+                              setViewDoc(null)
+                              navigate(`/vouchers/edit/${viewDoc.id}`)
+                            } catch (err) {
+                              pushToast('error', 'Reopen failed', err instanceof Error ? err.message : String(err))
+                            }
+                          }}
+                          className="flex items-center gap-1.5 rounded border border-amber-300 px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-50"
+                        >
+                          Reopen
+                        </button>
+                      )}
                     </>
                   )}
-                  {viewDoc.docType === 'sales-quote' && (
+                  {viewDoc.docType === 'sales-quote' && !isClosedYear && (
                     <button
                       onClick={async () => {
                         try {

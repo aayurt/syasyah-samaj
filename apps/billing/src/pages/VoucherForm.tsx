@@ -28,6 +28,7 @@ import {
   Truck,
   Trash2,
   Undo2,
+  Lock,
   Warehouse,
 } from 'lucide-react'
 import NepaliDateInput from '../components/NepaliDateInput'
@@ -1008,6 +1009,16 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
 
       {error && <p className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
+      {isClosedYear && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3.5 text-sm text-amber-800">
+          <Lock size={18} className="shrink-0 text-amber-600" />
+          <div>
+            <span className="font-semibold">Closed Period (Read-Only): </span>
+            The fiscal year <span className="font-medium">{selectedYear?.label || 'selected'}</span> is closed. Entries in this period cannot be created, edited, or saved. To make changes, an administrator must reopen the fiscal year in <strong>Settings → Fiscal Years</strong>.
+          </div>
+        </div>
+      )}
+
       {/* ── Doc Type Cards ── */}
       {/* ── Transaction Type (inline on the same page) ── */}
       {mode === 'create' && (
@@ -1929,13 +1940,15 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                   variant="outline"
                   size="md"
                   onClick={() => submit(false)}
-                  disabled={saving || (isJournal && !journalBalanced) || !hasPositiveTotal}
+                  disabled={isClosedYear || saving || (isJournal && !journalBalanced) || !hasPositiveTotal}
                   title={
-                    !hasPositiveTotal
-                      ? 'Total amount must be greater than 0'
-                      : isJournal && !journalBalanced
-                        ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
-                        : undefined
+                    isClosedYear
+                      ? 'The fiscal year is closed — saving drafts is disabled'
+                      : !hasPositiveTotal
+                        ? 'Total amount must be greater than 0'
+                        : isJournal && !journalBalanced
+                          ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
+                          : undefined
                   }
                 >
                   {saving
@@ -1956,15 +1969,17 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     variant="primary"
                     size="md"
                     onClick={() => submit(true)}
-                    disabled={saving || !allRequiredFilled || !hasPositiveTotal || setupBlocked}
+                    disabled={isClosedYear || saving || !allRequiredFilled || !hasPositiveTotal || setupBlocked}
                     title={
-                      !hasPositiveTotal
-                        ? 'Total amount must be greater than 0'
-                        : setupBlocked
-                          ? `Finish setup first (${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} left) — see the checklist on the Dashboard`
-                          : !allRequiredFilled
-                            ? 'Fill all required fields first'
-                            : undefined
+                      isClosedYear
+                        ? 'The fiscal year is closed — confirming orders is disabled'
+                        : !hasPositiveTotal
+                          ? 'Total amount must be greater than 0'
+                          : setupBlocked
+                            ? `Finish setup first (${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} left) — see the checklist on the Dashboard`
+                            : !allRequiredFilled
+                              ? 'Fill all required fields first'
+                              : undefined
                     }
                     className="!bg-emerald-600 hover:!bg-emerald-700 !border-emerald-600"
                   >
@@ -1976,17 +1991,19 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
                     variant="primary"
                     size="md"
                     onClick={() => submit(true)}
-                    disabled={saving || !allRequiredFilled || !hasPositiveTotal || setupBlocked || (isJournal && !journalBalanced)}
+                    disabled={isClosedYear || saving || !allRequiredFilled || !hasPositiveTotal || setupBlocked || (isJournal && !journalBalanced)}
                     title={
-                      !hasPositiveTotal
-                        ? 'Total amount must be greater than 0'
-                        : isJournal && !journalBalanced
-                          ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
-                          : setupBlocked
-                            ? `Finish setup first (${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} left) — see the checklist on the Dashboard`
-                            : !allRequiredFilled
-                              ? 'Fill all required fields first'
-                              : undefined
+                      isClosedYear
+                        ? 'The fiscal year is closed — posting transactions is disabled'
+                        : !hasPositiveTotal
+                          ? 'Total amount must be greater than 0'
+                          : isJournal && !journalBalanced
+                            ? t('vouchers.unbalancedHint', 'Debit and credit must match before saving')
+                            : setupBlocked
+                              ? `Finish setup first (${setup.missingCount} step${setup.missingCount === 1 ? '' : 's'} left) — see the checklist on the Dashboard`
+                              : !allRequiredFilled
+                                ? 'Fill all required fields first'
+                                : undefined
                     }
                     className={
                       posted
