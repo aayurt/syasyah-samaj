@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LiquidButton } from '../components/ui/LiquidButton'
-import { Download, Pencil, Plus, Sparkles, Trash2, Upload } from 'lucide-react'
+import { Download, FolderTree, Pencil, Plus, Sparkles, Trash2, Upload } from 'lucide-react'
 import { api, list, useSyncState } from '../lib/api'
 import { downloadCsv } from '../lib/csv'
 import { parseImportFile, validateImportRows, type ValidationError } from '../lib/importExport'
@@ -330,6 +330,14 @@ export default function Accounts() {
             size="sm"
           >
             <Download size={14} /> {t('export.button', 'Export')}
+          </LiquidButton>
+          <LiquidButton
+            onClick={() => setShowCoaSetup(true)}
+            variant="outline"
+            size="sm"
+            title="Configure account headings, custom categories, or apply standard structure"
+          >
+            <FolderTree size={14} /> Structure & Headings
           </LiquidButton>
           <LiquidButton
             onClick={openNew}
