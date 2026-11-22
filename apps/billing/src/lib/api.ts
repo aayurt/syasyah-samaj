@@ -90,12 +90,30 @@ async function doFetch<T>(path: string, options: ApiOptions): Promise<T> {
     for (const [k, v] of Object.entries(query)) {
       // Nested `where` objects become bracket params — Payload ignores the
       // JSON form and returns the first rows unfiltered otherwise.
-      if (k === 'where' && v && typeof v === 'object') {
-        for (const [field, cond] of Object.entries(v as Record<string, Record<string, unknown>>)) {
-          for (const [op, val] of Object.entries(cond)) {
-            if (val !== undefined && val !== '') {
-              url.searchParams.set(`where[${field}][${op}]`, String(val))
+      let whereVal = v
+      if (k === 'where' && typeof v === 'string' && v.trim().startsWith('{')) {
+        try {
+          whereVal = JSON.parse(v)
+        } catch {
+          // ignore parse error and keep as string
+        }
+      }
+      if (k === 'where' && whereVal && typeof whereVal === 'object') {
+        for (const [field, cond] of Object.entries(whereVal as Record<string, unknown>)) {
+          if (cond && typeof cond === 'object') {
+            for (const [op, val] of Object.entries(cond as Record<string, unknown>)) {
+              if (val !== undefined && val !== '') {
+                if (Array.isArray(val)) {
+                  val.forEach((item, idx) => {
+                    url.searchParams.set(`where[${field}][${op}][${idx}]`, String(item))
+                  })
+                } else {
+                  url.searchParams.set(`where[${field}][${op}]`, String(val))
+                }
+              }
             }
+          } else if (cond !== undefined && cond !== '') {
+            url.searchParams.set(`where[${field}][equals]`, String(cond))
           }
         }
         continue
@@ -511,7 +529,7 @@ export interface ListResponse<T> {
 
 export const list = <T>(
   slug: string,
-  query?: Record<string, string | number | undefined>,
+  query?: Record<string, string | number | boolean | undefined | unknown>,
 ) =>
   api<ListResponse<T>>(`/${slug}`, {
     query: { limit: 1000, depth: 1, ...query },

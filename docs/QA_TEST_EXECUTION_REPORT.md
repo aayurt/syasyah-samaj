@@ -41,6 +41,7 @@
 | 28 | Reports Suite Live Audit & Unified Filter Bar | `/app/reports/*` | ✅ PASS | Audited all 9 reports live. Deployed unified `ReportFilterBar` supporting Fiscal Year selector, 12 Bikram Sambat months (Shrawan–Asar), Day filters (`Today`, `Yesterday`), Quarters (`Q1`–`Q4`), Full FY, and dual BS/AD `NepaliDateInput` pickers. |
 | 29 | Visual Analytics & Financial Breakdown Charts | `/app/reports/pnl`, `/app/reports/sales`, `/app/reports/balance-sheet`, `/app/reports/vat-register`, `/app/reports/membership-fee-collection` | ✅ PASS | Deployed pure CSS/SVG `ReportBreakdownBar` and `ReportMetricGauge` widgets across reports. Verified live in browser: P&L revenue vs COGS breakdown, Sales settlement distribution, Balance Sheet capital structure, VAT statutory proportion, and Membership dues recovery status. |
 | 30 | Playwright E2E Test Suite Automation | `apps/billing/e2e/specs/reports-filters-charts.spec.ts` | ✅ PASS | Authored dedicated Playwright E2E test suite covering report filtering, Bikram Sambat quarter navigation, quick period pills, and chart verification. Vitest unit tests expanded to 645 tests across 68 files (100% passing). |
+| 31 | Party Statement Isolation & Loading State | `/app/reports/party-statement` | ✅ PASS | Fixed Payload REST API query param bracket conversion in `api.ts`. Resolved party filtering isolation, preventing all documents from showing across every party. Added explicit loading spinner and integrated `ReportFilterBar` with opening balance computation and visual activity breakdown. Vitest expanded to 650 tests across 69 files (100% passing). |
 
 ---
 
@@ -142,6 +143,15 @@
 - **Problem**: In `BalanceSheet.tsx`, the chart guard checked `data.totals.assets > 0`. Because accumulated depreciation on an uncapitalized test tenant yielded negative net assets (`-75,333.34`), the capital structure bar failed to render.
 - **Fix Applied**: Updated guard to check `Math.abs(data.totals.assets) > 0` and enabled `ReportBreakdownBar` to calculate absolute magnitude proportions, gracefully rendering visual solvency bars even with negative equity or accumulated losses.
 
+### Issue 25: Party Statement Query String Bypassing Payload Bracket Params & Missing Loading State
+- **Problem**: In `PartyStatement.tsx`, `where: JSON.stringify({ party: { equals: Number(selectedParty) } })` was passed as query option. In `api.ts`, lines 93-102 only unpacked `v` into bracket params (`where[field][op]=...`) if `typeof v === 'object'`. Because `v` was a serialized string, it was sent as `?where={"party":...}`, which Payload CMS's REST API ignores, returning all documents in the database regardless of the selected party. Furthermore, `loadDocs()` never called `setLoading(true)`, and previous documents were not cleared upon party change, causing the same statement to persist with no loading feedback.
+- **Fix Applied**:
+  1. Enhanced `apps/billing/src/lib/api.ts` `doFetch()` to parse JSON stringified `where` queries into objects and unpack fields, operators, and arrays into Payload's expected bracket notation (`where[field][op]=val`).
+  2. Updated `PartyStatement.tsx` to pass `where` as an object, call `setLoading(true)` on fetch, immediately clear stale rows on party change, and filter client-side as an additional defense-in-depth safeguard.
+  3. Added an explicit loading spinner (`<Loader2 className="animate-spin text-blue-600" />`) both adjacent to the Party selector and inside the primary statement viewport.
+  4. Deployed `ReportFilterBar` with opening balance calculation for date ranges and a responsive `ReportBreakdownBar` turnover analytics chart.
+  5. Authored comprehensive unit tests in `PartyStatement.test.tsx` (5/5 passing).
+
 ---
 
 ## 3. UI Updates & UX Improvements Implemented
@@ -163,3 +173,5 @@
    - Added standardized filtering with Fiscal Year dropdown, Bikram Sambat 12-month sequence (Shrawan to Asar), Day presets (`Today`, `Yesterday`), Quarters (`Q1`-`Q4`), and dual BS/AD `NepaliDateInput` date pickers.
 8. **Interactive Visual Analytics & Metric Gauges**:
    - Added lightweight, responsive SVG/CSS segmented breakdown bars (`ReportBreakdownBar`) and ratio gauges (`ReportMetricGauge`) across P&L, Sales, Balance Sheet, VAT Register, Fixed Assets, and Membership reports.
+9. **Party Statement Isolation, Dual Debit/Credit Columns & Visual Turnover Breakdown**:
+   - Refactored `PartyStatement.tsx` with dedicated Debit and Credit ledger columns, proper customer (receivable) vs vendor (payable) double-entry running balance math, animated loading spinner, and visual turnover breakdown.

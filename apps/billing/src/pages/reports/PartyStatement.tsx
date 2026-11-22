@@ -1,19 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Download, FileText, Printer } from 'lucide-react'
+import { ArrowLeft, Download, FileText, Loader2, Printer } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api, fmt, list } from '../../lib/api'
 import { downloadCsv } from '../../lib/csv'
 import { exportReportPdf } from '../../lib/pdf'
 import { useCalendar } from '../../lib/calendar'
 import { useTenant, useTenantQuery } from '../../lib/tenant'
-import { ReportSkeleton } from '../../components/Skeleton'
 import DataStatus from '../../components/DataStatus'
 import { useT } from '../../lib/i18n'
 import SearchBox from '../../components/SearchBox'
-import { DOC_TYPE_LABELS, baseCurrencyOf, effectiveAmount, toBaseCurrency, type BillingSettings, type Currency, type Document, type Party } from '../../lib/types'
+import ReportFilterBar from '../../components/ReportFilterBar'
+import { ReportBreakdownBar } from '../../components/ReportCharts'
+import {
+  DOC_TYPE_LABELS,
+  baseCurrencyOf,
+  effectiveAmount,
+  toBaseCurrency,
+  type BillingSettings,
+  type Currency,
+  type Document,
+  type Party,
+} from '../../lib/types'
 
 interface PartyDoc extends Document {
   partyName?: string
+  debit?: number
+  credit?: number
+  runningBalance?: number
 }
 
 export default function PartyStatement() {
@@ -30,155 +43,505 @@ export default function PartyStatement() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
 
   const loadParties = useCallback(async () => {
     try {
       const p = await list<Party>('parties', { depth: 0, sort: 'name', ...tenantQuery })
-      setParties(p.docs)
-    } catch { /* ignore */ }
+      setParties(p.docs || [])
+    } catch {
+      /* ignore */
+    }
   }, [tenantId])
 
-  useEffect(() => { loadParties() }, [loadParties])
+  useEffect(() => {
+    loadParties()
+  }, [loadParties])
 
   const loadDocs = useCallback(async () => {
-    if (!selectedParty) { setDocs([]); return }
+    if (!selectedParty) {
+      setDocs([])
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    setError('')
     try {
+      const partyIdNum = Number(selectedParty)
       const res = await list<Document>('documents', {
-        depth: 1, sort: 'date', ...tenantQuery,
-        where: JSON.stringify({ party: { equals: Number(selectedParty) } }),
+        depth: 1,
+        sort: 'date',
+        ...tenantQuery,
+        where: { party: { equals: partyIdNum } },
       })
-      const s = await api<BillingSettings>('/globals/billing-settings', { query: { depth: 1 } }).catch(() => ({} as BillingSettings))
+      const s = await api<BillingSettings>('/globals/billing-settings', {
+        query: { depth: 1 },
+      }).catch(() => ({} as BillingSettings))
       setBase(baseCurrencyOf(s))
-      setDocs(res.docs.map((d) => ({ ...d, partyName: parties.find((p) => p.id === d.party)?.name || '' })))
+
+      // Filter by partyId explicitly to guarantee isolation
+      const partyDocs = (res?.docs || []).filter((d: any) => {
+        const pid = typeof d.party === 'object' && d.party !== null ? d.party.id : Number(d.party)
+        return pid === partyIdNum
+      })
+
+      const partyObj = parties.find((p) => p.id === partyIdNum)
+      setDocs(
+        partyDocs.map((d: any) => ({
+          ...d,
+          partyName: (typeof d.party === 'object' && d.party?.name) || partyObj?.name || '',
+        })),
+      )
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load party statement')
-    } finally { setLoading(false) }
-  }, [selectedParty, tenantId])
+      setDocs([])
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedParty, tenantId, parties])
 
-  useEffect(() => { loadDocs() }, [loadDocs])
-
-  const running = useMemo(() => {
-    let bal = 0
-    return docs.map((d) => {
-      // For sales: debit the customer (positive = they owe us)
-      // For purchase: credit the vendor (positive = we owe them)
-      const amt = effectiveAmount(d)
-      if (d.docType === 'sales-invoice' || d.docType === 'receipt-voucher') bal += amt
-      else if (d.docType === 'purchase-invoice' || d.docType === 'payment-voucher') bal -= amt
-      else if (d.docType === 'credit-note') bal -= amt
-      else if (d.docType === 'debit-note') bal += amt
-      return { ...d, runningBalance: bal }
-    })
-  }, [docs])
-
-  const filtered = useMemo(() =>
-    running.filter((d) => {
-      if (!query) return true
-      return `${d.number || ''} ${d.narration || ''} ${DOC_TYPE_LABELS[d.docType] || d.docType}`.toLowerCase().includes(query.toLowerCase())
-    }), [running, query])
+  useEffect(() => {
+    loadDocs()
+  }, [loadDocs])
 
   const party = parties.find((p) => String(p.id) === selectedParty)
-  const totalDebit = docs.filter((d) => ['sales-invoice', 'debit-note'].includes(d.docType)).reduce((s, d) => s + effectiveAmount(d), 0)
-  const totalCredit = docs.filter((d) => ['purchase-invoice', 'credit-note', 'receipt-voucher', 'payment-voucher'].includes(d.docType)).reduce((s, d) => s + effectiveAmount(d), 0)
-  const totalDebitBase = docs.filter((d) => ['sales-invoice', 'debit-note'].includes(d.docType)).reduce((s, d) => s + toBaseCurrency(effectiveAmount(d), d, base), 0)
-  const totalCreditBase = docs.filter((d) => ['purchase-invoice', 'credit-note', 'receipt-voucher', 'payment-voucher'].includes(d.docType)).reduce((s, d) => s + toBaseCurrency(effectiveAmount(d), d, base), 0)
+  const isVendor = party?.type === 'vendor'
 
-  const csv = () => downloadCsv(`${party?.name || 'party'}-statement.csv`,
-    ['Date', 'Type', 'Number', 'Narration', 'Amount', 'Running Balance'],
-    filtered.map((d) => [formatDate(d.date), DOC_TYPE_LABELS[d.docType] || d.docType, d.number || '', d.narration || '', effectiveAmount(d), d.runningBalance]))
+  // Sort documents chronologically
+  const sortedDocs = useMemo(() => {
+    return [...docs].sort(
+      (a, b) => (a.date || '').localeCompare(b.date || '') || (Number(a.id) || 0) - (Number(b.id) || 0),
+    )
+  }, [docs])
 
-  const pdf = () => exportReportPdf({
-    filename: `${party?.name || 'party'}-statement.pdf`, title: `Party Statement — ${party?.name || ''}`,
-    meta: [['Total Debit', fmt(totalDebit)], ['Total Credit', fmt(totalCredit)], ['Balance', fmt(running[running.length - 1]?.runningBalance || 0)]],
-    tables: [{ columns: ['Date', 'Type', 'Number', 'Narration', 'Amount', 'Balance'],
-      rows: filtered.map((d) => [formatDate(d.date), DOC_TYPE_LABELS[d.docType] || d.docType, d.number || '', d.narration || '', effectiveAmount(d), d.runningBalance]) }],
-  })
+  // Partition into Opening Balance (before `from`) and Period Docs
+  const { openingBalance, periodDocs } = useMemo(() => {
+    let opening = 0
+    const period: PartyDoc[] = []
+
+    for (const d of sortedDocs) {
+      const dDate = (d.date || '').slice(0, 10)
+      const amt = effectiveAmount(d)
+      let debit = 0
+      let credit = 0
+
+      if (isVendor) {
+        // Vendor accounting:
+        // Purchase invoices and credit notes increase payable (Credit)
+        // Payments and debit notes decrease payable (Debit)
+        if (d.docType === 'payment-voucher' || d.docType === 'debit-note') debit = amt
+        else credit = amt
+        const change = credit - debit
+        if (from && dDate && dDate < from) {
+          opening += change
+        } else if (!to || !dDate || dDate <= to) {
+          period.push(d)
+        }
+      } else {
+        // Customer accounting:
+        // Sales invoices and debit notes increase receivable (Debit)
+        // Receipts and credit notes decrease receivable (Credit)
+        if (d.docType === 'sales-invoice' || d.docType === 'debit-note') debit = amt
+        else credit = amt
+        const change = debit - credit
+        if (from && dDate && dDate < from) {
+          opening += change
+        } else if (!to || !dDate || dDate <= to) {
+          period.push(d)
+        }
+      }
+    }
+    return { openingBalance: opening, periodDocs: period }
+  }, [sortedDocs, from, to, isVendor])
+
+  // Compute running balance across period docs
+  const running = useMemo(() => {
+    let bal = openingBalance
+    return periodDocs.map((d) => {
+      const amt = effectiveAmount(d)
+      let debit = 0
+      let credit = 0
+
+      if (isVendor) {
+        if (d.docType === 'payment-voucher' || d.docType === 'debit-note') debit = amt
+        else credit = amt
+        bal += credit - debit
+      } else {
+        if (d.docType === 'sales-invoice' || d.docType === 'debit-note') debit = amt
+        else credit = amt
+        bal += debit - credit
+      }
+
+      return {
+        ...d,
+        debit,
+        credit,
+        runningBalance: bal,
+      }
+    })
+  }, [periodDocs, openingBalance, isVendor])
+
+  const filtered = useMemo(() => {
+    return running.filter((d) => {
+      if (!query) return true
+      return `${d.number || ''} ${d.narration || ''} ${DOC_TYPE_LABELS[d.docType] || d.docType}`
+        .toLowerCase()
+        .includes(query.toLowerCase())
+    })
+  }, [running, query])
+
+  const totalDebit = running.reduce((s, d) => s + (d.debit || 0), 0)
+  const totalCredit = running.reduce((s, d) => s + (d.credit || 0), 0)
+  const closingBalance = running.length > 0 ? (running[running.length - 1].runningBalance || 0) : openingBalance
+
+  const totalDebitBase = running.reduce(
+    (s, d) => s + toBaseCurrency(d.debit || 0, d, base),
+    0,
+  )
+  const totalCreditBase = running.reduce(
+    (s, d) => s + toBaseCurrency(d.credit || 0, d, base),
+    0,
+  )
+
+  const csv = () =>
+    downloadCsv(
+      `${party?.name || 'party'}-statement.csv`,
+      ['Date', 'Type', 'Number', 'Narration', 'Debit', 'Credit', 'Running Balance'],
+      filtered.map((d) => [
+        formatDate(d.date),
+        DOC_TYPE_LABELS[d.docType] || d.docType,
+        d.number || '',
+        d.narration || '',
+        d.debit || 0,
+        d.credit || 0,
+        d.runningBalance ?? 0,
+      ]),
+    )
+
+  const pdf = () =>
+    exportReportPdf({
+      filename: `${party?.name || 'party'}-statement.pdf`,
+      title: `Party Statement — ${party?.name || ''} (${party?.type ? party.type.toUpperCase() : 'PARTY'})`,
+      meta: [
+        ['Party Type', (party?.type || 'Customer').toUpperCase()],
+        ['From', from || 'Earliest'],
+        ['To', to || 'Latest'],
+        ['Opening Balance', fmt(openingBalance)],
+        ['Total Debit', fmt(totalDebit)],
+        ['Total Credit', fmt(totalCredit)],
+        ['Closing Balance', fmt(closingBalance)],
+      ],
+      tables: [
+        {
+          columns: ['Date', 'Type', 'Number', 'Narration', 'Debit', 'Credit', 'Balance'],
+          rows: [
+            ...(from && openingBalance !== 0
+              ? [[formatDate(from), 'Opening', '—', 'Balance Brought Forward', '—', '—', fmt(openingBalance)]]
+              : []),
+            ...filtered.map((d) => [
+              formatDate(d.date),
+              DOC_TYPE_LABELS[d.docType] || d.docType,
+              d.number || '',
+              d.narration || '',
+              d.debit ? fmt(d.debit) : '—',
+              d.credit ? fmt(d.credit) : '—',
+              fmt(d.runningBalance ?? 0),
+            ]),
+          ],
+          totals: ['Totals', '', '', '', fmt(totalDebit), fmt(totalCredit), fmt(closingBalance)],
+        },
+      ],
+    })
 
   return (
     <div className="w-full">
+      {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/reports')} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><ArrowLeft size={18} /></button>
-          <h1 className="text-lg font-semibold text-slate-900">{t('reports.partyStatement', 'Party Statement')}</h1>
+          <button
+            onClick={() => navigate('/reports')}
+            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            title="Back to Reports"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h1 className="text-lg font-semibold text-slate-900">
+              {t('reports.partyStatement', 'Party Statement')}
+            </h1>
+            {party && (
+              <p className="text-xs text-slate-500">
+                {party.name} · <span className="capitalize">{party.type}</span>
+                {party.taxId ? ` · PAN: ${party.taxId}` : ''}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={csv} disabled={!selectedParty} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Download size={14} /> {t('common.csv', 'CSV')}</button>
-          <button onClick={pdf} disabled={!selectedParty} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><FileText size={14} /> {t('common.pdf', 'PDF')}</button>
-          <button onClick={() => window.print()} disabled={!selectedParty} className="flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Printer size={14} /> {t('common.print', 'Print')}</button>
+          <button
+            onClick={csv}
+            disabled={!selectedParty || loading}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <Download size={14} /> {t('common.csv', 'CSV')}
+          </button>
+          <button
+            onClick={pdf}
+            disabled={!selectedParty || loading}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <FileText size={14} /> {t('common.pdf', 'PDF')}
+          </button>
+          <button
+            onClick={() => window.print()}
+            disabled={!selectedParty || loading}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            <Printer size={14} /> {t('common.print', 'Print')}
+          </button>
         </div>
       </div>
-      <div className="mt-2"><DataStatus /></div>
 
-      <div className="mt-4 flex items-center gap-3">
-        <label className="text-sm text-slate-700">
-          Party
-          <select value={selectedParty} onChange={(e) => setSelectedParty(e.target.value)}
-            className="ml-2 rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500">
-            <option value="">— select party —</option>
-            {parties.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.type})</option>)}
-          </select>
-        </label>
-        {selectedParty && <SearchBox value={query} onChange={setQuery} placeholder="Filter transactions…" />}
+      <div className="mt-2">
+        <DataStatus />
       </div>
 
-      {error && <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-
-      {loading && docs.length === 0 ? <ReportSkeleton sections={1} /> : selectedParty && (
-        <>
-          <div className="mt-4 grid grid-cols-3 gap-4">
-            <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Total Debit</div>
-              <div className="mt-1 font-mono text-lg font-semibold text-amber-700">{fmt(totalDebit)}</div>
-              <div className="text-[10px] text-slate-400">{fmt(totalDebitBase)} base</div>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Total Credit</div>
-              <div className="mt-1 font-mono text-lg font-semibold text-amber-700">{fmt(totalCredit)}</div>
-              <div className="text-[10px] text-slate-400">{fmt(totalCreditBase)} base</div>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Balance</div>
-              <div className={`mt-1 font-mono text-lg font-semibold ${(running[running.length - 1]?.runningBalance || 0) >= 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
-                {fmt(running[running.length - 1]?.runningBalance || 0)}
-              </div>
-              <div className="text-[10px] text-slate-400">{fmt(totalDebitBase - totalCreditBase)} base</div>
-            </div>
-          </div>
-
-          <div className="mt-4 rounded-lg border border-slate-200 bg-white">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2">Number</th>
-                  <th className="px-4 py-2">Narration</th>
-                  <th className="px-4 py-2 text-right">Amount</th>
-                  <th className="px-4 py-2 text-right">Running</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 && (
-                  <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No transactions for this party.</td></tr>
-                )}
-                {filtered.map((d) => (
-                  <tr key={d.id} className="border-b border-slate-50">
-                    <td className="px-4 py-2 text-slate-600">{formatDate(d.date)}</td>
-                    <td className="px-4 py-2 text-slate-600">{DOC_TYPE_LABELS[d.docType] || d.docType}</td>
-                    <td className="px-4 py-2 font-mono text-slate-700">{d.number || '—'}</td>
-                    <td className="px-4 py-2 text-slate-800">{d.narration || '—'}</td>
-                    <td className="px-4 py-2 text-right font-mono text-slate-800">{fmt(effectiveAmount(d))}</td>
-                    <td className="px-4 py-2 text-right font-mono font-medium text-slate-800">{fmt(d.runningBalance)}</td>
-                  </tr>
+      {/* Filter Bar with Party Selector & Date Filters */}
+      <ReportFilterBar
+        from={from}
+        to={to}
+        onFromChange={setFrom}
+        onToChange={setTo}
+        className="mt-4"
+        extraControls={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="party-select" className="text-xs font-medium text-slate-600">
+                Party:
+              </label>
+              <select
+                id="party-select"
+                value={selectedParty}
+                onChange={(e) => {
+                  setSelectedParty(e.target.value)
+                  setDocs([])
+                }}
+                className="h-8 min-w-[200px] rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:outline-hidden"
+              >
+                <option value="">— select party —</option>
+                {parties.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.type})
+                  </option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+            </div>
+
+            {loading && (
+              <span className="flex items-center gap-1.5 text-xs font-medium text-blue-600">
+                <Loader2 size={14} className="animate-spin text-blue-600" />
+                <span>Loading…</span>
+              </span>
+            )}
+
+            {selectedParty && (
+              <SearchBox value={query} onChange={setQuery} placeholder="Filter transactions…" />
+            )}
           </div>
-        </>
+        }
+      />
+
+      {error && (
+        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
       )}
 
-      {!selectedParty && !loading && (
-        <p className="mt-8 text-center text-sm text-slate-400">Select a party to view its transaction statement.</p>
+      {/* Loading Spinner View */}
+      {loading ? (
+        <div className="mt-8 flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-16 shadow-xs">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+          <p className="mt-4 text-sm font-medium text-slate-700">
+            {t('reports.loadingPartyStatement', 'Loading party statement…')}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            {party?.name ? `Fetching transactions for ${party.name}` : 'Please wait…'}
+          </p>
+        </div>
+      ) : selectedParty ? (
+        <>
+          {/* Visual Activity Breakdown Bar */}
+          {(totalDebit > 0 || totalCredit > 0) && (
+            <div className="mt-4">
+              <ReportBreakdownBar
+                title={`${party?.name || 'Party'} — Activity Turnover`}
+                totalLabel="Total Period Volume"
+                segments={[
+                  {
+                    label: isVendor ? 'Payments Made (Debit)' : 'Billed Invoices (Debit)',
+                    value: totalDebit,
+                    color: 'bg-blue-500',
+                  },
+                  {
+                    label: isVendor ? 'Vendor Bills (Credit)' : 'Receipts Collected (Credit)',
+                    value: totalCredit,
+                    color: 'bg-emerald-500',
+                  },
+                ]}
+              />
+            </div>
+          )}
+
+          {/* Metric Summary Cards */}
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                {isVendor ? 'Total Paid / Debits' : 'Total Billed / Debits'}
+              </div>
+              <div className="mt-1 font-mono text-xl font-semibold text-slate-800">
+                {fmt(totalDebit)}
+              </div>
+              <div className="mt-0.5 text-[10px] text-slate-400">{fmt(totalDebitBase)} base</div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                {isVendor ? 'Total Invoiced / Credits' : 'Total Received / Credits'}
+              </div>
+              <div className="mt-1 font-mono text-xl font-semibold text-slate-800">
+                {fmt(totalCredit)}
+              </div>
+              <div className="mt-0.5 text-[10px] text-slate-400">{fmt(totalCreditBase)} base</div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs uppercase tracking-wide text-slate-500">
+                  {isVendor ? 'Closing Payable' : 'Closing Receivable'}
+                </span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    closingBalance > 0
+                      ? isVendor
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-emerald-100 text-emerald-800'
+                      : closingBalance < 0
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {closingBalance > 0
+                    ? isVendor
+                      ? 'Payable to Vendor'
+                      : 'Receivable from Customer'
+                    : closingBalance < 0
+                      ? isVendor
+                        ? 'Advance Paid'
+                        : 'Advance Received'
+                      : 'Settled'}
+                </span>
+              </div>
+              <div
+                className={`mt-1 font-mono text-xl font-semibold ${
+                  closingBalance > 0
+                    ? isVendor
+                      ? 'text-amber-700'
+                      : 'text-emerald-700'
+                    : closingBalance < 0
+                      ? 'text-purple-700'
+                      : 'text-slate-700'
+                }`}
+              >
+                {fmt(Math.abs(closingBalance))}
+              </div>
+              <div className="mt-0.5 text-[10px] text-slate-400">
+                {from ? `As of ${formatDate(to || new Date().toISOString().slice(0, 10))}` : 'Net outstanding balance'}
+              </div>
+            </div>
+          </div>
+
+          {/* Transactions Statement Table */}
+          <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wide text-slate-500">
+                    <th className="px-4 py-2.5">Date</th>
+                    <th className="px-4 py-2.5">Type</th>
+                    <th className="px-4 py-2.5">Number</th>
+                    <th className="px-4 py-2.5">Narration</th>
+                    <th className="px-4 py-2.5 text-right">Debit</th>
+                    <th className="px-4 py-2.5 text-right">Credit</th>
+                    <th className="px-4 py-2.5 text-right">Running Balance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {from && openingBalance !== 0 && (
+                    <tr className="bg-slate-50/80 font-medium text-slate-700">
+                      <td className="px-4 py-2.5">{formatDate(from)}</td>
+                      <td className="px-4 py-2.5">
+                        <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700">
+                          Opening
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 font-mono text-slate-400">—</td>
+                      <td className="px-4 py-2.5 italic text-slate-600">
+                        Opening Balance Brought Forward
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono text-slate-400">—</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-slate-400">—</td>
+                      <td className="px-4 py-2.5 text-right font-mono font-semibold text-slate-800">
+                        {fmt(openingBalance)}
+                      </td>
+                    </tr>
+                  )}
+
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-400">
+                        No transactions for this party.
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((d) => (
+                      <tr key={d.id} className="transition-colors hover:bg-slate-50/60">
+                        <td className="whitespace-nowrap px-4 py-2.5 text-slate-600">
+                          {formatDate(d.date)}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-2.5">
+                          <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                            {DOC_TYPE_LABELS[d.docType] || d.docType}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-2.5 font-mono text-xs font-medium text-slate-700">
+                          {d.number || '—'}
+                        </td>
+                        <td className="max-w-xs truncate px-4 py-2.5 text-slate-800" title={d.narration || ''}>
+                          {d.narration || '—'}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-2.5 text-right font-mono text-slate-800">
+                          {d.debit ? fmt(d.debit) : '—'}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-2.5 text-right font-mono text-slate-800">
+                          {d.credit ? fmt(d.credit) : '—'}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-2.5 text-right font-mono font-semibold text-slate-900">
+                          {fmt(d.runningBalance ?? 0)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="mt-8 flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-16 text-center">
+          <p className="text-sm font-medium text-slate-600">Select a party to view its transaction statement.</p>
+          <p className="mt-1 text-xs text-slate-400">Choose a customer or vendor from the dropdown above.</p>
+        </div>
       )}
     </div>
   )
