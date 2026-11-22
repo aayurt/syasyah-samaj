@@ -3,6 +3,8 @@ import { Check, FolderTree, X, AlertCircle } from 'lucide-react'
 import { LiquidButton } from './ui/LiquidButton'
 import { api } from '../lib/api'
 import { AccountType, AccountGroup } from '../lib/types'
+import { useTenant } from '../lib/tenant'
+import { pushToast } from '../lib/toast'
 
 const STARTER_GROUPS = [
   { code: '1000', name: 'Current Assets', type: 'asset' },
@@ -46,6 +48,34 @@ export default function CoaSetupModal({ isOpen, onClose, onSuccess, groupToEdit,
   const [error, setError] = useState<string | null>(null)
   const [editingGroup, setEditingGroup] = useState(false)
   const [editGroup, setEditGroup] = useState<{ id: number; name: string; code?: string; type: AccountType; parent?: number | AccountGroup | null | undefined } | null>(null)
+
+  const { tenantId } = useTenant()
+
+  const handleApplyStandard = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      await api('/data-ops/seed-demo', {
+        method: 'POST',
+        body: {
+          chartOnly: true,
+          seeds: ['accountGroups', 'accounts', 'taxTypes'],
+          tenant: tenantId ? String(tenantId) : undefined,
+        },
+      })
+      pushToast(
+        'success',
+        'Chart of Accounts Initialized',
+        'Standard account headings, subheadings, and default settings mappings have been configured.',
+      )
+      onSuccess()
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to apply standard structure.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // If groupToEdit prop is provided, start editing mode
   useState(() => {
@@ -201,8 +231,10 @@ export default function CoaSetupModal({ isOpen, onClose, onSuccess, groupToEdit,
                 Cancel
               </LiquidButton>
               <LiquidButton
+                type="button"
                 variant="accent"
                 size="sm"
+                onClick={handleApplyStandard}
                 disabled={loading}
                 className="gap-1.5"
               >

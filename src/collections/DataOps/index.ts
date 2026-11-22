@@ -705,18 +705,14 @@ export const DataOps: CollectionConfig = {
           )
         }
 
+        const chartOnly = body?.chartOnly === true
         const settings = await getBillingSettings(req.payload)
-        if (settings?.demoSeedEnabled === false) {
+        if (!chartOnly && settings?.demoSeedEnabled === false) {
           return Response.json(
             { error: 'Demo data is disabled in Billing Settings → Features.' },
             { status: 403 },
           )
         }
-
-        // Selective seeding: tell the endpoint which masters to create. When
-        // `seeds` is absent we fall back to the legacy flag — chartOnly (accounts
-        // + tax only, no parties/items/vouchers) or full demo seed.
-        const chartOnly = body?.chartOnly === true
         const seeds: string[] | null = Array.isArray(body?.seeds)
           ? (body.seeds as string[]).map(String)
           : null
