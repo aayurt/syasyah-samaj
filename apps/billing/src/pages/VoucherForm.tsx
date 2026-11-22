@@ -387,6 +387,8 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
   const [party, setParty] = useState('')
   const [partySearch, setPartySearch] = useState('')
   const [narration, setNarration] = useState('')
+  const [attachmentId, setAttachmentId] = useState<number | null>(null)
+  const [attachmentUrl, setAttachmentUrl] = useState('')
   const [lines, setLines] = useState<LineDraft[]>([emptyLine()])
   const [journalLines, setJournalLines] = useState<JLineDraft[]>([emptyJLine(), emptyJLine()])
   const [paymentMethod, setPaymentMethod] = useState('bank')
@@ -497,6 +499,12 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
           setDocType(d.docType); setInvoicePrefix(DOC_PREFIXES[d.docType] || 'INV')
           setDate(d.date?.slice(0, 10) || todayAD())
           setNarration(d.narration || '')
+          if (d.attachment) {
+            const aId = typeof d.attachment === 'object' && d.attachment !== null ? Number(d.attachment.id) : Number(d.attachment)
+            const aUrl = typeof d.attachment === 'object' && d.attachment !== null ? (d.attachment.url || '') : ''
+            setAttachmentId(aId || null)
+            setAttachmentUrl(aUrl)
+          }
           setCurrency((d.currency || 'NPR') as Currency)
           setExchangeRate(d.exchangeRate ?? null)
           setTaxRate(String(d.taxRate ?? 0))
@@ -785,6 +793,7 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
       status: 'draft',
       number: finalNumber || undefined,
       ...(tenantRelId !== undefined ? { tenant: tenantRelId } : {}),
+      ...(attachmentId ? { attachment: attachmentId } : {}),
       ...(currency && currency !== 'NPR' ? { currency } : {}),
       ...(exchangeRate != null && exchangeRate > 0 ? { exchangeRate } : {}),
     }
@@ -1817,7 +1826,16 @@ export default function VoucherForm({ mode, embedded = false, onSuccess }: Props
           </EntryCard>
         )}
 
-        <VoucherNotesCard narration={narration} onChange={setNarration} />
+        <VoucherNotesCard
+          narration={narration}
+          onChange={setNarration}
+          attachmentId={attachmentId}
+          attachmentUrl={attachmentUrl}
+          onAttachmentChange={(id, url) => {
+            setAttachmentId(id)
+            setAttachmentUrl(url)
+          }}
+        />
 
         {/* ── Payment Fields (collapsible for cash types) ─────── */}
         {isCash && !cashSimple && (

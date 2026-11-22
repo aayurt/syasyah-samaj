@@ -228,6 +228,7 @@ export interface Document {
     voidedBy?: string
   }>
   voidedAmount?: number
+  attachment?: number | { id: number; url?: string; filename?: string } | null
   /** Document currency (NPR | USD). Defaults to tenant base currency. */
   currency?: Currency
   /** Exchange rate: 1 unit of `currency` = N base units. Only meaningful when currency !== base. */

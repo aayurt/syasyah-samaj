@@ -1371,6 +1371,10 @@ export interface Document {
   taxTotal?: number | null;
   grossTotal?: number | null;
   createdBy?: (number | null) | User;
+  /**
+   * Attached bill, invoice scan, or receipt image
+   */
+  attachment?: (number | null) | Media;
   tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
@@ -4963,6 +4967,7 @@ export interface DocumentsSelect<T extends boolean = true> {
   taxTotal?: T;
   grossTotal?: T;
   createdBy?: T;
+  attachment?: T;
   tenant?: T;
   updatedAt?: T;
   createdAt?: T;

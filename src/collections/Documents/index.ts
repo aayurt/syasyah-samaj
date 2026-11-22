@@ -2973,6 +2973,14 @@ export const Documents: CollectionConfig = {
         readOnly: true,
       },
     },
+    {
+      name: 'attachment',
+      type: 'upload',
+      relationTo: 'media',
+      admin: {
+        description: 'Attached bill, invoice scan, or receipt image',
+      },
+    },
     // Illaka scoping — required; auto-assigned from the user's illaka (or C00).
     {
       name: 'tenant',

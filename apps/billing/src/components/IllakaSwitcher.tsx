@@ -31,8 +31,8 @@ export default function IllakaSwitcher() {
   // Central role: dropdown with Parent and Children grouping
   if (!isCentral) return null
 
-  const parentTenant = tenants.find((tn) => tn.type === 'central' || tn.code === 'C00')
-  const childTenants = tenants.filter((tn) => tn.id !== parentTenant?.id && (tn.type !== 'central' && tn.code !== 'C00'))
+  const parentTenants = tenants.filter((tn) => tn.type === 'central' || tn.code === 'C00')
+  const childTenants = tenants.filter((tn) => !parentTenants.some((p) => p.id === tn.id))
 
   return (
     <div className="relative">
@@ -44,11 +44,13 @@ export default function IllakaSwitcher() {
       >
         <option value="">{t('illaka.all', 'All Illakas (Consolidated)')}</option>
 
-        {parentTenant && (
+        {parentTenants.length > 0 && (
           <optgroup label="Parent Organization">
-            <option value={parentTenant.id}>
-              {parentTenant.name || 'Syasyah Samaj Central'} [Parent]
-            </option>
+            {parentTenants.map((ten) => (
+              <option key={ten.id} value={ten.id}>
+                {ten.name || 'Syasyah Samaj Central'} [Parent]
+              </option>
+            ))}
           </optgroup>
         )}
 

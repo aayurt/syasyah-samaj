@@ -56,6 +56,40 @@ export default function VoucherViewModal({
               {voucher.narration}
             </p>
           )}
+          {voucher.attachment && (
+            <div className="pt-1 pb-1 flex items-center gap-2">
+              <span className="text-slate-400">Attachment:</span>
+              {typeof voucher.attachment === 'object' && voucher.attachment?.url ? (
+                voucher.attachment.url.endsWith('.pdf') ? (
+                  <a
+                    href={voucher.attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                  >
+                    View Document (PDF)
+                  </a>
+                ) : (
+                  <a
+                    href={voucher.attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block h-12 w-14 overflow-hidden rounded border border-slate-200 hover:opacity-80"
+                  >
+                    <img
+                      src={voucher.attachment.url}
+                      alt="Attachment"
+                      className="h-full w-full object-cover"
+                    />
+                  </a>
+                )
+              ) : (
+                <span className="text-xs text-slate-500">
+                  File #{typeof voucher.attachment === 'object' ? voucher.attachment.id : voucher.attachment}
+                </span>
+              )}
+            </div>
+          )}
           <p className="pt-1 text-slate-400">{t('voucherView.lines')}</p>
           <table className="w-full text-sm">
             <thead>
