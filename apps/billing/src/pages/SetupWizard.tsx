@@ -39,13 +39,12 @@ import { adToBsString, bsToAdString } from '../lib/nepaliDate'
 import type { Account, BillingSettings, Document } from '../lib/types'
 import type { AIModel } from '../lib/ai/schemas'
 import AIWorkspaceModal from '../components/AIWorkspaceModal'
-import AccountSelect from '../components/AccountSelect'
 
 /**
  * Onboarding wizard for fresh (or freshly-cleaned) books.
  *
  * Walks a tenant through the four required M1 setup steps — company profile,
- * a fiscal year, a chart of accounts and default account mappings — with the
+ * a fiscal year, a chart of accounts — with the
  * optional extras (opening balances, demo data) offered at the end. It drives
  * the same billing-settings / fiscal-years state the setup gate (`useSetupStatus`)
  * checks, so the run always reflects the wizard's progress.
@@ -65,7 +64,7 @@ const REQUIRED_STEPS: StepDef[] = [
   { key: 'seed-account-groups', title: 'Account Types & Groups', blurb: 'Asset, liability, equity, income, expense — the parent structure accounts belong to.', icon: Layers },
   { key: 'seed-accounts', title: 'Chart of Accounts', blurb: 'Starter chart — groups, accounts, and default-account mappings.', icon: Database },
   { key: 'seed-taxTypes', title: 'Tax Types', blurb: 'VAT @ 13% plus its sales/purchase ledger wiring.', icon: Tag },
-  { key: 'defaults', title: 'Default Accounts', blurb: 'Map the default accounts the posting engine needs.', icon: Wallet },
+
 ]
 
 const OPTIONAL_STEPS: StepDef[] = [
@@ -77,17 +76,7 @@ const OPTIONAL_STEPS: StepDef[] = [
 
 const STEPS = [...REQUIRED_STEPS, ...OPTIONAL_STEPS]
 
-const CORE_DEFAULTS: { key: keyof BillingSettings; label: string }[] = [
-  { key: 'receivableAccount', label: 'Accounts Receivable' },
-  { key: 'payableAccount', label: 'Accounts Payable' },
-  { key: 'cashAccount', label: 'Cash' },
-  { key: 'bankAccount', label: 'Bank' },
-  { key: 'taxAccount', label: 'Tax (VAT)' },
-  { key: 'inventoryAccount', label: 'Inventory' },
-  { key: 'revenueAccount', label: 'Revenue' },
-  { key: 'expenseAccount', label: 'Expenses' },
-  { key: 'cogsAccount', label: 'Cost of Goods Sold (COGS)' },
-]
+
 
 export default function SetupWizard() {
   useDataEpochWatcher()
@@ -165,7 +154,7 @@ export default function SetupWizard() {
     })
   }
   // Default accounts form
-  const [defaults, setDefaults] = useState<Record<string, string>>({})
+
   // Per-seed-step completion (each seed area is its own wizard step now)
   const [seedDone, setSeedDone] = useState<Record<string, boolean>>({})
 
@@ -225,12 +214,7 @@ export default function SetupWizard() {
         companyEmail: s.companyEmail || '',
         companyAddress: s.companyAddress || '',
       })
-      const da: Record<string, string> = {}
-      for (const d of CORE_DEFAULTS) {
-        const v = s[d.key]
-        da[d.key] = v && typeof v === 'object' ? String((v as { id: number }).id) : v ? String(v) : ''
-      }
-      setDefaults(da)
+
     }
   }, [tenantQuery])
 
@@ -322,7 +306,7 @@ export default function SetupWizard() {
     'seed-account-groups': Boolean(seedDone['seed-account-groups']) || (accountGroupsCount ?? 0) > 0,
     'seed-accounts': Boolean(seedDone['seed-accounts']) || (chartCount ?? 0) > 0,
     'seed-taxTypes': Boolean(seedDone['seed-taxTypes']) || (taxTypesCount ?? 0) > 0,
-    defaults: CORE_DEFAULTS.every((d) => settings && settings[d.key] != null),
+
     'seed-parties': Boolean(seedDone['seed-parties']) || (partiesCount ?? 0) > 0,
     'seed-items': Boolean(seedDone['seed-items']) || (itemCount ?? 0) > 0,
     'seed-members': Boolean(seedDone['seed-members']) || (memberCount ?? 0) > 0,
@@ -684,71 +668,9 @@ export default function SetupWizard() {
     }
   }
 
-  const saveDefaults = async () => {
-    setBusy('defaults')
-    setError('')
-    try {
-      const body: Record<string, unknown> = {}
-      for (const d of CORE_DEFAULTS) {
-        body[d.key] = defaults[d.key] ? Number(defaults[d.key]) : null
-      }
-      await api('/globals/billing-settings', { method: 'POST', body })
-      bumpGlobals()
-      pushToast('success', 'Default accounts mapped')
-      setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save default accounts')
-    } finally {
-      setBusy('')
-    }
-  }
 
-  const autoMatchDefaults = () => {
-    const matched: Record<string, string> = { ...defaults }
-    const matchAccount = (criteria: { codes?: string[]; names?: string[]; type?: string }) => {
-      if (criteria.codes) {
-        const found = accounts.find((a) => criteria.codes?.includes(String(a.code)))
-        if (found) return String(found.id)
-      }
-      if (criteria.names) {
-        const found = accounts.find((a) =>
-          criteria.names?.some((n) => a.name.toLowerCase().includes(n.toLowerCase())) &&
-          (!criteria.type || a.type === criteria.type)
-        )
-        if (found) return String(found.id)
-      }
-      return ''
-    }
 
-    const rules: Record<string, { codes?: string[]; names?: string[]; type?: string }> = {
-      receivableAccount: { codes: ['1130'], names: ['receivable', 'debtor'], type: 'asset' },
-      payableAccount: { codes: ['2110'], names: ['payable', 'creditor'], type: 'liability' },
-      cashAccount: { codes: ['1110'], names: ['cash in hand', 'cash'], type: 'asset' },
-      bankAccount: { codes: ['1120'], names: ['bank', 'checking', 'savings'], type: 'asset' },
-      taxAccount: { codes: ['2100'], names: ['tax', 'vat'], type: 'liability' },
-      revenueAccount: { codes: ['4000'], names: ['revenue', 'sales', 'income'], type: 'income' },
-      expenseAccount: { codes: ['5000'], names: ['operating expense', 'expense', 'purchase'], type: 'expense' },
-      inventoryAccount: { codes: ['1100'], names: ['inventory', 'stock'], type: 'asset' },
-      cogsAccount: { codes: ['5000', '5100'], names: ['cost of goods', 'cogs', 'expense'], type: 'expense' },
-    }
 
-    let matchCount = 0
-    for (const d of CORE_DEFAULTS) {
-      if (!matched[d.key]) {
-        const id = matchAccount(rules[d.key] || {})
-        if (id) {
-          matched[d.key] = id
-          matchCount++
-        }
-      }
-    }
-    setDefaults(matched)
-    if (matchCount > 0) {
-      pushToast('success', `Auto-matched ${matchCount} standard default account(s)`)
-    } else {
-      pushToast('info', 'All standard default accounts already matched')
-    }
-  }
 
   const finish = () => navigate('/', { replace: true })
 
@@ -1998,53 +1920,7 @@ export default function SetupWizard() {
               setAiInitialModel={setAiInitialModel}
             />
           )}
-          {step.key === 'defaults' && (
-            <div className="space-y-3">
-              {accounts.length === 0 ? (
-                <div className="rounded border border-amber-200 bg-amber-50 p-4">
-                  <p className="text-sm text-amber-700">
-                    No accounts yet — seed the Chart of Accounts first, then map defaults here.
-                  </p>
-                  <button
-                    onClick={() => setStepIdx((i) => Math.max(i - 1, 0))}
-                    className="mt-2 inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
-                  >
-                    <ArrowLeft size={13} /> Back to Chart of Accounts
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                    <p className="text-xs text-slate-500">
-                      Map your core transaction accounts for automated posting.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={autoMatchDefaults}
-                      className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-xs cursor-pointer"
-                    >
-                      ⚡ Auto-fill standard defaults
-                    </button>
-                  </div>
-                  {CORE_DEFAULTS.map((d) => (
-                    <div key={d.key} className="flex items-center justify-between gap-4">
-                      <label className="w-48 shrink-0 text-sm text-slate-600">{d.label}</label>
-                      <div className="flex-1">
-                        <AccountSelect
-                          accounts={accounts}
-                          value={defaults[d.key] || ''}
-                          onChange={(id) => setDefaults({ ...defaults, [d.key]: id })}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                  <p className="text-xs text-slate-400">
-                    The posting engine resolves every voucher leg through these accounts.
-                  </p>
-                </>
-              )}
-            </div>
-          )}
+
 
           {step.key === 'openings' && (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
@@ -2155,27 +2031,7 @@ export default function SetupWizard() {
               </button>
             )}
             {/* Seed steps: single Skip/Next button above handles both cases */}
-            {step.key === 'defaults' && (
-              <>
-                <button
-                  onClick={() => {
-                    setAiInitialModel('gl-accounts')
-                    setAiOpen(true)
-                  }}
-                  className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  <Sparkles size={14} /> {t('ai.importDefaultAccounts', 'Import Default Accounts with AI')}
-                </button>
-                <button
-                  onClick={() => void saveDefaults()}
-                  disabled={busy === 'defaults'}
-                  className="inline-flex items-center gap-2 rounded bg-crimson-600 px-4 py-2 text-sm font-medium text-white hover:bg-crimson-700 disabled:opacity-60"
-                >
-                  {busy === 'defaults' ? <Loader2 size={15} className="animate-spin" /> : null}
-                  Save & continue
-                </button>
-              </>
-            )}
+
 
             {/* When the required step is already done, allow moving on. */}
             {isRequired && satisfied[step.key] && !busy && !step.key.startsWith('seed-') && (
