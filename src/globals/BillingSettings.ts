@@ -1,4 +1,5 @@
 import { isAdmin } from '@/access/admin'
+import { isSuperAdmin } from '@/access/isSuperAdmin'
 import type { GlobalConfig } from 'payload'
 
 /**
@@ -22,6 +23,24 @@ export const BillingSettings: GlobalConfig = {
     // in the correct calendar type.
     read: () => true,
     update: isAdmin,
+  },
+  hooks: {
+    beforeChange: [
+      async ({ data, req, originalDoc }) => {
+        // Enforce that only super-admin can toggle multiCompanyEnabled
+        if (
+          data &&
+          'multiCompanyEnabled' in data &&
+          originalDoc &&
+          data.multiCompanyEnabled !== originalDoc.multiCompanyEnabled
+        ) {
+          if (!isSuperAdmin(req.user)) {
+            data.multiCompanyEnabled = originalDoc.multiCompanyEnabled
+          }
+        }
+        return data
+      },
+    ],
   },
   fields: [
     {
@@ -151,6 +170,15 @@ export const BillingSettings: GlobalConfig = {
           admin: {
             description:
               'Show the amount-in-words line in Nepali words (रूपैयाँ/पैसा) on voucher previews and prints. When off, English words are used.',
+          },
+        },
+        {
+          name: 'multiCompanyEnabled',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: {
+            description:
+              'Enable Multi-Company / Sub-Companies mode. When enabled, users can switch between companies and manage sub-companies. Only configurable by super-admin.',
           },
         },
       ],

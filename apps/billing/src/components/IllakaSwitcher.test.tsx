@@ -95,4 +95,18 @@ describe('IllakaSwitcher', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument()
     expect(screen.queryByText('Unknown')).not.toBeInTheDocument()
   })
+
+  it('renders nothing when multiCompanyEnabled is explicitly false for central users', () => {
+    useTenantMock.mockReturnValue({
+      tenantId: '',
+      setTenantId,
+      tenants,
+      isCentral: true,
+      isIllaka: false,
+      illakaCode: null,
+      multiCompanyEnabled: false,
+    })
+    const { container } = renderSwitcher()
+    expect(container.firstChild).toBeNull()
+  })
 })

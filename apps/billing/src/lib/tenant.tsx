@@ -23,6 +23,7 @@ export type TenantOption = {
   type: 'central' | 'illaka'
   active?: boolean
   slug?: string
+  pan?: string
 }
 
 type TenantCtx = {
@@ -38,6 +39,8 @@ type TenantCtx = {
   isIllaka: boolean
   /** The user's illaka code, if scoped (e.g. "IL03"). */
   illakaCode: string | null
+  /** Whether multi-company / sub-companies mode is enabled by super-admin. */
+  multiCompanyEnabled: boolean
 }
 
 const TenantContext = createContext<TenantCtx>({
@@ -47,6 +50,7 @@ const TenantContext = createContext<TenantCtx>({
   isCentral: false,
   isIllaka: false,
   illakaCode: null,
+  multiCompanyEnabled: false,
 })
 
 const CENTRAL_ROLES = new Set([
@@ -84,6 +88,18 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   })
 
   const [tenants, setTenants] = useState<TenantOption[]>([])
+  const [multiCompanyEnabled, setMultiCompanyEnabled] = useState<boolean>(false)
+
+  // Load billing settings to check multiCompanyEnabled flag
+  useEffect(() => {
+    api<any>('/globals/billing-settings')
+      .then((settings) => {
+        if (settings?.multiCompanyEnabled != null) {
+          setMultiCompanyEnabled(Boolean(settings.multiCompanyEnabled))
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   // Load tenants for the switcher (central users only)
   useEffect(() => {
@@ -95,6 +111,9 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
           code: t.code || '',
           name: t.name || t.slug || '',
           type: (t.type || 'illaka') as 'central' | 'illaka',
+          active: t.active,
+          slug: t.slug,
+          pan: t.pan || '',
         }))
         setTenants(opts)
         // If no tenant is selected yet, default to empty (consolidated)
@@ -129,6 +148,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         isCentral,
         isIllaka,
         illakaCode,
+        multiCompanyEnabled,
       }}
     >
       {children}

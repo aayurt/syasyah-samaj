@@ -22,7 +22,13 @@ export async function resolveTenantId(
 ): Promise<number | string | undefined> {
   const found = await payload.find({
     collection: 'tenants',
-    where: { code: { equals: 'C00' } },
+    where: {
+      or: [
+        { code: { equals: 'C00' } },
+        { code: { equals: 'SYASYAJ' } },
+        { type: { equals: 'central' } },
+      ],
+    },
     limit: 1,
     depth: 0,
   })

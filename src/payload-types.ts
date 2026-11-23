@@ -376,6 +376,10 @@ export interface Tenant {
    */
   code?: string | null;
   /**
+   * Permanent Account Number (PAN) for the sub-company / branch.
+   */
+  pan?: string | null;
+  /**
    * Central is the parent organization (code C00); everything else is an illaka.
    */
   type?: ('central' | 'illaka') | null;
@@ -6548,6 +6552,10 @@ export interface BillingSetting {
    */
   nepaliWordsOnPrintEnabled?: boolean | null;
   /**
+   * Enable Multi-Company / Sub-Companies mode.
+   */
+  multiCompanyEnabled?: boolean | null;
+  /**
    * Company or organization name shown on invoices and reports.
    */
   companyName?: string | null;
@@ -6895,6 +6903,7 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   demoSeedEnabled?: T;
   nepaliDigitsEnabled?: T;
   nepaliWordsOnPrintEnabled?: T;
+  multiCompanyEnabled?: T;
   companyName?: T;
   companyPan?: T;
   companyContact?: T;

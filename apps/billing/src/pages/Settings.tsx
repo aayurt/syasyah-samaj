@@ -28,7 +28,7 @@ import {
   CalendarDays,
 } from 'lucide-react'
 import { api, fmt, protectGlobalsFields, useSyncState } from '../lib/api'
-import { authClient, clearCachedSession, isAdminUser } from '../lib/auth'
+import { authClient, clearCachedSession, isAdminUser, isSuperAdminUser } from '../lib/auth'
 import { adToBsString, formatDate } from '../lib/nepaliDate'
 import { useCalendar } from '../lib/calendar'
 import { useFiscalYear } from '../lib/fiscalYear'
@@ -220,6 +220,7 @@ export default function Settings() {
   const { data: session } = authClient.useSession()
   const userRole = (session?.user as any)?.role as string | undefined
   const isAdmin = isAdminUser(userRole)
+  const isSuperAdmin = isSuperAdminUser(userRole)
 
   // Sub-companies / Ilakas state
   const [subCompanies, setSubCompanies] = useState<any[]>([])
@@ -229,12 +230,14 @@ export default function Settings() {
   const [tenantName, setTenantName] = useState('')
   const [tenantCode, setTenantCode] = useState('')
   const [tenantSlug, setTenantSlug] = useState('')
+  const [tenantPan, setTenantPan] = useState('')
   const [tenantType, setTenantType] = useState<'central' | 'illaka'>('illaka')
   const [tenantPhone, setTenantPhone] = useState('')
   const [tenantEmail, setTenantEmail] = useState('')
   const [tenantActive, setTenantActive] = useState(true)
   const [savingTenant, setSavingTenant] = useState(false)
   const [tenantError, setTenantError] = useState('')
+  const [multiCompanySaving, setMultiCompanySaving] = useState(false)
 
   const loadSubCompanies = useCallback(() => {
     setLoadingTenants(true)
@@ -257,6 +260,7 @@ export default function Settings() {
     setTenantName('')
     setTenantCode('')
     setTenantSlug('')
+    setTenantPan('')
     setTenantType('illaka')
     setTenantPhone('')
     setTenantEmail('')
@@ -270,6 +274,7 @@ export default function Settings() {
     setTenantName(tDoc.name || '')
     setTenantCode(tDoc.code || '')
     setTenantSlug(tDoc.slug || '')
+    setTenantPan(tDoc.pan || '')
     setTenantType(tDoc.type || 'illaka')
     setTenantPhone(tDoc.contactInfo?.phone || '')
     setTenantEmail(tDoc.contactInfo?.email || '')
@@ -296,6 +301,7 @@ export default function Settings() {
         name: tenantName.trim(),
         code: tenantCode.trim() || undefined,
         slug: computedSlug,
+        pan: tenantPan.trim() || undefined,
         type: tenantType,
         active: tenantActive,
         contactInfo: {
@@ -414,12 +420,23 @@ export default function Settings() {
   const [demoSeedEnabled, setDemoSeedEnabled] = useState(true)
   const [nepaliDigitsEnabled, setNepaliDigitsEnabled] = useState(false)
   const [nepaliWordsOnPrintEnabled, setNepaliWordsOnPrintEnabled] = useState(false)
+  const [multiCompanyEnabled, setMultiCompanyEnabled] = useState(false)
   const { setEnabled: setContextTooltips } = useTooltips()
   const [tooltipEnabled, setTooltipEnabled] = useState(() => {
     const stored = localStorage.getItem('ui-tooltips-enabled')
     return stored !== 'false' // default ON
   })
-  const savedFeatures = useRef({ payroll: true, bankRec: false, simplifiedInv: true, threshold: '5000', demoSeed: true, nepaliDigits: false, nepaliWords: false, tooltipEnabled: true })
+  const savedFeatures = useRef({
+    payroll: true,
+    bankRec: false,
+    simplifiedInv: true,
+    threshold: '5000',
+    demoSeed: true,
+    nepaliDigits: false,
+    nepaliWords: false,
+    tooltipEnabled: true,
+    multiCompany: false,
+  })
   const featuresDirty =
     payrollEnabled !== savedFeatures.current.payroll ||
     bankRecEnabled !== savedFeatures.current.bankRec ||
@@ -428,8 +445,38 @@ export default function Settings() {
     demoSeedEnabled !== savedFeatures.current.demoSeed ||
     nepaliDigitsEnabled !== savedFeatures.current.nepaliDigits ||
     nepaliWordsOnPrintEnabled !== savedFeatures.current.nepaliWords ||
-    tooltipEnabled !== savedFeatures.current.tooltipEnabled
+    tooltipEnabled !== savedFeatures.current.tooltipEnabled ||
+    multiCompanyEnabled !== savedFeatures.current.multiCompany
   const [featuresSaved, setFeaturesSaved] = useState(false)
+
+  const toggleMultiCompany = async () => {
+    if (!isSuperAdmin) {
+      pushToast('error', 'Only Super Administrators can change the multi-company setting.')
+      return
+    }
+    const nextVal = !multiCompanyEnabled
+    setMultiCompanyEnabled(nextVal)
+    setMultiCompanySaving(true)
+    try {
+      await api('/globals/billing-settings', {
+        method: 'POST',
+        body: { multiCompanyEnabled: nextVal },
+      })
+      savedFeatures.current.multiCompany = nextVal
+      pushToast(
+        'success',
+        nextVal
+          ? 'Multi-Company Mode Enabled'
+          : 'Multi-Company Mode Disabled (Single Company: Syasyah Samaj)',
+      )
+      window.dispatchEvent(new Event('billing-settings-changed'))
+    } catch (err: any) {
+      setMultiCompanyEnabled(!nextVal)
+      pushToast('error', err.message || 'Failed to update multi-company setting')
+    } finally {
+      setMultiCompanySaving(false)
+    }
+  }
 
 
   // ── Chart of Accounts ──
@@ -612,6 +659,7 @@ export default function Settings() {
       const nd = !!res.nepaliDigitsEnabled
       const nw = !!res.nepaliWordsOnPrintEnabled
       const tt = res.tooltipEnabled !== false
+      const mc = !!res.multiCompanyEnabled
       setPayrollEnabled(py)
       setBankRecEnabled(br)
       setSimplifiedInvEnabled(si)
@@ -620,7 +668,18 @@ export default function Settings() {
       setNepaliDigitsEnabled(nd)
       setNepaliWordsOnPrintEnabled(nw)
       setTooltipEnabled(tt)
-      savedFeatures.current = { payroll: py, bankRec: br, simplifiedInv: si, threshold: st, demoSeed: ds, nepaliDigits: nd, nepaliWords: nw, tooltipEnabled: tt }
+      setMultiCompanyEnabled(mc)
+      savedFeatures.current = {
+        payroll: py,
+        bankRec: br,
+        simplifiedInv: si,
+        threshold: st,
+        demoSeed: ds,
+        nepaliDigits: nd,
+        nepaliWords: nw,
+        tooltipEnabled: tt,
+        multiCompany: mc,
+      }
 
       // Default account assignments
       const da: Record<string, string> = {}
@@ -1020,6 +1079,7 @@ export default function Settings() {
       nepaliDigitsEnabled,
       nepaliWordsOnPrintEnabled,
       tooltipEnabled,
+      multiCompanyEnabled: isSuperAdmin ? multiCompanyEnabled : savedFeatures.current.multiCompany,
     }
     try {
       const cached = JSON.parse(localStorage.getItem('billing.settingsCache') || '{}')
@@ -1030,7 +1090,17 @@ export default function Settings() {
       window.dispatchEvent(new Event('billing-settings-changed'))
       protectGlobalsFields(Object.keys(body))
     } catch { /* ignore */ }
-    savedFeatures.current = { payroll: payrollEnabled, bankRec: bankRecEnabled, simplifiedInv: simplifiedInvEnabled, threshold: simplifiedInvThreshold, demoSeed: demoSeedEnabled, nepaliDigits: nepaliDigitsEnabled, nepaliWords: nepaliWordsOnPrintEnabled, tooltipEnabled }
+    savedFeatures.current = {
+      payroll: payrollEnabled,
+      bankRec: bankRecEnabled,
+      simplifiedInv: simplifiedInvEnabled,
+      threshold: simplifiedInvThreshold,
+      demoSeed: demoSeedEnabled,
+      nepaliDigits: nepaliDigitsEnabled,
+      nepaliWords: nepaliWordsOnPrintEnabled,
+      tooltipEnabled,
+      multiCompany: isSuperAdmin ? multiCompanyEnabled : savedFeatures.current.multiCompany,
+    }
     setFeaturesSaved(true)
     setTimeout(() => setFeaturesSaved(false), 2000)
     // Fire-and-forget: sync to server in background
@@ -1047,6 +1117,7 @@ export default function Settings() {
     setNepaliDigitsEnabled(s.nepaliDigits)
     setNepaliWordsOnPrintEnabled(s.nepaliWords)
     setTooltipEnabled(s.tooltipEnabled)
+    setMultiCompanyEnabled(s.multiCompany)
   }
 
   // ── Default account assignments ──
@@ -1486,93 +1557,166 @@ export default function Settings() {
             </div>
           )}
 
-          {/* ── Sub-Companies / Ilakas Section ── */}
+          {/* ── Sub-Companies / Multi-Company Section ── */}
           <div className="mt-8 border-t border-slate-200 pt-6">
-            <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <h3 className="text-base font-semibold text-slate-800">Sub-Companies / Ilakas</h3>
-                <p className="text-xs text-slate-500">
-                  Manage branch units, branches and community ilakas under this organization. Requires admin access.
-                </p>
+            {/* ── Super Admin Multi-Company Toggle Card ── */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 mb-6 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Building2 size={18} className="text-crimson-600" />
+                    <h3 className="text-sm font-semibold text-slate-800">
+                      {t('settings.multiCompanyToggle', 'Multi-Company & Sub-Companies')}
+                    </h3>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700">
+                      <Lock size={10} />
+                      {t('settings.superAdminOnly', 'Super Admin Only')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 max-w-xl">
+                    {t(
+                      'settings.multiCompanyDesc',
+                      'Enable multiple sub-companies, branches, and multi-tenant accounting under Syasyah Samaj. When disabled, the system operates in single-company mode for Syasyah Samaj (default).',
+                    )}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  {isSuperAdmin ? (
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={multiCompanyEnabled}
+                      disabled={multiCompanySaving}
+                      onClick={toggleMultiCompany}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-crimson-500 focus:ring-offset-2 ${
+                        multiCompanyEnabled ? 'bg-crimson-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          multiCompanyEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-500">
+                      <Lock size={12} className="text-slate-400" />
+                      <span>{multiCompanyEnabled ? 'Enabled' : 'Disabled'}</span>
+                    </span>
+                  )}
+                </div>
               </div>
-              {isAdmin && (
-                <button
-                  type="button"
-                  onClick={openCreateTenant}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors w-fit"
-                >
-                  <Plus size={14} />
-                  <span>Add Sub-Company</span>
-                </button>
-              )}
             </div>
 
-            {loadingTenants ? (
-              <div className="py-6 text-center text-sm text-slate-400">Loading sub-companies…</div>
-            ) : subCompanies.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-                No sub-companies or ilakas configured yet.
+            {/* If Multi-Company is OFF, show clear informational state */}
+            {!multiCompanyEnabled ? (
+              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/40 p-6 text-center">
+                <Building2 size={24} className="mx-auto text-slate-400 mb-2" />
+                <p className="text-sm font-medium text-slate-700">
+                  Single-Company Mode Active
+                </p>
+                <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                  The system is currently operating in single-company mode for <strong>{companyName || 'Syasyah Samaj'}</strong>.
+                  {isSuperAdmin
+                    ? ' Toggle the switch above to enable multiple companies and sub-companies.'
+                    : ' Only a Super Administrator can enable multi-company mode.'}
+                </p>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    <tr>
-                      <th className="px-4 py-3">Code</th>
-                      <th className="px-4 py-3">Name</th>
-                      <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3">Contact</th>
-                      <th className="px-4 py-3">Status</th>
-                      {isAdmin && <th className="px-4 py-3 text-right">Actions</th>}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
-                    {subCompanies.map((tc) => (
-                      <tr key={tc.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-700">
-                          {tc.code || '—'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-slate-900">{tc.name}</div>
-                          <div className="text-xs text-slate-400 font-mono">/{tc.slug}</div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${tc.type === 'central'
-                              ? 'bg-purple-100 text-purple-700'
-                              : 'bg-blue-100 text-blue-700'
-                            }`}>
-                            {tc.type === 'central' ? 'Central' : 'Ilaka'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-slate-600">
-                          {tc.contactInfo?.phone && <div>📞 {tc.contactInfo.phone}</div>}
-                          {tc.contactInfo?.email && <div className="text-slate-400">✉️ {tc.contactInfo.email}</div>}
-                          {!tc.contactInfo?.phone && !tc.contactInfo?.email && <span className="text-slate-400">—</span>}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${tc.active !== false
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-slate-100 text-slate-500'
-                            }`}>
-                            {tc.active !== false ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        {isAdmin && (
-                          <td className="px-4 py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => openEditTenant(tc)}
-                              className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-                              title="Edit Sub-Company"
-                            >
-                              <Pencil size={14} />
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              /* If Multi-Company is ON, show full sub-companies management */
+              <div>
+                <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-800">Sub-Companies / Branches</h3>
+                    <p className="text-xs text-slate-500">
+                      Manage sub-companies, branch offices, and business units under this parent organization.
+                    </p>
+                  </div>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={openCreateTenant}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors w-fit"
+                    >
+                      <Plus size={14} />
+                      <span>Add Sub-Company</span>
+                    </button>
+                  )}
+                </div>
+
+                {loadingTenants ? (
+                  <div className="py-6 text-center text-sm text-slate-400">Loading sub-companies…</div>
+                ) : subCompanies.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+                    No sub-companies configured yet. Click "Add Sub-Company" to create your first sub-company.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-slate-200">
+                    <table className="w-full text-left text-sm">
+                      <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        <tr>
+                          <th className="px-4 py-3">Code</th>
+                          <th className="px-4 py-3">Name</th>
+                          <th className="px-4 py-3">Type</th>
+                          <th className="px-4 py-3">PAN</th>
+                          <th className="px-4 py-3">Contact</th>
+                          <th className="px-4 py-3">Status</th>
+                          {isAdmin && <th className="px-4 py-3 text-right">Actions</th>}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {subCompanies.map((tc) => (
+                          <tr key={tc.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-700">
+                              {tc.code || '—'}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-slate-900">{tc.name}</div>
+                              <div className="text-xs text-slate-400 font-mono">/{tc.slug}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${tc.type === 'central'
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : 'bg-blue-100 text-blue-700'
+                                }`}>
+                                {tc.type === 'central' ? 'Parent / Central' : 'Sub-Company'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 font-mono text-xs text-slate-600">
+                              {tc.pan || '—'}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-slate-600">
+                              {tc.contactInfo?.phone && <div>📞 {tc.contactInfo.phone}</div>}
+                              {tc.contactInfo?.email && <div className="text-slate-400">✉️ {tc.contactInfo.email}</div>}
+                              {!tc.contactInfo?.phone && !tc.contactInfo?.email && <span className="text-slate-400">—</span>}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${tc.active !== false
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : 'bg-slate-100 text-slate-500'
+                                }`}>
+                                {tc.active !== false ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            {isAdmin && (
+                              <td className="px-4 py-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => openEditTenant(tc)}
+                                  className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                                  title="Edit Sub-Company"
+                                >
+                                  <Pencil size={14} />
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -2820,6 +2964,17 @@ export default function Settings() {
                   value={tenantSlug}
                   onChange={(e) => setTenantSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, ''))}
                   placeholder="e.g. ilaka-01"
+                  className={`${inputCls} font-mono`}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">PAN / Tax ID</label>
+                <input
+                  type="text"
+                  value={tenantPan}
+                  onChange={(e) => setTenantPan(e.target.value)}
+                  placeholder="e.g. 600123456"
                   className={`${inputCls} font-mono`}
                 />
               </div>

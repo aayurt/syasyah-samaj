@@ -72,6 +72,15 @@ export const Tenants: CollectionConfig = {
       },
     },
     {
+      name: 'pan',
+      type: 'text',
+      required: false,
+      admin: {
+        description: 'Permanent Account Number (PAN) for the sub-company / branch.',
+        position: 'sidebar',
+      },
+    },
+    {
       name: 'type',
       type: 'select',
       defaultValue: 'illaka',

@@ -414,6 +414,7 @@ export interface BillingSettings {
   demoSeedEnabled?: boolean
   nepaliDigitsEnabled?: boolean
   nepaliWordsOnPrintEnabled?: boolean
+  multiCompanyEnabled?: boolean
   tooltipEnabled?: boolean
   dataEpoch?: number
   membershipFeeAccount?: number | Account | null
