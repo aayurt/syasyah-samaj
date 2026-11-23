@@ -380,15 +380,16 @@ export const FiscalYears: CollectionConfig = {
       name: 'status',
       type: 'select',
       required: true,
-      defaultValue: 'active',
+      defaultValue: 'open',
       options: [
-        { label: 'Active (editable)', value: 'active' },
+        { label: 'Active (working year)', value: 'active' },
+        { label: 'Open', value: 'open' },
         { label: 'Closed (read-only)', value: 'closed' },
       ],
       admin: {
         position: 'sidebar',
         description:
-          'Active = entries may be posted. Closed = read-only; the posting engine refuses new entries in this period.',
+          'Active = the single working year for new entries (only one per parent company). Open = a non-working period that can be reopened. Closed = read-only; the posting engine refuses new entries in this period.',
       },
     },
     {

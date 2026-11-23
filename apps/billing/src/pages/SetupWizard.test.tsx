@@ -135,7 +135,6 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
     })
     listMock.mockResolvedValue({ docs: existingTenants, totalDocs: existingTenants.length })
     apiMock.mockResolvedValue({
-      companyName: 'ABC Company',
       multiCompanyEnabled: true,
     })
 
@@ -149,5 +148,66 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
     expect(screen.getByText(/Switch \/ All Companies/i)).toBeInTheDocument()
     expect(screen.getByText(/Sub-Companies \/ Illakas for ABC Company/i)).toBeInTheDocument()
     expect(screen.getByText('ABC sub-company -1')).toBeInTheDocument()
+  })
+
+  it('renders Sub-Company profile and parent badge when a sub-company is selected', async () => {
+    const existingTenants = [
+      { id: '2', code: 'ABC', name: 'ABC Company', type: 'central' as const },
+      { id: '3', code: 'ABC-01', name: 'ABC sub-company -1', type: 'illaka' as const, parentId: '2' },
+    ]
+
+    useTenantMock.mockReturnValue({
+      tenantId: '3',
+      setTenantId,
+      tenants: existingTenants,
+      isCentral: true,
+      isIllaka: false,
+      illakaCode: null,
+      multiCompanyEnabled: true,
+    })
+    listMock.mockResolvedValue({ docs: existingTenants, totalDocs: existingTenants.length })
+    apiMock.mockResolvedValue({
+      multiCompanyEnabled: true,
+    })
+
+    renderWizard()
+
+    await waitFor(() => {
+      expect(screen.getAllByText('ABC sub-company -1').length).toBeGreaterThan(0)
+      expect(screen.getByText('Sub-Company')).toBeInTheDocument()
+    })
+
+    expect(screen.getByText(/Operating branch under ABC Company/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Switch to Parent \(ABC Company\)/i })).toBeInTheDocument()
+  })
+
+  it('allows editing a parent company from consolidated view', async () => {
+    const existingTenants = [
+      { id: '2', code: 'ABC', name: 'ABC Company', type: 'central' as const, pan: '123456789' },
+    ]
+
+    useTenantMock.mockReturnValue({
+      tenantId: '',
+      setTenantId,
+      tenants: existingTenants,
+      isCentral: true,
+      isIllaka: false,
+      illakaCode: null,
+      multiCompanyEnabled: true,
+    })
+    listMock.mockResolvedValue({ docs: existingTenants, totalDocs: existingTenants.length })
+
+    renderWizard()
+
+    await waitFor(() => {
+      expect(screen.getByText('ABC Company')).toBeInTheDocument()
+    })
+
+    const editBtn = screen.getByTitle('Edit ABC Company')
+    fireEvent.click(editBtn)
+
+    expect(screen.getByText(/Edit Parent Company: ABC Company/i)).toBeInTheDocument()
+    expect(screen.getByDisplayValue('ABC Company')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('ABC')).toBeInTheDocument()
   })
 })

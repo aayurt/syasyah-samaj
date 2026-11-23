@@ -116,6 +116,7 @@ export default function SetupWizard() {
 
   // Company Creator state
   const [showCompanyCreator, setShowCompanyCreator] = useState(false)
+  const [editingCompany, setEditingCompany] = useState<TenantOption | null>(null)
   const [newCompany, setNewCompany] = useState({
     name: '',
     code: '',
@@ -162,6 +163,16 @@ export default function SetupWizard() {
   const [error, setError] = useState('')
 
   const tenantQuery = useMemo(() => (tenantId ? { tenant: tenantId } : {}), [tenantId])
+
+  // Fiscal years belong to the parent company. When a sub-company (illaka)
+  // is selected, FY create/read/update targets the parent's periods.
+  const currentTenant = useMemo(() => tenants.find((t) => String(t.id) === String(tenantId)) || null, [tenants, tenantId])
+  const fyTenantId = useMemo(() => {
+    if (!currentTenant) return tenantId
+    if (isParentCompany(currentTenant)) return tenantId
+    return currentTenant.parentId || tenantId
+  }, [currentTenant, tenantId])
+  const fyTenantQuery = useMemo(() => (fyTenantId ? { tenant: fyTenantId } : {}), [fyTenantId])
 
   const refreshFacts = useCallback(async () => {
     const [s, chartRes, docRes, illakaRes, memberRes, itemRes, agRes, ttRes, ptRes] = await Promise.all([
@@ -230,6 +241,12 @@ export default function SetupWizard() {
       null
     )
   }, [subCompanies, tenants, tenantId])
+
+  const parentOfActiveTenant = useMemo(() => {
+    if (!activeTenant || isParentCompany(activeTenant)) return null
+    const source = subCompanies.length > 0 ? subCompanies : tenants
+    return source.find((t) => String(t.id) === String(activeTenant.parentId)) || null
+  }, [activeTenant, subCompanies, tenants])
 
   const currentCompanySubCompanies = useMemo(() => {
     if (!tenantId) return []
@@ -301,7 +318,11 @@ export default function SetupWizard() {
   }, [step.key])
 
   const satisfied: Record<string, boolean> = {
-    company: Boolean(settings?.companyName && String(settings.companyName).trim()),
+    company: Boolean(
+      activeTenant
+        ? (company.companyName || activeTenant.name)?.trim()
+        : settings?.companyName && String(settings.companyName).trim()
+    ),
     fiscalYear: (years?.length ?? 0) > 0 || Boolean(settings?.activeFiscalYear),
     'seed-account-groups': Boolean(seedDone['seed-account-groups']) || (accountGroupsCount ?? 0) > 0,
     'seed-accounts': Boolean(seedDone['seed-accounts']) || (chartCount ?? 0) > 0,
@@ -324,8 +345,8 @@ export default function SetupWizard() {
     setBusy('company')
     setError('')
     try {
-      await api('/globals/billing-settings', { method: 'POST', body: { ...company } })
-      if (tenantId) {
+      if (activeTenant && !isParentCompany(activeTenant)) {
+        // Sub-company: update the tenant record directly
         await api(`/tenants/${tenantId}`, {
           method: 'PATCH',
           body: {
@@ -339,7 +360,28 @@ export default function SetupWizard() {
               address: company.companyAddress || undefined,
             },
           },
-        }).catch(() => {})
+          immediate: true,
+        })
+      } else {
+        // Parent company: update billing-settings and tenant record
+        await api('/globals/billing-settings', { method: 'POST', body: { ...company } })
+        if (tenantId) {
+          await api(`/tenants/${tenantId}`, {
+            method: 'PATCH',
+            body: {
+              name: company.companyName,
+              pan: company.companyPan || undefined,
+              contactInfo: {
+                phone: company.companyContact || undefined,
+                email: company.companyEmail || undefined,
+              },
+              location: {
+                address: company.companyAddress || undefined,
+              },
+            },
+            immediate: true,
+          }).catch(() => {})
+        }
       }
       bumpGlobals()
       pushToast('success', 'Company profile saved')
@@ -368,25 +410,41 @@ export default function SetupWizard() {
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/(^-|-$)/g, '') || code.toLowerCase()
 
-      const res = await api<{ doc: any }>('/tenants', {
-        method: 'POST',
-        body: {
-          name,
-          code,
-          slug,
-          type: 'central',
-          pan: newCompany.pan.trim() || undefined,
-          contactInfo: {
-            phone: newCompany.contact.trim() || undefined,
-            email: newCompany.email.trim() || undefined,
-          },
-          location: {
-            address: newCompany.address.trim() || undefined,
-          },
-          active: true,
+      const payloadBody: any = {
+        name,
+        code,
+        slug,
+        type: 'central',
+        pan: newCompany.pan.trim() || undefined,
+        contactInfo: {
+          phone: newCompany.contact.trim() || undefined,
+          email: newCompany.email.trim() || undefined,
         },
-        immediate: true,
-      })
+        location: {
+          address: newCompany.address.trim() || undefined,
+        },
+        active: true,
+      }
+
+      if (editingCompany) {
+        await api(`/tenants/${editingCompany.id}`, {
+          method: 'PATCH',
+          body: payloadBody,
+          immediate: true,
+        })
+        pushToast('success', `Company "${name}" updated successfully`)
+      } else {
+        const res = await api<{ doc: any }>('/tenants', {
+          method: 'POST',
+          body: payloadBody,
+          immediate: true,
+        })
+        const createdId = res?.doc?.id ? String(res.doc.id) : ''
+        if (createdId) {
+          setTenantId(createdId)
+        }
+        pushToast('success', `Company "${name}" created successfully`)
+      }
 
       // Also ensure globals/billing-settings are populated and multiCompanyEnabled is true
       await api('/globals/billing-settings', {
@@ -401,20 +459,35 @@ export default function SetupWizard() {
         },
       }).catch(() => {})
 
-      pushToast('success', `Company "${name}" created successfully`)
       setNewCompany({ name: '', code: '', pan: '', contact: '', email: '', address: '' })
+      setEditingCompany(null)
       setShowCompanyCreator(false)
       await refreshFacts()
       bumpGlobals()
-
-      const createdId = res?.doc?.id ? String(res.doc.id) : ''
-      if (createdId) {
-        setTenantId(createdId)
-      }
     } catch (err) {
-      setCompanyCreatorError(err instanceof Error ? err.message : 'Failed to create company')
+      setCompanyCreatorError(err instanceof Error ? err.message : 'Failed to save company')
     } finally {
       setCreatingCompany(false)
+    }
+  }
+
+  const deleteParentCompany = async (parentId: string, parentName: string) => {
+    if (!window.confirm(`Delete company "${parentName}" and all its sub-companies? This cannot be undone.`)) return
+    try {
+      const source = subCompanies.length > 0 ? subCompanies : tenants
+      const children = getSubCompaniesForParent(parentId, source)
+      for (const child of children) {
+        await api(`/tenants/${child.id}`, { method: 'DELETE', immediate: true }).catch(() => {})
+      }
+      await api(`/tenants/${parentId}`, { method: 'DELETE', immediate: true })
+      if (String(tenantId) === String(parentId)) {
+        setTenantId('')
+      }
+      await refreshFacts()
+      bumpGlobals()
+      pushToast('success', `Deleted company "${parentName}"`)
+    } catch (e) {
+      pushToast('error', 'Failed to delete company', e instanceof Error ? e.message : 'Delete failed')
     }
   }
 
@@ -529,6 +602,14 @@ export default function SetupWizard() {
     setBusy('fiscalYear')
     setError('')
     try {
+      // You may not start a new period while a year is still the working year.
+      // Close the active year first. 'open' years may coexist.
+      const activeYear = (years ?? []).some((y) => y.status === 'active')
+      if (activeYear) {
+        pushToast('error', 'Close the working year first', 'Close the current active fiscal year before creating a new one.')
+        setBusy('')
+        return
+      }
       // Overlap check: new [start,end] must not intersect any existing period.
       const overlapsExisting = (years ?? []).some((y) => {
         return fy.startDate <= (y.endDate ?? '') && (y.startDate ?? '') <= fy.endDate
@@ -544,19 +625,21 @@ export default function SetupWizard() {
         const bsYear = Number(bs.slice(0, 4)) || 0
         if (bsYear) label = `${bsYear}-${String((bsYear + 1) % 100).padStart(2, '0')}`
       }
+      const isFirstYear = (years ?? []).length === 0
       const body: Record<string, unknown> = {
         label: label || undefined,
         startDate: fy.startDate,
         endDate: fy.endDate,
-        status: 'active',
-        isActive: true,
+        // First year becomes the working year; later years default to 'open'.
+        status: isFirstYear ? 'active' : 'open',
+        isActive: isFirstYear,
       }
-      if (tenantId) body.tenant = Number(tenantId)
+      if (fyTenantId) body.tenant = Number(fyTenantId)
       await api('/fiscal-years', { method: 'POST', body })
       // Point billing-settings at the new working year.
-      if (tenantId) {
+      if (fyTenantId) {
         const res = await api<{ docs: { id: number }[] }>('/fiscal-years', {
-          query: { limit: 1, depth: 0, sort: '-startDate', ...tenantQuery },
+          query: { limit: 1, depth: 0, sort: '-startDate', ...fyTenantQuery },
         })
         const created = res.docs?.[0]
         if (created) {
@@ -574,7 +657,7 @@ export default function SetupWizard() {
   }
 
   const fySetActive = (id: string) => {
-    api(`/fiscal-years/${id}`, { method: 'PATCH', body: { isActive: true } })
+    api(`/fiscal-years/${id}`, { method: 'PATCH', body: { isActive: true, status: 'active' } })
       .then(async () => {
         await api('/globals/billing-settings', { method: 'POST', body: { activeFiscalYear: Number(id) } }).catch(() => { })
         await refreshYears()
@@ -642,10 +725,16 @@ export default function SetupWizard() {
       pushToast('error', 'Select an ilaka first', 'Pick the tenant to set up from the switcher.')
       return
     }
+    // Fiscal years belong to the parent company — seed them under the parent's tenant.
+    const seedTenant = seedKey === 'fiscalYears' ? fyTenantId : tenantId
+    if (!seedTenant) {
+      pushToast('error', 'Select a parent company first', 'Pick the parent tenant before seeding fiscal years.')
+      return
+    }
     setBusy(seedKey)
     setError('')
     try {
-      const res = await runSeedSelective(tenantId, [seedKey])
+      const res = await runSeedSelective(seedTenant, [seedKey])
       if (res.error) {
         setError(res.error)
         return
@@ -706,15 +795,18 @@ export default function SetupWizard() {
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-slate-900">
-                    {parentCompanies.length === 0
-                      ? 'Create Your Organization / Parent Company'
-                      : 'Add New Parent Company'}
+                    {editingCompany
+                      ? `Edit Parent Company: ${editingCompany.name}`
+                      : parentCompanies.length === 0
+                        ? 'Create Your Organization / Parent Company'
+                        : 'Add New Parent Company'}
                   </h2>
-                  {parentCompanies.length > 0 && (
+                  {(parentCompanies.length > 0 || editingCompany) && (
                     <button
                       type="button"
                       onClick={() => {
                         setShowCompanyCreator(false)
+                        setEditingCompany(null)
                         setCompanyCreatorError('')
                       }}
                       className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
@@ -724,9 +816,11 @@ export default function SetupWizard() {
                   )}
                 </div>
                 <p className="mt-1 text-sm text-slate-500">
-                  {parentCompanies.length === 0
-                    ? 'Start by creating your primary company profile (e.g. Syasyah Samaj, ABC Company). Once registered, you will configure its fiscal year, chart of accounts, and manage sub-companies / branches.'
-                    : 'Register a new top-level organization. Once created, you can switch between companies and manage sub-companies for each.'}
+                  {editingCompany
+                    ? `Update company name, registration code, and contact information for ${editingCompany.name}.`
+                    : parentCompanies.length === 0
+                      ? 'Start by creating your primary company profile (e.g. Syasyah Samaj, ABC Company). Once registered, you will configure its fiscal year, chart of accounts, and manage sub-companies / branches.'
+                      : 'Register a new top-level organization. Once created, you can switch between companies and manage sub-companies for each.'}
                 </p>
               </div>
             </div>
@@ -824,11 +918,12 @@ export default function SetupWizard() {
               </div>
 
               <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-                {parentCompanies.length > 0 && (
+                {(parentCompanies.length > 0 || editingCompany) && (
                   <button
                     type="button"
                     onClick={() => {
                       setShowCompanyCreator(false)
+                      setEditingCompany(null)
                       setCompanyCreatorError('')
                     }}
                     className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
@@ -844,12 +939,12 @@ export default function SetupWizard() {
                   {creatingCompany ? (
                     <>
                       <Loader2 size={14} className="animate-spin" />
-                      <span>Creating Company…</span>
+                      <span>{editingCompany ? 'Updating Company…' : 'Creating Company…'}</span>
                     </>
                   ) : (
                     <>
                       <Building2 size={14} />
-                      <span>Create Company & Continue</span>
+                      <span>{editingCompany ? 'Update Company & Continue' : 'Create Company & Continue'}</span>
                     </>
                   )}
                 </button>
@@ -966,6 +1061,35 @@ export default function SetupWizard() {
                     <span>🏢 Configure {parent.name}</span>
                     <ArrowRight size={13} />
                   </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingCompany(parent)
+                        setNewCompany({
+                          name: parent.name,
+                          code: parent.code,
+                          pan: parent.pan || '',
+                          contact: '',
+                          email: '',
+                          address: '',
+                        })
+                        setShowCompanyCreator(true)
+                      }}
+                      className="rounded-lg p-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition"
+                      title={`Edit ${parent.name}`}
+                    >
+                      <Edit2 size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteParentCompany(parent.id, parent.name)}
+                      className="rounded-lg p-1.5 text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-700 transition"
+                      title={`Delete ${parent.name}`}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
             )
@@ -1175,9 +1299,59 @@ export default function SetupWizard() {
 
         <div className="mt-6">
           {step.key === 'company' && (
-            <div className="space-y-4">
-              {/* Parent company profile — only while no parent company exists yet. */}
-              {!settings?.companyName && (
+            <div className="space-y-6">
+              {/* Context Banner if configuring a sub-company */}
+              {activeTenant && !isParentCompany(activeTenant) && (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl bg-indigo-50/60 border border-indigo-100 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-9 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold shadow-xs">
+                      <GitBranch size={16} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-indigo-950">{activeTenant.name}</span>
+                        <span className="rounded bg-indigo-200/70 px-1.5 py-0.2 text-[10px] font-bold text-indigo-800">
+                          Sub-Company
+                        </span>
+                      </div>
+                      <p className="text-xs text-indigo-800/80">
+                        Operating branch under {parentOfActiveTenant?.name || 'Parent Organization'}.
+                      </p>
+                    </div>
+                  </div>
+                  {parentOfActiveTenant && (
+                    <button
+                      type="button"
+                      onClick={() => setTenantId(parentOfActiveTenant.id)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-2xs hover:bg-indigo-50 transition"
+                    >
+                      <Building2 size={13} />
+                      <span>Switch to Parent ({parentOfActiveTenant.name})</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Organization profile fields — always accessible */}
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs">
+                <div className="mb-4 pb-3 border-b border-slate-100 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      {activeTenant && !isParentCompany(activeTenant) ? 'Branch Profile Details' : 'Company Profile Details'}
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      {activeTenant && !isParentCompany(activeTenant)
+                        ? 'Details for this branch shown on branch vouchers and receipts.'
+                        : 'Primary organization details shown on invoices and reports.'}
+                    </p>
+                  </div>
+                  {activeTenant?.code && (
+                    <span className="font-mono text-xs font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">
+                      Code: {activeTenant.code}
+                    </span>
+                  )}
+                </div>
+
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
                     <label className="text-xs font-medium text-slate-600">
@@ -1191,12 +1365,12 @@ export default function SetupWizard() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-slate-600">PAN</label>
+                    <label className="text-xs font-medium text-slate-600">PAN / Tax ID</label>
                     <input
                       value={company.companyPan}
                       onChange={(e) => setCompany({ ...company, companyPan: e.target.value })}
                       placeholder="e.g. 612345678"
-                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 font-mono text-sm outline-none focus:border-slate-500"
                     />
                   </div>
                   <div>
@@ -1228,10 +1402,10 @@ export default function SetupWizard() {
                     />
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Sub-company / ilaka management (central admin only) */}
-              {isCentral && (
+              {/* Sub-company / ilaka management (central admin only & parent company only) */}
+              {isCentral && (!activeTenant || isParentCompany(activeTenant)) && (
                 <div className="space-y-3 pt-6 border-t border-slate-100">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1336,6 +1510,15 @@ export default function SetupWizard() {
                                 )}
                               </td>
                               <td className="py-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => setTenantId(tc.id)}
+                                  className="mr-1.5 inline-flex items-center gap-1 rounded bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-slate-800 transition shadow-2xs"
+                                  title={`Configure ${tc.name}`}
+                                >
+                                  <span>Configure</span>
+                                  <ArrowRight size={11} />
+                                </button>
                                 <button
                                   onClick={() => {
                                     setSubCompanyForm({
@@ -1499,6 +1682,17 @@ export default function SetupWizard() {
 
           {step.key === 'fiscalYear' && (
             <>
+              {activeTenant && !isParentCompany(activeTenant) && (
+                <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50/70 p-4 text-xs text-blue-900">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <CalendarDays size={16} className="text-blue-700" />
+                    <span>Fiscal Periods Inherited from Parent ({parentOfActiveTenant?.name || 'Central'})</span>
+                  </div>
+                  <p className="mt-1 text-blue-700">
+                    Sub-companies and branches share the parent organization&apos;s fiscal calendar and periods for consolidated books.
+                  </p>
+                </div>
+              )}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-500">Calendar</span>
@@ -1795,6 +1989,7 @@ export default function SetupWizard() {
               setSeedDone={setSeedDone}
               setAiOpen={setAiOpen}
               setAiInitialModel={setAiInitialModel}
+              onSuccess={refreshFacts}
             />
           )}
           {step.key === 'seed-accounts' && (
@@ -1820,6 +2015,7 @@ export default function SetupWizard() {
               setSeedDone={setSeedDone}
               setAiOpen={setAiOpen}
               setAiInitialModel={setAiInitialModel}
+              onSuccess={refreshFacts}
             />
           )}
           {step.key === 'seed-taxTypes' && (
@@ -1849,6 +2045,7 @@ export default function SetupWizard() {
               setSeedDone={setSeedDone}
               setAiOpen={setAiOpen}
               setAiInitialModel={setAiInitialModel}
+              onSuccess={refreshFacts}
             />
           )}
           {step.key === 'seed-parties' && (
@@ -1872,6 +2069,7 @@ export default function SetupWizard() {
               setSeedDone={setSeedDone}
               setAiOpen={setAiOpen}
               setAiInitialModel={setAiInitialModel}
+              onSuccess={refreshFacts}
             />
           )}
           {step.key === 'seed-items' && (
@@ -1895,6 +2093,7 @@ export default function SetupWizard() {
               setSeedDone={setSeedDone}
               setAiOpen={setAiOpen}
               setAiInitialModel={setAiInitialModel}
+              onSuccess={refreshFacts}
             />
           )}
           {step.key === 'seed-members' && (
@@ -1918,6 +2117,7 @@ export default function SetupWizard() {
               setSeedDone={setSeedDone}
               setAiOpen={setAiOpen}
               setAiInitialModel={setAiInitialModel}
+              onSuccess={refreshFacts}
             />
           )}
 
@@ -1973,9 +2173,14 @@ export default function SetupWizard() {
                   }
                   setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
                 }}
-                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition shadow-xs ${
+                  satisfied[step.key]
+                    ? 'bg-crimson-600 text-white hover:bg-crimson-700'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
               >
-                {t('setup.next', 'Next')} <ArrowRight size={15} />
+                <span>{satisfied[step.key] ? t('setup.nextStep', 'Next Step') : t('setup.skipOrNext', 'Skip / Next')}</span>
+                <ArrowRight size={15} />
               </button>
             )}
             {step.key === 'openings' && (
@@ -2034,12 +2239,12 @@ export default function SetupWizard() {
 
 
             {/* When the required step is already done, allow moving on. */}
-            {isRequired && satisfied[step.key] && !busy && !step.key.startsWith('seed-') && (
+            {isRequired && satisfied[step.key] && !busy && (
               <button
                 onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
-                className="inline-flex items-center gap-1 rounded px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                className="inline-flex items-center gap-1 rounded bg-slate-900 text-white px-4 py-2 text-sm font-medium hover:bg-slate-800 transition shadow-2xs"
               >
-                {t('setup.next', 'Next')} <ArrowRight size={15} />
+                {t('setup.next', 'Next Step')} <ArrowRight size={15} />
               </button>
             )}
           </div>
@@ -2101,11 +2306,12 @@ type SeedTableProps = {
   setSeedDone: (updater: (prev: Record<string, boolean>) => Record<string, boolean>) => void
   setAiOpen: (v: boolean) => void
   setAiInitialModel: (v: AIModel | null) => void
+  onSuccess?: () => void
 }
 
 function SeedTable({
   collection, title, subtitle, seedKey, seedLabel, icon, columns, aiModel, aiLabel, seedRows,
-  tenantId, tenantQuery, depth, setSeedDone, setAiOpen, setAiInitialModel,
+  tenantId, tenantQuery, depth, setSeedDone, setAiOpen, setAiInitialModel, onSuccess,
 }: SeedTableProps) {
   const [records, setRecords] = useState<any[]>([])
   const [editRow, setEditRow] = useState<string | null>(null)
@@ -2222,6 +2428,9 @@ function SeedTable({
       }
       setSeedDone((prev) => ({ ...prev, [seedKey]: true }))
       void loadRecords()
+      if (onSuccess) {
+        onSuccess()
+      }
       pushToast('success', 'Seeded', 'Records added. Edit or delete any row inline.')
     } catch (e) {
       pushToast('error', 'Failed to seed', e instanceof Error ? e.message : 'Seed failed')

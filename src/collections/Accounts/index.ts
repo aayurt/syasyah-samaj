@@ -85,8 +85,9 @@ const validateAccount = async ({
     parentTenant,
     tenant,
   })
-  if (!fieldResult.valid) {
-    throw new Error(fieldResult.issues.map((i) => i.message).join(' '))
+  const fieldErrors = fieldResult.issues.filter((i) => i.severity === 'error')
+  if (fieldErrors.length > 0) {
+    throw new Error(fieldErrors.map((i) => i.message).join(' '))
   }
 
   // An account cannot be its own parent.

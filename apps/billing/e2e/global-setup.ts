@@ -19,6 +19,11 @@ export default async function globalSetup(config: FullConfig) {
     mkdirSync(authDir, { recursive: true })
   }
 
+  if (process.env.E2E_SKIP_GLOBAL_SETUP === 'true') {
+    console.log('⏩ Skipping global setup API check (E2E_SKIP_GLOBAL_SETUP=true)')
+    return
+  }
+
   // Verify database connection
   const dbUri = process.env.E2E_DATABASE_URI
   if (dbUri) {
@@ -28,7 +33,8 @@ export default async function globalSetup(config: FullConfig) {
   }
 
   // Verify API server is reachable
-  const apiUrl = `http://localhost:${process.env.E2E_API_PORT || 3100}/api/users`
+  const baseApi = process.env.E2E_API_URL || process.env.API_URL || `http://localhost:${process.env.E2E_API_PORT || 3100}`
+  const apiUrl = `${baseApi.replace(/\/+$/, '')}/api/users`
 
   let apiReady = false
   for (let i = 0; i < 60; i++) {

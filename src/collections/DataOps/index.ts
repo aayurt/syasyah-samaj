@@ -431,10 +431,13 @@ async function ensureChart(
   const tid = toNum(tenant)
   const groupList = groupsFor(orgType)
   const accountList = accountsFor(orgType)
-  const groupIds = preExistingGroups ?? await ensureAccountGroups(payload, tenant, orgType)
+  const groupIds =
+    preExistingGroups && Object.keys(preExistingGroups).length > 0
+      ? preExistingGroups
+      : await ensureAccountGroups(payload, tenant, orgType)
   let accountsCreated = 0
   for (const a of accountList) {
-    if (!groupIds[a.code]) continue
+    if (!groupIds[a.group]) continue
     const existing = await payload.find({
       collection: 'gl-accounts',
       where: { code: { equals: a.code }, tenant: { equals: tenant } },
@@ -442,9 +445,11 @@ async function ensureChart(
       depth: 0,
     })
     if (existing.docs[0]?.id) continue
+    const defaultNormal = ['liability', 'equity', 'income'].includes(a.type) ? 'credit' : 'debit'
+    const normalBalance = (a as any).normalBalance || (a.code === '2090' ? 'credit' : defaultNormal)
     await payload.create({
       collection: 'gl-accounts',
-      data: { ...a, group: groupIds[a.code], tenant: tid },
+      data: { ...a, group: groupIds[a.group], normalBalance, tenant: tid },
       draft: true,
       overrideAccess: true,
     })
@@ -821,7 +826,10 @@ export const DataOps: CollectionConfig = {
           return key !== 'members' && key !== 'fiscalYears'
         }
 
-        const groupIds = want('accountGroups') ? await ensureAccountGroups(req.payload, tenant, orgType) : {}
+        const groupIds =
+          want('accountGroups') || want('accounts')
+            ? await ensureAccountGroups(req.payload, tenant, orgType)
+            : {}
         const groupsCreated = want('accountGroups') ? Object.keys(groupIds).length : 0
         const chart = want('accounts') ? await ensureChart(req.payload, tenant, groupIds, orgType) : { groups: 0, accounts: 0 }
         const taxTypes = want('taxTypes') ? await ensureSeedTaxTypes(req.payload, tenant) : { created: 0, ids: [] }

@@ -1604,9 +1604,9 @@ export interface FiscalYear {
    */
   endDate: string;
   /**
-   * Active = entries may be posted. Closed = read-only; the posting engine refuses new entries in this period.
+   * Active = the single working year for new entries (only one per parent company). Open = a non-working period that can be reopened. Closed = read-only; the posting engine refuses new entries in this period.
    */
-  status: 'active' | 'closed';
+  status: 'active' | 'open' | 'closed';
   /**
    * The working year for new entries and voucher numbering. Only one year can be active per tenant.
    */
@@ -2273,10 +2273,6 @@ export interface Employee {
    * Tax PAN (for TDS withholding)
    */
   pan?: string | null;
-  /**
-   * Parent company for sub-companies / branches. Leave empty for root / parent companies.
-   */
-  parent?: (number | null) | Tenant;
   /**
    * Bank name for salary transfer
    */
@@ -5063,6 +5059,8 @@ export interface TaxTypesSelect<T extends boolean = true> {
 export interface TenantsSelect<T extends boolean = true> {
   name?: T;
   code?: T;
+  pan?: T;
+  parent?: T;
   type?: T;
   active?: T;
   description?: T;
@@ -6560,7 +6558,7 @@ export interface BillingSetting {
    */
   nepaliWordsOnPrintEnabled?: boolean | null;
   /**
-   * Enable Multi-Company / Sub-Companies mode.
+   * Enable Multi-Company / Sub-Companies mode. When enabled, users can switch between companies and manage sub-companies. Only configurable by super-admin.
    */
   multiCompanyEnabled?: boolean | null;
   /**

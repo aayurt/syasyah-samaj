@@ -18,8 +18,8 @@ const fullyParallel = isCI || isJules
 
 const API_PORT = Number(process.env.E2E_API_PORT || 3100)
 const WEB_PORT = Number(process.env.E2E_WEB_PORT || 5174)
-const API_URL = `http://localhost:${API_PORT}`
-const WEB_URL = `http://localhost:${WEB_PORT}`
+const API_URL = process.env.E2E_API_URL || process.env.API_URL || `http://localhost:${API_PORT}`
+const WEB_URL = process.env.E2E_WEB_URL || process.env.WEB_URL || `http://localhost:${WEB_PORT}`
 
 export default defineConfig({
   testDir: './specs',
@@ -132,6 +132,11 @@ export default defineConfig({
     },
 
     // New test projects for Phase 4 requirements
+    {
+      name: 'company-hierarchy-setup',
+      testMatch: /company-hierarchy-setup\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
     {
       name: 'tenant-selector',
       testMatch: /tenant-selector\.spec\.ts/,

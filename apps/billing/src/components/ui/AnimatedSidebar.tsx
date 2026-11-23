@@ -163,9 +163,15 @@ export function AnimatedSidebar({
               <div className="grid flex-1 text-left leading-tight truncate">
                 <div className="flex items-center gap-1.5 truncate">
                   <span className="truncate text-xs font-bold text-slate-900">
-                    {activeTenant?.name || t('sidebar.orgName', 'Syasyah Samaj Central')}
+                    {!tenantId
+                      ? t('tenant.all', 'All Companies (Consolidated)')
+                      : activeTenant?.name || t('sidebar.orgName', 'Syasyah Samaj Central')}
                   </span>
-                  {activeTenant?.type === 'central' || activeTenant?.code === 'C00' ? (
+                  {!tenantId ? (
+                    <span className="shrink-0 rounded bg-amber-100 px-1 py-0.2 text-[9px] font-bold text-amber-800">
+                      Consolidated
+                    </span>
+                  ) : activeTenant?.type === 'central' || activeTenant?.code === 'C00' || !activeTenant?.parentId ? (
                     <span className="shrink-0 rounded bg-crimson-100 px-1 py-0.2 text-[9px] font-bold text-crimson-700">
                       Parent
                     </span>
@@ -176,9 +182,13 @@ export function AnimatedSidebar({
                   )}
                 </div>
                 <span className="truncate text-[10px] text-slate-500">
-                  {activeTenant?.type === 'central' || activeTenant?.code === 'C00'
-                    ? t('sidebar.hq', 'Syasyah Samaj Central [Parent]')
-                    : activeTenant?.code ? `${activeTenant.code} · ${t('sidebar.branch', 'Illaka Branch')}` : t('sidebar.branch', 'Illaka Branch')}
+                  {!tenantId
+                    ? t('tenant.allDesc', 'Consolidated view across all companies & branches')
+                    : activeTenant?.type === 'central' || activeTenant?.code === 'C00' || !activeTenant?.parentId
+                      ? `${activeTenant?.code ? `${activeTenant.code} · ` : ''}${t('sidebar.hq', 'Parent Organization')}`
+                      : activeTenant?.code
+                        ? `${activeTenant.code} · ${t('sidebar.branch', 'Illaka Branch')}`
+                        : t('sidebar.branch', 'Illaka Branch')}
                 </span>
               </div>
             )}

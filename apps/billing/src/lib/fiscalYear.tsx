@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { api, useSyncState } from './api'
-import { useTenant } from './tenant'
+import { useTenant, isParentCompany } from './tenant'
 import type { FiscalYear } from './types'
 
 /**
@@ -39,13 +39,23 @@ const FiscalYearContext = createContext<FiscalYearCtx>({
 })
 
 export function FiscalYearProvider({ children }: { children: React.ReactNode }) {
-  const { tenantId } = useTenant()
+  const { tenantId, tenants } = useTenant()
   const { cacheVersion } = useSyncState()
   const [years, setYears] = useState<FiscalYear[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const storageKey = useMemo(() => `${STORAGE_PREFIX}${tenantId}`, [tenantId])
+  // Fiscal years are owned by the parent company. A sub-company (illaka)
+  // inherits its parent's fiscal years — there is one set of periods per
+  // parent, not one per sub-company.
+  const currentTenant = useMemo(() => tenants.find((t) => String(t.id) === String(tenantId)) || null, [tenants, tenantId])
+  const fyTenantId = useMemo(() => {
+    if (!currentTenant) return tenantId
+    if (isParentCompany(currentTenant)) return tenantId
+    return currentTenant.parentId || tenantId
+  }, [currentTenant, tenantId])
+
+  const storageKey = useMemo(() => `${STORAGE_PREFIX}${fyTenantId}`, [fyTenantId])
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -74,7 +84,7 @@ export function FiscalYearProvider({ children }: { children: React.ReactNode }) 
           limit: 100,
           depth: 0,
           sort: '-startDate',
-          ...(tenantId ? { tenant: tenantId } : {}),
+          ...(fyTenantId ? { tenant: fyTenantId } : {}),
         },
       })
       const list = (res.docs || []).sort((a, b) =>

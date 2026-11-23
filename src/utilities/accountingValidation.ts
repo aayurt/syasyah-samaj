@@ -48,7 +48,8 @@ const issue = (
 /** Accumulate issues from multiple validation runs. */
 export function mergeResults(...results: ValidationResult[]): ValidationResult {
   const issues = results.flatMap((r) => r.issues)
-  return { valid: issues.length === 0, issues }
+  const hasErrors = issues.some((i) => i.severity === 'error')
+  return { valid: !hasErrors, issues }
 }
 
 /** ── COA validations ─────────────────────────────────────────────────── */
@@ -253,7 +254,8 @@ export function validateAccountData({
     )
   }
 
-  return { valid: issues.length === 0, issues }
+  const hasErrors = issues.some((i) => i.severity === 'error')
+  return { valid: !hasErrors, issues }
 }
 
 /** ── Opening balance validations ─────────────────────────────────────── */
@@ -449,7 +451,8 @@ export function validateOpeningBatch({
     )
   }
 
-  return { valid: issues.length === 0, issues }
+  const hasErrors = issues.some((i) => i.severity === 'error')
+  return { valid: !hasErrors, issues }
 }
 
 /** ── Helpers ─────────────────────────────────────────────────────────── */
