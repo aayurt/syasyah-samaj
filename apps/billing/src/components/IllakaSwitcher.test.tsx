@@ -123,7 +123,7 @@ describe('IllakaSwitcher', () => {
       { id: '22', code: 'DEF-2', name: 'DEF sub-company -2', type: 'illaka' as const, parentId: '20' },
     ]
     useTenantMock.mockReturnValue({
-      tenantId: '',
+      tenantId: '10',
       setTenantId,
       tenants: multiTenants,
       isCentral: true,
@@ -132,12 +132,28 @@ describe('IllakaSwitcher', () => {
       multiCompanyEnabled: true,
     })
 
-    renderSwitcher()
+    const { rerender } = renderSwitcher()
 
-    expect(screen.getByText(/ABC company/)).toBeInTheDocument()
+    expect(screen.getAllByText(/ABC company/).length).toBeGreaterThan(0)
     expect(screen.getByText(/ABC sub-company -1/)).toBeInTheDocument()
     expect(screen.getByText(/ABC sub-company -2/)).toBeInTheDocument()
-    expect(screen.getByText(/DEF company/)).toBeInTheDocument()
+
+    // Switch company to DEF
+    useTenantMock.mockReturnValue({
+      tenantId: '20',
+      setTenantId,
+      tenants: multiTenants,
+      isCentral: true,
+      isIllaka: false,
+      illakaCode: null,
+      multiCompanyEnabled: true,
+    })
+    rerender(
+      <LangContext.Provider value={{ lang: 'en', setLang: () => {} }}>
+        <IllakaSwitcher />
+      </LangContext.Provider>,
+    )
+    expect(screen.getAllByText(/DEF company/).length).toBeGreaterThan(0)
     expect(screen.getByText(/DEF sub-company -1/)).toBeInTheDocument()
     expect(screen.getByText(/DEF sub-company -2/)).toBeInTheDocument()
   })

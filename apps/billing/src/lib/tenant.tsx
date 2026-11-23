@@ -29,6 +29,7 @@ export type TenantOption = {
 }
 
 export function isParentCompany(tn: TenantOption): boolean {
+  if (tn.type === 'illaka') return false
   return tn.type === 'central' || !tn.parentId
 }
 
@@ -102,21 +103,23 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   })
 
   const [tenants, setTenants] = useState<TenantOption[]>([])
-  const [multiCompanyEnabled, setMultiCompanyEnabled] = useState<boolean>(false)
+  const [multiCompanyEnabled, setMultiCompanyEnabled] = useState<boolean>(true)
 
-  // Load billing settings to check multiCompanyEnabled flag
-  useEffect(() => {
+  const refreshSettings = () => {
     api<any>('/globals/billing-settings')
       .then((settings) => {
         if (settings?.multiCompanyEnabled != null) {
           setMultiCompanyEnabled(Boolean(settings.multiCompanyEnabled))
+        } else {
+          setMultiCompanyEnabled(true)
         }
       })
-      .catch(() => {})
-  }, [])
+      .catch(() => {
+        setMultiCompanyEnabled(true)
+      })
+  }
 
-  // Load tenants for the switcher (central users only)
-  useEffect(() => {
+  const refreshTenants = () => {
     if (!isCentral) return
     api<{ docs: any[] }>('/tenants', { query: { limit: 100, depth: 0 } })
       .then((res) => {
@@ -139,12 +142,22 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
           }
         })
         setTenants(opts)
-        // If no tenant is selected yet, default to empty (consolidated)
         if (!localStorage.getItem(STORAGE_KEY)) {
           setTenantIdRaw('')
         }
       })
       .catch(() => {})
+  }
+
+  useEffect(() => {
+    refreshSettings()
+    refreshTenants()
+    const handleChanged = () => {
+      refreshSettings()
+      refreshTenants()
+    }
+    window.addEventListener('billing-settings-changed', handleChanged)
+    return () => window.removeEventListener('billing-settings-changed', handleChanged)
   }, [isCentral])
 
   const setTenantId = (id: string) => {

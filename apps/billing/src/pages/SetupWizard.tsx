@@ -10,6 +10,7 @@ import {
   Circle,
   Database,
   Edit2,
+  GitBranch,
   Hourglass,
   Layers,
   Loader2,
@@ -31,7 +32,7 @@ import { api, list, getEngine } from '../lib/api'
 import { useDataEpochWatcher, runSeedSelective } from '../lib/dataOps'
 import type { SeedKey } from '../lib/dataOps'
 import { useFiscalYear } from '../lib/fiscalYear'
-import { useTenant, type TenantOption } from '../lib/tenant'
+import { useTenant, getParentCompanies, getSubCompaniesForParent, type TenantOption } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import { adToBsString, bsToAdString } from '../lib/nepaliDate'
@@ -111,11 +112,32 @@ export default function SetupWizard() {
   // Sub-company / ilaka management (central admin only)
   const [subCompanies, setSubCompanies] = useState<TenantOption[]>([])
   const [selectedSubCompanies, setSelectedSubCompanies] = useState<Set<string>>(new Set())
-  const [subCompanyForm, setSubCompanyForm] = useState<{ name: string; code: string; type: 'illaka'; active: boolean; slug: string }>({ name: '', code: '', type: 'illaka', active: true, slug: '' })
+  const [subCompanyForm, setSubCompanyForm] = useState<{
+    name: string
+    code: string
+    type: 'illaka'
+    active: boolean
+    slug: string
+    pan: string
+  }>({ name: '', code: '', type: 'illaka', active: true, slug: '', pan: '' })
   const [editingSubCompany, setEditingSubCompany] = useState<TenantOption | null>(null)
   const [subCompanyBusy, setSubCompanyBusy] = useState('')
   const [subCompanyError, setSubCompanyError] = useState('')
   const [subCompanyModalOpen, setSubCompanyModalOpen] = useState(false)
+
+  // Company Creator state
+  const [showCompanyCreator, setShowCompanyCreator] = useState(false)
+  const [newCompany, setNewCompany] = useState({
+    name: '',
+    code: '',
+    pan: '',
+    contact: '',
+    email: '',
+    address: '',
+  })
+  const [creatingCompany, setCreatingCompany] = useState(false)
+  const [companyCreatorError, setCompanyCreatorError] = useState('')
+
   // AI Workspace import (Chart of Accounts / Opening Balances)
   const [aiOpen, setAiOpen] = useState(false)
   const [aiInitialModel, setAiInitialModel] = useState<AIModel | null>(null)
@@ -173,7 +195,28 @@ export default function SetupWizard() {
     setAccountGroupsCount(agRes?.totalDocs ?? 0)
     setTaxTypesCount(ttRes?.totalDocs ?? 0)
     setPartiesCount(ptRes?.totalDocs ?? 0)
-    setSubCompanies(illakaRes?.docs ?? [])
+    const rawTenants: any[] = illakaRes?.docs ?? []
+    const mapped = rawTenants.map((t) => {
+      const parentId = t.parent
+        ? typeof t.parent === 'object'
+          ? String(t.parent.id)
+          : String(t.parent)
+        : t.parentId
+          ? String(t.parentId)
+          : null
+      return {
+        id: String(t.id),
+        code: t.code || '',
+        name: t.name || t.slug || '',
+        type: (t.type || 'illaka') as 'central' | 'illaka',
+        active: t.active,
+        slug: t.slug,
+        pan: t.pan || '',
+        parent: t.parent || null,
+        parentId,
+      }
+    })
+    setSubCompanies(mapped)
     if (s) {
       setCompany({
         companyName: s.companyName || '',
@@ -190,6 +233,36 @@ export default function SetupWizard() {
       setDefaults(da)
     }
   }, [tenantQuery])
+
+  const parentCompanies = useMemo(() => {
+    const source = subCompanies.length > 0 ? subCompanies : tenants
+    return getParentCompanies(source)
+  }, [subCompanies, tenants])
+
+  const activeTenant = useMemo(() => {
+    return (
+      subCompanies.find((t) => String(t.id) === String(tenantId)) ||
+      tenants.find((t) => String(t.id) === String(tenantId)) ||
+      null
+    )
+  }, [subCompanies, tenants, tenantId])
+
+  const currentCompanySubCompanies = useMemo(() => {
+    if (!tenantId) return []
+    const source = subCompanies.length > 0 ? subCompanies : tenants
+    return getSubCompaniesForParent(tenantId, source)
+  }, [subCompanies, tenants, tenantId])
+
+  // Sync company profile with selected tenant
+  useEffect(() => {
+    if (activeTenant) {
+      setCompany((prev) => ({
+        ...prev,
+        companyName: activeTenant.name || prev.companyName,
+        companyPan: activeTenant.pan || prev.companyPan,
+      }))
+    }
+  }, [activeTenant])
 
   // Reload facts on mount, sync data first, and refresh when tenant changes.
   useEffect(() => {
@@ -268,6 +341,22 @@ export default function SetupWizard() {
     setError('')
     try {
       await api('/globals/billing-settings', { method: 'POST', body: { ...company } })
+      if (tenantId) {
+        await api(`/tenants/${tenantId}`, {
+          method: 'PATCH',
+          body: {
+            name: company.companyName,
+            pan: company.companyPan || undefined,
+            contactInfo: {
+              phone: company.companyContact || undefined,
+              email: company.companyEmail || undefined,
+            },
+            location: {
+              address: company.companyAddress || undefined,
+            },
+          },
+        }).catch(() => {})
+      }
       bumpGlobals()
       pushToast('success', 'Company profile saved')
       setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
@@ -278,15 +367,82 @@ export default function SetupWizard() {
     }
   }
 
+  const handleCreateParentCompany = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    const name = newCompany.name.trim()
+    const code = newCompany.code.trim().toUpperCase()
+    if (!name || !code) {
+      setCompanyCreatorError('Company name and short code are required.')
+      return
+    }
+    setCreatingCompany(true)
+    setCompanyCreatorError('')
+    try {
+      const slug =
+        name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '') || code.toLowerCase()
+
+      const res = await api<{ doc: any }>('/tenants', {
+        method: 'POST',
+        body: {
+          name,
+          code,
+          slug,
+          type: 'central',
+          pan: newCompany.pan.trim() || undefined,
+          contactInfo: {
+            phone: newCompany.contact.trim() || undefined,
+            email: newCompany.email.trim() || undefined,
+          },
+          location: {
+            address: newCompany.address.trim() || undefined,
+          },
+          active: true,
+        },
+        immediate: true,
+      })
+
+      // Also ensure globals/billing-settings are populated and multiCompanyEnabled is true
+      await api('/globals/billing-settings', {
+        method: 'POST',
+        body: {
+          companyName: name,
+          companyPan: newCompany.pan.trim() || undefined,
+          companyContact: newCompany.contact.trim() || undefined,
+          companyEmail: newCompany.email.trim() || undefined,
+          companyAddress: newCompany.address.trim() || undefined,
+          multiCompanyEnabled: true,
+        },
+      }).catch(() => {})
+
+      pushToast('success', `Company "${name}" created successfully`)
+      setNewCompany({ name: '', code: '', pan: '', contact: '', email: '', address: '' })
+      setShowCompanyCreator(false)
+      await refreshFacts()
+      bumpGlobals()
+
+      const createdId = res?.doc?.id ? String(res.doc.id) : ''
+      if (createdId) {
+        setTenantId(createdId)
+      }
+    } catch (err) {
+      setCompanyCreatorError(err instanceof Error ? err.message : 'Failed to create company')
+    } finally {
+      setCreatingCompany(false)
+    }
+  }
+
   const cancelEditSubCompany = () => {
     setEditingSubCompany(null)
-    setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '' })
+    setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '', pan: '' })
     setSubCompanyError('')
     setSubCompanyModalOpen(false)
   }
 
   const saveSubCompany = async () => {
-    const { name, code, type, active, slug } = subCompanyForm
+    const { name, code, type, active, slug, pan } = subCompanyForm
     if (!name || !code || !slug) {
       setSubCompanyError('Name, code and slug are required.')
       return
@@ -294,22 +450,32 @@ export default function SetupWizard() {
     setSubCompanyBusy(editingSubCompany ? 'update' : 'create')
     setSubCompanyError('')
     try {
+      const payloadBody: any = {
+        name: name.trim(),
+        code: code.trim().toUpperCase(),
+        type: 'illaka',
+        active,
+        slug: slug.trim(),
+        pan: pan?.trim() || undefined,
+        parent: Number(tenantId),
+      }
       if (editingSubCompany) {
         await api(`/tenants/${editingSubCompany.id}`, {
           method: 'PATCH',
-          body: { name, code, type, active, slug },
+          body: payloadBody,
           immediate: true,
         })
         pushToast('success', 'Sub-company updated')
       } else {
         await api('/tenants', {
           method: 'POST',
-          body: { name, code, type, active, slug },
+          body: payloadBody,
           immediate: true,
         })
         pushToast('success', 'Sub-company created')
       }
       await refreshFacts()
+      bumpGlobals()
       cancelEditSubCompany()
     } catch (e) {
       setSubCompanyError(e instanceof Error ? e.message : 'Failed to save sub-company')
@@ -586,27 +752,302 @@ export default function SetupWizard() {
 
   const finish = () => navigate('/', { replace: true })
 
-  if (!isIllaka && !tenantId) {
-    // Consolidated mode — offer quick selection of available tenants.
+  if (syncing && !settingsLoaded && tenants.length === 0) {
     return (
-      <div className="w-full py-10">
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900 shadow-sm">
-          <h2 className="text-base font-semibold text-amber-950">Select an Ilaka / Branch to Onboard</h2>
-          <p className="mt-1 text-amber-800">
-            You are currently in consolidated (all illakas) mode. Please select a specific tenant below to configure company details, fiscal periods, and default accounts.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2.5">
-            {tenants.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTenantId(t.id)}
-                className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-3.5 py-2 text-xs font-semibold text-amber-950 shadow-xs hover:bg-amber-100 hover:border-amber-400 transition"
-              >
-                <span>🏢</span> Configure {t.name} ({t.code})
-              </button>
-            ))}
+      <div className="w-full flex flex-col items-center justify-center py-20 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-crimson-50 text-crimson-600 shadow-sm animate-pulse">
+          <Database size={26} />
+        </div>
+        <h2 className="mt-4 text-base font-semibold text-slate-800">
+          Syncing & loading setup facts…
+        </h2>
+        <p className="mt-1 max-w-sm text-xs text-slate-400">
+          Fetching the latest organization profile, fiscal periods, and chart of accounts from the server.
+        </p>
+        <div className="mt-5 flex items-center gap-2 text-xs font-medium text-slate-500">
+          <Loader2 size={14} className="animate-spin text-crimson-600" />
+          <span>Please wait a moment…</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isIllaka && !tenantId) {
+    if (parentCompanies.length === 0 || showCompanyCreator) {
+      return (
+        <div className="w-full max-w-2xl mx-auto py-8">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-crimson-50 text-crimson-600 shadow-2xs">
+                <Building2 size={24} />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-slate-900">
+                    {parentCompanies.length === 0
+                      ? 'Create Your Organization / Parent Company'
+                      : 'Add New Parent Company'}
+                  </h2>
+                  {parentCompanies.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCompanyCreator(false)
+                        setCompanyCreatorError('')
+                      }}
+                      className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+                <p className="mt-1 text-sm text-slate-500">
+                  {parentCompanies.length === 0
+                    ? 'Start by creating your primary company profile (e.g. Syasyah Samaj, ABC Company). Once registered, you will configure its fiscal year, chart of accounts, and manage sub-companies / branches.'
+                    : 'Register a new top-level organization. Once created, you can switch between companies and manage sub-companies for each.'}
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateParentCompany} className="mt-6 space-y-4">
+              {companyCreatorError && (
+                <div className="rounded-lg bg-red-50 p-3 text-xs font-medium text-red-700 border border-red-200">
+                  {companyCreatorError}
+                </div>
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Company Name <span className="text-crimson-600 font-bold ml-0.5">*</span>
+                  </label>
+                  <input
+                    autoFocus
+                    value={newCompany.name}
+                    onChange={(e) => {
+                      const name = e.target.value
+                      setNewCompany((prev) => ({
+                        ...prev,
+                        name,
+                        code: prev.code || name.slice(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, ''),
+                      }))
+                    }}
+                    placeholder="e.g. ABC Company or Syasyah Samaj"
+                    className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-crimson-500 focus:ring-1 focus:ring-crimson-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700">
+                    Company Code <span className="text-crimson-600 font-bold ml-0.5">*</span>
+                  </label>
+                  <input
+                    value={newCompany.code}
+                    onChange={(e) => setNewCompany({ ...newCompany, code: e.target.value.toUpperCase() })}
+                    placeholder="e.g. ABC or SYASYA"
+                    className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-crimson-500 focus:ring-1 focus:ring-crimson-500 uppercase"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700">
+                    PAN / Tax ID
+                  </label>
+                  <input
+                    value={newCompany.pan}
+                    onChange={(e) => setNewCompany({ ...newCompany, pan: e.target.value })}
+                    placeholder="e.g. 601234567"
+                    className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-crimson-500 focus:ring-1 focus:ring-crimson-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700">
+                    Contact Phone
+                  </label>
+                  <input
+                    value={newCompany.contact}
+                    onChange={(e) => setNewCompany({ ...newCompany, contact: e.target.value })}
+                    placeholder="+977-1-..."
+                    className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-crimson-500 focus:ring-1 focus:ring-crimson-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={newCompany.email}
+                    onChange={(e) => setNewCompany({ ...newCompany, email: e.target.value })}
+                    placeholder="info@company.com"
+                    className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-crimson-500 focus:ring-1 focus:ring-crimson-500"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Registered Address
+                  </label>
+                  <input
+                    value={newCompany.address}
+                    onChange={(e) => setNewCompany({ ...newCompany, address: e.target.value })}
+                    placeholder="e.g. Kathmandu, Nepal"
+                    className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-crimson-500 focus:ring-1 focus:ring-crimson-500"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                {parentCompanies.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCompanyCreator(false)
+                      setCompanyCreatorError('')
+                    }}
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={creatingCompany}
+                  className="inline-flex items-center gap-2 rounded-lg bg-crimson-600 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-crimson-700 transition disabled:opacity-60"
+                >
+                  {creatingCompany ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>Creating Company…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Building2 size={14} />
+                      <span>Create Company & Continue</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="w-full max-w-4xl mx-auto py-8 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Select Company to Onboard & Configure</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              You are currently in consolidated mode. Select a company below to configure its profile, fiscal periods, and accounts, or create a new parent company.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowCompanyCreator(true)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-crimson-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-crimson-700 transition"
+          >
+            <Plus size={14} />
+            <span>Add Parent Company</span>
+          </button>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {parentCompanies.map((parent) => {
+            const children = getSubCompaniesForParent(parent.id, subCompanies.length > 0 ? subCompanies : tenants)
+            return (
+              <div
+                key={parent.id}
+                className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-xs hover:border-crimson-200 transition-colors"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-crimson-50 text-crimson-600 font-bold text-xs shadow-2xs">
+                        <Building2 size={18} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-slate-900 text-sm">{parent.name}</h3>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {parent.code && (
+                            <span className="font-mono text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">
+                              {parent.code}
+                            </span>
+                          )}
+                          <span className="rounded bg-crimson-100 px-1.5 py-0.2 text-[9px] font-bold text-crimson-700">
+                            Parent Company
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {parent.pan && (
+                    <div className="mt-3 text-xs text-slate-600">
+                      <span className="text-slate-400">PAN:</span> <span className="font-mono font-medium">{parent.pan}</span>
+                    </div>
+                  )}
+
+                  <div className="mt-4 pt-3 border-t border-slate-100">
+                    <div className="flex items-center justify-between text-xs mb-2">
+                      <span className="font-medium text-slate-500">
+                        Sub-Companies ({children.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTenantId(parent.id)
+                          setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '', pan: '' })
+                          setEditingSubCompany(null)
+                          setSubCompanyError('')
+                          setSubCompanyModalOpen(true)
+                        }}
+                        className="text-[11px] font-semibold text-crimson-600 hover:text-crimson-700 inline-flex items-center gap-0.5"
+                      >
+                        <Plus size={11} /> Add Sub-Company
+                      </button>
+                    </div>
+
+                    {children.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {children.map((child) => (
+                          <button
+                            key={child.id}
+                            type="button"
+                            onClick={() => setTenantId(child.id)}
+                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-crimson-50 hover:border-crimson-200 hover:text-crimson-700 transition"
+                            title={`Switch to ${child.name}`}
+                          >
+                            <GitBranch size={10} className="text-slate-400" />
+                            <span>{child.name}</span>
+                            {child.code && <span className="font-mono text-[9px] text-slate-400">({child.code})</span>}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-slate-400 italic">No sub-companies yet.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setTenantId(parent.id)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition"
+                  >
+                    <span>🏢 Configure {parent.name}</span>
+                    <ArrowRight size={13} />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     )
@@ -634,6 +1075,56 @@ export default function SetupWizard() {
 
   return (
     <div className="w-full py-6">
+      {/* Active Organization Context Bar */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-crimson-50 text-crimson-600 font-bold text-xs shadow-2xs">
+            <Building2 size={18} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-900">
+                {activeTenant?.name || company.companyName || 'Organization Profile'}
+              </span>
+              {activeTenant?.code && (
+                <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                  {activeTenant.code}
+                </span>
+              )}
+              <span
+                className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                  activeTenant?.type === 'central' || !activeTenant?.parentId
+                    ? 'bg-crimson-100 text-crimson-700'
+                    : 'bg-indigo-100 text-indigo-700'
+                }`}
+              >
+                {activeTenant?.type === 'central' || !activeTenant?.parentId
+                  ? 'Parent Company'
+                  : 'Sub-Company / Branch'}
+              </span>
+            </div>
+            {activeTenant?.pan && (
+              <span className="text-[11px] text-slate-500 font-mono">
+                PAN: {activeTenant.pan}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {isCentral && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setTenantId('')}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition shadow-2xs"
+            >
+              <Building2 size={13} className="text-slate-500" />
+              <span>Switch / All Companies</span>
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Progress: numbered rail */}
       <div className="mb-8">
         <div className="text-center">
@@ -816,22 +1307,27 @@ export default function SetupWizard() {
 
               {/* Sub-company / ilaka management (central admin only) */}
               {isCentral && (
-                <div className="space-y-3">
+                <div className="space-y-3 pt-6 border-t border-slate-100">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-slate-700">
-                      {t('setup.subCompanies', 'Sub-companies')} (ilakas)
-                    </h3>
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-800">
+                        Sub-Companies / Illakas for {activeTenant?.name || company.companyName || 'this Company'}
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Branches, illakas, and subsidiaries reporting under this parent company.
+                      </p>
+                    </div>
                     {!subCompanyModalOpen && (
                       <button
                         onClick={() => {
-                          setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '' })
+                          setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '', pan: '' })
                           setEditingSubCompany(null)
                           setSubCompanyError('')
                           setSubCompanyModalOpen(true)
                         }}
-                        className="inline-flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800"
+                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white bg-crimson-600 hover:bg-crimson-700 shadow-xs transition"
                       >
-                        <Plus size={12} /> {t('setup.addSubCompany', 'Add sub-company')}
+                        <Plus size={13} /> {t('setup.addSubCompany', 'Add Sub-Company')}
                       </button>
                     )}
                   </div>
@@ -864,13 +1360,13 @@ export default function SetupWizard() {
                               <input
                                 type="checkbox"
                                 checked={
-                                  subCompanies.length > 0 &&
-                                  subCompanies.every((tc) => selectedSubCompanies.has(tc.id))
+                                  currentCompanySubCompanies.length > 0 &&
+                                  currentCompanySubCompanies.every((tc) => selectedSubCompanies.has(tc.id))
                                 }
                                 onChange={(e) =>
                                   toggleSelectAllSubCompanies(
                                     e.target.checked,
-                                    subCompanies.map((tc) => tc.id)
+                                    currentCompanySubCompanies.map((tc) => tc.id)
                                   )
                                 }
                                 className="rounded focus:ring-crimson-500"
@@ -883,15 +1379,18 @@ export default function SetupWizard() {
                               {t('setup.subCompanyCode', 'Code')}
                             </th>
                             <th className="text-left pb-2 text-xs font-semibold text-slate-500">
+                              PAN
+                            </th>
+                            <th className="text-left pb-2 text-xs font-semibold text-slate-500">
                               {t('setup.subCompanyActive', 'Active')}
                             </th>
-                            <th className="text-right pb-2 text-xs font-semibold text-slate-500 w-24">
+                            <th className="text-right pb-2 text-xs font-semibold text-slate-500 w-36">
                               Actions
                             </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {subCompanies.map((tc) => (
+                          {currentCompanySubCompanies.map((tc) => (
                             <tr key={tc.id}>
                               <td className="py-3 text-center">
                                 <input
@@ -902,11 +1401,24 @@ export default function SetupWizard() {
                                 />
                               </td>
                               <td className="py-3 text-slate-700 font-medium">{tc.name}</td>
-                              <td className="py-3 text-slate-600">{tc.code || '–'}</td>
+                              <td className="py-3 font-mono text-xs text-slate-600">{tc.code || '–'}</td>
+                              <td className="py-3 font-mono text-xs text-slate-600">{tc.pan || '–'}</td>
                               <td className="py-3 text-slate-600">
-                                {tc.active ? 'Yes' : 'No'}
+                                {tc.active ? (
+                                  <span className="rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">Active</span>
+                                ) : (
+                                  <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">Inactive</span>
+                                )}
                               </td>
                               <td className="py-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => setTenantId(tc.id)}
+                                  className="mr-1.5 rounded px-2 py-1 text-xs font-medium text-crimson-600 hover:bg-crimson-50"
+                                  title="Configure this branch"
+                                >
+                                  Configure
+                                </button>
                                 <button
                                   onClick={() => {
                                     setSubCompanyForm({
@@ -914,13 +1426,14 @@ export default function SetupWizard() {
                                       code: tc.code,
                                       type: 'illaka',
                                       active: tc.active ?? true,
-                                      slug: tc.slug || ''
+                                      slug: tc.slug || '',
+                                      pan: tc.pan || '',
                                     })
                                     setEditingSubCompany(tc)
                                     setSubCompanyError('')
                                     setSubCompanyModalOpen(true)
                                   }}
-                                  className="mr-2 rounded px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50"
+                                  className="mr-1.5 rounded px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50"
                                 >
                                   Edit
                                 </button>
@@ -934,10 +1447,10 @@ export default function SetupWizard() {
                               </td>
                             </tr>
                           ))}
-                          {subCompanies.length === 0 && (
+                          {currentCompanySubCompanies.length === 0 && (
                             <tr>
-                              <td colSpan={5} className="py-4 text-center text-xs text-slate-400">
-                                No sub-companies yet. {t('setup.addSubCompany', 'Add sub-company')} to get started.
+                              <td colSpan={6} className="py-6 text-center text-xs text-slate-400">
+                                No sub-companies or branches under {activeTenant?.name || 'this company'} yet. Click "{t('setup.addSubCompany', 'Add sub-company')}" to create one.
                               </td>
                             </tr>
                           )}
@@ -976,7 +1489,16 @@ export default function SetupWizard() {
                             <input
                               autoFocus
                               value={subCompanyForm.name}
-                              onChange={(e) => setSubCompanyForm({ ...subCompanyForm, name: e.target.value })}
+                              onChange={(e) => {
+                                const name = e.target.value
+                                const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+                                setSubCompanyForm((prev) => ({
+                                  ...prev,
+                                  name,
+                                  slug: prev.slug === '' || prev.slug === prev.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') ? slug : prev.slug,
+                                }))
+                              }}
+                              placeholder="e.g. ABC sub-company -1"
                               className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
                             />
                           </div>
@@ -986,9 +1508,9 @@ export default function SetupWizard() {
                             </label>
                             <input
                               value={subCompanyForm.code}
-                              onChange={(e) => setSubCompanyForm({ ...subCompanyForm, code: e.target.value })}
-                              placeholder="IL01"
-                              className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
+                              onChange={(e) => setSubCompanyForm({ ...subCompanyForm, code: e.target.value.toUpperCase() })}
+                              placeholder="ABC-01"
+                              className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 font-mono text-sm outline-none focus:border-slate-500 uppercase"
                             />
                           </div>
                           <div className="flex items-end">
@@ -1002,14 +1524,25 @@ export default function SetupWizard() {
                               className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                             />
                           </div>
-                          <div className="sm:col-span-4">
+                          <div className="sm:col-span-2">
+                            <label className="text-xs font-medium text-slate-600">
+                              PAN
+                            </label>
+                            <input
+                              value={subCompanyForm.pan || ''}
+                              onChange={(e) => setSubCompanyForm({ ...subCompanyForm, pan: e.target.value })}
+                              placeholder="e.g. 601234567"
+                              className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 font-mono text-sm outline-none focus:border-slate-500"
+                            />
+                          </div>
+                          <div className="sm:col-span-2">
                             <label className="text-xs font-medium text-slate-600">
                               {t('setup.subCompanySlug', 'Slug')} *
                             </label>
                             <input
                               value={subCompanyForm.slug}
                               onChange={(e) => setSubCompanyForm({ ...subCompanyForm, slug: e.target.value })}
-                              placeholder="ilaka-name"
+                              placeholder="abc-sub-company-1"
                               className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-slate-500"
                             />
                           </div>
