@@ -51,6 +51,8 @@ import { CompanyCreatorModal } from './SetupWizard/components/CompanyCreatorModa
 import { SubCompanyModal } from './SetupWizard/components/SubCompanyModal'
 import { SeedTableStep } from './SetupWizard/components/SeedTableStep'
 import { FiscalYearStep } from './SetupWizard/components/FiscalYearStep'
+import { ChildrenCompanySection } from './SetupWizard/components/ChildrenCompanySection'
+import { SetupFlowChoiceModal } from './SetupWizard/components/SetupFlowChoiceModal'
 
 const REQUIRED_STEPS: StepDef[] = [
   { key: 'company', title: 'Company Profile', blurb: 'Enter the org name and contact details shown on invoices.', icon: Building2 },
@@ -74,13 +76,17 @@ export default function SetupWizard() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const t = useT()
-  const { tenantId, setTenantId, tenants, isIllaka, isCentral } = useTenant()
+  const { tenantId, setTenantId, tenants, isIllaka, isCentral, isSuperAdmin } = useTenant()
   const { years, loading: yearsLoading, refresh: refreshYears } = useFiscalYear()
 
   const [stepIdx, setStepIdx] = useState(0)
   const [settings, setSettings] = useState<BillingSettings | null>(null)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [syncing, setSyncing] = useState(true)
+
+  // Children Company toggle and choice flow
+  const [enableChildrenCompanies, setEnableChildrenCompanies] = useState<boolean>(false)
+  const [showPostSaveChoiceModal, setShowPostSaveChoiceModal] = useState<boolean>(false)
 
   // Fact counts
   const [chartCount, setChartCount] = useState<number | null>(null)
@@ -174,6 +180,7 @@ export default function SetupWizard() {
   }, [allTenantsList])
 
   const activeTenant = currentTenant
+  const isSubCompany = Boolean(activeTenant && !isParentCompany(activeTenant))
 
   const parentOfActiveTenant = useMemo(() => {
     if (!activeTenant || isParentCompany(activeTenant)) return null
@@ -184,6 +191,15 @@ export default function SetupWizard() {
     if (!tenantId) return []
     return getSubCompaniesForParent(tenantId, allTenantsList)
   }, [allTenantsList, tenantId])
+
+  // Auto-initialize children companies toggle: ON if parent already has children in DB, OFF otherwise
+  useEffect(() => {
+    if (currentCompanySubCompanies.length > 0) {
+      setEnableChildrenCompanies(true)
+    } else {
+      setEnableChildrenCompanies(false)
+    }
+  }, [tenantId, currentCompanySubCompanies.length])
 
   const fyTenantId = useMemo(() => {
     if (!currentTenant) return tenantId
@@ -385,8 +401,12 @@ export default function SetupWizard() {
         })
       }
       bumpGlobals()
-      setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
       pushToast('success', t('setup.companySaved', 'Company profile saved'))
+      if (!isSubCompany && enableChildrenCompanies && currentCompanySubCompanies.length > 0) {
+        setShowPostSaveChoiceModal(true)
+      } else {
+        setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save company profile')
     } finally {
@@ -533,6 +553,7 @@ export default function SetupWizard() {
           },
         })
         pushToast('success', t('setup.subCompanyCreated', 'Sub-company created'))
+        setEnableChildrenCompanies(true)
       }
       setSubCompanyModalOpen(false)
       setEditingSubCompany(null)
@@ -809,8 +830,6 @@ export default function SetupWizard() {
     )
   }
 
-  const isSubCompany = Boolean(activeTenant && !isParentCompany(activeTenant))
-
   // 4. Main Setup Wizard View
   return (
     <div className="w-full py-6">
@@ -962,150 +981,25 @@ export default function SetupWizard() {
                 </div>
               </div>
 
-              {/* Sub-companies table (Central Admin on Parent Company only) */}
+              {/* Children Companies Section (Parent Companies, Super-Admin controlled) */}
               {isCentral && !isSubCompany && (
-                <div className="space-y-3 pt-6 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-800">
-                        Sub-Companies / Illakas for {activeTenant?.name || company.companyName || 'this Company'}
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        Branches, illakas, and subsidiaries reporting under this parent company.
-                      </p>
-                    </div>
-                    {!subCompanyModalOpen && activeTenant && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '', pan: '' })
-                          setEditingSubCompany(null)
-                          setSubCompanyError('')
-                          setSubCompanyModalOpen(true)
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white bg-crimson-600 hover:bg-crimson-700 shadow-xs transition"
-                      >
-                        <Plus size={13} /> {t('setup.addSubCompany', 'Add Sub-Company')}
-                      </button>
-                    )}
-                  </div>
-
-                  {selectedSubCompanies.size > 0 && (
-                    <div className="flex items-center gap-2 bg-slate-100 p-2 rounded-lg">
-                      <span className="text-xs font-medium text-slate-700 ml-1">
-                        {selectedSubCompanies.size} selected
-                      </span>
-                      <button
-                        type="button"
-                        onClick={deleteSelectedSubCompanies}
-                        disabled={subCompanyBusy === 'delete'}
-                        className="inline-flex items-center gap-1 rounded bg-red-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
-                      >
-                        <Trash2 size={12} /> Delete selected
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedSubCompanies(new Set())}
-                        className="inline-flex items-center gap-1 rounded border border-slate-300 px-2.5 py-1 text-xs text-slate-600 hover:bg-white"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                          <th className="px-3 py-2 text-center w-10">
-                            <input
-                              type="checkbox"
-                              checked={
-                                currentCompanySubCompanies.length > 0 &&
-                                currentCompanySubCompanies.every((sc) => selectedSubCompanies.has(sc.id))
-                              }
-                              onChange={(e) =>
-                                toggleSelectAllSubCompanies(
-                                  e.target.checked,
-                                  currentCompanySubCompanies.map((sc) => sc.id),
-                                )
-                              }
-                              className="rounded text-crimson-600 focus:ring-crimson-500"
-                            />
-                          </th>
-                          <th className="px-3 py-2">{t('setup.subCompanyName', 'Name')}</th>
-                          <th className="px-3 py-2">{t('setup.subCompanyCode', 'Code')}</th>
-                          <th className="px-3 py-2">PAN</th>
-                          <th className="px-3 py-2">{t('setup.subCompanyStatus', 'Status')}</th>
-                          <th className="px-3 py-2 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {currentCompanySubCompanies.map((sc) => (
-                          <tr key={sc.id} className="hover:bg-slate-50/70 transition-colors">
-                            <td className="px-3 py-2 text-center">
-                              <input
-                                type="checkbox"
-                                checked={selectedSubCompanies.has(sc.id)}
-                                onChange={(e) => toggleSubCompanySelect(sc.id, e.target.checked)}
-                                className="rounded text-crimson-600 focus:ring-crimson-500"
-                              />
-                            </td>
-                            <td className="px-3 py-2 font-medium text-slate-800">{sc.name}</td>
-                            <td className="px-3 py-2 font-mono text-xs text-slate-500">{sc.code}</td>
-                            <td className="px-3 py-2 font-mono text-xs text-slate-500">{sc.pan || '—'}</td>
-                            <td className="px-3 py-2">
-                              {sc.active ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.2 text-[10px] font-bold text-emerald-700">
-                                  Active
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.2 text-[10px] font-medium text-slate-600">
-                                  Inactive
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <div className="flex items-center justify-end gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setTenantId(sc.id)}
-                                  className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-crimson-600 hover:bg-crimson-50 transition"
-                                  title="Configure this branch"
-                                >
-                                  Configure →
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => editSubCompany(sc)}
-                                  className="rounded p-1 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-                                  title="Edit"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => deleteSubCompany(sc.id, sc.name)}
-                                  className="rounded p-1 text-xs text-red-500 hover:bg-red-50 hover:text-red-700"
-                                  title="Delete"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {currentCompanySubCompanies.length === 0 && (
-                          <tr>
-                            <td colSpan={6} className="py-6 text-center text-xs text-slate-400">
-                              No sub-companies or branches under {activeTenant?.name || 'this company'} yet. Click &ldquo;{t('setup.addSubCompany', 'Add sub-company')}&rdquo; to create one.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                <ChildrenCompanySection
+                  enabled={enableChildrenCompanies}
+                  onToggle={setEnableChildrenCompanies}
+                  subCompanies={currentCompanySubCompanies}
+                  isSuperAdmin={isSuperAdmin}
+                  companyName={activeTenant?.name || company.companyName}
+                  onAddClick={() => {
+                    setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '', pan: '' })
+                    setEditingSubCompany(null)
+                    setSubCompanyError('')
+                    setSubCompanyModalOpen(true)
+                  }}
+                  onEditClick={(sc) => editSubCompany(sc)}
+                  onDeleteClick={(id, name) => deleteSubCompany(id, name)}
+                  subCompanyBusy={subCompanyBusy}
+                  subCompanyError={subCompanyError}
+                />
               )}
             </div>
           )}
@@ -1467,6 +1361,24 @@ export default function SetupWizard() {
           </button>
         </div>
       )}
+
+      {/* Choice Modal for Next Step after Company Profile Save */}
+      <SetupFlowChoiceModal
+        open={showPostSaveChoiceModal}
+        onClose={() => setShowPostSaveChoiceModal(false)}
+        parentCompany={activeTenant}
+        parentName={company.companyName}
+        childCompanies={currentCompanySubCompanies}
+        onContinueParent={() => {
+          setShowPostSaveChoiceModal(false)
+          setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
+        }}
+        onSelectChild={(child) => {
+          setShowPostSaveChoiceModal(false)
+          setTenantId(child.id)
+          setStepIdx(0)
+        }}
+      />
 
       {/* SubCompany Modal */}
       <SubCompanyModal

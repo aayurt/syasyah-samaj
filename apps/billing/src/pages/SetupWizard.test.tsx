@@ -130,12 +130,14 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
       tenants: existingTenants,
       isCentral: true,
       isIllaka: false,
+      isSuperAdmin: true,
       illakaCode: null,
       multiCompanyEnabled: true,
     })
     listMock.mockResolvedValue({ docs: existingTenants, totalDocs: existingTenants.length })
-    apiMock.mockResolvedValue({
-      multiCompanyEnabled: true,
+    apiMock.mockImplementation((endpoint: string) => {
+      if (endpoint === '/tenants') return Promise.resolve({ docs: existingTenants })
+      return Promise.resolve({ multiCompanyEnabled: true })
     })
 
     renderWizard()
@@ -146,8 +148,92 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
     })
 
     expect(screen.getByText(/Switch \/ All Companies/i)).toBeInTheDocument()
-    expect(screen.getByText(/Sub-Companies \/ Illakas for ABC Company/i)).toBeInTheDocument()
+    expect(screen.getByText('Children Companies')).toBeInTheDocument()
+    expect(screen.getByText(/Child Companies & Illakas under ABC Company/i)).toBeInTheDocument()
     expect(screen.getByText('ABC sub-company -1')).toBeInTheDocument()
+  })
+
+  it('allows Super-Admin to toggle Children Companies OFF and shows confirmation warning', async () => {
+    const existingTenants = [
+      { id: '2', code: 'ABC', name: 'ABC Company', type: 'central' as const },
+      { id: '3', code: 'ABC-01', name: 'ABC sub-company -1', type: 'illaka' as const, parentId: '2' },
+    ]
+
+    useTenantMock.mockReturnValue({
+      tenantId: '2',
+      setTenantId,
+      tenants: existingTenants,
+      isCentral: true,
+      isIllaka: false,
+      isSuperAdmin: true,
+      illakaCode: null,
+      multiCompanyEnabled: true,
+    })
+    listMock.mockResolvedValue({ docs: existingTenants, totalDocs: existingTenants.length })
+    apiMock.mockImplementation((endpoint: string) => {
+      if (endpoint === '/tenants') return Promise.resolve({ docs: existingTenants })
+      return Promise.resolve({ multiCompanyEnabled: true })
+    })
+
+    renderWizard()
+
+    await waitFor(() => {
+      expect(screen.getByText('Children Companies')).toBeInTheDocument()
+    })
+
+    const toggle = screen.getByLabelText(/Toggle Children Companies/i)
+    fireEvent.click(toggle)
+
+    // Confirmation dialog appears
+    await waitFor(() => {
+      expect(screen.getByText(/Collapse Child Companies\?/i)).toBeInTheDocument()
+    })
+
+    // Click Proceed with Parent Only
+    fireEvent.click(screen.getByRole('button', { name: /Proceed with Parent Only/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/Operating as a standalone organization/i)).toBeInTheDocument()
+    })
+  })
+
+  it('prompts post-save setup flow modal when saving company with children enabled', async () => {
+    const existingTenants = [
+      { id: '2', code: 'ABC', name: 'ABC Company', type: 'central' as const },
+      { id: '3', code: 'ABC-01', name: 'ABC sub-company -1', type: 'illaka' as const, parentId: '2' },
+    ]
+
+    useTenantMock.mockReturnValue({
+      tenantId: '2',
+      setTenantId,
+      tenants: existingTenants,
+      isCentral: true,
+      isIllaka: false,
+      isSuperAdmin: true,
+      illakaCode: null,
+      multiCompanyEnabled: true,
+    })
+    listMock.mockResolvedValue({ docs: existingTenants, totalDocs: existingTenants.length })
+    apiMock.mockImplementation((endpoint: string) => {
+      if (endpoint === '/tenants') return Promise.resolve({ docs: existingTenants })
+      if (endpoint === '/globals/billing-settings') return Promise.resolve({ companyName: 'ABC Company' })
+      return Promise.resolve({ success: true })
+    })
+
+    renderWizard()
+
+    await waitFor(() => {
+      expect(screen.getByText('Children Companies')).toBeInTheDocument()
+    })
+
+    const saveBtn = screen.getByRole('button', { name: /Save & continue/i })
+    fireEvent.click(saveBtn)
+
+    await waitFor(() => {
+      expect(screen.getByText('Company Profile Saved')).toBeInTheDocument()
+      expect(screen.getByText(/Continue Parent Company Setup/i)).toBeInTheDocument()
+      expect(screen.getByText(/OR ONBOARD A CHILD COMPANY/i)).toBeInTheDocument()
+    })
   })
 
   it('renders Sub-Company profile and parent badge when a sub-company is selected', async () => {

@@ -47,8 +47,9 @@ export function useOfflineSession(): {
     typeof window !== 'undefined' &&
     window.localStorage.getItem('__e2e_bypass__') === '1'
   ) {
+    const role = window.localStorage.getItem('__e2e_role__') || 'super-admin'
     return {
-      session: { user: { email: 'e2e@test.com', role: 'admin' } } as CachedSession,
+      session: { user: { email: 'e2e@test.com', role } } as CachedSession,
       checking: false,
     }
   }

@@ -61,6 +61,8 @@ type TenantCtx = {
   isCentral: boolean
   /** Whether the user is an illaka-scoped role (locked chip). */
   isIllaka: boolean
+  /** Whether the user has the super-admin role. */
+  isSuperAdmin: boolean
   /** The user's illaka code, if scoped (e.g. "IL03"). */
   illakaCode: string | null
   /** Whether multi-company / sub-companies mode is enabled by super-admin. */
@@ -73,6 +75,7 @@ const TenantContext = createContext<TenantCtx>({
   tenants: [],
   isCentral: false,
   isIllaka: false,
+  isSuperAdmin: false,
   illakaCode: null,
   multiCompanyEnabled: false,
 })
@@ -87,10 +90,14 @@ const ILLAKA_ROLES = new Set([
 
 export function TenantProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = authClient.useSession()
-  const role = (session?.user as any)?.role as string | undefined
+  let role = (session?.user as any)?.role as string | undefined
+  if (!role && typeof window !== 'undefined' && window.localStorage.getItem('__e2e_bypass__') === '1') {
+    role = window.localStorage.getItem('__e2e_role__') || 'super-admin'
+  }
 
   const isCentral = CENTRAL_ROLES.has(role || '')
   const isIllaka = ILLAKA_ROLES.has(role || '')
+  const isSuperAdmin = role === 'super-admin'
 
   // For illaka users, their tenant comes from the user's tenants array
   const userTenants = (session?.user as any)?.tenants as
@@ -194,6 +201,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         tenants,
         isCentral,
         isIllaka,
+        isSuperAdmin,
         illakaCode,
         multiCompanyEnabled,
       }}

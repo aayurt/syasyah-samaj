@@ -122,10 +122,15 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     await expect(page.getByText(/Parent Company|Parent Organization/i).first()).toBeVisible()
 
     // ─────────────────────────────────────────────────────────────
-    // Phase 2: Sub-Company CRUD under ABC Company
+    // Phase 2: Toggle Children Company & Sub-Company CRUD under ABC Company
     // ─────────────────────────────────────────────────────────────
+    // Toggle Children Companies ON
+    const toggleChildren = page.getByLabel(/Toggle Children Companies/i)
+    await expect(toggleChildren).toBeVisible({ timeout: 10000 })
+    await toggleChildren.click()
+
     // 1. Add Sub-Company 1 (ABC sub-company -1)
-    const addSubBtn = page.getByRole('button', { name: /Add Sub-Company/i }).first()
+    const addSubBtn = page.getByRole('button', { name: /Add Child Company|Add Sub-Company/i }).first()
     await expect(addSubBtn).toBeVisible({ timeout: 10000 })
     await addSubBtn.click()
 
@@ -169,6 +174,24 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
 
     await expect(page.locator('table tr:has-text("ABC sub-company -2 Edited")')).not.toBeVisible({ timeout: 10000 })
     await expect(page.locator('table tr:has-text("ABC sub-company -1")')).toBeVisible()
+
+    // Test toggle OFF with existing children -> Confirmation warning
+    await toggleChildren.click()
+    await expect(page.getByText(/Collapse Child Companies\?/i)).toBeVisible({ timeout: 5000 })
+    // Cancel the collapse to leave children active
+    await page.getByRole('button', { name: /Cancel/i }).click()
+    await expect(page.getByText(/Collapse Child Companies\?/i)).not.toBeVisible()
+
+    // Test Post-Save Choice Flow modal when children exist:
+    const saveCompanyStepBtn = page.getByRole('button', { name: /Save & continue/i })
+    await saveCompanyStepBtn.click()
+    await expect(page.getByText('Company Profile Saved')).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText(/Continue Parent Company Setup/i)).toBeVisible()
+    await expect(page.getByText(/OR ONBOARD A CHILD COMPANY/i)).toBeVisible()
+
+    // Close choice dialog so we can proceed to Phase 3 (Multi-Company CRUD)
+    await page.getByRole('button', { name: /Decide Later/i }).click()
+    await expect(page.getByText('Company Profile Saved')).not.toBeVisible()
 
     // ─────────────────────────────────────────────────────────────
     // Phase 3: Multi-Company CRUD (DEF Company)
