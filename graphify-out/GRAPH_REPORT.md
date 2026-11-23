@@ -1,16 +1,16 @@
-# Graph Report - syasyah-samaj  (2026-11-22)
+# Graph Report - syasyah-samaj  (2026-11-23)
 
 ## Corpus Check
-- 873 files · ~1,016,429 words
+- 873 files · ~1,017,246 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 5537 nodes · 10396 edges · 377 communities (320 shown, 57 thin omitted)
+- 5538 nodes · 10401 edges · 376 communities (316 shown, 60 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 211 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9e906554`
+- Built from commit: `757693a6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -342,7 +342,6 @@
 - [[_COMMUNITY_Community 337|Community 337]]
 - [[_COMMUNITY_Community 338|Community 338]]
 - [[_COMMUNITY_Community 339|Community 339]]
-- [[_COMMUNITY_Community 340|Community 340]]
 - [[_COMMUNITY_Community 341|Community 341]]
 - [[_COMMUNITY_Community 342|Community 342]]
 - [[_COMMUNITY_Community 345|Community 345]]
@@ -405,31 +404,31 @@
 - 1-file cycle: `src/components/animate-ui/components/buttons/liquid.tsx -> src/components/animate-ui/components/buttons/liquid.tsx`
 - 3-file cycle: `src/collections/Events/index.ts -> src/utilities/cache.ts -> src/payload.config.ts -> src/collections/Events/index.ts`
 
-## Communities (377 total, 57 thin omitted)
+## Communities (376 total, 60 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.01
-Nodes (143): ContactArgs, Account, AccountGroup, AccountGroupsSelect, AccountsSelect, AdditionalSalariesSelect, AdditionalSalary, Apikey (+135 more)
+Nodes (145): ContactArgs, Account, AccountGroup, AccountGroupsSelect, AccountsSelect, AdditionalSalariesSelect, AdditionalSalary, Apikey (+137 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.04
-Nodes (88): DataStatus(), useSyncStateMock, BreakdownSegment, MetricGaugeProps, ReportBreakdownBar(), ReportBreakdownBarProps, ReportMetricGauge(), ReportTrendChart() (+80 more)
+Nodes (85): DataStatus(), useSyncStateMock, BreakdownSegment, MetricGaugeProps, ReportBreakdownBar(), ReportBreakdownBarProps, ReportMetricGauge(), ReportTrendChart() (+77 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.06
-Nodes (112): AccountSelect(), AddFiscalYearModal(), CommandPalette(), ConflictDrawer(), ConflictResolutionModal(), ConnectingBanner(), ExportModal(), FiscalYearSwitcher() (+104 more)
+Nodes (112): AccountSelect(), AccountsTable(), AddFiscalYearModal(), CommandPalette(), COLLECTION_LABELS, ConflictDrawer(), DraftBody(), ConflictResolutionModal() (+104 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.40
 Nodes (4): Popover(), PopoverProps, SearchSelectOption, SearchSelectProps
 
 ### Community 4 - "Community 4"
-Cohesion: 0.03
-Nodes (73): AccountSelectProps, isLocalIdDoc(), numToWords(), numToWordsRaw(), ONES, PrintVoucher(), Props, TENS (+65 more)
+Cohesion: 0.04
+Nodes (56): AccountSelectProps, isLocalIdDoc(), numToWords(), numToWordsRaw(), ONES, PrintVoucher(), Props, TENS (+48 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.05
-Nodes (43): isAdmin(), isAdminType, AccountGroups, accountTypeOptions, Accounts, AuditLogs, BankStatements, AdditionalSalaries (+35 more)
+Cohesion: 0.04
+Nodes (48): isAdmin(), isAdminType, AccountGroups, accountTypeOptions, Accounts, AuditLogs, BankStatements, AdditionalSalaries (+40 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.07
@@ -437,11 +436,11 @@ Nodes (30): test, Api, Dataset, here, raw, VoucherSpec, expectMoney(), money() (
 
 ### Community 7 - "Community 7"
 Cohesion: 0.03
-Nodes (81): Props, SearchResult, Shortcut, SHORTCUTS, VoucherNotesCardProps, api(), ApiOptions, clearProtectedFields() (+73 more)
+Nodes (88): Props, SearchResult, Shortcut, SHORTCUTS, AnyDoc, Step, VoucherNotesCardProps, api() (+80 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.11
-Nodes (23): CleanupResult, DATA_COLLECTIONS, invalidateCollections(), RESET_COLLECTIONS, ResetResult, runCleanup(), runReset(), runSeedDemo() (+15 more)
+Cohesion: 0.13
+Nodes (20): CleanupResult, DATA_COLLECTIONS, invalidateCollections(), RESET_COLLECTIONS, ResetResult, runCleanup(), runReset(), runSeedDemo() (+12 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.21
@@ -449,15 +448,15 @@ Nodes (11): validateAccount(), defaultNormalBalance(), isCompatibleChildType(), 
 
 ### Community 10 - "Community 10"
 Cohesion: 0.07
-Nodes (33): anyone(), authenticated(), isAuthenticated, authenticatedOrPublished(), Banner, ChatRooms, Code, Archives (+25 more)
+Nodes (32): anyone(), authenticated(), isAuthenticated, authenticatedOrPublished(), Banner, ChatRooms, Code, Archives (+24 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.06
-Nodes (42): BentoGrid(), BentoGridItem(), HoverEffect(), MotionSpan, MotionSpanProps, InfiniteMovingCards(), Spotlight(), SpotlightProps (+34 more)
+Cohesion: 0.03
+Nodes (73): BentoGrid(), BentoGridItem(), HoverEffect(), MotionSpan, MotionSpanProps, InfiniteMovingCards(), Spotlight(), SpotlightProps (+65 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.11
-Nodes (14): authClient, ForgotPasswordForm(), LoginViewProps, Ilaka, metadata, metadata, Members(), Card() (+6 more)
+Cohesion: 0.08
+Nodes (29): authClient, ForgotPasswordForm(), LoginViewProps, Checkbox(), Country(), countryOptions, Email(), Error() (+21 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.04
@@ -469,43 +468,39 @@ Nodes (45): dependencies, better-auth, exceljs, @fontsource/inter, jspdf, lucide
 
 ### Community 15 - "Community 15"
 Cohesion: 0.08
-Nodes (40): accId(), buildPostingLines(), cleanFyLabel(), computeStockPlan(), createPostingArtifacts(), DOC_PREFIXES, DOC_TYPES, DocLine (+32 more)
+Nodes (42): accId(), buildPostingLines(), cleanFyLabel(), computeStockPlan(), createPostingArtifacts(), DOC_PREFIXES, DOC_TYPES, DocLine (+34 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.11
-Nodes (18): canMutateTenant(), createAccess(), isAccessingSelf(), isSuperAdmin(), isSuperAdminAccess(), readAccess(), Header, revalidateHeader() (+10 more)
-
-### Community 17 - "Community 17"
-Cohesion: 0.22
-Nodes (5): INDIAN_STATES, ACCOUNT_FIELDS, STATUTES, apiMock, SETTINGS
+Cohesion: 0.10
+Nodes (23): canMutateTenant(), createAccess(), isAccessingSelf(), isSuperAdmin(), isSuperAdminAccess(), readAccess(), getBaseUrl(), resend (+15 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.07
-Nodes (28): ArchiveBlock(), BannerBlock(), Props, blockComponents, CallToActionBlock(), Code(), Props, CodeBlock() (+20 more)
+Cohesion: 0.06
+Nodes (33): BannerBlock(), Props, blockComponents, RenderBlocks(), CallToActionBlock(), Code(), CodeBlock(), CodeBlockProps (+25 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.05
 Nodes (39): 10. Central audit dashboard, 11. Audit trail, 12. Bank accounts, 13. Double-entry accounting, 14. Central annual report, 15. Fiscal year & dates (Nepal), 16. Application structure (navigation), 17. Dashboards (+31 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.06
-Nodes (17): ActionMenuItem, Sk(), TableSkeleton(), CATEGORY_OPTIONS, CATEGORY_USEFUL_LIFE_PRESETS, DISPOSAL_TYPE_OPTIONS, emptyForm, FixedAssetRegisterRow (+9 more)
+Cohesion: 0.05
+Nodes (29): ActionMenuItem, Sk(), TableSkeleton(), SortableThProps, parseImportFile(), StockLedgerRow, SortState, UseSortSearchOptions (+21 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.05
 Nodes (38): 1.1 Installation & Configuration, 1.2 Governance Documentation, 1.3 Jules Dispatch Gates, 2.1 Core Library (`apps/billing/src/lib/importExport.ts`), 2.2 Collection Configurations, 2.3 UI: Import Wizard (DataManagement Page) 🔄 IN PROGRESS, 2.4 Export UI Enhancements, 3.1 Chart of Accounts (CoA) Excel Export (+30 more)
 
 ### Community 22 - "Community 22"
-Cohesion: 0.12
-Nodes (21): ACCOUNT_CLASS_LABELS, ACCOUNT_CLASSES, ACCOUNT_TYPE_LABELS, ACCOUNT_TYPES, AIContext, AIModel, AIModelDef, GROUP_NATURE_LABELS (+13 more)
+Cohesion: 0.09
+Nodes (38): docLabel(), enumOptions(), exampleJson(), fieldInputs(), NUMERIC_FIELDS, ACCOUNT_CLASS_LABELS, ACCOUNT_CLASSES, ACCOUNT_TYPE_LABELS (+30 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.09
-Nodes (35): CENTRAL_ROLES, ILLAKA_ROLES, isBillingUser(), isCentralUser(), isIllakaUser(), resolveScopedTenant(), roleOf(), scopedCreate() (+27 more)
+Cohesion: 0.10
+Nodes (38): CENTRAL_ROLES, ILLAKA_ROLES, isBillingUser(), isCentralUser(), isIllakaUser(), resolveScopedTenant(), roleOf(), scopedCreate() (+30 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.04
-Nodes (52): AccountsTable(), AccountsTableProps, TYPE_LABELS, CoaSetupModal(), CoaSetupModalProps, STARTER_GROUPS, AccountClass, AccountGroup (+44 more)
+Nodes (49): AccountsTableProps, TYPE_LABELS, CoaSetupModal(), CoaSetupModalProps, STARTER_GROUPS, AccountClass, AccountGroup, AccountType (+41 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.05
@@ -513,7 +508,7 @@ Nodes (36): Billing Settings (Global), Copy to Invoice (Quote → Invoice), Crea
 
 ### Community 26 - "Community 26"
 Cohesion: 0.08
-Nodes (28): ExcelExportColumn, ValidationError, buildExportExcel(), buildImportContext(), coerceBooleans(), DEDUP_KEYS, DedupResult, ExcelExportOptions (+20 more)
+Nodes (32): EXPORT_COLLECTIONS, ExportOption, ExcelExportColumn, ValidationError, buildExportCsv(), buildExportExcel(), buildExportJson(), buildImportContext() (+24 more)
 
 ### Community 27 - "Community 27"
 Cohesion: 0.06
@@ -532,8 +527,8 @@ Cohesion: 0.06
 Nodes (35): 1. Create New Tenant (Ilaka), 2. Reset Tenant Data (Cleanup), 3. Seed Demo Data, 4. Backup Database, 5. Restore Database, 6. Clear Sync State (Troubleshooting), Audit Log Review (Weekly), Automated (PM2 + Cron) (+27 more)
 
 ### Community 31 - "Community 31"
-Cohesion: 0.11
-Nodes (18): Card(), EventHero(), PostHero(), RelatedEvents(), RelatedEventsProps, RelatedPosts(), RelatedPostsProps, Args (+10 more)
+Cohesion: 0.12
+Nodes (15): PayrollDeduction, PayrollEarning, computePayrollRun(), computePayrollSlip(), PayrollAssignmentField, PayrollComponentField, PayrollDeductionsLine, PayrollEarningsLine (+7 more)
 
 ### Community 32 - "Community 32"
 Cohesion: 0.06
@@ -544,36 +539,36 @@ Cohesion: 0.06
 Nodes (34): API Integration, Blockers / Questions, CI Pipeline, CoA Hierarchical Export/Import, Conflict Resolution UI (`apps/billing/src/components/SyncConflictsModal.tsx`), Coverage, DataManagement UI Updates (`apps/billing/src/pages/DataManagement.tsx`), Documentation (+26 more)
 
 ### Community 34 - "Community 34"
-Cohesion: 0.10
-Nodes (14): CardPostData, CollectionArchive(), Props, Args, PageClient(), defaultCollectionLabels, defaultLabels, PageRange() (+6 more)
+Cohesion: 0.06
+Nodes (32): ArchiveBlock(), Card(), CardPostData, Props, CopyButton(), CollectionArchive(), Props, Args (+24 more)
 
 ### Community 35 - "Community 35"
 Cohesion: 0.14
 Nodes (14): createMockAccount(), createMockAccountGroup(), createMockBillingSettings(), createMockCentralTenant(), createMockCoAHierarchy(), createMockDataSet(), createMockFiscalYear(), createMockItem() (+6 more)
 
 ### Community 37 - "Community 37"
-Cohesion: 0.08
-Nodes (31): normalizeRow(), vErr(), bumpEpoch(), DataOps, ensureAccountGroups(), ensureChart(), ensureDefaults(), ensureFiscalYear() (+23 more)
+Cohesion: 0.09
+Nodes (27): bumpEpoch(), DataOps, ensureAccountGroups(), ensureChart(), ensureDefaults(), ensureFiscalYear(), ensureMembers(), ensureMembershipTypes() (+19 more)
 
 ### Community 38 - "Community 38"
-Cohesion: 0.10
-Nodes (15): AdminBar(), collectionLabels, cookies, ImageMedia(), Props, HomeArgs, image1, image2 (+7 more)
+Cohesion: 0.16
+Nodes (13): ArchiveItem, ArchivesSection(), CivicServicesSection(), EldersSection(), Donor, EmergencyBloodSection(), UpcomingEvents(), ArchiveItem (+5 more)
 
 ### Community 39 - "Community 39"
 Cohesion: 0.12
-Nodes (18): ContextType, HeaderThemeContext, HeaderThemeProvider(), initialContext, useHeaderTheme(), PageClient(), Providers(), PageClient() (+10 more)
+Nodes (19): ContextType, HeaderThemeContext, HeaderThemeProvider(), initialContext, useHeaderTheme(), PageClient(), PageClient(), Providers() (+11 more)
 
 ### Community 40 - "Community 40"
 Cohesion: 0.07
 Nodes (29): 1. Domain Concepts (Nepal), 2. Data Model (new Payload collections), 3. Accounting Integration, 4. UI Design, 5. Implementation Steps, 6. Files to Create / Modify, 7. Offline & Sync Summary, 8. Out of Scope (for now) (+21 more)
 
 ### Community 42 - "Community 42"
-Cohesion: 0.09
-Nodes (15): mockBuildCsv, mockBuildEntityExcel, mockBuildJson, mockBuildTemplate, mockDownload, mockFetchAllDocs, mockToast, onClose (+7 more)
+Cohesion: 0.14
+Nodes (7): ENTITY_REGISTRY, EntityExcelConfig, EntityRegistry, ImportContext, REGISTRY, PAYLOAD_SLUGS, DOCS
 
 ### Community 43 - "Community 43"
 Cohesion: 0.06
-Nodes (45): AddFiscalYearModalProps, NepaliDateInput(), Props, onChange, OutstandingInvoice, Props, getYesterdayAD(), ReportFilterBar() (+37 more)
+Nodes (43): AddFiscalYearModalProps, Props, onChange, OutstandingInvoice, Props, getYesterdayAD(), ReportFilterBar(), ReportFilterBarProps (+35 more)
 
 ### Community 44 - "Community 44"
 Cohesion: 0.08
@@ -592,12 +587,12 @@ Cohesion: 0.11
 Nodes (22): Action, ActionType, actionTypes, addToRemoveQueue(), dispatch(), genId(), listeners, memoryState (+14 more)
 
 ### Community 48 - "Community 48"
-Cohesion: 0.10
-Nodes (19): accounts, onChange, entry, fetchServerVersion, forceApply, onClose, onResolved, serverDoc (+11 more)
+Cohesion: 0.09
+Nodes (18): accounts, onChange, entry, fetchServerVersion, forceApply, onClose, onResolved, serverDoc (+10 more)
 
 ### Community 49 - "Community 49"
-Cohesion: 0.07
-Nodes (47): calculatePayrollBatch(), isBillingReq(), releasePayrollBatch(), relId(), tenantValue(), validatePayrollBatch(), generatePayrollRun(), getPayrollSettings() (+39 more)
+Cohesion: 0.12
+Nodes (32): calculatePayrollBatch(), isBillingReq(), releasePayrollBatch(), relId(), tenantValue(), validatePayrollBatch(), generatePayrollRun(), getPayrollSettings() (+24 more)
 
 ### Community 50 - "Community 50"
 Cohesion: 0.06
@@ -617,11 +612,11 @@ Nodes (30): 1. Current state (implemented, deployed on staging + prod), 2. Targe
 
 ### Community 55 - "Community 55"
 Cohesion: 0.11
-Nodes (5): Props, MemoryDb, SqlDatabase, OfflineDb, OutboxEntry
+Nodes (7): Props, openDb(), txDone(), MemoryDb, SqlDatabase, OfflineDb, OutboxEntry
 
 ### Community 56 - "Community 56"
-Cohesion: 0.08
-Nodes (21): COLLECTION_LABELS, DraftBody(), DOC_TYPE_FALLBACK, docTypeKey(), docTypeLabel(), Lang, LangContextValue, Activity (+13 more)
+Cohesion: 0.22
+Nodes (8): mockBuildCsv, mockBuildEntityExcel, mockBuildJson, mockBuildTemplate, mockDownload, mockFetchAllDocs, mockToast, onClose
 
 ### Community 57 - "Community 57"
 Cohesion: 0.08
@@ -632,20 +627,20 @@ Cohesion: 0.09
 Nodes (21): AGENTS.md - Your Workspace, Automations - Be Proactive, Existing Solutions Preflight, External vs Internal, First Run, graphify, Group Chats, Know When to Speak (+13 more)
 
 ### Community 59 - "Community 59"
-Cohesion: 0.05
-Nodes (46): FlipWords(), MotionSpan, MotionSpanProps, ArchiveItem, ArchivesSection(), betterAuthOptions, getCurrentUser(), ChatInterface() (+38 more)
+Cohesion: 0.17
+Nodes (13): betterAuthOptions, getCurrentUser(), ChatInterface(), ChatInterfaceProps, Message, CoordinatorPortalPage(), metadata, ChatRoomPage() (+5 more)
 
 ### Community 60 - "Community 60"
-Cohesion: 0.06
-Nodes (33): RenderBlocks(), EventCard(), EventType, PastEvents(), RenderHero(), LivePreviewListener(), client, Locale (+25 more)
+Cohesion: 0.04
+Nodes (57): EventHero(), EventCard(), EventType, EventsPage(), generateMetadata(), PastEvents(), RenderHero(), fallbackImages (+49 more)
 
 ### Community 61 - "Community 61"
 Cohesion: 0.09
 Nodes (21): 1. Existing architecture assessment, 2. Component architecture, 3. Adapter interface (adapted to existing architecture), 4. JSON schema strategy, 5. Validation & execution strategy, 6. Integration points, 7. Implementation plan (phased), 8. Definition of done (+13 more)
 
 ### Community 62 - "Community 62"
-Cohesion: 0.14
-Nodes (15): Footer(), HeaderClient(), HeaderClientProps, Header(), LanguageSwitcher(), Logo(), Props, HeaderNav() (+7 more)
+Cohesion: 0.07
+Nodes (27): LanguageLoading(), Tenant, TenantContext, TenantContextType, TenantProvider(), User, UserContext, UserContextType (+19 more)
 
 ### Community 63 - "Community 63"
 Cohesion: 0.09
@@ -672,16 +667,12 @@ Cohesion: 0.07
 Nodes (26): Dependencies & Execution Order, Format: `[ID] [P?] [Story] Description`, Implementation for User Story 1, Implementation for User Story 2, Implementation for User Story 3, Implementation for User Story 4, Implementation Strategy, Incremental Delivery (+18 more)
 
 ### Community 69 - "Community 69"
-Cohesion: 0.14
-Nodes (11): getBaseUrl(), resend, revalidateRedirects(), baseUrl, generateURL(), plugins, beforeSyncWithSearch(), searchFields (+3 more)
+Cohesion: 0.33
+Nodes (4): DigitalIDCard(), DigitalIDCardProps, MotionDiv, MotionDivProps
 
 ### Community 70 - "Community 70"
 Cohesion: 0.10
 Nodes (20): Architecture Overview — syasyah-samaj Billing SPA, Collections (Payload CMS), Conflict Resolution, Core Architectural Decisions, Data Flow, Deployment, Import/Export Pipeline, IndexedDB (Web) (+12 more)
-
-### Community 71 - "Community 71"
-Cohesion: 0.22
-Nodes (4): IndexedDb, openDb(), reqResult(), txDone()
 
 ### Community 72 - "Community 72"
 Cohesion: 0.07
@@ -752,8 +743,8 @@ Cohesion: 0.17
 Nodes (14): findOrphans(), importMasterWorkbook(), MasterImportSummary, OrphanRef, ParsedMaster, parseMasterWorkbook(), readCell(), SheetSummary (+6 more)
 
 ### Community 89 - "Community 89"
-Cohesion: 0.12
-Nodes (26): Checkbox(), Country(), countryOptions, Email(), Error(), FormBlockType, fields, Message() (+18 more)
+Cohesion: 0.38
+Nodes (5): IlakaShowcase(), MotionSpan, MotionSpanProps, Ilakas(), Locale
 
 ### Community 90 - "Community 90"
 Cohesion: 0.12
@@ -788,8 +779,8 @@ Cohesion: 0.10
 Nodes (20): 1.1 State Mapping & Prop Synchronization, 1.2 Wire [`TransactionLine.tsx`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/apps/billing/src/components/TransactionLine.tsx) into Table Body, 1.3 Total Calculations via Engine, 2.1 Server Endpoints in [`src/collections/FixedAssets/index.ts`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/src/collections/FixedAssets/index.ts) — **DONE**, 2.2 Frontend UI in [`FixedAssets.tsx`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/apps/billing/src/pages/FixedAssets.tsx) — **DONE**, 3.1 Stage & Clean Up Pending Reports, 3.2 Refactor Report Pages to use [`ReportLayout.tsx`](file:///Users/aayurtshrestha/Projects/supreme/syasyah-samaj/apps/billing/src/components/ReportLayout.tsx), 3.3 Implement Stage 4: Fixed Asset Reports — **DONE** (+12 more)
 
 ### Community 99 - "Community 99"
-Cohesion: 0.22
-Nodes (6): DefaultIcon, IlakaMapProps, TenantWithLocation, IlakaMap, MapClient(), Tenant
+Cohesion: 0.16
+Nodes (8): DefaultIcon, IlakaMapProps, TenantWithLocation, EXCLUDED_TENANT_IDS, IlakaTabs(), IlakaMap, MapClient(), Tenant
 
 ### Community 100 - "Community 100"
 Cohesion: 0.07
@@ -800,8 +791,8 @@ Cohesion: 0.15
 Nodes (12): 10. Roadmap, 11. Decisions & risks, 1. Vision & non-goals, 2. Architecture, 3. Domain model — Payload collections, 4. The posting engine (the heart), 5. Derived views & reports (server endpoints), 6. API surface (+4 more)
 
 ### Community 102 - "Community 102"
-Cohesion: 0.10
-Nodes (17): renderBar(), getKeyMock, renderBanner(), renderSwitcher(), setTenantId, tenants, useTenantMock, renderModal() (+9 more)
+Cohesion: 0.15
+Nodes (10): renderBar(), renderSwitcher(), setTenantId, tenants, useTenantMock, renderModal(), apiMock, linkedGetMock (+2 more)
 
 ### Community 103 - "Community 103"
 Cohesion: 0.15
@@ -832,8 +823,8 @@ Cohesion: 0.17
 Nodes (11): 1. Local Storage Adapters, 2. Sync Engine (`apps/billing/src/lib/sync/SyncEngine.ts`), 3. Cache-First Reads, 4. API Layer (`apps/billing/src/lib/api.ts`), 5. Compatibility Wrapper (`apps/billing/src/lib/offline/index.ts`), ADR-0002: Offline-First Architecture with SyncEngine, Consequences, Context (+3 more)
 
 ### Community 111 - "Community 111"
-Cohesion: 0.14
-Nodes (10): Hero(), heroes, HighImpactHero(), EXCLUDED_TENANT_IDS, IlakaTabs(), LowImpactHero(), LowImpactHeroType, Media() (+2 more)
+Cohesion: 0.15
+Nodes (8): Notification(), FindIlaka(), Ilaka, About(), Contact(), HomePage(), Gallery(), TimelineSection()
 
 ### Community 112 - "Community 112"
 Cohesion: 0.17
@@ -964,8 +955,8 @@ Cohesion: 0.20
 Nodes (10): type, webviews, windows, items, description, items, type, description (+2 more)
 
 ### Community 144 - "Community 144"
-Cohesion: 0.09
-Nodes (23): Archive, CallToAction, columnFields, Content, appearanceOptions, link(), LinkAppearances, LinkType (+15 more)
+Cohesion: 0.08
+Nodes (25): Archive, CallToAction, columnFields, Content, appearanceOptions, link(), LinkAppearances, LinkType (+17 more)
 
 ### Community 145 - "Community 145"
 Cohesion: 0.29
@@ -974,10 +965,6 @@ Nodes (5): parseCSV(), COLUMN_MAP, pickValue(), syncMembersFromGoogleSheet(), Sy
 ### Community 146 - "Community 146"
 Cohesion: 0.22
 Nodes (3): importMap, Args, Args
-
-### Community 147 - "Community 147"
-Cohesion: 0.19
-Nodes (17): docLabel(), enumOptions(), exampleJson(), fieldInputs(), NUMERIC_FIELDS, AI_MODELS, modelDef(), AIWorkspaceModal() (+9 more)
 
 ### Community 148 - "Community 148"
 Cohesion: 0.11
@@ -996,8 +983,8 @@ Cohesion: 0.12
 Nodes (16): Architecture / proposed approach, Current context / assumptions, Goal, Plan: Arrange voucher form per transaction type — minimal, clean, consistent cards, Risks, tradeoffs, and open questions, Step-by-step tasks, Task 1 — Read-only audit: inventory every entry card's classes & order (10 min, read-only), Task 2 — Create `EntryCard` shell component (15 min) (+8 more)
 
 ### Community 152 - "Community 152"
-Cohesion: 0.31
-Nodes (8): advanceDate(), daysInMonth(), DOC_TYPES_FOR_RECURRING, FREQUENCIES, generateFromSchedule(), isBillingReq(), isBillingUser(), RecurringSchedules
+Cohesion: 0.29
+Nodes (9): advanceDate(), daysInMonth(), DOC_TYPES_FOR_RECURRING, FREQUENCIES, generateFromSchedule(), isBillingReq(), isBillingUser(), RecurringSchedules (+1 more)
 
 ### Community 153 - "Community 153"
 Cohesion: 0.42
@@ -1008,8 +995,8 @@ Cohesion: 0.36
 Nodes (8): checkBloodGroup(), columnSignature(), diffSchemas(), dumpSchema(), E2E, main(), PROD, psql()
 
 ### Community 155 - "Community 155"
-Cohesion: 0.07
-Nodes (24): LanguageLoading(), Tenant, TenantContext, TenantContextType, TenantProvider(), User, UserContext, UserContextType (+16 more)
+Cohesion: 0.40
+Nodes (4): FlipWords(), MotionSpan, MotionSpanProps, HomepageHero()
 
 ### Community 156 - "Community 156"
 Cohesion: 0.25
@@ -1044,12 +1031,12 @@ Cohesion: 0.61
 Nodes (7): fail(), info(), ok(), run_local(), run_remote(), warn(), LocalSyncDeployer.sh script
 
 ### Community 164 - "Community 164"
-Cohesion: 0.17
-Nodes (14): authClient, CachedSession, canAccessBilling(), ILLAKA_ROLES, isAdminUser(), useOfflineSession(), navigateMock, signInMock (+6 more)
+Cohesion: 0.06
+Nodes (46): SetupStepKey, protectGlobalsFields(), authClient, CachedSession, canAccessBilling(), clearCachedSession(), ILLAKA_ROLES, isAdminUser() (+38 more)
 
 ### Community 165 - "Community 165"
-Cohesion: 0.20
-Nodes (9): DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut(), DropdownMenuSubContent (+1 more)
+Cohesion: 0.40
+Nodes (4): base, renderStatus(), syncAll, useSyncStateMock
 
 ### Community 166 - "Community 166"
 Cohesion: 0.14
@@ -1060,8 +1047,8 @@ Cohesion: 0.14
 Nodes (13): Baseline findings (read-only pass), Files changed, Fix 0 — PostgreSQL connection exhaustion during root prerender, Fix 1 — Stop tracking generated artifacts, Fix 2 — Vitest 4 `poolOptions` → supported equivalent, Fix 3 — CI: root production-build job; remove duplicate billing-unit "integration tests" job, Fix 4 — Coverage vs. README claims (documented gap, not applied), How the local schema is created — and a repo bug found on the way (+5 more)
 
 ### Community 168 - "Community 168"
-Cohesion: 0.14
-Nodes (20): EXPORT_COLLECTIONS, ExportOption, addMetaSheet(), buildEntityExcel(), buildTemplate(), EntityBuildOptions, getCfg(), HEADER_FILL (+12 more)
+Cohesion: 0.28
+Nodes (10): addMetaSheet(), buildEntityExcel(), buildTemplate(), EntityBuildOptions, getCfg(), HEADER_FILL, styleHeader(), parties (+2 more)
 
 ### Community 169 - "Community 169"
 Cohesion: 0.25
@@ -1155,10 +1142,6 @@ Nodes (6): Boundaries, Continuity, Core Truths, Related, SOUL.md - Who You Are, 
 Cohesion: 0.43
 Nodes (4): fetchJson(), findDocByNarration(), resolveFirstId(), resolveTenantId()
 
-### Community 192 - "Community 192"
-Cohesion: 0.38
-Nodes (5): DOC_TYPE_OPTIONS, DocSequences, DOCUMENT_TYPES, optionValues, PRE_FIX_ENUM_VALUES
-
 ### Community 193 - "Community 193"
 Cohesion: 0.33
 Nodes (5): ALLOWED_COLLECTIONS, POST(), processOperation(), SyncOperation, SyncResponse
@@ -1212,15 +1195,15 @@ Cohesion: 0.53
 Nodes (4): BalanceBar(), BalanceBarProps, fmtNum(), useBalanceSnap()
 
 ### Community 206 - "Community 206"
-Cohesion: 0.33
-Nodes (5): navigateMock, refreshMock, renderSwitcher(), useFiscalYearMock, years
+Cohesion: 0.12
+Nodes (12): getKeyMock, renderBanner(), navigateMock, refreshMock, renderSwitcher(), useFiscalYearMock, years, accounts (+4 more)
 
 ### Community 207 - "Community 207"
 Cohesion: 0.33
 Nodes (6): tailwind, baseColor, config, css, cssVariables, prefix
 
 ### Community 208 - "Community 208"
-Cohesion: 0.40
+Cohesion: 0.50
 Nodes (4): tooltipStyle(), Tour(), TOUR_STEPS, TourStep
 
 ### Community 209 - "Community 209"
@@ -1360,8 +1343,8 @@ Cohesion: 0.50
 Nodes (4): 11.1 Vitest, 11.2 Playwright, 11.3 Test execution rules, 11. Phase 10 — Test Execution and Automation
 
 ### Community 243 - "Community 243"
-Cohesion: 0.29
-Nodes (6): LiquidButton, LiquidButtonProps, liquidBlobVariants, liquidButtonVariants, MotionDiv, MotionDivProps
+Cohesion: 0.50
+Nodes (3): navigateMock, signInMock, signOutMock
 
 ### Community 244 - "Community 244"
 Cohesion: 0.50
@@ -1626,22 +1609,22 @@ Nodes (4): anyOf, description, $schema, title
 ## Knowledge Gaps
 - **2606 isolated node(s):** `cacheRows`, `PROD`, `E2E`, `printWidth`, `semi` (+2601 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **57 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **60 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `T` connect `Community 2` to `Community 1`, `Community 4`, `Community 164`, `Community 7`, `Community 43`, `Community 155`, `Community 205`, `Community 12`, `Community 111`, `Community 208`, `Community 147`, `Community 24`, `Community 56`, `Community 59`, `Community 60`, `Community 62`?**
-  _High betweenness centrality (0.127) - this node is a cross-community bridge._
-- **Why does `Footer()` connect `Community 62` to `Community 2`, `Community 155`?**
-  _High betweenness centrality (0.022) - this node is a cross-community bridge._
-- **Why does `cn()` connect `Community 11` to `Community 34`, `Community 165`, `Community 38`, `Community 75`, `Community 155`, `Community 12`, `Community 47`, `Community 18`, `Community 243`, `Community 118`, `Community 89`, `Community 59`, `Community 31`?**
-  _High betweenness centrality (0.021) - this node is a cross-community bridge._
+- **Why does `T` connect `Community 2` to `Community 1`, `Community 99`, `Community 4`, `Community 164`, `Community 43`, `Community 12`, `Community 205`, `Community 111`, `Community 208`, `Community 18`, `Community 22`, `Community 89`, `Community 60`, `Community 62`?**
+  _High betweenness centrality (0.123) - this node is a cross-community bridge._
+- **Why does `Footer()` connect `Community 62` to `Community 2`?**
+  _High betweenness centrality (0.030) - this node is a cross-community bridge._
+- **Why does `cn()` connect `Community 11` to `Community 34`, `Community 75`, `Community 12`, `Community 47`, `Community 18`, `Community 118`, `Community 155`, `Community 62`?**
+  _High betweenness centrality (0.020) - this node is a cross-community bridge._
 - **Are the 114 inferred relationships involving `T` (e.g. with `AccountSelect()` and `AccountsTable()`) actually correct?**
   _`T` has 114 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `cacheRows`, `PROD`, `E2E` to the rest of the system?**
   _2606 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.013793103448275862 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.013697370840227983 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.03821789070657849 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.04055065090528206 - nodes in this community are weakly interconnected._
