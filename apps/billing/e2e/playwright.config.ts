@@ -138,6 +138,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      name: 'role-based-setup-wizard',
+      testMatch: /role-based-setup-wizard\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       name: 'tenant-selector',
       testMatch: /tenant-selector\.spec\.ts/,
       dependencies: ['setup-auth'],
