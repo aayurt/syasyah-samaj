@@ -63,6 +63,7 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     // Clean up any leftover test companies from previous runs for idempotent repeatability
     await page.evaluate(async () => {
       try {
+        localStorage.removeItem('billing_tenant_id')
         const res = await fetch('/api/tenants?limit=100', { credentials: 'include' }).then((r) => r.json())
         const testTenants = (res?.docs || []).filter((t: any) =>
           t.name?.includes('ABC') ||
@@ -71,6 +72,8 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
             (code) => t.code === code || t.code?.startsWith('ABC') || t.code?.startsWith('DEF'),
           ),
         )
+        // Delete children before parents to satisfy foreign key constraints
+        testTenants.sort((a: any, b: any) => (b.parent ? 1 : 0) - (a.parent ? 1 : 0))
         for (const t of testTenants) {
           const delRes = await fetch(`/api/tenants/${t.id}`, { method: 'DELETE', credentials: 'include' })
           if (!delRes.ok) {
@@ -78,7 +81,9 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               credentials: 'include',
-              body: JSON.stringify({ code: `OLD-${t.id}-${Date.now().toString().slice(-4)}` }),
+              body: JSON.stringify({
+                code: `OLD-${t.id}-${Date.now().toString().slice(-4)}-${Math.random().toString(36).slice(2, 5)}`,
+              }),
             })
           }
         }
@@ -97,8 +102,8 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     // Phase 1: Parent Company Creation (ABC Company)
     // ─────────────────────────────────────────────────────────────
     // Check whether the company creator form or the consolidated cards are visible
-    const createBtn = page.getByRole('button', { name: /Create Company & Continue/i })
-    const isFormReady = await createBtn
+    const submitBtn = page.getByRole('button', { name: /Create Company & Continue|Create Parent Company/i })
+    const isFormReady = await submitBtn
       .waitFor({ state: 'visible', timeout: 10000 })
       .then(() => true)
       .catch(() => false)
@@ -124,7 +129,7 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     const panInput = page.getByPlaceholder(/e\.g\. 601234567/i)
     await panInput.fill('123456789')
 
-    await createBtn.click()
+    await submitBtn.click()
 
     // Verify creator form closes and redirected to Step 1 for ABC Company
     await expect(page.getByText(/Create Your Organization \/ Parent Company/i)).not.toBeVisible({ timeout: 15000 })
@@ -221,7 +226,7 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     await nameInput.fill('DEF Company')
     await codeInput.fill('DEF')
     await panInput.fill('987654321')
-    await createBtn.click()
+    await submitBtn.click()
 
     await expect(page.locator('h3:has-text("DEF Company"), .font-bold:has-text("DEF Company")').first()).toBeVisible({ timeout: 15000 })
 

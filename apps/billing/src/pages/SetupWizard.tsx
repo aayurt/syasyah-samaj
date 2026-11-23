@@ -201,13 +201,6 @@ export default function SetupWizard() {
     }
   }, [tenantId, currentCompanySubCompanies.length])
 
-  // Clear stale tenantId if it no longer exists in available tenants
-  useEffect(() => {
-    if (tenantId && allTenantsList.length > 0 && !currentTenant) {
-      setTenantId('')
-    }
-  }, [tenantId, allTenantsList.length, currentTenant, setTenantId])
-
   const fyTenantId = useMemo(() => {
     if (!currentTenant) return tenantId
     if (isParentCompany(currentTenant)) return tenantId
@@ -492,7 +485,26 @@ export default function SetupWizard() {
         }
 
         const newId = String(res.doc?.id ?? (res as any)?.id)
+        const createdOption: TenantOption = {
+          id: newId,
+          code: newCompany.code.trim().toUpperCase(),
+          name: newCompany.name.trim(),
+          type: 'central',
+          active: true,
+          slug: slug || newCompany.code.toLowerCase(),
+          pan: newCompany.pan.trim() || '',
+          parent: null,
+          parentId: null,
+        }
+        setSubCompanies((prev) => [...prev, createdOption])
         setTenantId(newId)
+        setCompany({
+          companyName: newCompany.name.trim(),
+          companyPan: newCompany.pan.trim(),
+          companyContact: newCompany.contact.trim(),
+          companyEmail: newCompany.email.trim(),
+          companyAddress: newCompany.address.trim(),
+        })
         pushToast('success', `Parent company "${newCompany.name}" created successfully!`)
       }
 
@@ -544,9 +556,23 @@ export default function SetupWizard() {
             parent: parentVal,
           },
         })
+        setSubCompanies((prev) =>
+          prev.map((sc) =>
+            sc.id === editingSubCompany.id
+              ? {
+                  ...sc,
+                  name: subCompanyForm.name,
+                  code: subCompanyForm.code,
+                  active: subCompanyForm.active,
+                  slug: subCompanyForm.slug,
+                  pan: subCompanyForm.pan || '',
+                }
+              : sc,
+          ),
+        )
         pushToast('success', t('setup.subCompanyUpdated', 'Sub-company updated'))
       } else {
-        await api('/tenants', {
+        const res = await api<{ doc: { id: string | number; name: string } }>('/tenants', {
           method: 'POST',
           immediate: true,
           body: {
@@ -559,6 +585,21 @@ export default function SetupWizard() {
             parent: parentVal,
           },
         })
+        const newSubId = String(res.doc?.id ?? (res as any)?.id ?? Date.now())
+        setSubCompanies((prev) => [
+          ...prev,
+          {
+            id: newSubId,
+            name: subCompanyForm.name,
+            code: subCompanyForm.code,
+            type: 'illaka',
+            active: subCompanyForm.active,
+            slug: subCompanyForm.slug,
+            pan: subCompanyForm.pan || '',
+            parent: parentVal as any,
+            parentId: currentParentId,
+          },
+        ])
         pushToast('success', t('setup.subCompanyCreated', 'Sub-company created'))
         setEnableChildrenCompanies(true)
       }

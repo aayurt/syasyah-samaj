@@ -161,7 +161,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         })
         setTenants(opts)
         const savedId = localStorage.getItem(STORAGE_KEY)
-        if (!savedId || !opts.some((o) => o.id === savedId)) {
+        if (savedId && opts.length > 0 && !opts.some((o) => o.id === savedId)) {
           setTenantIdRaw('')
           localStorage.removeItem(STORAGE_KEY)
         }
