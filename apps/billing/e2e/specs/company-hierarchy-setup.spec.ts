@@ -60,6 +60,21 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     })
     expect(authSuccess).toBeTruthy()
 
+    // Clean up any leftover test companies from previous runs for idempotent repeatability
+    await page.evaluate(async () => {
+      try {
+        const res = await fetch('/api/tenants?limit=100').then((r) => r.json())
+        const testTenants = (res?.docs || []).filter((t: any) =>
+          ['ABC', 'ABC-01', 'ABC-02', 'DEF'].some(
+            (code) => t.code === code || t.code?.startsWith('ABC') || t.code?.startsWith('DEF'),
+          ),
+        )
+        for (const t of testTenants) {
+          await fetch(`/api/tenants/${t.id}`, { method: 'DELETE' })
+        }
+      } catch {}
+    })
+
     // Reload with authenticated cookie
     await page.goto(setupUrl)
     await page.waitForLoadState('domcontentloaded')
@@ -237,7 +252,7 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
 
     // Step 3: Account Types & Groups
     await expect(page.getByText('Account Types & Groups').first()).toBeVisible({ timeout: 10000 })
-    const seedGroupsBtn = page.getByRole('button', { name: /Seed types & groups/i })
+    const seedGroupsBtn = page.getByRole('button', { name: /Seed types & groups/i }).first()
     if (await seedGroupsBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
       await seedGroupsBtn.click()
       await expect(page.getByText(/Asset|Liability|Income|Expense/i).first()).toBeVisible({ timeout: 15000 })
@@ -250,7 +265,7 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
 
     // Step 4: Chart of Accounts
     await expect(page.getByText('Chart of Accounts').first()).toBeVisible({ timeout: 10000 })
-    const seedChartBtn = page.getByRole('button', { name: /Seed chart/i })
+    const seedChartBtn = page.getByRole('button', { name: /Seed chart/i }).first()
     if (await seedChartBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
       await seedChartBtn.click()
       await expect(page.locator('table tr, [role="row"]').filter({ hasText: /Cash|Bank|Receivable|1010/i }).first()).toBeVisible({ timeout: 20000 })
@@ -263,7 +278,7 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
 
     // Step 5: Tax Types
     await expect(page.getByText('Tax Types').first()).toBeVisible({ timeout: 10000 })
-    const seedTaxBtn = page.getByRole('button', { name: /Seed tax types/i })
+    const seedTaxBtn = page.getByRole('button', { name: /Seed tax types/i }).first()
     if (await seedTaxBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
       await seedTaxBtn.click()
       await expect(page.locator('table tr, [role="row"]').filter({ hasText: /VAT|Value Added Tax|13/i }).first()).toBeVisible({ timeout: 20000 })

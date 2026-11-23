@@ -26,10 +26,19 @@ export type TenantOption = {
   pan?: string
   parent?: string | { id: string | number; name?: string; code?: string } | null
   parentId?: string | null
+  contactInfo?: {
+    phone?: string
+    email?: string
+  }
+  location?: {
+    address?: string
+    city?: string
+    state?: string
+  }
 }
 
 export function isParentCompany(tn: TenantOption): boolean {
-  if (tn.type === 'illaka') return false
+  if (tn.type === 'illaka' && tn.parentId) return false
   return tn.type === 'central' || !tn.parentId
 }
 
@@ -139,6 +148,8 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
             pan: t.pan || '',
             parent: t.parent || null,
             parentId,
+            contactInfo: t.contactInfo || null,
+            location: t.location || null,
           }
         })
         setTenants(opts)

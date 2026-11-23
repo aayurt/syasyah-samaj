@@ -104,7 +104,7 @@ export function FiscalYearProvider({ children }: { children: React.ReactNode }) 
     } finally {
       setLoading(false)
     }
-  }, [storageKey, tenantId])
+  }, [storageKey, tenantId, fyTenantId])
 
   // Reload when the tenant changes, on first mount, and whenever a sync
   // flush changed cached rows (e.g. a created fiscal year got its real
