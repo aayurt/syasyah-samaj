@@ -43,7 +43,7 @@ export const TaxTypes: CollectionConfig = {
       name: 'code',
       type: 'text',
       required: true,
-      unique: true,
+      index: true,
       admin: {
         description: 'Short code, e.g. VAT, GST-18, TDS-2.',
       },
