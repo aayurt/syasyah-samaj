@@ -71,16 +71,41 @@ if [ "$DRY_RUN" -eq 1 ]; then
 fi
 
 # -- 1. Local build (catch errors before shipping) -----------------------
+# Resolve database connection for local Next.js SSG build.
+# When Docker is used locally, .env.local may specify 'db:5432' which does not
+# resolve on macOS host. Map it to localhost:5433 (if exposed) or fallback to .env.
+BUILD_DATABASE_URI="${DATABASE_URI:-}"
+if [ -z "$BUILD_DATABASE_URI" ] && [ -f "$LOCAL_PATH/.env.local" ]; then
+  if grep -q "@db:5432" "$LOCAL_PATH/.env.local"; then
+    if nc -z localhost 5433 2>/dev/null; then
+      info "Detected Docker Postgres in .env.local; routing build to localhost:5433 on host..."
+      BUILD_DATABASE_URI="postgresql://postgres:postgres@localhost:5433/syasyah"
+    elif [ -f "$LOCAL_PATH/.env" ] && grep -q "^DATABASE_URI=" "$LOCAL_PATH/.env"; then
+      info "Host cannot reach 'db'; using DATABASE_URI from .env for SSG..."
+      BUILD_DATABASE_URI="$(grep '^DATABASE_URI=' "$LOCAL_PATH/.env" | cut -d '=' -f2-)"
+    fi
+  fi
+fi
+
 if [ "$SKIP_BUILD" -eq 1 ]; then
   warn "Skipping local build (--skip-build)."
 else
-    # Build the Next.js app locally
-    info "Building Next.js app locally..."
-    run_local pnpm run build
-    # Ensure local binary path is included for Vite/tsc
-    info "Building billing SPA locally... (base /app/ for the hosted deploy)"
-    run_local env PATH="$LOCAL_PATH/apps/billing/node_modules/.bin:$PATH" pnpm --dir apps/billing build
-    ok "Local build passed."
+  # Clean stale Next.js build output
+  info "Cleaning stale .next build output..."
+  rm -rf "$LOCAL_PATH/.next"
+
+  # Build the Next.js app locally
+  info "Building Next.js app locally..."
+  if [ -n "$BUILD_DATABASE_URI" ]; then
+    run_local env DATABASE_URI="$BUILD_DATABASE_URI" NODE_OPTIONS="${NODE_OPTIONS_BUILD}" pnpm run build
+  else
+    run_local env NODE_OPTIONS="${NODE_OPTIONS_BUILD}" pnpm run build
+  fi
+
+  # Ensure local binary path is included for Vite/tsc
+  info "Building billing SPA locally... (base /app/ for the hosted deploy)"
+  run_local env PATH="$LOCAL_PATH/apps/billing/node_modules/.bin:$PATH" pnpm --dir apps/billing build
+  ok "Local build passed."
 fi
 
 # -- 2. Ship source to the server ---------------------------------------
@@ -105,7 +130,20 @@ else
   ok "Pushed $BRANCH."
 fi
 
-# -- 3. Ship build artifacts (always rsync - the server never builds) ----
+# -- 3. Verify and ship build artifacts ---------------------------------
+info "Verifying build artifacts before shipping..."
+if [ ! -f "$LOCAL_PATH/.next/BUILD_ID" ]; then
+  fail "Build check failed: $LOCAL_PATH/.next/BUILD_ID missing! Aborting deploy to prevent server 502."
+fi
+if [ ! -f "$LOCAL_PATH/.next/routes-manifest.json" ]; then
+  fail "Build check failed: $LOCAL_PATH/.next/routes-manifest.json missing! Aborting deploy to prevent server 502."
+fi
+if [ ! -f "$LOCAL_PATH/apps/billing/dist/index.html" ]; then
+  fail "Build check failed: $LOCAL_PATH/apps/billing/dist/index.html missing! Aborting deploy."
+fi
+BUILD_ID_VAL="$(cat "$LOCAL_PATH/.next/BUILD_ID")"
+ok "Build artifacts verified (BUILD_ID: $BUILD_ID_VAL)."
+
 info "Shipping build output (.next + billing dist) to $SERVER..."
 # .next: platform-independent JS; exclude webpack cache + standalone (unused
 # with `next start`). --delete keeps the server free of stale build files.
@@ -120,8 +158,13 @@ run_local rsync -az "$LOCAL_PATH"/public/sitemap*.xml "$SERVER:$REMOTE_PATH/publ
 ok "Build output shipped."
 
 # -- 4. Server-side: pull, install (refresh natives), reload -------------
-REMOTE_SCRIPT=$(cat <<EOF
+read -r -d '' REMOTE_SCRIPT <<'EOF' || true
 set -euo pipefail
+REMOTE_PATH="$1"
+RSYNC_MODE="$2"
+BRANCH="$3"
+PM2_APP="$4"
+
 source ~/.nvm/nvm.sh
 cd "$REMOTE_PATH"
 
@@ -130,7 +173,7 @@ if [ "$RSYNC_MODE" -eq 0 ]; then
   git fetch origin "$BRANCH"
   git checkout "$BRANCH" 2>/dev/null || git checkout -B "$BRANCH" origin/"$BRANCH"
   git pull --ff-only origin "$BRANCH" 2>/dev/null || git reset --hard origin/"$BRANCH"
-  echo "OK At: \$(git log --oneline -1)"
+  echo "OK At: $(git log --oneline -1)"
 fi
 
 echo ">> Installing dependencies - refreshes sharp + other native modules for this platform..."
@@ -146,9 +189,29 @@ else
   pm2 start ecosystem.config.cjs
 fi
 pm2 save
+
+echo ">> Verifying app health on server..."
+sleep 2
+SERVER_HEALTHY=0
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8085/ || true)
+  case "$HTTP_CODE" in
+    200|301|302|307|308)
+      echo "OK App responded with HTTP $HTTP_CODE on localhost:8085."
+      SERVER_HEALTHY=1
+      break
+      ;;
+    *)
+      sleep 1
+      ;;
+  esac
+done
+if [ "$SERVER_HEALTHY" -eq 0 ]; then
+  echo "!! Warning: Local check did not return 2xx/3xx within 10s. Inspect 'pm2 logs $PM2_APP'."
+fi
+
 echo "DONE Server deploy complete."
 EOF
-)
 
 # Optional: push local .env to the server (explicit opt-in - it's prod
 # config). The local .env carries dev URLs (localhost) that would break
@@ -163,12 +226,20 @@ if [ "$SYNC_ENV" -eq 1 ]; then
 fi
 
 if [ "$DRY_RUN" -eq 1 ]; then
-  info "Dry run - would execute this on the server:"
-  echo "$REMOTE_SCRIPT" | sed 's/^/    /'
+  info "Dry run - would execute remote script on $SERVER with args: $REMOTE_PATH $RSYNC_MODE $BRANCH $PM2_APP"
 else
   info "Running server-side update..."
-  ssh -o ConnectTimeout=20 -o BatchMode=yes "$SERVER" "bash -s" <<< "$REMOTE_SCRIPT" || fail "server deploy failed"
+  ssh -o ConnectTimeout=20 -o BatchMode=yes "$SERVER" "bash -s -- \"$REMOTE_PATH\" \"$RSYNC_MODE\" \"$BRANCH\" \"$PM2_APP\"" <<< "$REMOTE_SCRIPT" || fail "server deploy failed"
 fi
 
 echo ""
-ok "All done. Check https://syasyahsamaj.com/ to confirm."
+info "Testing public URL ($PUBLIC_URL)..."
+PUB_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$PUBLIC_URL" || true)
+case "$PUB_CODE" in
+  200|301|302|307|308)
+    ok "All done. Verified $PUBLIC_URL is healthy (HTTP $PUB_CODE)."
+    ;;
+  *)
+    warn "Deploy completed, but $PUBLIC_URL returned HTTP $PUB_CODE. Check PM2 logs on $SERVER."
+    ;;
+esac
