@@ -67,12 +67,12 @@ export default function Accounts() {
       await api('/data-ops/seed-demo', {
         method: 'POST',
         body: {
-          chartOnly: true,
-          seeds: ['accountGroups', 'accounts', 'taxTypes'],
+          chartOnly: false,
+          seeds: ['accountGroups', 'accounts', 'taxTypes', 'parties', 'items', 'vouchers', 'fiscalYears'],
           tenant: tenantId ? String(tenantId) : undefined,
         },
       })
-      pushToast('success', 'Chart of Accounts Initialized', 'Recommended standard accounts and groups loaded.')
+      pushToast('success', 'Demo Data Initialized', 'Groups, accounts, tax types, parties, items, fiscal year, and draft vouchers loaded.')
       await load()
     } catch (err) {
       pushToast('error', 'Initialization failed', err instanceof Error ? err.message : String(err))
@@ -314,7 +314,7 @@ export default function Accounts() {
               size="sm"
               className="!bg-emerald-600 hover:!bg-emerald-700 !border-emerald-600"
             >
-              <Sparkles size={14} /> {seedingCoa ? 'Initializing…' : 'Seed Recommended Chart'}
+              <Sparkles size={14} /> {seedingCoa ? 'Initializing…' : 'Seed Demo Data'}
             </LiquidButton>
           )}
           <LiquidButton

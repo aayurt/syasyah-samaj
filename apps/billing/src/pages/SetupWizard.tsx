@@ -32,7 +32,7 @@ import { api, list, getEngine } from '../lib/api'
 import { useDataEpochWatcher, runSeedSelective } from '../lib/dataOps'
 import type { SeedKey } from '../lib/dataOps'
 import { useFiscalYear } from '../lib/fiscalYear'
-import { useTenant, getParentCompanies, getSubCompaniesForParent, type TenantOption } from '../lib/tenant'
+import { useTenant, getParentCompanies, getSubCompaniesForParent, isParentCompany, type TenantOption } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 import { pushToast } from '../lib/toast'
 import { adToBsString, bsToAdString } from '../lib/nepaliDate'
@@ -1254,56 +1254,59 @@ export default function SetupWizard() {
         <div className="mt-6">
           {step.key === 'company' && (
             <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-medium text-slate-600">
-                    Organization name <span className="text-crimson-600 font-bold ml-0.5">*</span>
-                  </label>
-                  <input
-                    value={company.companyName}
-                    onChange={(e) => setCompany({ ...company, companyName: e.target.value })}
-                    placeholder="e.g. Syasyah Sahakari"
-                    className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
+              {/* Parent company profile — only while no parent company exists yet. */}
+              {!settings?.companyName && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-medium text-slate-600">
+                      Organization name <span className="text-crimson-600 font-bold ml-0.5">*</span>
+                    </label>
+                    <input
+                      value={company.companyName}
+                      onChange={(e) => setCompany({ ...company, companyName: e.target.value })}
+                      placeholder="e.g. Syasyah Sahakari"
+                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">PAN</label>
+                    <input
+                      value={company.companyPan}
+                      onChange={(e) => setCompany({ ...company, companyPan: e.target.value })}
+                      placeholder="e.g. 612345678"
+                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Contact</label>
+                    <input
+                      value={company.companyContact}
+                      onChange={(e) => setCompany({ ...company, companyContact: e.target.value })}
+                      placeholder="Phone number"
+                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Email</label>
+                    <input
+                      type="email"
+                      value={company.companyEmail}
+                      onChange={(e) => setCompany({ ...company, companyEmail: e.target.value })}
+                      placeholder="org@example.com"
+                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Address</label>
+                    <input
+                      value={company.companyAddress}
+                      onChange={(e) => setCompany({ ...company, companyAddress: e.target.value })}
+                      placeholder="Registered address"
+                      className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-600">PAN</label>
-                  <input
-                    value={company.companyPan}
-                    onChange={(e) => setCompany({ ...company, companyPan: e.target.value })}
-                    placeholder="e.g. 612345678"
-                    className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-600">Contact</label>
-                  <input
-                    value={company.companyContact}
-                    onChange={(e) => setCompany({ ...company, companyContact: e.target.value })}
-                    placeholder="Phone number"
-                    className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-600">Email</label>
-                  <input
-                    type="email"
-                    value={company.companyEmail}
-                    onChange={(e) => setCompany({ ...company, companyEmail: e.target.value })}
-                    placeholder="org@example.com"
-                    className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-600">Address</label>
-                  <input
-                    value={company.companyAddress}
-                    onChange={(e) => setCompany({ ...company, companyAddress: e.target.value })}
-                    placeholder="Registered address"
-                    className="mt-1 h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
-                </div>
-              </div>
+              )}
 
               {/* Sub-company / ilaka management (central admin only) */}
               {isCentral && (
@@ -1317,7 +1320,7 @@ export default function SetupWizard() {
                         Branches, illakas, and subsidiaries reporting under this parent company.
                       </p>
                     </div>
-                    {!subCompanyModalOpen && (
+                    {!subCompanyModalOpen && activeTenant && isParentCompany(activeTenant) && (
                       <button
                         onClick={() => {
                           setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '', pan: '' })

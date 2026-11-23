@@ -191,35 +191,139 @@ async function readBody(req: PayloadRequest): Promise<Record<string, unknown>> {
 
 // ── Seed templates ────────────────────────────────────────────────
 
-const STARTER_GROUPS = [
+const FOR_PROFIT_GROUPS = [
   { code: '1', name: 'Current Assets', type: 'asset' },
   { code: '2', name: 'Fixed Assets', type: 'asset' },
   { code: '3', name: 'Current Liabilities', type: 'liability' },
-  { code: '4', name: 'Equity', type: 'equity' },
-  { code: '5', name: 'Revenue', type: 'income' },
-  { code: '6', name: 'Expenses', type: 'expense' },
+  { code: '4', name: 'Long-term Liabilities', type: 'liability' },
+  { code: '5', name: 'Capital & Reserves', type: 'equity' },
+  { code: '6', name: 'Income', type: 'income' },
+  { code: '7', name: 'Direct Expenses', type: 'expense' },
+  { code: '8', name: 'Indirect Expenses', type: 'expense' },
 ] as const
 
-const STARTER_ACCOUNTS = [
+const NON_PROFIT_GROUPS = [
+  { code: '1', name: 'Current Assets', type: 'asset' },
+  { code: '2', name: 'Fixed Assets', type: 'asset' },
+  { code: '3', name: 'Current Liabilities', type: 'liability' },
+  { code: '4', name: 'Long-term Liabilities', type: 'liability' },
+  { code: '5', name: 'Accumulated Funds & Reserves', type: 'equity' },
+  { code: '6', name: 'Income & Contributions', type: 'income' },
+  { code: '7', name: 'Programme Expenses', type: 'expense' },
+  { code: '8', name: 'Administrative Expenses', type: 'expense' },
+] as const
+
+const FOR_PROFIT_ACCOUNTS = [
   { code: '1010', name: 'Cash in Hand', group: '1', type: 'asset', class: 'cash' },
+  { code: '1020', name: 'Petty Cash', group: '1', type: 'asset', class: 'cash' },
   { code: '1030', name: 'Bank Account', group: '1', type: 'asset', class: 'bank' },
   { code: '1100', name: 'Accounts Receivable', group: '1', type: 'asset', class: 'other' },
   { code: '1200', name: 'Inventory', group: '1', type: 'asset', class: 'other' },
-  { code: '1060', name: 'Prepaid Expenses', group: '1', type: 'asset', class: 'other' },
-  { code: '1500', name: 'Fixed Asset Cost', group: '2', type: 'asset', class: 'other' },
-  { code: '2000', name: 'Accumulated Depreciation', group: '2', type: 'asset', class: 'other' },
-  { code: '3000', name: 'Accounts Payable', group: '3', type: 'liability', class: 'other' },
-  { code: '3100', name: 'Tax Payable', group: '3', type: 'liability', class: 'other' },
-  { code: '3500', name: 'Accrued Liabilities', group: '3', type: 'liability', class: 'other' },
-  { code: '4000', name: 'Retained Earnings', group: '4', type: 'equity', class: 'other' },
-  { code: '5000', name: 'Revenue', group: '5', type: 'income', class: 'other' },
-  { code: '5100', name: 'Membership Fees', group: '5', type: 'income', class: 'other' },
-  { code: '5200', name: 'Donations', group: '5', type: 'income', class: 'other' },
-  { code: '6000', name: 'Cost of Goods Sold', group: '6', type: 'expense', class: 'other' },
-  { code: '6100', name: 'Operating Expenses', group: '6', type: 'expense', class: 'other' },
-  { code: '6200', name: 'Depreciation Expense', group: '6', type: 'expense', class: 'other' },
-  { code: '6300', name: 'Rent Expense', group: '6', type: 'expense', class: 'other' },
+  { code: '1300', name: 'Prepaid Expenses', group: '1', type: 'asset', class: 'other' },
+  { code: '1400', name: 'VAT Receivable', group: '1', type: 'asset', class: 'other' },
+  { code: '2010', name: 'Land', group: '2', type: 'asset', class: 'other' },
+  { code: '2020', name: 'Building', group: '2', type: 'asset', class: 'other' },
+  { code: '2030', name: 'Furniture & Fixtures', group: '2', type: 'asset', class: 'other' },
+  { code: '2040', name: 'Computer & Equipment', group: '2', type: 'asset', class: 'other' },
+  { code: '2050', name: 'Vehicles', group: '2', type: 'asset', class: 'other' },
+  { code: '2090', name: 'Accumulated Depreciation', group: '2', type: 'asset', class: 'other' },
+  { code: '2100', name: 'Accounts Payable', group: '3', type: 'liability', class: 'other' },
+  { code: '2200', name: 'Accrued Expenses', group: '3', type: 'liability', class: 'other' },
+  { code: '2300', name: 'VAT Payable', group: '3', type: 'liability', class: 'other' },
+  { code: '2400', name: 'Staff Payables', group: '3', type: 'liability', class: 'other' },
+  { code: '2500', name: 'Customer Advances', group: '3', type: 'liability', class: 'other' },
+  { code: '3100', name: 'Bank Loans', group: '4', type: 'liability', class: 'other' },
+  { code: '3200', name: 'Other Long-term Loans', group: '4', type: 'liability', class: 'other' },
+  { code: '4000', name: "Owner's Capital", group: '5', type: 'equity', class: 'other' },
+  { code: '4100', name: 'Retained Earnings', group: '5', type: 'equity', class: 'other' },
+  { code: '4200', name: 'Current Year Earnings', group: '5', type: 'equity', class: 'other' },
+  { code: '5000', name: 'Sales Revenue', group: '6', type: 'income', class: 'other' },
+  { code: '5100', name: 'Service Revenue', group: '6', type: 'income', class: 'other' },
+  { code: '5200', name: 'Sales Returns', group: '6', type: 'income', class: 'other' },
+  { code: '5300', name: 'Other Income', group: '6', type: 'income', class: 'other' },
+  { code: '5400', name: 'Interest Income', group: '6', type: 'income', class: 'other' },
+  { code: '6100', name: 'Purchases', group: '7', type: 'expense', class: 'other' },
+  { code: '6200', name: 'Cost of Goods Sold', group: '7', type: 'expense', class: 'other' },
+  { code: '6300', name: 'Purchase Returns', group: '7', type: 'expense', class: 'other' },
+  { code: '6400', name: 'Freight & Carriage Inward', group: '7', type: 'expense', class: 'other' },
+  { code: '7100', name: 'Rent Expense', group: '8', type: 'expense', class: 'other' },
+  { code: '7200', name: 'Salaries & Wages', group: '8', type: 'expense', class: 'other' },
+  { code: '7300', name: 'Utilities', group: '8', type: 'expense', class: 'other' },
+  { code: '7400', name: 'Office Supplies', group: '8', type: 'expense', class: 'other' },
+  { code: '7500', name: 'Transportation', group: '8', type: 'expense', class: 'other' },
+  { code: '7600', name: 'Communication Expenses', group: '8', type: 'expense', class: 'other' },
+  { code: '7700', name: 'Marketing & Advertising', group: '8', type: 'expense', class: 'other' },
+  { code: '7800', name: 'Audit & Professional Fees', group: '8', type: 'expense', class: 'other' },
+  { code: '7900', name: 'Miscellaneous Expenses', group: '8', type: 'expense', class: 'other' },
 ] as const
+
+const NON_PROFIT_ACCOUNTS = [
+  { code: '1010', name: 'Cash in Hand', group: '1', type: 'asset', class: 'cash' },
+  { code: '1020', name: 'Petty Cash', group: '1', type: 'asset', class: 'cash' },
+  { code: '1030', name: 'Bank Account', group: '1', type: 'asset', class: 'bank' },
+  { code: '1100', name: 'Member Receivables', group: '1', type: 'asset', class: 'other' },
+  { code: '1110', name: 'Other Receivables', group: '1', type: 'asset', class: 'other' },
+  { code: '1200', name: 'Inventory', group: '1', type: 'asset', class: 'other' },
+  { code: '1300', name: 'Prepaid Expenses', group: '1', type: 'asset', class: 'other' },
+  { code: '1400', name: 'VAT Receivable', group: '1', type: 'asset', class: 'other' },
+  { code: '2010', name: 'Land', group: '2', type: 'asset', class: 'other' },
+  { code: '2020', name: 'Building', group: '2', type: 'asset', class: 'other' },
+  { code: '2030', name: 'Furniture & Fixtures', group: '2', type: 'asset', class: 'other' },
+  { code: '2040', name: 'Computer & Equipment', group: '2', type: 'asset', class: 'other' },
+  { code: '2050', name: 'Vehicles', group: '2', type: 'asset', class: 'other' },
+  { code: '2090', name: 'Accumulated Depreciation', group: '2', type: 'asset', class: 'other' },
+  { code: '2100', name: 'Accounts Payable', group: '3', type: 'liability', class: 'other' },
+  { code: '2200', name: 'Accrued Expenses', group: '3', type: 'liability', class: 'other' },
+  { code: '2300', name: 'VAT Payable', group: '3', type: 'liability', class: 'other' },
+  { code: '2400', name: 'Staff Payables', group: '3', type: 'liability', class: 'other' },
+  { code: '2500', name: 'Refundable Member Deposits', group: '3', type: 'liability', class: 'other' },
+  { code: '2600', name: 'Project Funds Payable', group: '3', type: 'liability', class: 'other' },
+  { code: '3100', name: 'Long-term Loans', group: '4', type: 'liability', class: 'other' },
+  { code: '3200', name: 'Other Long-term Liabilities', group: '4', type: 'liability', class: 'other' },
+  { code: '4000', name: 'Opening Accumulated Fund', group: '5', type: 'equity', class: 'other' },
+  { code: '4100', name: 'General Fund', group: '5', type: 'equity', class: 'other' },
+  { code: '4200', name: 'Restricted Fund', group: '5', type: 'equity', class: 'other' },
+  { code: '4300', name: 'Capital Fund', group: '5', type: 'equity', class: 'other' },
+  { code: '4400', name: 'Reserve Fund', group: '5', type: 'equity', class: 'other' },
+  { code: '4500', name: 'Accumulated Surplus / Deficit', group: '5', type: 'equity', class: 'other' },
+  { code: '4600', name: 'Current Year Surplus / Deficit', group: '5', type: 'equity', class: 'other' },
+  { code: '5000', name: 'Membership Fees', group: '6', type: 'income', class: 'other' },
+  { code: '5010', name: 'Annual Membership Renewal', group: '6', type: 'income', class: 'other' },
+  { code: '5020', name: 'Member Contributions', group: '6', type: 'income', class: 'other' },
+  { code: '5100', name: 'Donations', group: '6', type: 'income', class: 'other' },
+  { code: '5110', name: 'Individual Donations', group: '6', type: 'income', class: 'other' },
+  { code: '5120', name: 'Institutional Donations', group: '6', type: 'income', class: 'other' },
+  { code: '5200', name: 'Grants Received', group: '6', type: 'income', class: 'other' },
+  { code: '5210', name: 'Government Grants', group: '6', type: 'income', class: 'other' },
+  { code: '5220', name: 'Project Grants', group: '6', type: 'income', class: 'other' },
+  { code: '5300', name: 'Event Contributions', group: '6', type: 'income', class: 'other' },
+  { code: '5400', name: 'Fundraising Income', group: '6', type: 'income', class: 'other' },
+  { code: '5500', name: 'Interest Income', group: '6', type: 'income', class: 'other' },
+  { code: '5900', name: 'Other Income', group: '6', type: 'income', class: 'other' },
+  { code: '6100', name: 'Programme Expenses', group: '7', type: 'expense', class: 'other' },
+  { code: '6200', name: 'Project Expenses', group: '7', type: 'expense', class: 'other' },
+  { code: '6300', name: 'Event Expenses', group: '7', type: 'expense', class: 'other' },
+  { code: '6400', name: 'Community Development Expenses', group: '7', type: 'expense', class: 'other' },
+  { code: '6500', name: 'Social Welfare Expenses', group: '7', type: 'expense', class: 'other' },
+  { code: '6600', name: 'Education & Training Expenses', group: '7', type: 'expense', class: 'other' },
+  { code: '7100', name: 'Salaries & Wages', group: '8', type: 'expense', class: 'other' },
+  { code: '7200', name: 'Office Rent', group: '8', type: 'expense', class: 'other' },
+  { code: '7300', name: 'Utilities', group: '8', type: 'expense', class: 'other' },
+  { code: '7400', name: 'Office Supplies', group: '8', type: 'expense', class: 'other' },
+  { code: '7500', name: 'Transportation', group: '8', type: 'expense', class: 'other' },
+  { code: '7600', name: 'Communication Expenses', group: '8', type: 'expense', class: 'other' },
+  { code: '7700', name: 'Audit & Professional Fees', group: '8', type: 'expense', class: 'other' },
+  { code: '7800', name: 'Administrative Expenses', group: '8', type: 'expense', class: 'other' },
+  { code: '7900', name: 'Miscellaneous Expenses', group: '8', type: 'expense', class: 'other' },
+] as const
+
+function groupsFor(orgType: 'FOR_PROFIT' | 'NON_PROFIT') {
+  return orgType === 'FOR_PROFIT' ? FOR_PROFIT_GROUPS : NON_PROFIT_GROUPS
+}
+
+function accountsFor(orgType: 'FOR_PROFIT' | 'NON_PROFIT') {
+  return orgType === 'FOR_PROFIT' ? FOR_PROFIT_ACCOUNTS : NON_PROFIT_ACCOUNTS
+}
 
 const SEED_PARTIES = [
   { type: 'customer', name: 'Hari Bahadur Shrestha', phone: '9800000001', address: 'Kathmandu', openingBalance: 0 },
@@ -280,10 +384,15 @@ async function ensureSeedTaxTypes(payload: Payload, tenant: string): Promise<{ c
   return { created, ids }
 }
 
-async function ensureAccountGroups(payload: Payload, tenant: string): Promise<Record<string, number>> {
+async function ensureAccountGroups(
+  payload: Payload,
+  tenant: string,
+  orgType: 'FOR_PROFIT' | 'NON_PROFIT' = 'FOR_PROFIT',
+): Promise<Record<string, number>> {
   const tid = toNum(tenant)
+  const groupList = groupsFor(orgType)
   const groupIds: Record<string, number> = {}
-  for (const g of STARTER_GROUPS) {
+  for (const g of groupList) {
     // Tenant-specific group first, then fall back to common (NULL tenant) group
     let existing = await payload.find({
       collection: 'account-groups',
@@ -317,43 +426,31 @@ async function ensureChart(
   payload: Payload,
   tenant: string,
   preExistingGroups?: Record<string, number>,
+  orgType: 'FOR_PROFIT' | 'NON_PROFIT' = 'FOR_PROFIT',
 ): Promise<{ groups: number; accounts: number }> {
   const tid = toNum(tenant)
-  try {
-    const count = await payload.find({
+  const groupList = groupsFor(orgType)
+  const accountList = accountsFor(orgType)
+  const groupIds = preExistingGroups ?? await ensureAccountGroups(payload, tenant, orgType)
+  let accountsCreated = 0
+  for (const a of accountList) {
+    if (!groupIds[a.code]) continue
+    const existing = await payload.find({
       collection: 'gl-accounts',
-      where: { tenant: { equals: tenant } },
+      where: { code: { equals: a.code }, tenant: { equals: tenant } },
       limit: 1,
       depth: 0,
     })
-    // Fall back to common (NULL tenant) accounts — a shared COA means
-    // tenant-specific accounts may not exist yet.
-    if ((count.totalDocs ?? 0) === 0) {
-      const common = await payload.find({
-        collection: 'gl-accounts',
-        where: { tenant: { equals: null } },
-        limit: 1,
-        depth: 0,
-      })
-      if ((common.totalDocs ?? 0) > 0) return { groups: 0, accounts: 0 }
-    }
-    if ((count.totalDocs ?? 0) > 0) return { groups: 0, accounts: 0 }
-
-    const groupIds = preExistingGroups ?? await ensureAccountGroups(payload, tenant)
-    const groupsCreated = preExistingGroups ? 0 : STARTER_GROUPS.length
-
-    for (const a of STARTER_ACCOUNTS) {
-      await payload.create({
-        collection: 'gl-accounts',
-        data: { ...a, group: groupIds[a.group], tenant: tid },
-        draft: true,
-        overrideAccess: true,
-      })
-    }
-    return { groups: groupsCreated, accounts: STARTER_ACCOUNTS.length }
-  } catch {
-    return { groups: 0, accounts: 0 }
+    if (existing.docs[0]?.id) continue
+    await payload.create({
+      collection: 'gl-accounts',
+      data: { ...a, group: groupIds[a.code], tenant: tid },
+      draft: true,
+      overrideAccess: true,
+    })
+    accountsCreated++
   }
+  return { groups: groupList.length, accounts: accountsCreated }
 }
 
 /** Fill only the default-account slots that are still unset (never clobber). */
@@ -707,6 +804,7 @@ export const DataOps: CollectionConfig = {
 
         const chartOnly = body?.chartOnly === true
         const settings = await getBillingSettings(req.payload)
+        const orgType = settings?.isProfitMaking === false ? 'NON_PROFIT' : 'FOR_PROFIT'
         if (!chartOnly && settings?.demoSeedEnabled === false) {
           return Response.json(
             { error: 'Demo data is disabled in Billing Settings → Features.' },
@@ -723,9 +821,9 @@ export const DataOps: CollectionConfig = {
           return key !== 'members' && key !== 'fiscalYears'
         }
 
-        const groupIds = want('accountGroups') ? await ensureAccountGroups(req.payload, tenant) : {}
+        const groupIds = want('accountGroups') ? await ensureAccountGroups(req.payload, tenant, orgType) : {}
         const groupsCreated = want('accountGroups') ? Object.keys(groupIds).length : 0
-        const chart = want('accounts') ? await ensureChart(req.payload, tenant, groupIds) : { groups: 0, accounts: 0 }
+        const chart = want('accounts') ? await ensureChart(req.payload, tenant, groupIds, orgType) : { groups: 0, accounts: 0 }
         const taxTypes = want('taxTypes') ? await ensureSeedTaxTypes(req.payload, tenant) : { created: 0, ids: [] }
         const taxId = taxTypes.ids[0] ?? null
         const defaultsApplied = want('accounts') ? await ensureDefaults(req.payload) : []
