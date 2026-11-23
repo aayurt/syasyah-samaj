@@ -1415,14 +1415,6 @@ export default function SetupWizard() {
                               </td>
                               <td className="py-3 text-right">
                                 <button
-                                  type="button"
-                                  onClick={() => setTenantId(tc.id)}
-                                  className="mr-1.5 rounded px-2 py-1 text-xs font-medium text-crimson-600 hover:bg-crimson-50"
-                                  title="Configure this branch"
-                                >
-                                  Configure
-                                </button>
-                                <button
                                   onClick={() => {
                                     setSubCompanyForm({
                                       name: tc.name,
