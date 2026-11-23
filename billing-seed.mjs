@@ -95,46 +95,155 @@ const sess = await api('/auth/get-session')
 if (!sess?.user) throw new Error('Login failed — no session.')
 console.log(`    ✓ session for ${sess.user.email} (role ${sess.user.role})`)
 
+// ---- org type --------------------------------------------------------------
+// Read from existing billing-settings; default to for-profit when unset.
+let isProfitMaking = true
+try {
+  const existingSettings = await api('/globals/billing-settings')
+  isProfitMaking = existingSettings.isProfitMaking !== false
+} catch {
+  // settings not yet created — default to for-profit
+}
+const ORG_TYPE = isProfitMaking ? 'FOR_PROFIT' : 'NON_PROFIT'
+console.log(`    organisation type: ${ORG_TYPE}`)
+
 // ---- 2. masters ------------------------------------------------------------
 console.log('\n[2] Masters (idempotent) …')
 
-const GROUPS = [
+const FOR_PROFIT_GROUPS = [
   { name: 'Current Assets', type: 'asset', code: '1' },
   { name: 'Fixed Assets', type: 'asset', code: '2' },
   { name: 'Current Liabilities', type: 'liability', code: '3' },
-  { name: 'Capital & Reserves', type: 'equity', code: '4' },
-  { name: 'Income', type: 'income', code: '5' },
-  { name: 'Direct Expenses', type: 'expense', code: '6' },
-  { name: 'Indirect Expenses', type: 'expense', code: '7' },
+  { name: 'Long-term Liabilities', type: 'liability', code: '4' },
+  { name: 'Capital & Reserves', type: 'equity', code: '5' },
+  { name: 'Income', type: 'income', code: '6' },
+  { name: 'Direct Expenses', type: 'expense', code: '7' },
+  { name: 'Indirect Expenses', type: 'expense', code: '8' },
 ]
+
+const NON_PROFIT_GROUPS = [
+  { name: 'Current Assets', type: 'asset', code: '1' },
+  { name: 'Fixed Assets', type: 'asset', code: '2' },
+  { name: 'Current Liabilities', type: 'liability', code: '3' },
+  { name: 'Long-term Liabilities', type: 'liability', code: '4' },
+  { name: 'Accumulated Funds & Reserves', type: 'equity', code: '5' },
+  { name: 'Income & Contributions', type: 'income', code: '6' },
+  { name: 'Programme Expenses', type: 'expense', code: '7' },
+  { name: 'Administrative Expenses', type: 'expense', code: '8' },
+]
+
+const GROUPS = ORG_TYPE === 'FOR_PROFIT' ? FOR_PROFIT_GROUPS : NON_PROFIT_GROUPS
 const groupIds = {}
 for (const g of GROUPS) {
   const doc = await createIfMissing('account-groups', 'name', g.name, g)
   groupIds[g.name] = doc.id
 }
 
-const ACCOUNTS = [
+const FOR_PROFIT_ACCOUNTS = [
   { name: 'Cash in Hand', code: '1010', type: 'asset', class: 'cash', group: 'Current Assets', openingBalance: 0 },
   { name: 'Petty Cash', code: '1020', type: 'asset', class: 'cash', group: 'Current Assets', openingBalance: 0 },
   { name: 'Bank Account', code: '1030', type: 'asset', class: 'bank', group: 'Current Assets', openingBalance: 0 },
   { name: 'Accounts Receivable', code: '1100', type: 'asset', group: 'Current Assets' },
   { name: 'Inventory', code: '1200', type: 'asset', group: 'Current Assets' },
+  { name: 'Prepaid Expenses', code: '1300', type: 'asset', group: 'Current Assets' },
+  { name: 'VAT Receivable', code: '1400', type: 'asset', group: 'Current Assets' },
+  { name: 'Land', code: '2010', type: 'asset', group: 'Fixed Assets' },
+  { name: 'Building', code: '2020', type: 'asset', group: 'Fixed Assets' },
+  { name: 'Furniture & Fixtures', code: '2030', type: 'asset', group: 'Fixed Assets' },
+  { name: 'Computer & Equipment', code: '2040', type: 'asset', group: 'Fixed Assets' },
+  { name: 'Vehicles', code: '2050', type: 'asset', group: 'Fixed Assets' },
+  { name: 'Accumulated Depreciation', code: '2090', type: 'asset', group: 'Fixed Assets' },
   { name: 'Accounts Payable', code: '2100', type: 'liability', group: 'Current Liabilities' },
-  { name: 'Accrued Payables', code: '2200', type: 'liability', group: 'Current Liabilities' },
-  { name: 'VAT (Input / Output)', code: '2300', type: 'liability', group: 'Current Liabilities' },
-  { name: 'Capital', code: '4000', type: 'equity', group: 'Capital & Reserves' },
+  { name: 'Accrued Expenses', code: '2200', type: 'liability', group: 'Current Liabilities' },
+  { name: 'VAT Payable', code: '2300', type: 'liability', group: 'Current Liabilities' },
+  { name: 'Staff Payables', code: '2400', type: 'liability', group: 'Current Liabilities' },
+  { name: 'Customer Advances', code: '2500', type: 'liability', group: 'Current Liabilities' },
+  { name: 'Bank Loans', code: '3100', type: 'liability', group: 'Long-term Liabilities' },
+  { name: 'Other Long-term Loans', code: '3200', type: 'liability', group: 'Long-term Liabilities' },
+  { name: "Owner's Capital", code: '4000', type: 'equity', group: 'Capital & Reserves' },
+  { name: 'Retained Earnings', code: '4100', type: 'equity', group: 'Capital & Reserves' },
+  { name: 'Current Year Earnings', code: '4200', type: 'equity', group: 'Capital & Reserves' },
   { name: 'Sales Revenue', code: '5000', type: 'income', group: 'Income' },
   { name: 'Service Revenue', code: '5100', type: 'income', group: 'Income' },
-  { name: 'Sales & Purchase Returns', code: '5200', type: 'income', group: 'Income' },
-  { name: 'Purchases / Operating Expense', code: '6100', type: 'expense', group: 'Direct Expenses' },
+  { name: 'Sales Returns', code: '5200', type: 'income', group: 'Income' },
+  { name: 'Other Income', code: '5300', type: 'income', group: 'Income' },
+  { name: 'Interest Income', code: '5400', type: 'income', group: 'Income' },
+  { name: 'Purchases', code: '6100', type: 'expense', group: 'Direct Expenses' },
   { name: 'Cost of Goods Sold', code: '6200', type: 'expense', group: 'Direct Expenses' },
+  { name: 'Purchase Returns', code: '6300', type: 'expense', group: 'Direct Expenses' },
+  { name: 'Freight & Carriage Inward', code: '6400', type: 'expense', group: 'Direct Expenses' },
   { name: 'Rent Expense', code: '7100', type: 'expense', group: 'Indirect Expenses' },
   { name: 'Salaries & Wages', code: '7200', type: 'expense', group: 'Indirect Expenses' },
   { name: 'Utilities', code: '7300', type: 'expense', group: 'Indirect Expenses' },
   { name: 'Office Supplies', code: '7400', type: 'expense', group: 'Indirect Expenses' },
   { name: 'Transportation', code: '7500', type: 'expense', group: 'Indirect Expenses' },
+  { name: 'Communication Expenses', code: '7600', type: 'expense', group: 'Indirect Expenses' },
+  { name: 'Marketing & Advertising', code: '7700', type: 'expense', group: 'Indirect Expenses' },
+  { name: 'Audit & Professional Fees', code: '7800', type: 'expense', group: 'Indirect Expenses' },
   { name: 'Miscellaneous Expenses', code: '7900', type: 'expense', group: 'Indirect Expenses' },
 ]
+
+const NON_PROFIT_ACCOUNTS = [
+  { name: 'Cash in Hand', code: '1010', type: 'asset', class: 'cash', group: 'Current Assets', openingBalance: 0 },
+  { name: 'Petty Cash', code: '1020', type: 'asset', class: 'cash', group: 'Current Assets', openingBalance: 0 },
+  { name: 'Bank Account', code: '1030', type: 'asset', class: 'bank', group: 'Current Assets', openingBalance: 0 },
+  { name: 'Member Receivables', code: '1100', type: 'asset', group: 'Current Assets' },
+  { name: 'Other Receivables', code: '1110', type: 'asset', group: 'Current Assets' },
+  { name: 'Inventory', code: '1200', type: 'asset', group: 'Current Assets' },
+  { name: 'Prepaid Expenses', code: '1300', type: 'asset', group: 'Current Assets' },
+  { name: 'VAT Receivable', code: '1400', type: 'asset', group: 'Current Assets' },
+  { name: 'Land', code: '2010', type: 'asset', group: 'Fixed Assets' },
+  { name: 'Building', code: '2020', type: 'asset', group: 'Fixed Assets' },
+  { name: 'Furniture & Fixtures', code: '2030', type: 'asset', group: 'Fixed Assets' },
+  { name: 'Computer & Equipment', code: '2040', type: 'asset', group: 'Fixed Assets' },
+  { name: 'Vehicles', code: '2050', type: 'asset', group: 'Fixed Assets' },
+  { name: 'Accumulated Depreciation', code: '2090', type: 'asset', group: 'Fixed Assets' },
+  { name: 'Accounts Payable', code: '2100', type: 'liability', group: 'Current Liabilities' },
+  { name: 'Accrued Expenses', code: '2200', type: 'liability', group: 'Current Liabilities' },
+  { name: 'VAT Payable', code: '2300', type: 'liability', group: 'Current Liabilities' },
+  { name: 'Staff Payables', code: '2400', type: 'liability', group: 'Current Liabilities' },
+  { name: 'Refundable Member Deposits', code: '2500', type: 'liability', group: 'Current Liabilities' },
+  { name: 'Project Funds Payable', code: '2600', type: 'liability', group: 'Current Liabilities' },
+  { name: 'Long-term Loans', code: '3100', type: 'liability', group: 'Long-term Liabilities' },
+  { name: 'Other Long-term Liabilities', code: '3200', type: 'liability', group: 'Long-term Liabilities' },
+  { name: 'Opening Accumulated Fund', code: '4000', type: 'equity', group: 'Accumulated Funds & Reserves' },
+  { name: 'General Fund', code: '4100', type: 'equity', group: 'Accumulated Funds & Reserves' },
+  { name: 'Restricted Fund', code: '4200', type: 'equity', group: 'Accumulated Funds & Reserves' },
+  { name: 'Capital Fund', code: '4300', type: 'equity', group: 'Accumulated Funds & Reserves' },
+  { name: 'Reserve Fund', code: '4400', type: 'equity', group: 'Accumulated Funds & Reserves' },
+  { name: 'Accumulated Surplus / Deficit', code: '4500', type: 'equity', group: 'Accumulated Funds & Reserves' },
+  { name: 'Current Year Surplus / Deficit', code: '4600', type: 'equity', group: 'Accumulated Funds & Reserves' },
+  { name: 'Membership Fees', code: '5000', type: 'income', group: 'Income & Contributions' },
+  { name: 'Annual Membership Renewal', code: '5010', type: 'income', group: 'Income & Contributions' },
+  { name: 'Member Contributions', code: '5020', type: 'income', group: 'Income & Contributions' },
+  { name: 'Donations', code: '5100', type: 'income', group: 'Income & Contributions' },
+  { name: 'Individual Donations', code: '5110', type: 'income', group: 'Income & Contributions' },
+  { name: 'Institutional Donations', code: '5120', type: 'income', group: 'Income & Contributions' },
+  { name: 'Grants Received', code: '5200', type: 'income', group: 'Income & Contributions' },
+  { name: 'Government Grants', code: '5210', type: 'income', group: 'Income & Contributions' },
+  { name: 'Project Grants', code: '5220', type: 'income', group: 'Income & Contributions' },
+  { name: 'Event Contributions', code: '5300', type: 'income', group: 'Income & Contributions' },
+  { name: 'Fundraising Income', code: '5400', type: 'income', group: 'Income & Contributions' },
+  { name: 'Interest Income', code: '5500', type: 'income', group: 'Income & Contributions' },
+  { name: 'Other Income', code: '5900', type: 'income', group: 'Income & Contributions' },
+  { name: 'Programme Expenses', code: '6100', type: 'expense', group: 'Programme Expenses' },
+  { name: 'Project Expenses', code: '6200', type: 'expense', group: 'Programme Expenses' },
+  { name: 'Event Expenses', code: '6300', type: 'expense', group: 'Programme Expenses' },
+  { name: 'Community Development Expenses', code: '6400', type: 'expense', group: 'Programme Expenses' },
+  { name: 'Social Welfare Expenses', code: '6500', type: 'expense', group: 'Programme Expenses' },
+  { name: 'Education & Training Expenses', code: '6600', type: 'expense', group: 'Programme Expenses' },
+  { name: 'Salaries & Wages', code: '7100', type: 'expense', group: 'Administrative Expenses' },
+  { name: 'Office Rent', code: '7200', type: 'expense', group: 'Administrative Expenses' },
+  { name: 'Utilities', code: '7300', type: 'expense', group: 'Administrative Expenses' },
+  { name: 'Office Supplies', code: '7400', type: 'expense', group: 'Administrative Expenses' },
+  { name: 'Transportation', code: '7500', type: 'expense', group: 'Administrative Expenses' },
+  { name: 'Communication Expenses', code: '7600', type: 'expense', group: 'Administrative Expenses' },
+  { name: 'Audit & Professional Fees', code: '7700', type: 'expense', group: 'Administrative Expenses' },
+  { name: 'Administrative Expenses', code: '7800', type: 'expense', group: 'Administrative Expenses' },
+  { name: 'Miscellaneous Expenses', code: '7900', type: 'expense', group: 'Administrative Expenses' },
+]
+
+const ACCOUNTS = ORG_TYPE === 'FOR_PROFIT' ? FOR_PROFIT_ACCOUNTS : NON_PROFIT_ACCOUNTS
 const accountIds = {}
 for (const a of ACCOUNTS) {
   const doc = await createIfMissing('gl-accounts', 'name', a.name, {
@@ -144,23 +253,50 @@ for (const a of ACCOUNTS) {
   accountIds[a.name] = doc.id
 }
 
-// Billing settings → default accounts
+// Billing settings → default accounts (org-type aware)
+const defaultAccounts = ORG_TYPE === 'FOR_PROFIT'
+  ? {
+      receivableAccount: accountIds['Accounts Receivable'],
+      payableAccount: accountIds['Accounts Payable'],
+      revenueAccount: accountIds['Sales Revenue'],
+      expenseAccount: accountIds['Purchases'],
+      taxAccount: accountIds['VAT Payable'],
+      cashAccount: accountIds['Cash in Hand'],
+      bankAccount: accountIds['Bank Account'],
+      pettyCashAccount: accountIds['Petty Cash'],
+      inventoryAccount: accountIds['Inventory'],
+      cogsAccount: accountIds['Cost of Goods Sold'],
+      returnsAccount: accountIds['Sales Returns'],
+      accruedPayableAccount: accountIds['Accrued Expenses'],
+      depreciationAccount: accountIds['Accumulated Depreciation'],
+      accumulatedDepreciationAccount: accountIds['Accumulated Depreciation'],
+      membershipFeeAccount: null,
+      donationAccount: null,
+    }
+  : {
+      receivableAccount: accountIds['Member Receivables'],
+      payableAccount: accountIds['Accounts Payable'],
+      revenueAccount: accountIds['Donations'],
+      expenseAccount: accountIds['Programme Expenses'],
+      taxAccount: accountIds['VAT Payable'],
+      cashAccount: accountIds['Cash in Hand'],
+      bankAccount: accountIds['Bank Account'],
+      pettyCashAccount: accountIds['Petty Cash'],
+      inventoryAccount: accountIds['Inventory'],
+      cogsAccount: accountIds['Programme Expenses'],
+      returnsAccount: null,
+      accruedPayableAccount: accountIds['Accrued Expenses'],
+      depreciationAccount: accountIds['Accumulated Depreciation'],
+      accumulatedDepreciationAccount: accountIds['Accumulated Depreciation'],
+      membershipFeeAccount: accountIds['Membership Fees'],
+      donationAccount: accountIds['Donations'],
+    }
+
 const settings = await api('/globals/billing-settings', {
   method: 'POST',
   body: {
     fiscalYearStart: '2026-07-16',
-    receivableAccount: accountIds['Accounts Receivable'],
-    payableAccount: accountIds['Accounts Payable'],
-    revenueAccount: accountIds['Sales Revenue'],
-    expenseAccount: accountIds['Purchases / Operating Expense'],
-    taxAccount: accountIds['VAT (Input / Output)'],
-    cashAccount: accountIds['Cash in Hand'],
-    bankAccount: accountIds['Bank Account'],
-    pettyCashAccount: accountIds['Petty Cash'],
-    inventoryAccount: accountIds['Inventory'],
-    cogsAccount: accountIds['Cost of Goods Sold'],
-    returnsAccount: accountIds['Sales & Purchase Returns'],
-    accruedPayableAccount: accountIds['Accrued Payables'],
+    ...defaultAccounts,
   },
 })
 // Create a working fiscal year (Manager.io-style) and point settings at it.

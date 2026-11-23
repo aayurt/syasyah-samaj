@@ -13,7 +13,7 @@ import {
   PanelLeftOpen,
   Settings,
 } from 'lucide-react'
-import { useTenant } from '../../lib/tenant'
+import { useTenant, getParentCompanies, getSubCompaniesForParent } from '../../lib/tenant'
 import { authClient, useOfflineSession } from '../../lib/auth'
 
 export interface SidebarItem {
@@ -101,16 +101,12 @@ export function AnimatedSidebar({
   }, [tenantDropdownOpen, userDropdownOpen])
 
   const activeTenant = React.useMemo(() => {
-    return tenants.find((tn) => String(tn.id) === String(tenantId)) || tenants[0]
+    return tenants.find((tn) => String(tn.id) === String(tenantId)) || null
   }, [tenants, tenantId])
 
-  const parentTenant = React.useMemo(() => {
-    return tenants.find((tn) => tn.type === 'central' || tn.code === 'C00') || tenants[0]
+  const parentCompanies = React.useMemo(() => {
+    return getParentCompanies(tenants)
   }, [tenants])
-
-  const childTenants = React.useMemo(() => {
-    return tenants.filter((tn) => tn.id !== parentTenant?.id && (tn.type !== 'central' && tn.code !== 'C00'))
-  }, [tenants, parentTenant])
 
   const userInitial = React.useMemo(() => {
     const email = userEmail || 'Admin'
@@ -219,84 +215,95 @@ export function AnimatedSidebar({
               <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                 {t('sidebar.scopeSelect', 'Select Tenant / Illaka')}
               </div>
-              <div className="max-h-60 overflow-y-auto space-y-1.5 p-0.5">
-                {/* ── 1. Parent Organization ── */}
-                {parentTenant && (
-                  <div>
-                    <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-crimson-600">
-                      Parent
-                    </div>
-                    {(() => {
-                      const active = String(parentTenant.id) === String(tenantId)
-                      return (
-                        <button
-                          key={parentTenant.id}
-                          onClick={() => {
-                            setTenantId(String(parentTenant.id))
-                            setTenantDropdownOpen(false)
-                          }}
-                          className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-xs text-left transition-colors ${
-                            active
-                              ? 'bg-crimson-600 text-white font-bold shadow-xs'
-                              : 'bg-crimson-50/70 text-slate-900 hover:bg-crimson-100/70 font-semibold border border-crimson-200/60'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <Building2 size={14} className={active ? 'text-white' : 'text-crimson-600'} />
-                            <span className="truncate">{parentTenant.name || 'Syasyah Samaj Central'}</span>
-                            <span className={`rounded px-1.5 py-0.2 text-[9px] font-bold ${active ? 'bg-white/20 text-white' : 'bg-crimson-200/70 text-crimson-800'}`}>
-                              Parent
-                            </span>
-                          </div>
-                          {parentTenant.code && (
-                            <span className={`font-mono text-[10px] ${active ? 'text-white/80' : 'text-crimson-700'}`}>
-                              {parentTenant.code}
-                            </span>
-                          )}
-                        </button>
-                      )
-                    })()}
-                  </div>
-                )}
+              <div className="max-h-60 overflow-y-auto space-y-2 p-0.5">
+                {/* ── 1. Consolidated Option ── */}
+                {(() => {
+                  const active = !tenantId
+                  return (
+                    <button
+                      onClick={() => {
+                        setTenantId('')
+                        setTenantDropdownOpen(false)
+                      }}
+                      className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-left transition-colors ${
+                        active
+                          ? 'bg-crimson-600 text-white font-bold shadow-xs'
+                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <Building2 size={13} className={active ? 'text-white' : 'text-slate-500'} />
+                        <span className="truncate">{t('illaka.all', 'All Companies (Consolidated)')}</span>
+                      </div>
+                    </button>
+                  )
+                })()}
 
-                {/* ── 2. Child Branches (Illakas) ── */}
-                {childTenants.length > 0 && (
-                  <div className="pt-1">
-                    <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                      <span>Illakas (Children)</span>
-                      <span className="text-[9px] text-slate-400 font-mono">{childTenants.length}</span>
+                {/* ── 2. Hierarchical Parent Companies & Sub-Companies ── */}
+                {parentCompanies.map((parent) => {
+                  const children = getSubCompaniesForParent(parent.id, tenants)
+                  const isParentActive = String(parent.id) === String(tenantId)
+                  return (
+                    <div key={parent.id} className="space-y-1">
+                      <button
+                        onClick={() => {
+                          setTenantId(String(parent.id))
+                          setTenantDropdownOpen(false)
+                        }}
+                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-left transition-colors ${
+                          isParentActive
+                            ? 'bg-crimson-600 text-white font-bold shadow-xs'
+                            : 'bg-crimson-50/70 text-slate-900 hover:bg-crimson-100/70 font-semibold border border-crimson-200/60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <Building2 size={13} className={isParentActive ? 'text-white' : 'text-crimson-600'} />
+                          <span className="truncate">{parent.name}</span>
+                          <span className={`rounded px-1.5 py-0.2 text-[9px] font-bold ${isParentActive ? 'bg-white/20 text-white' : 'bg-crimson-200/70 text-crimson-800'}`}>
+                            Main
+                          </span>
+                        </div>
+                        {parent.code && (
+                          <span className={`font-mono text-[10px] ${isParentActive ? 'text-white/80' : 'text-crimson-700'}`}>
+                            {parent.code}
+                          </span>
+                        )}
+                      </button>
+
+                      {children.length > 0 && (
+                        <div className="space-y-0.5 pl-2 border-l-2 border-slate-200 ml-2">
+                          {children.map((child) => {
+                            const isChildActive = String(child.id) === String(tenantId)
+                            return (
+                              <button
+                                key={child.id}
+                                onClick={() => {
+                                  setTenantId(String(child.id))
+                                  setTenantDropdownOpen(false)
+                                }}
+                                className={`flex w-full items-center justify-between rounded-lg px-2 py-1 text-xs text-left transition-colors ${
+                                  isChildActive
+                                    ? 'bg-crimson-50 text-crimson-800 font-bold'
+                                    : 'text-slate-600 hover:bg-slate-50'
+                                }`}
+                              >
+                                <div className="flex items-center gap-1.5 truncate">
+                                  <CornerDownRight size={10} className={isChildActive ? 'text-crimson-500' : 'text-slate-300'} />
+                                  <span className="truncate">{child.name}</span>
+                                </div>
+                                {child.code && (
+                                  <span className="ml-1.5 font-mono text-[10px] text-slate-400">
+                                    {child.code}
+                                  </span>
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
-                    <div className="space-y-0.5 pl-1.5 border-l-2 border-slate-100 ml-2">
-                      {childTenants.map((tn) => {
-                        const active = String(tn.id) === String(tenantId)
-                        return (
-                          <button
-                            key={tn.id}
-                            onClick={() => {
-                              setTenantId(String(tn.id))
-                              setTenantDropdownOpen(false)
-                            }}
-                            className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-left transition-colors ${
-                              active
-                                ? 'bg-crimson-50 text-crimson-800 font-bold'
-                                : 'text-slate-700 hover:bg-slate-50'
-                            }`}
-                          >
-                            <div className="flex items-center gap-1.5 truncate">
-                              <CornerDownRight size={11} className={active ? 'text-crimson-500' : 'text-slate-300'} />
-                              <span className="truncate">{tn.name}</span>
-                            </div>
-                            {tn.code && (
-                              <span className="ml-2 font-mono text-[10px] text-slate-400">
-                                {tn.code}
-                              </span>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
+                  )
+                })}
               </div>
             </motion.div>
           )}

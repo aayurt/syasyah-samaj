@@ -81,6 +81,17 @@ export const Tenants: CollectionConfig = {
       },
     },
     {
+      name: 'parent',
+      type: 'relationship',
+      relationTo: 'tenants',
+      required: false,
+      admin: {
+        description:
+          'Parent company for sub-companies / branches. Leave empty for root / parent companies.',
+        position: 'sidebar',
+      },
+    },
+    {
       name: 'type',
       type: 'select',
       defaultValue: 'illaka',

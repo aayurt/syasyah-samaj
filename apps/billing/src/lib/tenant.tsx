@@ -24,6 +24,20 @@ export type TenantOption = {
   active?: boolean
   slug?: string
   pan?: string
+  parent?: string | { id: string | number; name?: string; code?: string } | null
+  parentId?: string | null
+}
+
+export function isParentCompany(tn: TenantOption): boolean {
+  return tn.type === 'central' || !tn.parentId
+}
+
+export function getParentCompanies(tenants: TenantOption[]): TenantOption[] {
+  return tenants.filter(isParentCompany)
+}
+
+export function getSubCompaniesForParent(parentId: string, tenants: TenantOption[]): TenantOption[] {
+  return tenants.filter((tn) => String(tn.parentId) === String(parentId))
 }
 
 type TenantCtx = {
@@ -106,15 +120,24 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     if (!isCentral) return
     api<{ docs: any[] }>('/tenants', { query: { limit: 100, depth: 0 } })
       .then((res) => {
-        const opts = res.docs.map((t) => ({
-          id: String(t.id),
-          code: t.code || '',
-          name: t.name || t.slug || '',
-          type: (t.type || 'illaka') as 'central' | 'illaka',
-          active: t.active,
-          slug: t.slug,
-          pan: t.pan || '',
-        }))
+        const opts = res.docs.map((t) => {
+          const parentId = t.parent
+            ? typeof t.parent === 'object'
+              ? String(t.parent.id)
+              : String(t.parent)
+            : null
+          return {
+            id: String(t.id),
+            code: t.code || '',
+            name: t.name || t.slug || '',
+            type: (t.type || 'illaka') as 'central' | 'illaka',
+            active: t.active,
+            slug: t.slug,
+            pan: t.pan || '',
+            parent: t.parent || null,
+            parentId,
+          }
+        })
         setTenants(opts)
         // If no tenant is selected yet, default to empty (consolidated)
         if (!localStorage.getItem(STORAGE_KEY)) {

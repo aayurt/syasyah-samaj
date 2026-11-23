@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -231,13 +231,34 @@ export default function Settings() {
   const [tenantCode, setTenantCode] = useState('')
   const [tenantSlug, setTenantSlug] = useState('')
   const [tenantPan, setTenantPan] = useState('')
-  const [tenantType, setTenantType] = useState<'central' | 'illaka'>('illaka')
+  const [tenantType, setTenantType] = useState<'central' | 'illaka'>('central')
+  const [tenantParentId, setTenantParentId] = useState<string>('')
   const [tenantPhone, setTenantPhone] = useState('')
   const [tenantEmail, setTenantEmail] = useState('')
   const [tenantActive, setTenantActive] = useState(true)
   const [savingTenant, setSavingTenant] = useState(false)
   const [tenantError, setTenantError] = useState('')
   const [multiCompanySaving, setMultiCompanySaving] = useState(false)
+
+  const parentCompanies = useMemo(() => {
+    return subCompanies.filter(
+      (tn) => tn.type === 'central' || (!tn.parent && tn.code === 'C00') || !tn.parent,
+    )
+  }, [subCompanies])
+
+  const getChildrenForParent = useCallback(
+    (parentId: string | number) => {
+      return subCompanies.filter((tn) => {
+        const pId = tn.parent
+          ? typeof tn.parent === 'object'
+            ? String(tn.parent.id)
+            : String(tn.parent)
+          : null
+        return String(pId) === String(parentId)
+      })
+    },
+    [subCompanies],
+  )
 
   const loadSubCompanies = useCallback(() => {
     setLoadingTenants(true)
@@ -255,13 +276,14 @@ export default function Settings() {
     }
   }, [activeSection, loadSubCompanies])
 
-  const openCreateTenant = () => {
+  const openCreateTenant = (parentId?: string | number, defaultType: 'central' | 'illaka' = 'central') => {
     setEditingTenant(null)
     setTenantName('')
     setTenantCode('')
     setTenantSlug('')
     setTenantPan('')
-    setTenantType('illaka')
+    setTenantType(parentId ? 'illaka' : defaultType)
+    setTenantParentId(parentId ? String(parentId) : '')
     setTenantPhone('')
     setTenantEmail('')
     setTenantActive(true)
@@ -275,7 +297,13 @@ export default function Settings() {
     setTenantCode(tDoc.code || '')
     setTenantSlug(tDoc.slug || '')
     setTenantPan(tDoc.pan || '')
-    setTenantType(tDoc.type || 'illaka')
+    setTenantType(tDoc.type || (tDoc.parent ? 'illaka' : 'central'))
+    const pId = tDoc.parent
+      ? typeof tDoc.parent === 'object'
+        ? String(tDoc.parent.id)
+        : String(tDoc.parent)
+      : ''
+    setTenantParentId(pId)
     setTenantPhone(tDoc.contactInfo?.phone || '')
     setTenantEmail(tDoc.contactInfo?.email || '')
     setTenantActive(tDoc.active !== false)
@@ -297,12 +325,13 @@ export default function Settings() {
     setSavingTenant(true)
     setTenantError('')
     try {
-      const payloadBody = {
+      const payloadBody: any = {
         name: tenantName.trim(),
         code: tenantCode.trim() || undefined,
         slug: computedSlug,
         pan: tenantPan.trim() || undefined,
         type: tenantType,
+        parent: tenantType === 'central' ? null : (tenantParentId ? Number(tenantParentId) : null),
         active: tenantActive,
         contactInfo: {
           phone: tenantPhone.trim() || undefined,
@@ -317,7 +346,7 @@ export default function Settings() {
       setTenantModalOpen(false)
       loadSubCompanies()
     } catch (err: any) {
-      setTenantError(err.message || 'Failed to save sub-company')
+      setTenantError(err.message || 'Failed to save company / sub-company')
     } finally {
       setSavingTenant(false)
     }
@@ -1624,97 +1653,178 @@ export default function Settings() {
                 </p>
               </div>
             ) : (
-              /* If Multi-Company is ON, show full sub-companies management */
-              <div>
-                <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              /* If Multi-Company is ON, show full multi-company hierarchy */
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
                   <div>
-                    <h3 className="text-base font-semibold text-slate-800">Sub-Companies / Branches</h3>
+                    <h3 className="text-base font-semibold text-slate-800">
+                      Companies & Sub-Companies Hierarchy
+                    </h3>
                     <p className="text-xs text-slate-500">
-                      Manage sub-companies, branch offices, and business units under this parent organization.
+                      Manage parent companies and their respective sub-companies, branches, and business units.
                     </p>
                   </div>
                   {isAdmin && (
-                    <button
-                      type="button"
-                      onClick={openCreateTenant}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors w-fit"
-                    >
-                      <Plus size={14} />
-                      <span>Add Sub-Company</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openCreateTenant(undefined, 'central')}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-crimson-700 transition-colors w-fit"
+                      >
+                        <Plus size={14} />
+                        <span>Add Parent Company</span>
+                      </button>
+                    </div>
                   )}
                 </div>
 
                 {loadingTenants ? (
-                  <div className="py-6 text-center text-sm text-slate-400">Loading sub-companies…</div>
-                ) : subCompanies.length === 0 ? (
+                  <div className="py-6 text-center text-sm text-slate-400">Loading companies & branches…</div>
+                ) : parentCompanies.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-                    No sub-companies configured yet. Click "Add Sub-Company" to create your first sub-company.
+                    No companies configured yet. Click "Add Parent Company" to set up your first organization.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-slate-200">
-                    <table className="w-full text-left text-sm">
-                      <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        <tr>
-                          <th className="px-4 py-3">Code</th>
-                          <th className="px-4 py-3">Name</th>
-                          <th className="px-4 py-3">Type</th>
-                          <th className="px-4 py-3">PAN</th>
-                          <th className="px-4 py-3">Contact</th>
-                          <th className="px-4 py-3">Status</th>
-                          {isAdmin && <th className="px-4 py-3 text-right">Actions</th>}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white">
-                        {subCompanies.map((tc) => (
-                          <tr key={tc.id} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-700">
-                              {tc.code || '—'}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="font-medium text-slate-900">{tc.name}</div>
-                              <div className="text-xs text-slate-400 font-mono">/{tc.slug}</div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${tc.type === 'central'
-                                  ? 'bg-purple-100 text-purple-700'
-                                  : 'bg-blue-100 text-blue-700'
-                                }`}>
-                                {tc.type === 'central' ? 'Parent / Central' : 'Sub-Company'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 font-mono text-xs text-slate-600">
-                              {tc.pan || '—'}
-                            </td>
-                            <td className="px-4 py-3 text-xs text-slate-600">
-                              {tc.contactInfo?.phone && <div>📞 {tc.contactInfo.phone}</div>}
-                              {tc.contactInfo?.email && <div className="text-slate-400">✉️ {tc.contactInfo.email}</div>}
-                              {!tc.contactInfo?.phone && !tc.contactInfo?.email && <span className="text-slate-400">—</span>}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${tc.active !== false
-                                  ? 'bg-emerald-100 text-emerald-700'
-                                  : 'bg-slate-100 text-slate-500'
-                                }`}>
-                                {tc.active !== false ? 'Active' : 'Inactive'}
-                              </span>
-                            </td>
+                  <div className="space-y-4">
+                    {parentCompanies.map((parent: any) => {
+                      const children = getChildrenForParent(parent.id)
+                      return (
+                        <div
+                          key={parent.id}
+                          className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-2xs"
+                        >
+                          {/* Parent Company Header */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 p-4">
+                            <div className="flex items-start sm:items-center gap-3">
+                              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-crimson-100 text-crimson-700 font-bold text-sm">
+                                <Building2 size={18} />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-slate-900 text-sm">{parent.name}</span>
+                                  <span className="rounded bg-crimson-100 px-1.5 py-0.2 text-[10px] font-bold text-crimson-700">
+                                    Parent Company
+                                  </span>
+                                  <span
+                                    className={`inline-flex items-center rounded-full px-2 py-0.2 text-[10px] font-medium ${
+                                      parent.active !== false
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : 'bg-slate-100 text-slate-500'
+                                    }`}
+                                  >
+                                    {parent.active !== false ? 'Active' : 'Inactive'}
+                                  </span>
+                                </div>
+                                <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                                  {parent.code && <span className="font-mono">Code: {parent.code}</span>}
+                                  {parent.pan && <span className="font-mono">PAN: {parent.pan}</span>}
+                                  {parent.contactInfo?.phone && <span>📞 {parent.contactInfo.phone}</span>}
+                                  {parent.contactInfo?.email && <span>✉️ {parent.contactInfo.email}</span>}
+                                </div>
+                              </div>
+                            </div>
+
                             {isAdmin && (
-                              <td className="px-4 py-3 text-right">
+                              <div className="flex items-center gap-2 self-end sm:self-center">
                                 <button
                                   type="button"
-                                  onClick={() => openEditTenant(tc)}
-                                  className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-                                  title="Edit Sub-Company"
+                                  onClick={() => openCreateTenant(parent.id, 'illaka')}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
                                 >
-                                  <Pencil size={14} />
+                                  <Plus size={13} />
+                                  <span>Add Sub-Company</span>
                                 </button>
-                              </td>
+                                <button
+                                  type="button"
+                                  onClick={() => openEditTenant(parent)}
+                                  className="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-colors"
+                                  title="Edit Company"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                              </div>
                             )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                          </div>
+
+                          {/* Sub-Companies Section */}
+                          <div className="p-4 bg-white">
+                            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+                              <span>Sub-Companies & Branches ({children.length})</span>
+                            </div>
+
+                            {children.length === 0 ? (
+                              <p className="text-xs text-slate-400 italic py-2">
+                                No sub-companies under {parent.name} yet. Click "Add Sub-Company" above to add one.
+                              </p>
+                            ) : (
+                              <div className="overflow-x-auto rounded-lg border border-slate-100">
+                                <table className="w-full text-left text-xs">
+                                  <thead className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-semibold uppercase text-slate-500">
+                                    <tr>
+                                      <th className="px-3 py-2">Code</th>
+                                      <th className="px-3 py-2">Sub-Company Name</th>
+                                      <th className="px-3 py-2">PAN</th>
+                                      <th className="px-3 py-2">Contact</th>
+                                      <th className="px-3 py-2">Status</th>
+                                      {isAdmin && <th className="px-3 py-2 text-right">Actions</th>}
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-100">
+                                    {children.map((sub) => (
+                                      <tr key={sub.id} className="hover:bg-slate-50/60 transition-colors">
+                                        <td className="px-3 py-2 font-mono font-medium text-slate-700">
+                                          {sub.code || '—'}
+                                        </td>
+                                        <td className="px-3 py-2">
+                                          <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                            <span className="text-slate-300">↳</span>
+                                            {sub.name}
+                                          </div>
+                                          <div className="text-[10px] text-slate-400 font-mono pl-3.5">
+                                            /{sub.slug}
+                                          </div>
+                                        </td>
+                                        <td className="px-3 py-2 font-mono text-slate-600">
+                                          {sub.pan || '—'}
+                                        </td>
+                                        <td className="px-3 py-2 text-slate-600">
+                                          {sub.contactInfo?.phone && <div>📞 {sub.contactInfo.phone}</div>}
+                                          {sub.contactInfo?.email && <div className="text-slate-400">✉️ {sub.contactInfo.email}</div>}
+                                          {!sub.contactInfo?.phone && !sub.contactInfo?.email && <span className="text-slate-400">—</span>}
+                                        </td>
+                                        <td className="px-3 py-2">
+                                          <span
+                                            className={`inline-flex items-center rounded-full px-2 py-0.2 text-[10px] font-medium ${
+                                              sub.active !== false
+                                                ? 'bg-emerald-100 text-emerald-700'
+                                                : 'bg-slate-100 text-slate-500'
+                                            }`}
+                                          >
+                                            {sub.active !== false ? 'Active' : 'Inactive'}
+                                          </span>
+                                        </td>
+                                        {isAdmin && (
+                                          <td className="px-3 py-2 text-right">
+                                            <button
+                                              type="button"
+                                              onClick={() => openEditTenant(sub)}
+                                              className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                                              title="Edit Sub-Company"
+                                            >
+                                              <Pencil size={13} />
+                                            </button>
+                                          </td>
+                                        )}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -2893,7 +3003,13 @@ export default function Settings() {
           <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-800">
-                {editingTenant ? 'Edit Sub-Company / Ilaka' : 'Add Sub-Company / Ilaka'}
+                {editingTenant
+                  ? tenantType === 'central'
+                    ? 'Edit Parent Company'
+                    : 'Edit Sub-Company'
+                  : tenantType === 'central'
+                  ? 'Add Parent Company'
+                  : 'Add Sub-Company'}
               </h3>
               <button
                 type="button"
@@ -2925,34 +3041,61 @@ export default function Settings() {
                       setTenantSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
                     }
                   }}
-                  placeholder="e.g. Ilaka 01 - Patan"
+                  placeholder={tenantType === 'central' ? 'e.g. ABC Company' : 'e.g. ABC sub-company -1'}
                   className={inputCls}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Entity Level</label>
+                  <select
+                    value={tenantType}
+                    onChange={(e) => {
+                      const next = e.target.value as 'central' | 'illaka'
+                      setTenantType(next)
+                      if (next === 'central') setTenantParentId('')
+                    }}
+                    className={inputCls}
+                  >
+                    <option value="central">Parent Company</option>
+                    <option value="illaka">Sub-Company / Branch</option>
+                  </select>
+                </div>
+                <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">Code</label>
                   <input
                     type="text"
                     value={tenantCode}
                     onChange={(e) => setTenantCode(e.target.value.toUpperCase())}
-                    placeholder="e.g. IL01"
+                    placeholder={tenantType === 'central' ? 'e.g. ABC' : 'e.g. ABC-01'}
                     className={`${inputCls} font-mono`}
                   />
                 </div>
+              </div>
+
+              {tenantType === 'illaka' && (
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Type</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Parent Company <span className="text-crimson-600 font-bold ml-0.5">*</span>
+                  </label>
                   <select
-                    value={tenantType}
-                    onChange={(e) => setTenantType(e.target.value as 'central' | 'illaka')}
+                    value={tenantParentId}
+                    onChange={(e) => setTenantParentId(e.target.value)}
                     className={inputCls}
+                    required
                   >
-                    <option value="illaka">Ilaka</option>
-                    <option value="central">Central</option>
+                    <option value="">— Select Parent Company —</option>
+                    {parentCompanies
+                      .filter((p: any) => !editingTenant || p.id !== editingTenant.id)
+                      .map((p: any) => (
+                        <option key={p.id} value={p.id}>
+                          🏢 {p.name} {p.code ? `(${p.code})` : ''}
+                        </option>
+                      ))}
                   </select>
                 </div>
-              </div>
+              )}
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
@@ -3028,7 +3171,13 @@ export default function Settings() {
                   disabled={savingTenant}
                   className="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
                 >
-                  {savingTenant ? 'Saving…' : editingTenant ? 'Save Changes' : 'Create Sub-Company'}
+                  {savingTenant
+                    ? 'Saving…'
+                    : editingTenant
+                    ? 'Save Changes'
+                    : tenantType === 'central'
+                    ? 'Create Parent Company'
+                    : 'Create Sub-Company'}
                 </button>
               </div>
             </form>

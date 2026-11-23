@@ -380,6 +380,10 @@ export interface Tenant {
    */
   pan?: string | null;
   /**
+   * Parent company for sub-companies / branches. Leave empty for root / parent companies.
+   */
+  parent?: (number | null) | Tenant;
+  /**
    * Central is the parent organization (code C00); everything else is an illaka.
    */
   type?: ('central' | 'illaka') | null;
@@ -2269,6 +2273,10 @@ export interface Employee {
    * Tax PAN (for TDS withholding)
    */
   pan?: string | null;
+  /**
+   * Parent company for sub-companies / branches. Leave empty for root / parent companies.
+   */
+  parent?: (number | null) | Tenant;
   /**
    * Bank name for salary transfer
    */

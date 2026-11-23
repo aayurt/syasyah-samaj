@@ -11,6 +11,9 @@ const useTenantMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../lib/tenant', () => ({
   useTenant: useTenantMock,
+  getParentCompanies: (list: any[]) => list.filter((t: any) => t.type === 'central' || !t.parentId),
+  getSubCompaniesForParent: (pId: string, list: any[]) =>
+    list.filter((t: any) => String(t.parentId) === String(pId)),
 }))
 
 function renderSwitcher() {
@@ -108,5 +111,34 @@ describe('IllakaSwitcher', () => {
     })
     const { container } = renderSwitcher()
     expect(container.firstChild).toBeNull()
+  })
+
+  it('renders hierarchical parent and sub-companies correctly', () => {
+    const multiTenants = [
+      { id: '10', code: 'ABC', name: 'ABC company', type: 'central' as const },
+      { id: '11', code: 'ABC-1', name: 'ABC sub-company -1', type: 'illaka' as const, parentId: '10' },
+      { id: '12', code: 'ABC-2', name: 'ABC sub-company -2', type: 'illaka' as const, parentId: '10' },
+      { id: '20', code: 'DEF', name: 'DEF company', type: 'central' as const },
+      { id: '21', code: 'DEF-1', name: 'DEF sub-company -1', type: 'illaka' as const, parentId: '20' },
+      { id: '22', code: 'DEF-2', name: 'DEF sub-company -2', type: 'illaka' as const, parentId: '20' },
+    ]
+    useTenantMock.mockReturnValue({
+      tenantId: '',
+      setTenantId,
+      tenants: multiTenants,
+      isCentral: true,
+      isIllaka: false,
+      illakaCode: null,
+      multiCompanyEnabled: true,
+    })
+
+    renderSwitcher()
+
+    expect(screen.getByText(/ABC company/)).toBeInTheDocument()
+    expect(screen.getByText(/ABC sub-company -1/)).toBeInTheDocument()
+    expect(screen.getByText(/ABC sub-company -2/)).toBeInTheDocument()
+    expect(screen.getByText(/DEF company/)).toBeInTheDocument()
+    expect(screen.getByText(/DEF sub-company -1/)).toBeInTheDocument()
+    expect(screen.getByText(/DEF sub-company -2/)).toBeInTheDocument()
   })
 })

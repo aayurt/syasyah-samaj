@@ -1,13 +1,11 @@
 import { Lock, ChevronDown } from 'lucide-react'
-import { useTenant } from '../lib/tenant'
+import { useTenant, getParentCompanies, getSubCompaniesForParent } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 
 /**
- * P1 illaka switcher (§21.1 of docs/illaka/PLAN.md).
- *
- * Central roles: a dropdown — All · Central (C00) · Illaka 01 … Illaka N.
- * Illaka roles: a static locked chip showing their illaka code + name.
- * Viewer: same dropdown but disabled.
+ * P1 multi-company / sub-company switcher (§21.1 of docs/illaka/PLAN.md).
+ * Supports hierarchical multi-company structure:
+ * Multiple Parent Companies (e.g. ABC Company, DEF Company) and their Sub-Companies.
  */
 export default function IllakaSwitcher() {
   const { tenantId, setTenantId, tenants, isCentral, isIllaka, illakaCode, multiCompanyEnabled } =
@@ -33,13 +31,15 @@ export default function IllakaSwitcher() {
     )
   }
 
-  // Central role: dropdown with Parent and Children grouping
+  // Central role: dropdown with hierarchical Company & Sub-Company groups
   if (!isCentral) return null
 
-  const parentTenants = tenants.filter(
-    (tn) => tn.type === 'central' || tn.code === 'C00' || tn.code === 'SYASYAJ',
+  const parents = getParentCompanies(tenants)
+  const parentIds = new Set(parents.map((p) => p.id))
+  // Orphans: sub-companies without a valid parent in the list
+  const orphans = tenants.filter(
+    (tn) => !parentIds.has(tn.id) && (!tn.parentId || !parentIds.has(String(tn.parentId))),
   )
-  const childTenants = tenants.filter((tn) => !parentTenants.some((p) => p.id === tn.id))
 
   return (
     <div className="relative">
@@ -51,19 +51,25 @@ export default function IllakaSwitcher() {
       >
         <option value="">{t('illaka.all', 'All Companies (Consolidated)')}</option>
 
-        {parentTenants.length > 0 && (
-          <optgroup label={t('illaka.parentOrg', 'Parent Organization')}>
-            {parentTenants.map((ten) => (
-              <option key={ten.id} value={ten.id}>
-                {ten.name || 'Syasyah Samaj Central'} [Parent]
+        {parents.map((parent) => {
+          const children = getSubCompaniesForParent(parent.id, tenants)
+          return (
+            <optgroup key={parent.id} label={parent.name || 'Company'}>
+              <option value={parent.id}>
+                🏢 {parent.name} [Main]
               </option>
-            ))}
-          </optgroup>
-        )}
+              {children.map((child) => (
+                <option key={child.id} value={child.id}>
+                  &nbsp;&nbsp;↳ {child.code ? `${child.code} · ` : ''}{child.name}
+                </option>
+              ))}
+            </optgroup>
+          )
+        })}
 
-        {childTenants.length > 0 && (
-          <optgroup label={t('illaka.children', 'Sub-Companies / Branches')}>
-            {childTenants.map((ten) => (
+        {orphans.length > 0 && (
+          <optgroup label={t('illaka.otherBranches', 'Other Branches / Units')}>
+            {orphans.map((ten) => (
               <option key={ten.id} value={ten.id}>
                 {ten.code ? `${ten.code} · ` : ''}{ten.name}
               </option>
