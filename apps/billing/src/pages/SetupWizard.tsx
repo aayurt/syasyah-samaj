@@ -201,6 +201,13 @@ export default function SetupWizard() {
     }
   }, [tenantId, currentCompanySubCompanies.length])
 
+  // Clear stale tenantId if it no longer exists in available tenants
+  useEffect(() => {
+    if (tenantId && allTenantsList.length > 0 && !currentTenant) {
+      setTenantId('')
+    }
+  }, [tenantId, allTenantsList.length, currentTenant, setTenantId])
+
   const fyTenantId = useMemo(() => {
     if (!currentTenant) return tenantId
     if (isParentCompany(currentTenant)) return tenantId

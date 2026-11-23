@@ -53,6 +53,7 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
     setLoading(true)
     try {
       const res = await api<{ docs: any[] }>(`/${collection}`, {
+        immediate: true,
         query: { limit: 1000, depth: depth ?? 0, ...tenantQuery },
       })
       setRecords(res.docs ?? [])
@@ -84,7 +85,7 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
       for (const col of columns) {
         if (col.type !== 'readonly') body[col.key] = rowDraft[col.key]
       }
-      await api(`/${collection}/${id}`, { method: 'PATCH', body })
+      await api(`/${collection}/${id}`, { method: 'PATCH', body, immediate: true })
       setEditRow(null)
       setBusyId(null)
       void loadRecords()
@@ -99,7 +100,7 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
     if (!window.confirm(`Delete this ${title}?`)) return
     setBusyId(id)
     try {
-      await api(`/${collection}/${id}`, { method: 'DELETE' })
+      await api(`/${collection}/${id}`, { method: 'DELETE', immediate: true })
       setBusyId(null)
       void loadRecords()
       pushToast('success', `${title} deleted`)
