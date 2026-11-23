@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Lock, ChevronDown, Building2, GitBranch } from 'lucide-react'
+import { Lock, ChevronDown } from 'lucide-react'
 import { useTenant, getParentCompanies, getSubCompaniesForParent } from '../lib/tenant'
 import { useT } from '../lib/i18n'
 
@@ -11,6 +11,31 @@ export default function IllakaSwitcher() {
   const { tenantId, setTenantId, tenants, isCentral, isIllaka, illakaCode, multiCompanyEnabled } =
     useTenant()
   const t = useT()
+
+  const parents = useMemo(() => getParentCompanies(tenants), [tenants])
+
+  const activeTenant = useMemo(
+    () => tenants.find((t) => String(t.id) === String(tenantId)),
+    [tenants, tenantId]
+  )
+
+  // Identify which parent company corresponds to the currently active tenantId
+  // If tenantId is empty -> selectedParentId is '' (All Companies)
+  // If tenantId is a parent -> selectedParentId is tenantId
+  // If tenantId is a sub-company -> selectedParentId is tenant.parentId
+  const selectedParentId = useMemo(() => {
+    if (!tenantId) return ''
+    if (activeTenant && activeTenant.parentId) {
+      return String(activeTenant.parentId)
+    }
+    return tenantId
+  }, [tenantId, activeTenant])
+
+  // Get sub-companies of the currently selected parent company
+  const currentSubCompanies = useMemo(() => {
+    if (!selectedParentId) return []
+    return getSubCompaniesForParent(selectedParentId, tenants)
+  }, [selectedParentId, tenants])
 
   // If multi-company mode is explicitly turned off, hide the switcher for central users
   if (multiCompanyEnabled === false && !isIllaka) {
@@ -33,27 +58,6 @@ export default function IllakaSwitcher() {
 
   // Central role: dropdowns for Company and Sub-Company
   if (!isCentral) return null
-
-  const parents = getParentCompanies(tenants)
-
-  // Identify which parent company corresponds to the currently active tenantId
-  // If tenantId is empty -> selectedParentId is '' (All Companies)
-  // If tenantId is a parent -> selectedParentId is tenantId
-  // If tenantId is a sub-company -> selectedParentId is tenant.parentId
-  const activeTenant = tenants.find((t) => String(t.id) === String(tenantId))
-  const selectedParentId = useMemo(() => {
-    if (!tenantId) return ''
-    if (activeTenant && activeTenant.parentId) {
-      return String(activeTenant.parentId)
-    }
-    return tenantId
-  }, [tenantId, activeTenant])
-
-  // Get sub-companies of the currently selected parent company
-  const currentSubCompanies = useMemo(() => {
-    if (!selectedParentId) return []
-    return getSubCompaniesForParent(selectedParentId, tenants)
-  }, [selectedParentId, tenants])
 
   const handleCompanyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value

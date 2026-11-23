@@ -1450,7 +1450,7 @@ export default function SetupWizard() {
                           {currentCompanySubCompanies.length === 0 && (
                             <tr>
                               <td colSpan={6} className="py-6 text-center text-xs text-slate-400">
-                                No sub-companies or branches under {activeTenant?.name || 'this company'} yet. Click "{t('setup.addSubCompany', 'Add sub-company')}" to create one.
+                                No sub-companies or branches under {activeTenant?.name || 'this company'} yet. Click &ldquo;{t('setup.addSubCompany', 'Add sub-company')}&rdquo; to create one.
                               </td>
                             </tr>
                           )}
