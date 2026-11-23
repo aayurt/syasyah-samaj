@@ -63,6 +63,12 @@ type TenantCtx = {
   isIllaka: boolean
   /** Whether the user has the super-admin role. */
   isSuperAdmin: boolean
+  /** Whether the user has an admin or super-admin role. */
+  isAdmin: boolean
+  /** Whether the user is a read-only viewer / demo user. */
+  isViewer: boolean
+  /** The user's active role name. */
+  role: string
   /** The user's illaka code, if scoped (e.g. "IL03"). */
   illakaCode: string | null
   /** Whether multi-company / sub-companies mode is enabled by super-admin. */
@@ -76,6 +82,9 @@ const TenantContext = createContext<TenantCtx>({
   isCentral: false,
   isIllaka: false,
   isSuperAdmin: false,
+  isAdmin: false,
+  isViewer: false,
+  role: 'super-admin',
   illakaCode: null,
   multiCompanyEnabled: false,
 })
@@ -91,26 +100,33 @@ const ILLAKA_ROLES = new Set([
 export function TenantProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = authClient.useSession()
   let role = (session?.user as any)?.role as string | undefined
-  if (!role && typeof window !== 'undefined' && window.localStorage.getItem('__e2e_bypass__') === '1') {
-    role = window.localStorage.getItem('__e2e_role__') || 'super-admin'
+  if (typeof window !== 'undefined' && window.localStorage.getItem('__e2e_bypass__') === '1') {
+    role = window.localStorage.getItem('__e2e_role__') || role || 'super-admin'
   }
 
   const isCentral = CENTRAL_ROLES.has(role || '')
   const isIllaka = ILLAKA_ROLES.has(role || '')
   const isSuperAdmin = role === 'super-admin'
+  const isAdmin = role === 'admin' || role === 'super-admin'
+  const isViewer = role === 'viewer' || role === 'user' || role === 'member'
 
   // For illaka users, their tenant comes from the user's tenants array
   const userTenants = (session?.user as any)?.tenants as
     | { tenant: { id: string; code?: string; name?: string } }[]
     | undefined
-  const lockedTenantId =
+  let lockedTenantId =
     isIllaka && userTenants?.[0]?.tenant
       ? String(userTenants[0].tenant.id)
       : null
-  const illakaCode =
+  let illakaCode =
     isIllaka && userTenants?.[0]?.tenant?.code
       ? userTenants[0].tenant.code
       : null
+
+  if (isIllaka && typeof window !== 'undefined' && window.localStorage.getItem('__e2e_bypass__') === '1') {
+    lockedTenantId = window.localStorage.getItem('__e2e_tenant_id__') || lockedTenantId
+    illakaCode = window.localStorage.getItem('__e2e_illaka_code__') || illakaCode || 'IL01'
+  }
 
   // Central users: initialise from localStorage, default to C00
   const [tenantId, setTenantIdRaw] = useState<string>(() => {
@@ -136,7 +152,6 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   }
 
   const refreshTenants = () => {
-    if (!isCentral) return
     api<{ docs: any[] }>('/tenants', { query: { limit: 100, depth: 0 } })
       .then((res) => {
         const opts = res.docs.map((t) => {
@@ -160,10 +175,18 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
           }
         })
         setTenants(opts)
-        const savedId = localStorage.getItem(STORAGE_KEY)
-        if (savedId && opts.length > 0 && !opts.some((o) => o.id === savedId)) {
-          setTenantIdRaw('')
-          localStorage.removeItem(STORAGE_KEY)
+
+        if (isIllaka) {
+          if (!lockedTenantId && opts.length > 0) {
+            const branch = opts.find((o) => o.type === 'illaka' && o.parentId) || opts[0]
+            if (branch) setTenantIdRaw(branch.id)
+          }
+        } else {
+          const savedId = localStorage.getItem(STORAGE_KEY)
+          if (savedId && opts.length > 0 && !opts.some((o) => o.id === savedId)) {
+            setTenantIdRaw('')
+            localStorage.removeItem(STORAGE_KEY)
+          }
         }
       })
       .catch(() => {})
@@ -204,6 +227,9 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         isCentral,
         isIllaka,
         isSuperAdmin,
+        isAdmin,
+        isViewer,
+        role: role || 'super-admin',
         illakaCode,
         multiCompanyEnabled,
       }}

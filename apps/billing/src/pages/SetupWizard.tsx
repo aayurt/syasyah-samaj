@@ -7,6 +7,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Database,
+  Eye,
   GitBranch,
   Hourglass,
   Layers,
@@ -76,7 +77,7 @@ export default function SetupWizard() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const t = useT()
-  const { tenantId, setTenantId, tenants, isIllaka, isCentral, isSuperAdmin } = useTenant()
+  const { tenantId, setTenantId, tenants, isIllaka, isCentral, isSuperAdmin, isViewer } = useTenant()
   const { years, loading: yearsLoading, refresh: refreshYears } = useFiscalYear()
 
   const [stepIdx, setStepIdx] = useState(0)
@@ -829,6 +830,7 @@ export default function SetupWizard() {
       <CompanyDirectory
         parentCompanies={parentCompanies}
         allTenants={allTenantsList}
+        isSuperAdmin={isSuperAdmin}
         onSelectTenant={(id) => setTenantId(id)}
         onAddParentCompany={() => {
           setEditingCompany(null)
@@ -881,6 +883,16 @@ export default function SetupWizard() {
   // 4. Main Setup Wizard View
   return (
     <div className="w-full py-6">
+      {/* View-Only Demo Banner */}
+      {isViewer && (
+        <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900 shadow-2xs">
+          <Eye size={16} className="text-amber-600 shrink-0" />
+          <span className="font-medium">
+            You are viewing the Setup Wizard in View-Only (Demo) mode. Modifications and seeding are disabled.
+          </span>
+        </div>
+      )}
+
       {/* Active Organization Context Bar */}
       <SetupContextBar
         activeTenant={activeTenant}
@@ -984,27 +996,30 @@ export default function SetupWizard() {
                     </label>
                     <input
                       value={company.companyName}
+                      disabled={isViewer}
                       onChange={(e) => setCompany({ ...company, companyName: e.target.value })}
                       placeholder="e.g. Syasyah Sahakari"
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
                     />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-slate-600">PAN / Tax ID</label>
                     <input
                       value={company.companyPan}
+                      disabled={isViewer}
                       onChange={(e) => setCompany({ ...company, companyPan: e.target.value })}
                       placeholder="e.g. 612345678"
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 font-mono text-sm outline-none focus:border-crimson-500"
+                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 font-mono text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
                     />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-slate-600">Contact</label>
                     <input
                       value={company.companyContact}
+                      disabled={isViewer}
                       onChange={(e) => setCompany({ ...company, companyContact: e.target.value })}
                       placeholder="Phone number"
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
                     />
                   </div>
                   <div>
@@ -1012,18 +1027,20 @@ export default function SetupWizard() {
                     <input
                       type="email"
                       value={company.companyEmail}
+                      disabled={isViewer}
                       onChange={(e) => setCompany({ ...company, companyEmail: e.target.value })}
                       placeholder="org@example.com"
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
                     />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-slate-600">Address</label>
                     <input
                       value={company.companyAddress}
+                      disabled={isViewer}
                       onChange={(e) => setCompany({ ...company, companyAddress: e.target.value })}
                       placeholder="Registered address"
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
                     />
                   </div>
                 </div>
@@ -1081,6 +1098,7 @@ export default function SetupWizard() {
               onSaveYear={fyRowSave}
               onDeleteYear={fyDelete}
               busy={busy}
+              isViewer={isViewer}
             />
           )}
 
@@ -1266,17 +1284,19 @@ export default function SetupWizard() {
                 >
                   Open Opening Balances
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAiInitialModel('opening-balances')
-                    setAiOpen(true)
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
-                >
-                  <Sparkles size={14} className="text-amber-500" />
-                  <span>{t('ai.importOpenings', 'Import Opening Balances with AI')}</span>
-                </button>
+                {!isViewer && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAiInitialModel('opening-balances')
+                      setAiOpen(true)
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
+                  >
+                    <Sparkles size={14} className="text-amber-500" />
+                    <span>{t('ai.importOpenings', 'Import Opening Balances with AI')}</span>
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -1301,7 +1321,7 @@ export default function SetupWizard() {
 
           <div className="flex items-center gap-2">
             {/* AI helper shortcuts on specific steps */}
-            {step.key === 'company' && (
+            {!isViewer && step.key === 'company' && (
               <button
                 type="button"
                 onClick={() => {
@@ -1317,16 +1337,27 @@ export default function SetupWizard() {
 
             {/* Primary Action Button - ONE authoritative button */}
             {step.key === 'company' && (
-              <button
-                type="button"
-                onClick={() => void saveCompany()}
-                disabled={busy === 'company' || !settingsLoaded}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-4 py-2 text-xs font-semibold text-white hover:bg-crimson-700 disabled:opacity-60 transition shadow-2xs"
-              >
-                {busy === 'company' ? <Loader2 size={13} className="animate-spin" /> : null}
-                <span>Save & continue</span>
-                <ArrowRight size={14} />
-              </button>
+              isViewer ? (
+                <button
+                  type="button"
+                  onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-900 transition shadow-2xs"
+                >
+                  <span>Next Step (View Only)</span>
+                  <ArrowRight size={14} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void saveCompany()}
+                  disabled={busy === 'company' || !settingsLoaded}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-4 py-2 text-xs font-semibold text-white hover:bg-crimson-700 disabled:opacity-60 transition shadow-2xs"
+                >
+                  {busy === 'company' ? <Loader2 size={13} className="animate-spin" /> : null}
+                  <span>Save & continue</span>
+                  <ArrowRight size={14} />
+                </button>
+              )
             )}
 
             {step.key === 'fiscalYear' && (

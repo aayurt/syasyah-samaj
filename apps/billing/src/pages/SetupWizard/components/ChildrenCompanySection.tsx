@@ -138,14 +138,16 @@ export function ChildrenCompanySection({
                 Branches, illakas, and subsidiaries reporting under this parent organization.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onAddClick}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition shadow-2xs shrink-0"
-            >
-              <Plus size={14} />
-              <span>Add Child Company</span>
-            </button>
+            {isSuperAdmin && (
+              <button
+                type="button"
+                onClick={onAddClick}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition shadow-2xs shrink-0"
+              >
+                <Plus size={14} />
+                <span>Add Child Company</span>
+              </button>
+            )}
           </div>
 
           {subCompanyError && (
@@ -202,26 +204,32 @@ export function ChildrenCompanySection({
                       </td>
                       <td className="py-2.5 px-3 text-right">
                         <div className="inline-flex items-center gap-1.5 justify-end">
-                          <button
-                            type="button"
-                            onClick={() => onEditClick(sc)}
-                            className="rounded px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 transition"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onDeleteClick(sc.id, sc.name)}
-                            disabled={subCompanyBusy === sc.id}
-                            className="rounded p-1 text-slate-400 hover:text-crimson-600 hover:bg-crimson-50 transition"
-                            title="Delete Child Company"
-                          >
-                            {subCompanyBusy === sc.id ? (
-                              <Loader2 size={13} className="animate-spin text-crimson-600" />
-                            ) : (
-                              <Trash2 size={13} />
-                            )}
-                          </button>
+                          {isSuperAdmin ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => onEditClick(sc)}
+                                className="rounded px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 transition"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onDeleteClick(sc.id, sc.name)}
+                                disabled={subCompanyBusy === sc.id}
+                                className="rounded p-1 text-slate-400 hover:text-crimson-600 hover:bg-crimson-50 transition"
+                                title="Delete Child Company"
+                              >
+                                {subCompanyBusy === sc.id ? (
+                                  <Loader2 size={13} className="animate-spin text-crimson-600" />
+                                ) : (
+                                  <Trash2 size={13} />
+                                )}
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">View only</span>
+                          )}
                         </div>
                       </td>
                     </tr>

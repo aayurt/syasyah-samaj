@@ -32,6 +32,7 @@ interface FiscalYearStepProps {
   onSaveYear: (id: string, draft: any) => Promise<void>
   onDeleteYear: (id: string) => Promise<void>
   busy: string
+  isViewer?: boolean
 }
 
 export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
@@ -53,6 +54,7 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
   onSaveYear,
   onDeleteYear,
   busy,
+  isViewer = false,
 }) => {
   const [fyEditRow, setFyEditRow] = useState<string | null>(null)
   const [fyRowDraft, setFyRowDraft] = useState<{
@@ -85,7 +87,14 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
       <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-2xs">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-sm font-bold text-slate-800">Add Fiscal Period</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-800">Add Fiscal Period</h3>
+              {isViewer && (
+                <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                  View-Only
+                </span>
+              )}
+            </div>
             <p className="text-xs text-slate-500">
               Define the accounting date range that drives voucher and receipt sequences.
             </p>
@@ -96,6 +105,7 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
               <button
                 type="button"
                 onClick={toggleFyCal}
+                disabled={isViewer}
                 className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                   fyCal === 'AD'
                     ? 'bg-white text-crimson-700 shadow-2xs'
@@ -107,6 +117,7 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
               <button
                 type="button"
                 onClick={toggleFyCal}
+                disabled={isViewer}
                 className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                   fyCal === 'BS'
                     ? 'bg-white text-crimson-700 shadow-2xs'
@@ -126,13 +137,15 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
               <input
                 type="date"
                 value={fy.startDate}
+                disabled={isViewer}
                 onChange={(e) => setFy({ ...fy, startDate: e.target.value })}
-                className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+                className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
               />
             ) : (
               <input
                 type="text"
                 value={fyBs.start}
+                disabled={isViewer}
                 onChange={(e) => {
                   const v = e.target.value
                   setFyBs({ ...fyBs, start: v })
@@ -140,7 +153,7 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
                   if (ad) setFy({ ...fy, startDate: ad })
                 }}
                 placeholder="YYYY-MM-DD"
-                className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 font-mono text-sm outline-none focus:border-crimson-500"
+                className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 font-mono text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
               />
             )}
             {fyCal === 'BS' && fyBs.start && !bsToAdString(fyBs.start) && (
@@ -154,13 +167,15 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
               <input
                 type="date"
                 value={fy.endDate}
+                disabled={isViewer}
                 onChange={(e) => setFy({ ...fy, endDate: e.target.value })}
-                className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+                className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
               />
             ) : (
               <input
                 type="text"
                 value={fyBs.end}
+                disabled={isViewer}
                 onChange={(e) => {
                   const v = e.target.value
                   setFyBs({ ...fyBs, end: v })
@@ -168,7 +183,7 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
                   if (ad) setFy({ ...fy, endDate: ad })
                 }}
                 placeholder="YYYY-MM-DD"
-                className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 font-mono text-sm outline-none focus:border-crimson-500"
+                className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 font-mono text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
               />
             )}
             {fyCal === 'BS' && fyBs.end && !bsToAdString(fyBs.end) && (
@@ -180,21 +195,24 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
             <label className="text-xs font-medium text-slate-600">Label (optional)</label>
             <input
               value={fy.label}
+              disabled={isViewer}
               onChange={(e) => setFy({ ...fy, label: e.target.value })}
               placeholder="e.g. 2083-84"
-              className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500"
+              className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
             />
           </div>
         </div>
 
         <div className="flex items-center justify-between pt-2">
           <p className="text-xs text-slate-400">
-            Label is auto-generated from the start date when left blank. Added year becomes active.
+            {isViewer
+              ? 'Demo / View-Only mode: adding or modifying fiscal periods is disabled.'
+              : 'Label is auto-generated from the start date when left blank. Added year becomes active.'}
           </p>
           <button
             type="button"
             onClick={() => void onCreateYear()}
-            disabled={busy === 'fiscalYear' || !fy.startDate || !fy.endDate}
+            disabled={isViewer || busy === 'fiscalYear' || !fy.startDate || !fy.endDate}
             className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-crimson-700 disabled:opacity-60 transition shadow-2xs"
           >
             <Plus size={14} /> <span>Add Year</span>
@@ -246,13 +264,14 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
                         ) : (
                           <button
                             type="button"
+                            disabled={isViewer}
                             onClick={() => onSetActiveYear(String(y.id))}
-                            title={isWorking ? 'Working year' : 'Set as working year'}
+                            title={isWorking ? 'Working year' : isViewer ? 'View-only mode' : 'Set as working year'}
                             className={`flex size-5 items-center justify-center rounded-full border transition ${
                               isWorking
                                 ? 'border-crimson-600 bg-crimson-600 text-white'
                                 : 'border-slate-300 text-transparent hover:border-crimson-400'
-                            }`}
+                            } ${isViewer ? 'cursor-not-allowed opacity-80' : ''}`}
                           >
                             <CheckCircle2 size={12} />
                           </button>
@@ -355,6 +374,10 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
                             >
                               <X size={13} />
                             </button>
+                          </div>
+                        ) : isViewer ? (
+                          <div className="flex items-center justify-end">
+                            <span className="text-xs text-slate-400 italic">View only</span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-1">

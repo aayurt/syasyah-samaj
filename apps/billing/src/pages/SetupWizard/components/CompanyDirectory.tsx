@@ -15,6 +15,7 @@ import { useT } from '../../../lib/i18n'
 interface CompanyDirectoryProps {
   parentCompanies: TenantOption[]
   allTenants: TenantOption[]
+  isSuperAdmin?: boolean
   onSelectTenant: (id: string) => void
   onAddParentCompany: () => void
   onEditParentCompany: (company: TenantOption) => void
@@ -25,6 +26,7 @@ interface CompanyDirectoryProps {
 export const CompanyDirectory: React.FC<CompanyDirectoryProps> = ({
   parentCompanies,
   allTenants,
+  isSuperAdmin = true,
   onSelectTenant,
   onAddParentCompany,
   onEditParentCompany,
@@ -55,20 +57,22 @@ export const CompanyDirectory: React.FC<CompanyDirectoryProps> = ({
             Create Your Organization / Parent Company
           </h2>
           <p className="mt-2 text-xs text-slate-500 max-w-md mx-auto">
-            No companies have been configured yet. Start by setting up your primary parent company
-            (e.g. Syasyah Samaj or ABC Company). You can later manage branches, illakas, and
-            subsidiaries under it.
+            {isSuperAdmin
+              ? 'No companies have been configured yet. Start by setting up your primary parent company (e.g. Syasyah Samaj or ABC Company). You can later manage branches, illakas, and subsidiaries under it.'
+              : 'No organizations configured yet. Please request a Super-Administrator to register the primary parent organization.'}
           </p>
-          <div className="mt-6 flex justify-center">
-            <button
-              type="button"
-              onClick={onAddParentCompany}
-              className="inline-flex items-center gap-2 rounded-xl bg-crimson-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-crimson-700 transition"
-            >
-              <Plus size={16} />
-              <span>Create Company & Continue</span>
-            </button>
-          </div>
+          {isSuperAdmin && (
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={onAddParentCompany}
+                className="inline-flex items-center gap-2 rounded-xl bg-crimson-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-crimson-700 transition"
+              >
+                <Plus size={16} />
+                <span>Create Company & Continue</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -86,14 +90,16 @@ export const CompanyDirectory: React.FC<CompanyDirectoryProps> = ({
             profile, fiscal periods, and accounts, or create a new parent company.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onAddParentCompany}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-crimson-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-crimson-700 transition"
-        >
-          <Plus size={14} />
-          <span>Add Parent Company</span>
-        </button>
+        {isSuperAdmin && (
+          <button
+            type="button"
+            onClick={onAddParentCompany}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-crimson-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-crimson-700 transition"
+          >
+            <Plus size={14} />
+            <span>Add Parent Company</span>
+          </button>
+        )}
       </div>
 
       {parentCompanies.length > 4 && (
@@ -151,13 +157,15 @@ export const CompanyDirectory: React.FC<CompanyDirectoryProps> = ({
                     <span className="font-medium text-slate-500">
                       Sub-Companies ({children.length})
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => onAddSubCompany(parent)}
-                      className="text-[11px] font-semibold text-crimson-600 hover:text-crimson-700 inline-flex items-center gap-0.5"
-                    >
-                      <Plus size={11} /> {t('setup.addSubCompany', 'Add Sub-Company')}
-                    </button>
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => onAddSubCompany(parent)}
+                        className="text-[11px] font-semibold text-crimson-600 hover:text-crimson-700 inline-flex items-center gap-0.5"
+                      >
+                        <Plus size={11} /> {t('setup.addSubCompany', 'Add Sub-Company')}
+                      </button>
+                    )}
                   </div>
 
                   {children.length > 0 ? (
@@ -204,14 +212,16 @@ export const CompanyDirectory: React.FC<CompanyDirectoryProps> = ({
                   >
                     <Edit2 size={13} />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteParentCompany(parent.id, parent.name)}
-                    className="rounded-lg p-1.5 text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-700 transition"
-                    title={`Delete ${parent.name}`}
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  {isSuperAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteParentCompany(parent.id, parent.name)}
+                      className="rounded-lg p-1.5 text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-700 transition"
+                      title={`Delete ${parent.name}`}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
