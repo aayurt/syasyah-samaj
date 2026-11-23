@@ -37,7 +37,7 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
   onSuccess,
 }) => {
   const [records, setRecords] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [editRow, setEditRow] = useState<string | null>(null)
   const [rowDraft, setRowDraft] = useState<Record<string, any>>({})
   const [busyId, setBusyId] = useState<string | null>(null)

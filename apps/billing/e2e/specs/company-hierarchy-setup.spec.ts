@@ -63,14 +63,24 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     // Clean up any leftover test companies from previous runs for idempotent repeatability
     await page.evaluate(async () => {
       try {
-        const res = await fetch('/api/tenants?limit=100').then((r) => r.json())
+        const res = await fetch('/api/tenants?limit=100', { credentials: 'include' }).then((r) => r.json())
         const testTenants = (res?.docs || []).filter((t: any) =>
+          t.name?.includes('ABC') ||
+          t.name?.includes('DEF') ||
           ['ABC', 'ABC-01', 'ABC-02', 'DEF'].some(
             (code) => t.code === code || t.code?.startsWith('ABC') || t.code?.startsWith('DEF'),
           ),
         )
         for (const t of testTenants) {
-          await fetch(`/api/tenants/${t.id}`, { method: 'DELETE' })
+          const delRes = await fetch(`/api/tenants/${t.id}`, { method: 'DELETE', credentials: 'include' })
+          if (!delRes.ok) {
+            await fetch(`/api/tenants/${t.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ code: `OLD-${t.id}-${Date.now().toString().slice(-4)}` }),
+            })
+          }
         }
       } catch {}
     })
@@ -185,13 +195,13 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     // Test Post-Save Choice Flow modal when children exist:
     const saveCompanyStepBtn = page.getByRole('button', { name: /Save & continue/i })
     await saveCompanyStepBtn.click()
-    await expect(page.getByText('Company Profile Saved')).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('heading', { name: 'Company Profile Saved' })).toBeVisible({ timeout: 10000 })
     await expect(page.getByText(/Continue Parent Company Setup/i)).toBeVisible()
     await expect(page.getByText(/OR ONBOARD A CHILD COMPANY/i)).toBeVisible()
 
     // Close choice dialog so we can proceed to Phase 3 (Multi-Company CRUD)
     await page.getByRole('button', { name: /Decide Later/i }).click()
-    await expect(page.getByText('Company Profile Saved')).not.toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Company Profile Saved' })).not.toBeVisible()
 
     // ─────────────────────────────────────────────────────────────
     // Phase 3: Multi-Company CRUD (DEF Company)
@@ -201,7 +211,7 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     await switchAllBtn.click()
 
     await expect(page.getByText(/Select Company to Onboard & Configure/i)).toBeVisible({ timeout: 10000 })
-    await expect(page.locator('h3:has-text("ABC Company")')).toBeVisible()
+    await expect(page.locator('h3:has-text("ABC Company")').first()).toBeVisible()
 
     // Add Company 2 (DEF Company)
     const addSecondParentBtn = page.getByRole('button', { name: /Add Parent Company/i })
@@ -220,8 +230,8 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     await expect(page.getByText(/Select Company to Onboard & Configure/i)).toBeVisible()
 
     // Both companies should be listed
-    await expect(page.locator('h3:has-text("ABC Company")')).toBeVisible()
-    await expect(page.locator('h3:has-text("DEF Company")')).toBeVisible()
+    await expect(page.locator('h3:has-text("ABC Company")').first()).toBeVisible()
+    await expect(page.locator('h3:has-text("DEF Company")').first()).toBeVisible()
 
     // Edit DEF Company from consolidated view
     const editDefBtn = page.getByTitle('Edit DEF Company')
@@ -231,14 +241,14 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     const updateCompanyBtn = page.getByRole('button', { name: /Update Company & Continue/i })
     await updateCompanyBtn.click()
 
-    await expect(page.locator('h3:has-text("DEF Global Holdings")')).toBeVisible({ timeout: 10000 })
+    await expect(page.locator('h3:has-text("DEF Global Holdings")').first()).toBeVisible({ timeout: 10000 })
 
     // Delete DEF Global Holdings
     const deleteDefBtn = page.getByTitle('Delete DEF Global Holdings')
     await deleteDefBtn.click()
 
     await expect(page.locator('h3:has-text("DEF Global Holdings")')).not.toBeVisible({ timeout: 10000 })
-    await expect(page.locator('h3:has-text("ABC Company")')).toBeVisible()
+    await expect(page.locator('h3:has-text("ABC Company")').first()).toBeVisible()
 
     // ─────────────────────────────────────────────────────────────
     // Phase 4: Select Sub-Company & Run Complete Setup Wizard
@@ -274,9 +284,10 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     await nextStepBtn.click()
 
     // Step 3: Account Types & Groups
-    await expect(page.getByText('Account Types & Groups').first()).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('heading', { level: 2, name: /Account Types & Groups/i })).toBeVisible({ timeout: 10000 })
+    await page.getByText(/Loading account types/i).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
     const seedGroupsBtn = page.getByRole('button', { name: /Seed types & groups/i }).first()
-    if (await seedGroupsBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    if (await seedGroupsBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await seedGroupsBtn.click()
       await expect(page.getByText(/Asset|Liability|Income|Expense/i).first()).toBeVisible({ timeout: 15000 })
     }
@@ -287,11 +298,15 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     await nextStep3.click()
 
     // Step 4: Chart of Accounts
-    await expect(page.getByText('Chart of Accounts').first()).toBeVisible({ timeout: 10000 })
-    const seedChartBtn = page.getByRole('button', { name: /Seed chart/i }).first()
-    if (await seedChartBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await seedChartBtn.click()
-      await expect(page.locator('table tr, [role="row"]').filter({ hasText: /Cash|Bank|Receivable|1010/i }).first()).toBeVisible({ timeout: 20000 })
+    await expect(page.getByRole('heading', { level: 2, name: /Chart of Accounts/i })).toBeVisible({ timeout: 10000 })
+    await page.getByText(/Loading chart/i).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+    const chartHasRows = await page.locator('table tr, [role="row"]').filter({ hasText: /Cash|Bank|Receivable|1010/i }).first().isVisible().catch(() => false)
+    if (!chartHasRows) {
+      const seedChartBtn = page.getByRole('button', { name: /Seed chart/i }).first()
+      if (await seedChartBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await seedChartBtn.click()
+        await expect(page.locator('table tr, [role="row"]').filter({ hasText: /Cash|Bank|Receivable|1010/i }).first()).toBeVisible({ timeout: 20000 })
+      }
     }
 
     // Advance to Step 5 (Tax Types)
@@ -300,11 +315,15 @@ test.describe.serial('Multi-Tenant Company Hierarchy & Setup Wizard Flow', () =>
     await nextStep4.click()
 
     // Step 5: Tax Types
-    await expect(page.getByText('Tax Types').first()).toBeVisible({ timeout: 10000 })
-    const seedTaxBtn = page.getByRole('button', { name: /Seed tax types/i }).first()
-    if (await seedTaxBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await seedTaxBtn.click()
-      await expect(page.locator('table tr, [role="row"]').filter({ hasText: /VAT|Value Added Tax|13/i }).first()).toBeVisible({ timeout: 20000 })
+    await expect(page.getByRole('heading', { level: 2, name: /Tax Types/i })).toBeVisible({ timeout: 10000 })
+    await page.getByText(/Loading tax types/i).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+    const taxHasRows = await page.locator('table tr, [role="row"]').filter({ hasText: /VAT|Value Added Tax|13/i }).first().isVisible().catch(() => false)
+    if (!taxHasRows) {
+      const seedTaxBtn = page.getByRole('button', { name: /Seed tax types/i }).first()
+      if (await seedTaxBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await seedTaxBtn.click()
+        await expect(page.locator('table tr, [role="row"]').filter({ hasText: /VAT|Value Added Tax|13/i }).first()).toBeVisible({ timeout: 20000 })
+      }
     }
 
     // ─────────────────────────────────────────────────────────────
