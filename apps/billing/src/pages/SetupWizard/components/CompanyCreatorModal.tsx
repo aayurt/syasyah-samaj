@@ -33,6 +33,7 @@ export const CompanyCreatorModal: React.FC<CompanyCreatorModalProps> = ({
   const isDuplicateName = React.useMemo(() => {
     if (!formData.name.trim()) return false
     const trimmed = formData.name.trim().toLowerCase()
+    if (editingCompany && editingCompany.name.trim().toLowerCase() === trimmed) return false
     return parentCompanies.some(
       (p) => (!editingCompany || String(p.id) !== String(editingCompany.id)) &&
              p.name.trim().toLowerCase() === trimmed
@@ -42,6 +43,7 @@ export const CompanyCreatorModal: React.FC<CompanyCreatorModalProps> = ({
   const isDuplicateCode = React.useMemo(() => {
     if (!formData.code.trim()) return false
     const trimmed = formData.code.trim().toUpperCase()
+    if (editingCompany && editingCompany.code.trim().toUpperCase() === trimmed) return false
     return parentCompanies.some(
       (p) => (!editingCompany || String(p.id) !== String(editingCompany.id)) &&
              p.code.trim().toUpperCase() === trimmed

@@ -349,10 +349,13 @@ export default function SetupWizard() {
   const isDuplicateParentName = useMemo(() => {
     if (isSubCompany || !company.companyName.trim()) return false
     const trimmed = company.companyName.trim().toLowerCase()
+    // If the name is unchanged from the active company's current name, it is not a duplicate
+    if (activeTenant && activeTenant.name.trim().toLowerCase() === trimmed) return false
+    const currentCompanyId = activeTenant?.id || tenantId
     return parentCompanies.some(
-      (p) => String(p.id) !== String(tenantId) && p.name.trim().toLowerCase() === trimmed,
+      (p) => (!currentCompanyId || String(p.id) !== String(currentCompanyId)) && p.name.trim().toLowerCase() === trimmed,
     )
-  }, [isSubCompany, company.companyName, parentCompanies, tenantId])
+  }, [isSubCompany, company.companyName, parentCompanies, tenantId, activeTenant])
 
   // Save company profile
   const saveCompany = async () => {
@@ -454,7 +457,7 @@ export default function SetupWizard() {
       (p) => (!editingCompany || String(p.id) !== String(editingCompany.id)) &&
              p.name.trim().toLowerCase() === trimmedName.toLowerCase(),
     )
-    if (isDuplicateName) {
+    if (isDuplicateName && (!editingCompany || editingCompany.name.trim().toLowerCase() !== trimmedName.toLowerCase())) {
       setCompanyCreatorError(`A parent company with the name "${trimmedName}" already exists. Parent company names must be unique.`)
       return
     }
@@ -463,7 +466,7 @@ export default function SetupWizard() {
       (p) => (!editingCompany || String(p.id) !== String(editingCompany.id)) &&
              p.code.trim().toUpperCase() === trimmedCode,
     )
-    if (isDuplicateCode) {
+    if (isDuplicateCode && (!editingCompany || editingCompany.code.trim().toUpperCase() !== trimmedCode)) {
       setCompanyCreatorError(`A company with the code "${trimmedCode}" already exists. Please choose a unique code.`)
       return
     }

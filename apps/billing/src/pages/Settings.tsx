@@ -320,7 +320,8 @@ export default function Settings() {
 
     if (tenantType === 'central') {
       const trimmed = tenantName.trim().toLowerCase()
-      const isDuplicate = tenants.some(
+      const isSameName = editingTenant && editingTenant.name.trim().toLowerCase() === trimmed
+      const isDuplicate = !isSameName && tenants.some(
         (t) => (t.type === 'central' || !t.parentId) &&
                (!editingTenant || String(t.id) !== String(editingTenant.id)) &&
                t.name.trim().toLowerCase() === trimmed,

@@ -33,6 +33,16 @@ export const Tenants: CollectionConfig = {
         const name = typeof data.name === 'string' ? data.name.trim() : (data.name as any)?.en?.trim() || ''
         if (!name) return data
 
+        const currentId = originalDoc?.id || (data as any)?.id || (req as any)?.id || (req as any)?.routeParams?.id || (req as any)?.params?.id
+
+        // If updating an existing doc and the name has not changed, skip uniqueness check
+        if (operation === 'update' && originalDoc?.name) {
+          const origName = typeof originalDoc.name === 'string' ? originalDoc.name.trim() : (originalDoc.name as any)?.en?.trim() || ''
+          if (origName.toLowerCase() === name.toLowerCase()) {
+            return data
+          }
+        }
+
         const type = data.type || originalDoc?.type || 'illaka'
         const parent = data.parent !== undefined ? data.parent : originalDoc?.parent
         const isParent = type === 'central' || (!parent && type !== 'illaka')
@@ -46,7 +56,6 @@ export const Tenants: CollectionConfig = {
             limit: 100,
             depth: 0,
           })
-          const currentId = originalDoc?.id
           const conflict = existing.docs.find((doc) => {
             if (currentId && String(doc.id) === String(currentId)) return false
             const docName = typeof doc.name === 'string' ? doc.name.trim() : (doc.name as any)?.en?.trim() || ''
