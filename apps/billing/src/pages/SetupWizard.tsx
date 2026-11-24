@@ -195,6 +195,13 @@ export default function SetupWizard() {
     return allTenantsList.find((t) => String(t.id) === String(activeTenant.parentId)) || null
   }, [activeTenant, allTenantsList])
 
+  // Memoized sub-company tenant query — inline object literal in JSX would
+  // create a new reference every render, tripping SeedTableStep's reload effect
+  const subTenantQuery = useMemo(
+    () => (isSubCompany && parentOfActiveTenant ? { tenant: parentOfActiveTenant.id } : tenantQuery),
+    [isSubCompany, parentOfActiveTenant?.id, tenantQuery]
+  )
+
   const currentCompanySubCompanies = useMemo(() => {
     if (!tenantId) return []
     return getSubCompaniesForParent(tenantId, allTenantsList)
@@ -340,12 +347,12 @@ export default function SetupWizard() {
       isSubCompany
         ? (parentAccountGroupsCount ?? 0) > 0 || (accountGroupsCount ?? 0) > 0
         : Boolean(seedDone['seed-account-groups'] || seedDone['accountGroups']) ||
-          (accountGroupsCount ?? 0) > 0,
+        (accountGroupsCount ?? 0) > 0,
     'seed-accounts':
       isSubCompany
         ? (parentChartCount ?? 0) > 0 || (chartCount ?? 0) > 0
         : Boolean(seedDone['seed-accounts'] || seedDone['accounts']) ||
-          (chartCount ?? 0) > 0,
+        (chartCount ?? 0) > 0,
     'seed-taxTypes':
       Boolean(seedDone['seed-taxTypes'] || seedDone['taxTypes']) ||
       (taxTypesCount ?? 0) > 0,
@@ -492,7 +499,7 @@ export default function SetupWizard() {
 
     const isDuplicateName = parentCompanies.some(
       (p) => (!editingCompany || String(p.id) !== String(editingCompany.id)) &&
-             p.name.trim().toLowerCase() === trimmedName.toLowerCase(),
+        p.name.trim().toLowerCase() === trimmedName.toLowerCase(),
     )
     if (isDuplicateName && (!editingCompany || editingCompany.name.trim().toLowerCase() !== trimmedName.toLowerCase())) {
       setCompanyCreatorError(`A parent company with the name "${trimmedName}" already exists. Parent company names must be unique.`)
@@ -501,7 +508,7 @@ export default function SetupWizard() {
 
     const isDuplicateCode = parentCompanies.some(
       (p) => (!editingCompany || String(p.id) !== String(editingCompany.id)) &&
-             p.code.trim().toUpperCase() === trimmedCode,
+        p.code.trim().toUpperCase() === trimmedCode,
     )
     if (isDuplicateCode && (!editingCompany || editingCompany.code.trim().toUpperCase() !== trimmedCode)) {
       setCompanyCreatorError(`A company with the code "${trimmedCode}" already exists. Please choose a unique code.`)
@@ -568,7 +575,7 @@ export default function SetupWizard() {
               companyEmail: newCompany.email.trim() || undefined,
               companyAddress: newCompany.address.trim() || undefined,
             },
-          }).catch(() => {})
+          }).catch(() => { })
         }
 
         const newId = String(res.doc?.id ?? (res as any)?.id)
@@ -642,7 +649,7 @@ export default function SetupWizard() {
 
     const isDuplicateChildName = currentCompanySubCompanies.some(
       (sc) => (!editingSubCompany || String(sc.id) !== String(editingSubCompany.id)) &&
-             sc.name.trim().toLowerCase() === trimmedSubName.toLowerCase(),
+        sc.name.trim().toLowerCase() === trimmedSubName.toLowerCase(),
     )
     if (isDuplicateChildName) {
       setSubCompanyError(`A child branch with the name "${trimmedSubName}" already exists under this parent company.`)
@@ -651,7 +658,7 @@ export default function SetupWizard() {
 
     const isDuplicateChildCode = allTenantsList.some(
       (t) => (!editingSubCompany || String(t.id) !== String(editingSubCompany.id)) &&
-             t.code.trim().toUpperCase() === trimmedSubCode,
+        t.code.trim().toUpperCase() === trimmedSubCode,
     )
     if (isDuplicateChildCode) {
       setSubCompanyError(`A company / branch with the code "${trimmedSubCode}" already exists. Please choose a unique code.`)
@@ -684,13 +691,13 @@ export default function SetupWizard() {
           prev.map((sc) =>
             sc.id === editingSubCompany.id
               ? {
-                  ...sc,
-                  name: subCompanyForm.name,
-                  code: subCompanyForm.code,
-                  active: subCompanyForm.active,
-                  slug: subCompanyForm.slug,
-                  pan: subCompanyForm.pan || '',
-                }
+                ...sc,
+                name: subCompanyForm.name,
+                code: subCompanyForm.code,
+                active: subCompanyForm.active,
+                slug: subCompanyForm.slug,
+                pan: subCompanyForm.pan || '',
+              }
               : sc,
           ),
         )
@@ -1236,10 +1243,10 @@ export default function SetupWizard() {
               activeFiscalYearId={
                 settings?.activeFiscalYear
                   ? String(
-                      typeof settings.activeFiscalYear === 'object'
-                        ? settings.activeFiscalYear.id
-                        : settings.activeFiscalYear,
-                    )
+                    typeof settings.activeFiscalYear === 'object'
+                      ? settings.activeFiscalYear.id
+                      : settings.activeFiscalYear,
+                  )
                   : undefined
               }
               onCreateYear={createFiscalYear}
@@ -1276,7 +1283,7 @@ export default function SetupWizard() {
                 { key: 'description', label: 'Description', type: 'text' },
               ]}
               tenantId={isSubCompany && parentOfActiveTenant ? parentOfActiveTenant.id : tenantId}
-              tenantQuery={isSubCompany && parentOfActiveTenant ? { tenant: parentOfActiveTenant.id } : tenantQuery}
+              tenantQuery={subTenantQuery}
               setSeedDone={setSeedDone}
               setAiOpen={setAiOpen}
               setAiInitialModel={setAiInitialModel}
@@ -1311,7 +1318,7 @@ export default function SetupWizard() {
               aiLabel="Import Chart of Accounts with AI"
               depth={1}
               tenantId={isSubCompany && parentOfActiveTenant ? parentOfActiveTenant.id : tenantId}
-              tenantQuery={isSubCompany && parentOfActiveTenant ? { tenant: parentOfActiveTenant.id } : tenantQuery}
+              tenantQuery={subTenantQuery}
               setSeedDone={setSeedDone}
               setAiOpen={setAiOpen}
               setAiInitialModel={setAiInitialModel}
@@ -1515,11 +1522,10 @@ export default function SetupWizard() {
                 type="button"
                 onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
                 disabled={!satisfied.fiscalYear}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition shadow-2xs ${
-                  satisfied.fiscalYear
-                    ? 'bg-crimson-600 text-white hover:bg-crimson-700'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                }`}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition shadow-2xs ${satisfied.fiscalYear
+                  ? 'bg-crimson-600 text-white hover:bg-crimson-700'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  }`}
               >
                 <span>{t('setup.next', 'Next Step')}</span>
                 <ArrowRight size={14} />
@@ -1535,11 +1541,10 @@ export default function SetupWizard() {
                   }
                   setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
                 }}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition shadow-2xs ${
-                  satisfied[step.key]
-                    ? 'bg-crimson-600 text-white hover:bg-crimson-700'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition shadow-2xs ${satisfied[step.key]
+                  ? 'bg-crimson-600 text-white hover:bg-crimson-700'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
               >
                 <span>
                   {satisfied[step.key]

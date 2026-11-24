@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Database,
   Edit2,
@@ -52,27 +52,41 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
   const cellText = (v: any) =>
     v == null ? '—' : typeof v === 'object' ? String(v?.name ?? v?.title ?? v) : String(v)
 
-  const tenantQueryStr = useMemo(() => JSON.stringify(tenantQuery), [tenantQuery])
+  const tenantQueryStr = useMemo(() => JSON.stringify(tenantQuery ?? {}), [tenantQuery])
+  const activeReqRef = useRef(0)
+  const hasLoadedRef = useRef(false)
 
   const loadRecords = useCallback(async () => {
-    setLoading(true)
+    const reqId = ++activeReqRef.current
+    // Only show full-screen loader on initial mount; re-fetches (after seed,
+    // effect re-trigger) update data silently to avoid flashing a spinner.
+    if (!hasLoadedRef.current) setLoading(true)
+    hasLoadedRef.current = true
     try {
+      const parsedQuery = tenantQueryStr ? JSON.parse(tenantQueryStr) : {}
       const res = await api<{ docs: any[] }>(`/${collection}`, {
         immediate: true,
-        query: { limit: 1000, depth: depth ?? 0, ...tenantQuery },
+        query: { limit: 1000, depth: depth ?? 0, ...parsedQuery },
       })
-      setRecords(res.docs ?? [])
+      if (reqId === activeReqRef.current) {
+        setRecords(res.docs ?? [])
+      }
     } catch {
-      setRecords([])
+      if (reqId === activeReqRef.current) {
+        setRecords([])
+      }
     } finally {
-      setLoading(false)
+      if (reqId === activeReqRef.current) {
+        setLoading(false)
+      }
     }
   }, [collection, depth, tenantQueryStr])
 
-  // Fix stale closures by reloading whenever collection, tenantId, or query changes
+  // Reload whenever collection, depth, or serialized tenant query changes.
+  // Using loadRecords directly in deps is safe now that its dependencies are primitive/serialized.
   useEffect(() => {
     void loadRecords()
-  }, [loadRecords, tenantId])
+  }, [loadRecords])
 
   const startEdit = (row: any) => {
     const draft: Record<string, any> = {}
