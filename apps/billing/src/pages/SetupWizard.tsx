@@ -7,12 +7,16 @@ import {
   CalendarDays,
   CheckCircle2,
   Database,
+  Edit2,
   Eye,
   GitBranch,
   Hourglass,
   Layers,
   Loader2,
+  Mail,
+  MapPin,
   Package,
+  Phone,
   Plus,
   Sparkles,
   Tag,
@@ -1095,88 +1099,98 @@ export default function SetupWizard() {
                 </div>
               )}
 
-              {/* Organization Profile Details */}
+              {/* Organization Profile Overview Card (Read-only with Edit modal trigger) */}
               <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs">
-                <div className="mb-4 pb-3 border-b border-slate-100 flex items-center justify-between">
+                <div className="mb-4 pb-3 border-b border-slate-100 flex items-center justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">
-                      {isSubCompany ? 'Branch Profile Details' : 'Company Profile Details'}
+                      {isSubCompany ? 'Branch Profile Overview' : 'Company Profile Overview'}
                     </h3>
                     <p className="text-xs text-slate-500">
                       {isSubCompany
-                        ? 'Details for this branch shown on branch vouchers and receipts.'
-                        : 'Primary organization details shown on invoices and reports.'}
+                        ? 'Registered details for this branch shown on branch vouchers and receipts.'
+                        : 'Primary organization details shown on invoices, ledgers, and reports.'}
                     </p>
                   </div>
-                  {activeTenant?.code && (
-                    <span className="font-mono text-xs font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">
-                      Code: {activeTenant.code}
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-slate-600">
-                      Organization name <span className="text-crimson-600 font-bold ml-0.5">*</span>
-                    </label>
-                    <input
-                      value={company.companyName}
-                      disabled={!isAdmin}
-                      onChange={(e) => setCompany({ ...company, companyName: e.target.value })}
-                      placeholder="e.g. Syasyah Sahakari"
-                      className={`mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-1 disabled:bg-slate-50 disabled:text-slate-500 ${
-                        isDuplicateParentName
-                          ? 'border-red-400 focus:border-red-500 focus:ring-red-500 bg-red-50/30'
-                          : 'border-slate-300 focus:border-crimson-500 focus:ring-crimson-500'
-                      }`}
-                    />
-                    {isDuplicateParentName && (
-                      <p className="mt-1 text-xs font-medium text-red-600">
-                        A parent company with this name already exists. Please choose a unique organization name.
-                      </p>
+                  <div className="flex items-center gap-2">
+                    {activeTenant?.code && (
+                      <span className="font-mono text-xs font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">
+                        Code: {activeTenant.code}
+                      </span>
+                    )}
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isSubCompany && activeTenant) {
+                            editSubCompany(activeTenant)
+                          } else if (activeTenant) {
+                            setEditingCompany(activeTenant)
+                            setNewCompany({
+                              name: activeTenant.name || company.companyName,
+                              code: activeTenant.code || '',
+                              pan: activeTenant.pan || company.companyPan || '',
+                              contact: activeTenant.contactInfo?.phone || company.companyContact || '',
+                              email: activeTenant.contactInfo?.email || company.companyEmail || '',
+                              address: activeTenant.location?.address || company.companyAddress || '',
+                            })
+                            setShowCompanyCreator(true)
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-crimson-600 transition shadow-2xs"
+                      >
+                        <Edit2 size={12} />
+                        <span>Edit Profile</span>
+                      </button>
                     )}
                   </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">PAN / Tax ID</label>
-                    <input
-                      value={company.companyPan}
-                      disabled={!isAdmin}
-                      onChange={(e) => setCompany({ ...company, companyPan: e.target.value })}
-                      placeholder="e.g. 612345678"
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 font-mono text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
-                    />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-lg bg-slate-50/70 border border-slate-100 p-3">
+                    <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">
+                      Organization Name
+                    </span>
+                    <span className="text-sm font-bold text-slate-900 mt-1 block truncate">
+                      {activeTenant?.name || company.companyName || '—'}
+                    </span>
                   </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Contact</label>
-                    <input
-                      value={company.companyContact}
-                      disabled={!isAdmin}
-                      onChange={(e) => setCompany({ ...company, companyContact: e.target.value })}
-                      placeholder="Phone number"
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
-                    />
+
+                  <div className="rounded-lg bg-slate-50/70 border border-slate-100 p-3">
+                    <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">
+                      PAN / Tax ID
+                    </span>
+                    <span className="text-sm font-mono font-semibold text-slate-800 mt-1 block">
+                      {activeTenant?.pan || company.companyPan || '—'}
+                    </span>
                   </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Email</label>
-                    <input
-                      type="email"
-                      value={company.companyEmail}
-                      disabled={!isAdmin}
-                      onChange={(e) => setCompany({ ...company, companyEmail: e.target.value })}
-                      placeholder="org@example.com"
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
-                    />
+
+                  <div className="rounded-lg bg-slate-50/70 border border-slate-100 p-3">
+                    <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">
+                      Contact & Email
+                    </span>
+                    <div className="mt-1 space-y-0.5 text-xs text-slate-700">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Phone size={12} className="text-slate-400 shrink-0" />
+                        <span>{activeTenant?.contactInfo?.phone || company.companyContact || '—'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Mail size={12} className="text-slate-400 shrink-0" />
+                        <span>{activeTenant?.contactInfo?.email || company.companyEmail || '—'}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Address</label>
-                    <input
-                      value={company.companyAddress}
-                      disabled={!isAdmin}
-                      onChange={(e) => setCompany({ ...company, companyAddress: e.target.value })}
-                      placeholder="Registered address"
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
-                    />
+
+                  <div className="rounded-lg bg-slate-50/70 border border-slate-100 p-3">
+                    <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">
+                      Registered Address
+                    </span>
+                    <div className="mt-1 flex items-start gap-1.5 text-xs text-slate-700">
+                      <MapPin size={12} className="text-slate-400 shrink-0 mt-0.5" />
+                      <span className="line-clamp-2">
+                        {activeTenant?.location?.address || company.companyAddress || '—'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1486,39 +1500,14 @@ export default function SetupWizard() {
 
             {/* Primary Action Button - ONE authoritative button */}
             {step.key === 'company' && (
-              !isAdmin ? (
-                <button
-                  type="button"
-                  onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-900 transition shadow-2xs"
-                >
-                  <span>Next Step (View Only)</span>
-                  <ArrowRight size={14} />
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  {satisfied.company && (
-                    <button
-                      type="button"
-                      onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
-                    >
-                      <span>Continue without saving</span>
-                      <ArrowRight size={13} className="text-slate-500" />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => void saveCompany()}
-                    disabled={busy === 'company' || !settingsLoaded}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-4 py-2 text-xs font-semibold text-white hover:bg-crimson-700 disabled:opacity-60 transition shadow-2xs"
-                  >
-                    {busy === 'company' ? <Loader2 size={13} className="animate-spin" /> : null}
-                    <span>Save & continue</span>
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-              )
+              <button
+                type="button"
+                onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-4 py-2 text-xs font-semibold text-white hover:bg-crimson-700 transition shadow-2xs"
+              >
+                <span>Continue to Fiscal Year</span>
+                <ArrowRight size={14} />
+              </button>
             )}
 
             {step.key === 'fiscalYear' && (

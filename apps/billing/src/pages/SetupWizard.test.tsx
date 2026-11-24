@@ -143,7 +143,7 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
     renderWizard()
 
     await waitFor(() => {
-      expect(screen.getByText('ABC Company')).toBeInTheDocument()
+      expect(screen.getAllByText('ABC Company').length).toBeGreaterThan(0)
       expect(screen.getByText('Parent Company')).toBeInTheDocument()
     })
 
@@ -184,10 +184,9 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
     // Switch company is super-admin ONLY: "Switch / All Companies" must NOT be in the document
     expect(screen.queryByText(/Switch \/ All Companies/i)).not.toBeInTheDocument()
 
-    // Company profile is admin-level: inputs are enabled and Save & continue is present
-    const orgInput = screen.getByPlaceholderText(/e.g. Syasyah Sahakari/i)
-    expect(orgInput).not.toBeDisabled()
-    expect(screen.getByRole('button', { name: /Save & continue/i })).toBeInTheDocument()
+    // Company profile overview card displays with Edit Profile button for admin
+    expect(screen.getByRole('button', { name: /Edit Profile/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Continue to Fiscal Year/i })).toBeInTheDocument()
 
     // Children management shows permission warning for admin
     expect(
@@ -239,7 +238,7 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
     })
   })
 
-  it('prompts post-save setup flow modal when saving company with children enabled', async () => {
+  it('advances directly to Fiscal Year from company profile overview card', async () => {
     const existingTenants = [
       { id: '2', code: 'ABC', name: 'ABC Company', type: 'central' as const },
       { id: '3', code: 'ABC-01', name: 'ABC sub-company -1', type: 'illaka' as const, parentId: '2' },
@@ -268,13 +267,13 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
       expect(screen.getByText('Children Companies')).toBeInTheDocument()
     })
 
-    const saveBtn = screen.getByRole('button', { name: /Save & continue/i })
-    fireEvent.click(saveBtn)
+    const continueBtn = screen.getByRole('button', { name: /Continue to Fiscal Year/i })
+    expect(continueBtn).toBeInTheDocument()
+    fireEvent.click(continueBtn)
 
+    // Should advance to fiscal year step
     await waitFor(() => {
-      expect(screen.getByText('Company Profile Saved')).toBeInTheDocument()
-      expect(screen.getByText(/Continue Parent Company Setup/i)).toBeInTheDocument()
-      expect(screen.getByText(/OR ONBOARD A CHILD COMPANY/i)).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Fiscal Year' })).toBeInTheDocument()
     })
   })
 
@@ -341,7 +340,7 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
     expect(screen.getByDisplayValue('ABC')).toBeInTheDocument()
   })
 
-  it('validates and blocks duplicate parent company names on step 0', async () => {
+  it('allows clicking Edit Profile to open CompanyCreatorModal and prevents duplicate names', async () => {
     const existingTenants = [
       { id: '1', code: 'ABC', name: 'ABC Company', type: 'central' as const, pan: '123456789' },
       { id: '2', code: 'XYZ', name: 'XYZ Enterprises', type: 'central' as const, pan: '987654321' },
@@ -364,32 +363,32 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
     renderWizard()
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('XYZ Enterprises')).toBeInTheDocument()
+      expect(screen.getAllByText('XYZ Enterprises').length).toBeGreaterThan(0)
+    })
+
+    // Click Edit Profile to open CompanyCreatorModal
+    const editBtn = screen.getByRole('button', { name: /Edit Profile/i })
+    fireEvent.click(editBtn)
+
+    // Modal opens
+    await waitFor(() => {
+      expect(screen.getByText(/Edit Parent Company: XYZ Enterprises/i)).toBeInTheDocument()
     })
 
     const nameInput = screen.getByDisplayValue('XYZ Enterprises')
     // Attempt to rename to existing parent company "ABC Company"
     fireEvent.change(nameInput, { target: { value: 'ABC Company' } })
 
-    // Inline validation error should appear
+    // Inline validation error should appear in modal
     await waitFor(() => {
       expect(
-        screen.getByText(/A parent company with this name already exists\. Please choose a unique organization name\./i),
+        screen.getByText(/A parent company with this name already exists\. Please choose a unique company name\./i),
       ).toBeInTheDocument()
     })
 
-    // Clicking save should be blocked
-    const saveBtn = screen.getByRole('button', { name: /Save & continue/i })
-    fireEvent.click(saveBtn)
-
-    // Ensure api was not called to patch with duplicate name
-    expect(apiMock).not.toHaveBeenCalledWith(
-      '/tenants/2',
-      expect.objectContaining({
-        method: 'PATCH',
-        body: expect.objectContaining({ name: 'ABC Company' }),
-      }),
-    )
+    // Submitting in modal should be blocked
+    const updateBtn = screen.getByRole('button', { name: /Update Company/i })
+    expect(updateBtn).toBeDisabled()
   })
 
   it('disables Add Child Company and warns when parent company lacks Account Types and Chart of Accounts', async () => {
