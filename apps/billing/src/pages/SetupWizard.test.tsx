@@ -186,7 +186,7 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
 
     // Company profile overview card displays with Edit Profile button for admin
     expect(screen.getByRole('button', { name: /Edit Profile/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Continue to Fiscal Year/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Continue to Account Types & Groups/i })).toBeInTheDocument()
 
     // Children management shows permission warning for admin
     expect(
@@ -238,7 +238,7 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
     })
   })
 
-  it('advances directly to Fiscal Year from company profile overview card', async () => {
+  it('advances directly to Account Types & Groups from company profile overview card', async () => {
     const existingTenants = [
       { id: '2', code: 'ABC', name: 'ABC Company', type: 'central' as const },
       { id: '3', code: 'ABC-01', name: 'ABC sub-company -1', type: 'illaka' as const, parentId: '2' },
@@ -267,13 +267,13 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
       expect(screen.getByText('Children Companies')).toBeInTheDocument()
     })
 
-    const continueBtn = screen.getByRole('button', { name: /Continue to Fiscal Year/i })
+    const continueBtn = screen.getByRole('button', { name: /Continue to Account Types & Groups/i })
     expect(continueBtn).toBeInTheDocument()
     fireEvent.click(continueBtn)
 
-    // Should advance to fiscal year step
+    // Should advance to Account Types & Groups step
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Fiscal Year' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 2, name: /Account Types & Groups/i })).toBeInTheDocument()
     })
   })
 

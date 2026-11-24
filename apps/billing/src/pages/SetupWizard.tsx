@@ -61,9 +61,9 @@ import { SetupFlowChoiceModal } from './SetupWizard/components/SetupFlowChoiceMo
 
 const REQUIRED_STEPS: StepDef[] = [
   { key: 'company', title: 'Company Profile', blurb: 'Enter the org name and contact details shown on invoices.', icon: Building2 },
+  { key: 'seed-account-groups', title: 'Account Types & Groups', blurb: 'Asset, liability, equity, income, expense — common parent structure accounts belong to.', icon: Layers },
+  { key: 'seed-accounts', title: 'Chart of Accounts', blurb: 'Common starter chart — groups, accounts, and default-account mappings.', icon: Database },
   { key: 'fiscalYear', title: 'Fiscal Year', blurb: 'Define the accounting period that drives voucher numbering.', icon: CalendarDays },
-  { key: 'seed-account-groups', title: 'Account Types & Groups', blurb: 'Asset, liability, equity, income, expense — the parent structure accounts belong to.', icon: Layers },
-  { key: 'seed-accounts', title: 'Chart of Accounts', blurb: 'Starter chart — groups, accounts, and default-account mappings.', icon: Database },
   { key: 'seed-taxTypes', title: 'Tax Types', blurb: 'VAT @ 13% plus its sales/purchase ledger wiring.', icon: Tag },
 ]
 
@@ -1505,7 +1505,7 @@ export default function SetupWizard() {
                 onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-4 py-2 text-xs font-semibold text-white hover:bg-crimson-700 transition shadow-2xs"
               >
-                <span>Continue to Fiscal Year</span>
+                <span>Continue to Account Types & Groups</span>
                 <ArrowRight size={14} />
               </button>
             )}
