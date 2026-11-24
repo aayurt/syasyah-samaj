@@ -11,6 +11,7 @@ import AddFiscalYearModal from './AddFiscalYearModal'
  */
 export default function FiscalYearSwitcher() {
   const { years, selectedYear, activeYear, selectYear, refresh, loading } = useFiscalYear()
+  console.log('[FiscalYearSwitcher] render, loading:', loading, 'years count:', years.length, 'selectedYear:', selectedYear?.id)
   const t = useT()
   const { lang } = useLang()
   const [showAddYear, setShowAddYear] = useState(false)

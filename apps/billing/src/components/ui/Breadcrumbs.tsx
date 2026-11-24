@@ -41,6 +41,7 @@ const ROUTE_KEYS: Record<string, string> = {
 }
 
 export function Breadcrumbs() {
+  console.log('[Breadcrumbs] render')
   const location = useLocation()
   const t = useT()
   const segments = location.pathname.split('/').filter(Boolean)

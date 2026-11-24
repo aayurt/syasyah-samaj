@@ -172,6 +172,15 @@ class CompatibilityEngine {
           next.lastReportSyncAt !== lastState.lastReportSyncAt ||
           next.nextSyncAt !== lastState.nextSyncAt
         ) {
+          console.log('[offline shim] state changed, diff:', {
+            online: next.online !== lastState.online ? [lastState.online, next.online] : undefined,
+            pending: next.pending !== lastState.pending ? [lastState.pending, next.pending] : undefined,
+            conflicts: next.conflicts !== lastState.conflicts ? [lastState.conflicts, next.conflicts] : undefined,
+            cacheVersion: next.cacheVersion !== lastState.cacheVersion ? [lastState.cacheVersion, next.cacheVersion] : undefined,
+            syncingCount: next.syncingCount !== lastState.syncingCount ? [lastState.syncingCount, next.syncingCount] : undefined,
+            reportsStale: next.reportsStale !== lastState.reportsStale ? [lastState.reportsStale, next.reportsStale] : undefined,
+            nextSyncAt: next.nextSyncAt !== lastState.nextSyncAt ? [lastState.nextSyncAt, next.nextSyncAt] : undefined,
+          })
           lastState = next
           fn(next)
         }

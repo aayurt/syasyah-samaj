@@ -58,6 +58,7 @@ export function FiscalYearProvider({ children }: { children: React.ReactNode }) 
   const storageKey = useMemo(() => `${STORAGE_PREFIX}${fyTenantId}`, [fyTenantId])
 
   const refresh = useCallback(async () => {
+    console.log('[fiscalYear] refresh triggered, fyTenantId:', fyTenantId)
     setLoading(true)
     try {
       // E2E bypass: return seeded mock fiscal years (no API round-trip,

@@ -245,6 +245,7 @@ function AppShell() {
 }
 
 function Shell({ email }: { email: string }) {
+  console.log('[Shell] render')
   useBackgroundSync()
   useDataEpochWatcher()
   // Pre-warm the offline masters cache (members, accounts, fiscal years,
@@ -337,6 +338,7 @@ function Shell({ email }: { email: string }) {
   // Load feature toggles from settings — cache-first via localStorage
   // Re-fetch on route change AND when Settings dispatches a change event
   const refreshFeatures = () => {
+    console.log('[App] refreshFeatures called')
     api<BillingSettings>('/globals/billing-settings', { query: { depth: 0 } })
       .then((s) => {
         setFeatures({

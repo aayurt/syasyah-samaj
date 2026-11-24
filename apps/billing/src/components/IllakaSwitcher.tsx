@@ -8,6 +8,7 @@ import { useT } from '../lib/i18n'
  * Allows switching the Parent Company first, and then choosing its Sub-companies / Branches.
  */
 export default function IllakaSwitcher() {
+  console.log('[IllakaSwitcher] render')
   const { tenantId, setTenantId, tenants, isCentral, isIllaka, isSuperAdmin, illakaCode, multiCompanyEnabled } =
     useTenant()
   const t = useT()

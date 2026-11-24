@@ -10,6 +10,7 @@ import { useT } from '../lib/i18n'
  * first. Never shows if the cache is already warm.
  */
 export default function ConnectingBanner() {
+  console.log('[ConnectingBanner] render')
   const t = useT()
   const [visible, setVisible] = useState(false)
 

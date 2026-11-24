@@ -13,6 +13,7 @@ import ConflictDrawer from './ConflictDrawer'
  * drawer instead of interrupting the user with banners or alerts.
  */
 function SyncStatus() {
+  console.log('[SyncStatus] render')
   const t = useT()
   const state = useSyncState()
   const [syncing, setSyncing] = useState(false)
