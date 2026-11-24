@@ -218,22 +218,36 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     } catch { /* ignore */ }
   }, [tenantId])
 
+  const contextValue = useMemo(
+    () => ({
+      tenantId,
+      setTenantId,
+      tenants,
+      isCentral,
+      isIllaka,
+      isSuperAdmin,
+      isAdmin,
+      isViewer,
+      role: role || 'super-admin',
+      illakaCode,
+      multiCompanyEnabled,
+    }),
+    [
+      tenantId,
+      tenants,
+      isCentral,
+      isIllaka,
+      isSuperAdmin,
+      isAdmin,
+      isViewer,
+      role,
+      illakaCode,
+      multiCompanyEnabled,
+    ],
+  )
+
   return (
-    <TenantContext.Provider
-      value={{
-        tenantId,
-        setTenantId,
-        tenants,
-        isCentral,
-        isIllaka,
-        isSuperAdmin,
-        isAdmin,
-        isViewer,
-        role: role || 'super-admin',
-        illakaCode,
-        multiCompanyEnabled,
-      }}
-    >
+    <TenantContext.Provider value={contextValue}>
       {children}
     </TenantContext.Provider>
   )

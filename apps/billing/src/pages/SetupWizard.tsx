@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -224,8 +224,13 @@ export default function SetupWizard() {
 
   const fyTenantQuery = useMemo(() => (fyTenantId ? { tenant: fyTenantId } : {}), [fyTenantId])
 
+  const initialFactsLoadedRef = useRef(false)
+  const isRefreshingRef = useRef(false)
+
   // Fact refresh loader
   const refreshFacts = useCallback(async () => {
+    if (isRefreshingRef.current) return
+    isRefreshingRef.current = true
     try {
       const activeParentId = activeTenant && !isParentCompany(activeTenant) ? activeTenant.parentId : null
       const parentQ = activeParentId ? { tenant: activeParentId } : null
@@ -285,7 +290,9 @@ export default function SetupWizard() {
           companyAddress: s.companyAddress || '',
         })
       }
+      initialFactsLoadedRef.current = true
     } finally {
+      isRefreshingRef.current = false
       setSyncing(false)
     }
   }, [tenantId, tenantQuery])
@@ -308,7 +315,9 @@ export default function SetupWizard() {
     let alive = true
     const init = async () => {
       if (alive) {
-        setSyncing(true)
+        if (!initialFactsLoadedRef.current) {
+          setSyncing(true)
+        }
         await refreshFacts()
       }
     }
@@ -998,8 +1007,8 @@ export default function SetupWizard() {
     )
   }
 
-  // 3. Loading check when tenant is selected
-  if (syncing || !settingsLoaded || yearsLoading) {
+  // 3. Loading check when tenant is selected (only on cold start before facts have loaded)
+  if (!initialFactsLoadedRef.current && (syncing || !settingsLoaded || yearsLoading)) {
     return (
       <div className="w-full flex flex-col items-center justify-center py-20 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-crimson-50 text-crimson-600 shadow-sm animate-pulse">

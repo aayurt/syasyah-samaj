@@ -83,7 +83,6 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
   }, [collection, depth, tenantQueryStr])
 
   // Reload whenever collection, depth, or serialized tenant query changes.
-  // Using loadRecords directly in deps is safe now that its dependencies are primitive/serialized.
   useEffect(() => {
     void loadRecords()
   }, [loadRecords])
