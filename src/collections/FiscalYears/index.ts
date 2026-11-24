@@ -118,6 +118,7 @@ export const FiscalYears: CollectionConfig = {
         // When a year is flagged active or isActive = true:
         // Automatically demote any other active/working year for this tenant to 'open' and isActive = false.
         // We use direct SQL via payload.db.pool to guarantee atomicity and avoid hook loops.
+        const currentDocId = (req as any)?.routeParams?.id ?? (req as any)?.id ?? d.id ?? context?.currentId
         const isTargetActive = Boolean(d.isActive || d.status === 'active')
         if (isTargetActive) {
           d.isActive = true
@@ -126,13 +127,12 @@ export const FiscalYears: CollectionConfig = {
           const pool = (req.payload.db as any)?.pool
           if (pool && tenantId) {
             try {
-              const currentId = d.id ?? context?.currentId
-              if (currentId) {
+              if (currentDocId) {
                 await pool.query(
                   `UPDATE fiscal_years 
                    SET is_active = false, status = 'open' 
                    WHERE tenant_id = $1 AND id != $2 AND (is_active = true OR status = 'active')`,
-                  [tenantId, currentId]
+                  [tenantId, currentDocId]
                 )
               } else {
                 await pool.query(
@@ -148,7 +148,7 @@ export const FiscalYears: CollectionConfig = {
           }
         }
 
-        // ── 6. Overlap detection ───────────────────────────────────────
+        // ── 5. Overlap detection (only if dates are present and creating or modifying dates) ────
         if (d.startDate && d.endDate && tenantId) {
           try {
             const overlaps = await req.payload.find({
@@ -165,8 +165,7 @@ export const FiscalYears: CollectionConfig = {
             } as any)
             const existing = (overlaps.docs as any[]).filter(
               (fy) => {
-                const currentId = d.id ?? context?.currentId
-                return String(fy.id) !== String(currentId)
+                return String(fy.id) !== String(currentDocId)
               },
             )
             if (existing.length > 0) {
