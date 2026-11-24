@@ -875,11 +875,19 @@ export default function SetupWizard() {
 
   const fySetActive = async (id: string) => {
     try {
-      await api(`/fiscal-years/${id}`, { method: 'PATCH', body: { isActive: true } })
-      await api('/globals/billing-settings', { method: 'POST', body: { activeFiscalYear: Number(id) } })
+      await api(`/fiscal-years/${id}`, {
+        method: 'PATCH',
+        immediate: true,
+        body: { isActive: true, status: 'active' },
+      })
+      await api('/globals/billing-settings', {
+        method: 'POST',
+        immediate: true,
+        body: { activeFiscalYear: Number(id) },
+      })
       bumpGlobals()
       await refreshYears()
-      pushToast('success', 'Working year updated')
+      pushToast('success', 'Active working year updated')
     } catch (e) {
       pushToast('error', 'Failed to set working year', e instanceof Error ? e.message : String(e))
     }
@@ -887,10 +895,14 @@ export default function SetupWizard() {
 
   const fyOpen = async (id: string) => {
     try {
-      await api(`/fiscal-years/${id}`, { method: 'PATCH', body: { status: 'active' } })
+      await api(`/fiscal-years/${id}`, {
+        method: 'PATCH',
+        immediate: true,
+        body: { status: 'open', isActive: false },
+      })
       bumpGlobals()
       await refreshYears()
-      pushToast('success', 'Fiscal year reopened')
+      pushToast('success', 'Fiscal year reopened (status: open)')
     } catch (e) {
       pushToast('error', 'Failed to reopen fiscal year', e instanceof Error ? e.message : String(e))
     }
@@ -899,7 +911,11 @@ export default function SetupWizard() {
   const fyClose = async (id: string) => {
     if (!window.confirm('Close this fiscal year? Transactions will be locked.')) return
     try {
-      await api(`/fiscal-years/${id}`, { method: 'PATCH', body: { status: 'closed' } })
+      await api(`/fiscal-years/${id}`, {
+        method: 'PATCH',
+        immediate: true,
+        body: { status: 'closed', isActive: false },
+      })
       bumpGlobals()
       await refreshYears()
       pushToast('success', 'Fiscal year closed')

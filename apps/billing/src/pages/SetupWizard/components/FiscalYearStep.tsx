@@ -269,8 +269,8 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {years.map((y) => {
-                  const isWorking =
-                    Boolean(y.isActive) || String(y.id) === String(activeFiscalYearId)
+                  const isActive = y.status === 'active' || Boolean(y.isActive) || String(y.id) === String(activeFiscalYearId)
+                  const isOpen = y.status === 'open' && !isActive
                   const isClosed = y.status === 'closed'
                   const isEditing = fyEditRow === String(y.id)
 
@@ -286,9 +286,9 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
                             type="button"
                             disabled={isViewer}
                             onClick={() => onSetActiveYear(String(y.id))}
-                            title={isWorking ? 'Working year' : isViewer ? 'View-only mode' : 'Set as working year'}
+                            title={isActive ? 'Active working year' : isViewer ? 'View-only mode' : 'Set as active working year'}
                             className={`flex size-5 items-center justify-center rounded-full border transition ${
-                              isWorking
+                              isActive
                                 ? 'border-crimson-600 bg-crimson-600 text-white'
                                 : 'border-slate-300 text-transparent hover:border-crimson-400'
                             } ${isViewer ? 'cursor-not-allowed opacity-80' : ''}`}
@@ -352,22 +352,27 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
                       <td className="px-3 py-2">
                         {isEditing ? (
                           <select
-                            defaultValue={y.status || 'active'}
+                            defaultValue={isActive ? 'active' : (y.status || 'open')}
                             className="w-full rounded border border-slate-300 bg-white px-1 py-0.5 text-xs outline-none focus:ring-1 focus:ring-crimson-500"
                             onChange={(e) =>
                               setFyRowDraft({ ...fyRowDraft, status: e.target.value })
                             }
                           >
-                            <option value="active">Active</option>
+                            <option value="active">Active (Working)</option>
+                            <option value="open">Open</option>
                             <option value="closed">Closed</option>
                           </select>
-                        ) : isClosed ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.2 text-[10px] font-medium text-slate-600">
-                            <Lock size={10} /> Closed
-                          </span>
-                        ) : (
+                        ) : isActive ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.2 text-[10px] font-bold text-emerald-700">
                             <Unlock size={10} /> Active
+                          </span>
+                        ) : isOpen ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.2 text-[10px] font-medium text-sky-700">
+                            <Unlock size={10} /> Open
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.2 text-[10px] font-medium text-slate-600">
+                            <Lock size={10} /> Closed
                           </span>
                         )}
                       </td>
@@ -405,8 +410,8 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onOpenYear(String(y.id))}
-                                title="Reopen year"
-                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600"
+                                title="Reopen year (Set to Open)"
+                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-sky-600"
                               >
                                 <Unlock size={13} />
                               </button>

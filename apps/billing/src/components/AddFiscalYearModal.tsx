@@ -28,7 +28,7 @@ export default function AddFiscalYearModal({
   const [label, setLabel] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [status, setStatus] = useState<'active' | 'closed'>('active')
+  const [status, setStatus] = useState<'active' | 'open' | 'closed'>('open')
   const [makeActive, setMakeActive] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -152,24 +152,13 @@ export default function AddFiscalYearModal({
         label: finalLabel,
         startDate,
         endDate,
-        status,
+        status: makeActive ? 'active' : status,
         isActive: makeActive,
       }
       if (tenantId) body.tenant = Number(tenantId)
 
-      // If setting as working year, close other active years first
-      if (makeActive) {
-        const otherActive = years.find((y) => y.status === 'active')
-        if (otherActive) {
-          await api(`/fiscal-years/${otherActive.id}`, {
-            method: 'PATCH',
-            body: { status: 'closed' },
-          }).catch(() => {})
-        }
-      }
-
       // Create new fiscal year
-      await api('/fiscal-years', { method: 'POST', body })
+      await api('/fiscal-years', { method: 'POST', immediate: true, body })
 
       // Fetch created record to get its generated server ID
       const queryTenant = tenantId ? { tenant: tenantId } : {}
@@ -299,11 +288,11 @@ export default function AddFiscalYearModal({
                 <input
                   type="radio"
                   name="modalFyStatus"
-                  checked={status === 'active'}
-                  onChange={() => setStatus('active')}
+                  checked={status === 'open' || status === 'active'}
+                  onChange={() => setStatus('open')}
                   className="text-crimson-600 focus:ring-crimson-500"
                 />
-                Active (Open)
+                Open
               </label>
               <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
                 <input
@@ -325,7 +314,10 @@ export default function AddFiscalYearModal({
                 type="checkbox"
                 checked={makeActive}
                 disabled={status === 'closed'}
-                onChange={(e) => setMakeActive(e.target.checked)}
+                onChange={(e) => {
+                  setMakeActive(e.target.checked)
+                  if (e.target.checked) setStatus('active')
+                }}
                 className="rounded border-slate-300 text-crimson-600 focus:ring-crimson-500"
               />
               <span>Set as active working year for new transactions</span>

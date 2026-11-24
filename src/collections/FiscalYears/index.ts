@@ -106,51 +106,45 @@ export const FiscalYears: CollectionConfig = {
         const tenantId = tenantRef != null ? extractID(tenantRef) : undefined
         const tenantFilter = tenantId ? { tenant: { equals: tenantId } } : null
 
-        // ── 3. BUG-3: Only open years may be the working year ─────────
+        // ── 3. BUG-3: Only open/active years may be the working year ─────────
         if (d.isActive && d.status === 'closed') {
           throw new Error(
             'Cannot set a closed fiscal year as the working year. ' +
-            'Open the year first (set status to Active), then mark it as working.',
+            'Open the year first, then mark it as working.',
           )
         }
 
-        // ── 4. BUG-4: Only one isActive per tenant ────────────────────
-        if (d.isActive) {
-          try {
-            await req.payload.update({
-              collection: 'fiscal-years',
-              where: {
-                and: [
-                  { isActive: { equals: true } },
-                  ...(tenantFilter ? [tenantFilter] : []),
-                ],
-              },
-              data: { isActive: false },
-              overrideAccess: true,
-              depth: 0,
-            } as any)
-          } catch {
-            // best-effort
-          }
-        }
+        // ── 4. Exactly one active working year per tenant ─────────────
+        // When a year is flagged active or isActive = true:
+        // Automatically demote any other active/working year for this tenant to 'open' and isActive = false.
+        // We use direct SQL via payload.db.pool to guarantee atomicity and avoid hook loops.
+        const isTargetActive = Boolean(d.isActive || d.status === 'active')
+        if (isTargetActive) {
+          d.isActive = true
+          d.status = 'active'
 
-        // ── 5. Only one open year per tenant ───────────────────────────
-        if (d.status === 'active') {
-          try {
-            await req.payload.update({
-              collection: 'fiscal-years',
-              where: {
-                and: [
-                  { status: { equals: 'active' } },
-                  ...(tenantFilter ? [tenantFilter] : []),
-                ],
-              },
-              data: { status: 'closed' },
-              overrideAccess: true,
-              depth: 0,
-            } as any)
-          } catch {
-            // best-effort
+          const pool = (req.payload.db as any)?.pool
+          if (pool && tenantId) {
+            try {
+              const currentId = d.id ?? context?.currentId
+              if (currentId) {
+                await pool.query(
+                  `UPDATE fiscal_years 
+                   SET is_active = false, status = 'open' 
+                   WHERE tenant_id = $1 AND id != $2 AND (is_active = true OR status = 'active')`,
+                  [tenantId, currentId]
+                )
+              } else {
+                await pool.query(
+                  `UPDATE fiscal_years 
+                   SET is_active = false, status = 'open' 
+                   WHERE tenant_id = $1 AND (is_active = true OR status = 'active')`,
+                  [tenantId]
+                )
+              }
+            } catch (err) {
+              req.payload.logger.error?.(`Failed to demote previous active fiscal years: ${err}`)
+            }
           }
         }
 

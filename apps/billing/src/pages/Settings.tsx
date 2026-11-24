@@ -419,7 +419,7 @@ export default function Settings() {
     label: '',
     startDate: '',
     endDate: '',
-    status: 'active' as 'active' | 'closed',
+    status: 'open' as 'active' | 'open' | 'closed',
     makeActive: false,
   })
   // Shared confirmation/validation modal for fiscal-year state changes
@@ -884,21 +884,21 @@ export default function Settings() {
   }
 
   const fyReopen = (year: FiscalYear) => {
-    // Only one fiscal year may be open at a time — if another is already
-    // open, reopening this one closes that other year.
-    const alreadyOpen = fiscalYears.find(
-      (y) => y.status === 'active' && y.id !== year.id,
-    )
-    setFyConfirm({
-      action: 'open',
-      year,
-      swap: alreadyOpen,
-      swapIsWorking: activeFiscalYear?.id === alreadyOpen?.id,
+    // Reopening sets status to open (not active working year unless explicitly set)
+    api(`/fiscal-years/${year.id}`, {
+      method: 'PATCH',
+      immediate: true,
+      body: { status: 'open', isActive: false },
     })
+      .then(() => {
+        pushToast('success', 'Fiscal year reopened', `${year.label} is now open for editing.`)
+        void refreshFiscalYears()
+      })
+      .catch((err) => pushToast('error', 'Failed to reopen year', err instanceof Error ? err.message : String(err)))
   }
 
   const fySetActive = (year: FiscalYear) => {
-    // Only an open (status 'active') year may become the working year.
+    // Only an open or active year may become the working year.
     if (year.status === 'closed') {
       pushToast(
         'error',
@@ -907,26 +907,14 @@ export default function Settings() {
       )
       return
     }
-    // If another year is already active, confirm closing it first.
-    const otherActive = fiscalYears.find(
-      (y) => y.status === 'active' && y.id !== year.id,
-    )
-    if (otherActive) {
-      setFyConfirm({
-        action: 'working',
-        year,
-        swap: otherActive,
-        swapIsWorking: activeFiscalYear?.id === otherActive.id,
-      })
-      return
-    }
     fyDoSetWorking(year)
   }
 
   const fyCloseNow = (year: FiscalYear) => {
     api(`/fiscal-years/${year.id}`, {
       method: 'PATCH',
-      body: { status: 'closed' },
+      immediate: true,
+      body: { status: 'closed', isActive: false },
     })
       .then(() => {
         pushToast('success', 'Fiscal year closed', `${year.label} — entries are now read-only.`)
@@ -938,7 +926,8 @@ export default function Settings() {
   const fyOpenNow = (year: FiscalYear) => {
     api(`/fiscal-years/${year.id}`, {
       method: 'PATCH',
-      body: { status: 'active' },
+      immediate: true,
+      body: { status: 'open', isActive: false },
     })
       .then(() => {
         pushToast('success', 'Fiscal year opened', `${year.label} — entries are editable again.`)
@@ -950,13 +939,15 @@ export default function Settings() {
   const fyDoSetWorking = (year: FiscalYear) => {
     api(`/fiscal-years/${year.id}`, {
       method: 'PATCH',
-      body: { isActive: true },
+      immediate: true,
+      body: { isActive: true, status: 'active' },
     })
       .then(async () => {
         // Also point billing-settings at the new working year so numbering
         // and the period freeze follow the selection.
         await api('/globals/billing-settings', {
           method: 'POST',
+          immediate: true,
           body: { activeFiscalYear: year.id },
         }).catch(() => { })
         selectFiscalYear(year.id)
@@ -1059,20 +1050,8 @@ export default function Settings() {
         label: label || undefined,
         startDate: fyForm.startDate,
         endDate: fyForm.endDate,
-        status: fyForm.status,
+        status: makeActive ? 'active' : fyForm.status,
         isActive: makeActive,
-      }
-      // If making this the active year, close any other active year first.
-      if (makeActive) {
-        const otherActive = fiscalYears.find(
-          (y) => y.status === 'active' && y.id !== activeFiscalYear?.id,
-        )
-        if (otherActive) {
-          await api(`/fiscal-years/${otherActive.id}`, {
-            method: 'PATCH',
-            body: { status: 'closed' },
-          }).catch(() => { })
-        }
       }
       if (fyEditing) {
         // ── EDIT ──
@@ -1967,9 +1946,13 @@ export default function Settings() {
                               <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
                                 <Lock size={10} /> {t("hint.closedLabel")}
                               </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                            ) : isActiveFlag ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
                                 <Unlock size={10} /> {t("hint.activeLabel")}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
+                                <Unlock size={10} /> Open
                               </span>
                             )}
                           </td>
@@ -2092,10 +2075,10 @@ export default function Settings() {
                   <input
                     type="radio"
                     name="fyStatus"
-                    checked={fyForm.status === 'active'}
-                    onChange={() => setFyForm((f) => ({ ...f, status: 'active' }))}
+                    checked={fyForm.status === 'open' || fyForm.status === 'active'}
+                    onChange={() => setFyForm((f) => ({ ...f, status: 'open' }))}
                   />
-                  {t("hint.fyStatusActive")}
+                  Open
                 </label>
                 <label className="flex items-center gap-2 text-sm text-slate-600">
                   <input
@@ -2111,7 +2094,7 @@ export default function Settings() {
                     type="checkbox"
                     checked={fyForm.makeActive}
                     disabled={fyForm.status === 'closed'}
-                    onChange={(e) => setFyForm((f) => ({ ...f, makeActive: e.target.checked }))}
+                    onChange={(e) => setFyForm((f) => ({ ...f, makeActive: e.target.checked, status: e.target.checked ? 'active' : 'open' }))}
                   />
                   {t("hint.setWorking")}
                 </label>

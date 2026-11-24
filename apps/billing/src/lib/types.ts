@@ -370,7 +370,7 @@ export interface FiscalYear {
   label?: string | null
   startDate?: string | null
   endDate?: string | null
-  status?: 'active' | 'closed' | null
+  status?: 'active' | 'open' | 'closed' | null
   isActive?: boolean | null
   tenant?: number | { id: number } | null
 }
