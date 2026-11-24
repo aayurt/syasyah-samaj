@@ -15,7 +15,7 @@ export const isSuperAdminUser = (role?: string): boolean =>
   role === 'super-admin'
 
 // Roles allowed to enter the Billing app. The publicly advertised demo account
-// uses the read-only `viewer` role — write/admin gates still use isAdminUser().
+// uses the `super-admin` role for full access to the setup wizard and platform features.
 const ILLAKA_ROLES = [
   'illaka-chair',
   'illaka-treasurer',

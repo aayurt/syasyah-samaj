@@ -30,7 +30,7 @@
   {
     "email": "demo@syasyahsamaj.com",
     "name": "Demo User",
-    "role": "admin",
+    "role": "super-admin",
     "phoneNumber": "+977-1-5555004",
     "password": "SyashaDemo2026!"
   }
