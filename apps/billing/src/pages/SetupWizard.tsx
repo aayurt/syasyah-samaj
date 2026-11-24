@@ -908,7 +908,12 @@ export default function SetupWizard() {
         parentCompanies={parentCompanies}
         allTenants={allTenantsList}
         isSuperAdmin={isSuperAdmin}
-        onSelectTenant={(id) => setTenantId(id)}
+        onSelectTenant={(id, autoAdvance) => {
+          setTenantId(id)
+          if (autoAdvance) {
+            setStepIdx(1)
+          }
+        }}
         onAddParentCompany={() => {
           setEditingCompany(null)
           setNewCompany({ name: '', code: '', pan: '', contact: '', email: '', address: '' })
@@ -1434,16 +1439,28 @@ export default function SetupWizard() {
                   <ArrowRight size={14} />
                 </button>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => void saveCompany()}
-                  disabled={busy === 'company' || !settingsLoaded}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-4 py-2 text-xs font-semibold text-white hover:bg-crimson-700 disabled:opacity-60 transition shadow-2xs"
-                >
-                  {busy === 'company' ? <Loader2 size={13} className="animate-spin" /> : null}
-                  <span>Save & continue</span>
-                  <ArrowRight size={14} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {satisfied.company && (
+                    <button
+                      type="button"
+                      onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+                    >
+                      <span>Continue without saving</span>
+                      <ArrowRight size={13} className="text-slate-500" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => void saveCompany()}
+                    disabled={busy === 'company' || !settingsLoaded}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-4 py-2 text-xs font-semibold text-white hover:bg-crimson-700 disabled:opacity-60 transition shadow-2xs"
+                  >
+                    {busy === 'company' ? <Loader2 size={13} className="animate-spin" /> : null}
+                    <span>Save & continue</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
               )
             )}
 

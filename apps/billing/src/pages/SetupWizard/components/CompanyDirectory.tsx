@@ -16,7 +16,7 @@ interface CompanyDirectoryProps {
   parentCompanies: TenantOption[]
   allTenants: TenantOption[]
   isSuperAdmin?: boolean
-  onSelectTenant: (id: string) => void
+  onSelectTenant: (id: string, autoAdvance?: boolean) => void
   onAddParentCompany: () => void
   onEditParentCompany: (company: TenantOption) => void
   onDeleteParentCompany: (id: string, name: string) => void
@@ -174,9 +174,9 @@ export const CompanyDirectory: React.FC<CompanyDirectoryProps> = ({
                         <button
                           key={child.id}
                           type="button"
-                          onClick={() => onSelectTenant(child.id)}
+                          onClick={() => onSelectTenant(child.id, true)}
                           className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-crimson-50 hover:border-crimson-200 hover:text-crimson-700 transition"
-                          title={`Switch to ${child.name}`}
+                          title={`Select ${child.name} & Continue to Setup`}
                         >
                           <GitBranch size={10} className="text-slate-400" />
                           <span>{child.name}</span>
@@ -194,15 +194,26 @@ export const CompanyDirectory: React.FC<CompanyDirectoryProps> = ({
                 </div>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => onSelectTenant(parent.id)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition shadow-2xs"
-                >
-                  <span>🏢 Configure {parent.name}</span>
-                  <ArrowRight size={13} />
-                </button>
+              <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => onSelectTenant(parent.id, true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-crimson-700 transition shadow-2xs"
+                    title={`Select ${parent.name} and continue to next setup step`}
+                  >
+                    <span>Select & Continue</span>
+                    <ArrowRight size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSelectTenant(parent.id, false)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+                    title={`Configure profile for ${parent.name}`}
+                  >
+                    <span>Configure {parent.name}</span>
+                  </button>
+                </div>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
