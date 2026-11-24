@@ -149,3 +149,29 @@ export function useSelectedYearClosed(): boolean {
   const { selectedYear } = useFiscalYear()
   return selectedYear?.status === 'closed'
 }
+
+/**
+ * Checks whether a given [startDate, endDate] range overlaps with any existing fiscal year.
+ * Two date ranges [s1, e1] and [s2, e2] overlap if:
+ * s1 <= e2 && e1 >= s2 (assuming valid intervals s1 <= e1, s2 <= e2).
+ * Contiguous boundaries (e.g. e1 = 2026-07-15, s2 = 2026-07-16) do NOT overlap.
+ */
+export function findOverlappingFiscalYear(
+  startDate: string,
+  endDate: string,
+  existingYears: FiscalYear[],
+  excludeYearId?: string | number,
+): FiscalYear | undefined {
+  if (!startDate || !endDate) return undefined
+  const s = String(startDate).slice(0, 10)
+  const e = String(endDate).slice(0, 10)
+  if (s > e) return undefined
+
+  return existingYears.find((fy) => {
+    if (excludeYearId && String(fy.id) === String(excludeYearId)) return false
+    if (!fy.startDate || !fy.endDate) return false
+    const fyStart = String(fy.startDate).slice(0, 10)
+    const fyEnd = String(fy.endDate).slice(0, 10)
+    return s <= fyEnd && e >= fyStart
+  })
+}

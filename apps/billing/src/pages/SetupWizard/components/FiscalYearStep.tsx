@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { adToBsString, bsToAdString } from '../../../lib/nepaliDate'
+import { findOverlappingFiscalYear } from '../../../lib/fiscalYear'
 import type { FiscalYear } from '../../../lib/types'
 
 interface FiscalYearStepProps {
@@ -68,6 +69,13 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
     endDate: '',
     status: 'active',
   })
+
+  // Overlap detection for new fiscal year
+  const overlap =
+    fy.startDate && fy.endDate
+      ? findOverlappingFiscalYear(fy.startDate, fy.endDate, years)
+      : undefined
+  const isDateOrderInvalid = Boolean(fy.startDate && fy.endDate && fy.startDate > fy.endDate)
 
   return (
     <>
@@ -203,6 +211,18 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
           </div>
         </div>
 
+        {isDateOrderInvalid && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs font-medium text-red-700">
+            Fiscal year end date must be after the start date.
+          </div>
+        )}
+
+        {overlap && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs font-medium text-red-700">
+            Cannot add fiscal year: duration overlaps with existing year "{overlap.label || `FY ${overlap.startDate}`}" ({overlap.startDate} to {overlap.endDate}). Fiscal year periods cannot touch or overlap.
+          </div>
+        )}
+
         <div className="flex items-center justify-between pt-2">
           <p className="text-xs text-slate-400">
             {isViewer
@@ -212,7 +232,7 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
           <button
             type="button"
             onClick={() => void onCreateYear()}
-            disabled={isViewer || busy === 'fiscalYear' || !fy.startDate || !fy.endDate}
+            disabled={isViewer || busy === 'fiscalYear' || !fy.startDate || !fy.endDate || Boolean(overlap) || isDateOrderInvalid}
             className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-crimson-700 disabled:opacity-60 transition shadow-2xs"
           >
             <Plus size={14} /> <span>Add Year</span>

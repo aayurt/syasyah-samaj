@@ -5,7 +5,7 @@ import { pushToast } from '../lib/toast'
 import { useT } from '../lib/i18n'
 import NepaliDateInput from './NepaliDateInput'
 import { adToBsString, todayAD } from '../lib/nepaliDate'
-import { useFiscalYear } from '../lib/fiscalYear'
+import { useFiscalYear, findOverlappingFiscalYear } from '../lib/fiscalYear'
 import { useTenant } from '../lib/tenant'
 import { LiquidButton } from './ui/LiquidButton'
 import type { FiscalYear } from '../lib/types'
@@ -116,6 +116,20 @@ export default function AddFiscalYearModal({
     e.preventDefault()
     if (!startDate || !endDate) {
       setError('Both Start Date and End Date are required.')
+      return
+    }
+
+    if (startDate > endDate) {
+      setError('Fiscal year end date must be after the start date.')
+      return
+    }
+
+    const overlap = findOverlappingFiscalYear(startDate, endDate, years)
+    if (overlap) {
+      const overlapLabel = overlap.label || `FY ${overlap.startDate}`
+      setError(
+        `Fiscal year duration overlaps with existing fiscal year "${overlapLabel}" (${overlap.startDate} to ${overlap.endDate}). Fiscal year periods cannot touch or overlap.`
+      )
       return
     }
 

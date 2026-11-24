@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import { api, list } from '../lib/api'
 import { useDataEpochWatcher } from '../lib/dataOps'
-import { useFiscalYear } from '../lib/fiscalYear'
+import { useFiscalYear, findOverlappingFiscalYear } from '../lib/fiscalYear'
 import {
   useTenant,
   getParentCompanies,
@@ -820,6 +820,22 @@ export default function SetupWizard() {
     setBusy('fiscalYear')
     setError('')
     try {
+      if (!fy.startDate || !fy.endDate) {
+        throw new Error('Both start date and end date are required.')
+      }
+
+      if (fy.startDate > fy.endDate) {
+        throw new Error('Fiscal year end date must be after the start date.')
+      }
+
+      const overlap = findOverlappingFiscalYear(fy.startDate, fy.endDate, years)
+      if (overlap) {
+        const overlapLabel = overlap.label || `FY ${overlap.startDate}`
+        throw new Error(
+          `Fiscal year duration overlaps with existing fiscal year "${overlapLabel}" (${overlap.startDate} to ${overlap.endDate}). Fiscal year durations cannot overlap.`
+        )
+      }
+
       const label =
         fy.label.trim() ||
         (() => {
@@ -830,6 +846,7 @@ export default function SetupWizard() {
 
       const created = await api<FiscalYear>('/fiscal-years', {
         method: 'POST',
+        immediate: true,
         body: {
           label,
           startDate: fy.startDate,
@@ -841,11 +858,13 @@ export default function SetupWizard() {
       })
       await api('/globals/billing-settings', {
         method: 'POST',
+        immediate: true,
         body: { activeFiscalYear: created.id },
       })
       bumpGlobals()
       await refreshYears()
-      setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
+      setFy({ label: '', startDate: '', endDate: '' })
+      setFyBs({ start: '', end: '' })
       pushToast('success', t('setup.fySaved', 'Fiscal year created & set active'))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create fiscal year')
@@ -891,8 +910,21 @@ export default function SetupWizard() {
 
   const fyRowSave = async (id: string, draft: any) => {
     try {
+      if (draft.startDate && draft.endDate) {
+        if (draft.startDate > draft.endDate) {
+          throw new Error('Fiscal year end date must be after the start date.')
+        }
+        const overlap = findOverlappingFiscalYear(draft.startDate, draft.endDate, years, id)
+        if (overlap) {
+          const overlapLabel = overlap.label || `FY ${overlap.startDate}`
+          throw new Error(
+            `Fiscal year duration overlaps with existing fiscal year "${overlapLabel}" (${overlap.startDate} to ${overlap.endDate}). Fiscal year durations cannot overlap.`
+          )
+        }
+      }
       await api(`/fiscal-years/${id}`, {
         method: 'PATCH',
+        immediate: true,
         body: {
           label: draft.label,
           startDate: draft.startDate,
