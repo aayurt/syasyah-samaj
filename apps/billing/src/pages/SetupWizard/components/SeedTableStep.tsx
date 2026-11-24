@@ -119,8 +119,17 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
     setBusyId(id)
     try {
       await api(`/${collection}/${id}`, { method: 'DELETE', immediate: true })
+      setRecords((prev) => prev.filter((r) => String(r.id) !== String(id)))
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(String(id))
+        return next
+      })
       setBusyId(null)
-      void loadRecords()
+      await loadRecords()
+      if (onSuccess) {
+        onSuccess()
+      }
       pushToast('success', `${title} deleted`)
     } catch (e) {
       setBusyId(null)
@@ -152,18 +161,35 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
     if (!window.confirm(`Delete ${ids.length} ${title}?`)) return
     setBusyId('multi')
     let failed = 0
+    const deletedIds = new Set<string>()
+
     for (const id of ids) {
       try {
-        await api(`/${collection}/${id}`, { method: 'DELETE' })
-      } catch {
+        await api(`/${collection}/${id}`, { method: 'DELETE', immediate: true })
+        deletedIds.add(id)
+      } catch (err) {
+        console.error(`Failed to delete ${collection} id ${id}:`, err)
         failed += 1
       }
     }
+
+    // Optimistically remove deleted records immediately from local state
+    if (deletedIds.size > 0) {
+      setRecords((prev) => prev.filter((r) => !deletedIds.has(String(r.id))))
+    }
+
     setBusyId(null)
     clearSelection()
-    void loadRecords()
-    if (failed === 0) pushToast('success', `Deleted ${ids.length} ${title}`)
-    else pushToast('warning', `Deleted ${ids.length - failed} of ${ids.length} ${title}`, `${failed} failed`)
+    await loadRecords()
+    if (onSuccess) {
+      onSuccess()
+    }
+
+    if (failed === 0) {
+      pushToast('success', `Deleted ${ids.length} ${title}`)
+    } else {
+      pushToast('warning', `Deleted ${ids.length - failed} of ${ids.length} ${title}`, `${failed} failed`)
+    }
   }
 
   const doSeed = async () => {
