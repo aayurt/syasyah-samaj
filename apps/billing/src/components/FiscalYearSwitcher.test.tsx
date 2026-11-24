@@ -123,31 +123,4 @@ describe('FiscalYearSwitcher', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByText(/Add new fiscal year/i)).toBeInTheDocument()
   })
-
-  it('bumps the cache version on beforeunload', () => {
-    localStorage.setItem('billing.cacheVersion', '3')
-    renderSwitcher()
-    fireEvent(window, new Event('beforeunload'))
-    expect(localStorage.getItem('billing.cacheVersion')).toBe('4')
-    localStorage.removeItem('billing.cacheVersion')
-  })
-
-  it('refreshes when the tab becomes visible again', () => {
-    useFiscalYearMock.mockReturnValue({
-      years,
-      selectedYear: years[1],
-      activeYear: years[0],
-      selectYear: vi.fn(),
-      loading: false,
-      refresh: refreshMock,
-    })
-    renderSwitcher()
-    refreshMock.mockClear()
-    Object.defineProperty(document, 'visibilityState', {
-      configurable: true,
-      get: () => 'visible',
-    })
-    fireEvent(document, new Event('visibilitychange'))
-    expect(refreshMock).toHaveBeenCalled()
-  })
 })

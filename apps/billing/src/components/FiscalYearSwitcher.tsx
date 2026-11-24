@@ -1,7 +1,6 @@
 import { CalendarClock, ChevronDown, Lock, Plus } from 'lucide-react'
 import { useFiscalYear } from '../lib/fiscalYear'
-import { useSyncState } from '../lib/offline'
-import { useState, useEffect } from 'react'
+import { useState, memo } from 'react'
 import { useT, useLang } from '../lib/i18n'
 import { toNepaliDigits } from '../lib/nepaliNumbers'
 import AddFiscalYearModal from './AddFiscalYearModal'
@@ -9,35 +8,11 @@ import AddFiscalYearModal from './AddFiscalYearModal'
 /**
  * Fiscal year switcher with a floating "Add Year" modal button.
  */
-export default function FiscalYearSwitcher() {
+function FiscalYearSwitcher() {
   const { years, selectedYear, activeYear, selectYear, refresh, loading } = useFiscalYear()
-  console.log('[FiscalYearSwitcher] render, loading:', loading, 'years count:', years.length, 'selectedYear:', selectedYear?.id)
   const t = useT()
   const { lang } = useLang()
   const [showAddYear, setShowAddYear] = useState(false)
-
-  // Clear cache + reload when tab becomes visible again
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        void refresh()
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibility)
-    return () => document.removeEventListener('visibilitychange', handleVisibility)
-  }, [refresh])
-
-  // Clear cache on window unload to prevent stale data
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (typeof window !== 'undefined') {
-        const current = Number(localStorage.getItem('billing.cacheVersion') || '0')
-        localStorage.setItem('billing.cacheVersion', String(current + 1))
-      }
-    }
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [])
 
   // When "Add Year" is clicked, show modal to create fiscal year right in the header
   const handleAddYearClick = () => {
@@ -115,3 +90,5 @@ export default function FiscalYearSwitcher() {
     </>
   )
 }
+
+export default memo(FiscalYearSwitcher)

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { api, useSyncState } from './api'
 import { useTenant, isParentCompany } from './tenant'
 import type { FiscalYear } from './types'
@@ -53,13 +53,20 @@ export function FiscalYearProvider({ children }: { children: React.ReactNode }) 
     if (!currentTenant) return tenantId
     if (isParentCompany(currentTenant)) return tenantId
     return currentTenant.parentId || tenantId
-  }, [currentTenant, tenantId])
+  }, [currentTenant?.id, currentTenant?.parentId, tenantId])
 
   const storageKey = useMemo(() => `${STORAGE_PREFIX}${fyTenantId}`, [fyTenantId])
 
+  const yearsCountRef = useRef(years.length)
+  useEffect(() => {
+    yearsCountRef.current = years.length
+  }, [years.length])
+
   const refresh = useCallback(async () => {
-    console.log('[fiscalYear] refresh triggered, fyTenantId:', fyTenantId)
-    setLoading(true)
+    // Only set loading true if we don't have years loaded yet, to avoid unmounting the UI / flickering
+    if (yearsCountRef.current === 0) {
+      setLoading(true)
+    }
     try {
       // E2E bypass: return seeded mock fiscal years (no API round-trip,
       // no session cookie needed).
@@ -92,21 +99,31 @@ export function FiscalYearProvider({ children }: { children: React.ReactNode }) 
       const list = (res.docs || []).sort((a, b) =>
         String(b.startDate || '').localeCompare(String(a.startDate || '')),
       )
-      setYears(list)
+      // Only trigger state update if contents have changed
+      setYears((prev) => {
+        if (
+          prev.length === list.length &&
+          prev.every((p, idx) => p.id === list[idx]?.id && p.status === list[idx]?.status && p.isActive === list[idx]?.isActive)
+        ) {
+          return prev
+        }
+        return list
+      })
       // Keep selection: explicit stored id → isActive → first active → first
       const stored = Number(localStorage.getItem(storageKey) || '') || null
       const active = list.find((y) => y.isActive) || list.find((y) => y.status === 'active') || null
       const keep = stored
         ? (list.find((y) => y.id === stored) || null)
         : null
-      setSelectedId(keep ? keep.id : active ? active.id : null)
+      const nextId = keep ? keep.id : active ? active.id : null
+      setSelectedId((prev) => (prev === nextId ? prev : nextId))
       return
     } catch {
       /* offline — keep cached selection */
     } finally {
       setLoading(false)
     }
-  }, [storageKey, tenantId, fyTenantId])
+  }, [storageKey, fyTenantId])
 
   // Reload when the tenant changes, on first mount, and whenever a sync
   // flush changed cached rows (e.g. a created fiscal year got its real

@@ -155,39 +155,34 @@ class CompatibilityEngine {
   }
 
   subscribe(fn: (s: OldSyncState) => void): () => void {
-    // Wrap the new engine's subscribe to emit old-state shape
+    // If the inner engine is already available, subscribe to its events directly
+    // to avoid unnecessary interval polling.
     let lastState = this.getState()
-    const unsub = (() => {
-      // Polling subscribe — the new engine doesn't expose the old state shape,
-      // so we poll every 2s and emit on change. This is a temporary shim.
-      const timer = setInterval(() => {
-        const next = this.getState()
-        if (
-          next.online !== lastState.online ||
-          next.pending !== lastState.pending ||
-          next.conflicts !== lastState.conflicts ||
-          next.cacheVersion !== lastState.cacheVersion ||
-          next.syncingCount !== lastState.syncingCount ||
-          next.reportsStale !== lastState.reportsStale ||
-          next.lastReportSyncAt !== lastState.lastReportSyncAt ||
-          next.nextSyncAt !== lastState.nextSyncAt
-        ) {
-          console.log('[offline shim] state changed, diff:', {
-            online: next.online !== lastState.online ? [lastState.online, next.online] : undefined,
-            pending: next.pending !== lastState.pending ? [lastState.pending, next.pending] : undefined,
-            conflicts: next.conflicts !== lastState.conflicts ? [lastState.conflicts, next.conflicts] : undefined,
-            cacheVersion: next.cacheVersion !== lastState.cacheVersion ? [lastState.cacheVersion, next.cacheVersion] : undefined,
-            syncingCount: next.syncingCount !== lastState.syncingCount ? [lastState.syncingCount, next.syncingCount] : undefined,
-            reportsStale: next.reportsStale !== lastState.reportsStale ? [lastState.reportsStale, next.reportsStale] : undefined,
-            nextSyncAt: next.nextSyncAt !== lastState.nextSyncAt ? [lastState.nextSyncAt, next.nextSyncAt] : undefined,
-          })
-          lastState = next
-          fn(next)
-        }
-      }, 2000)
-      return () => clearInterval(timer)
-    })()
-    return unsub
+    const checkState = () => {
+      const next = this.getState()
+      if (
+        next.online !== lastState.online ||
+        next.pending !== lastState.pending ||
+        next.conflicts !== lastState.conflicts ||
+        next.cacheVersion !== lastState.cacheVersion ||
+        next.syncingCount !== lastState.syncingCount ||
+        next.reportsStale !== lastState.reportsStale ||
+        next.lastReportSyncAt !== lastState.lastReportSyncAt
+      ) {
+        lastState = next
+        fn(next)
+      }
+    }
+
+    if (this.inner) {
+      return this.inner.subscribe(() => checkState())
+    }
+
+    // Fallback polling until engine is initialized
+    const timer = setInterval(() => {
+      checkState()
+    }, 2000)
+    return () => clearInterval(timer)
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────
