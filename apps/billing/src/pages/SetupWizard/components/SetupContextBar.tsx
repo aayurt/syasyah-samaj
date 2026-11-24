@@ -7,6 +7,7 @@ interface SetupContextBarProps {
   activeTenant: TenantOption | null
   companyName: string
   isCentral: boolean
+  isSuperAdmin?: boolean
   onSwitchAll: () => void
 }
 
@@ -14,6 +15,7 @@ export const SetupContextBar: React.FC<SetupContextBarProps> = ({
   activeTenant,
   companyName,
   isCentral,
+  isSuperAdmin = false,
   onSwitchAll,
 }) => {
   const isParent = !activeTenant || isParentCompany(activeTenant)
@@ -52,7 +54,7 @@ export const SetupContextBar: React.FC<SetupContextBarProps> = ({
         </div>
       </div>
 
-      {isCentral && (
+      {isSuperAdmin && (
         <div className="flex items-center gap-2">
           <button
             type="button"

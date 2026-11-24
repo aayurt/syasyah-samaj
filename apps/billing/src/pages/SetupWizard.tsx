@@ -77,7 +77,8 @@ export default function SetupWizard() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const t = useT()
-  const { tenantId, setTenantId, tenants, isIllaka, isCentral, isSuperAdmin, isViewer } = useTenant()
+  const { tenantId, setTenantId, tenants, isIllaka, isCentral, isSuperAdmin, isAdmin: rawIsAdmin, isViewer } = useTenant()
+  const isAdmin = rawIsAdmin ?? (isSuperAdmin || isCentral)
   const { years, loading: yearsLoading, refresh: refreshYears } = useFiscalYear()
 
   const [stepIdx, setStepIdx] = useState(0)
@@ -346,6 +347,10 @@ export default function SetupWizard() {
 
   // Save company profile
   const saveCompany = async () => {
+    if (!isAdmin) {
+      pushToast('error', 'Admin permission required', 'Only administrators have permission to update the company profile.')
+      return
+    }
     setBusy('company')
     setError('')
     try {
@@ -898,6 +903,7 @@ export default function SetupWizard() {
         activeTenant={activeTenant}
         companyName={company.companyName}
         isCentral={isCentral}
+        isSuperAdmin={isSuperAdmin}
         onSwitchAll={() => setTenantId('')}
       />
 
@@ -956,7 +962,7 @@ export default function SetupWizard() {
                       </p>
                     </div>
                   </div>
-                  {parentOfActiveTenant && (
+                  {parentOfActiveTenant && isSuperAdmin && (
                     <button
                       type="button"
                       onClick={() => setTenantId(parentOfActiveTenant.id)}
@@ -996,7 +1002,7 @@ export default function SetupWizard() {
                     </label>
                     <input
                       value={company.companyName}
-                      disabled={isViewer}
+                      disabled={!isAdmin}
                       onChange={(e) => setCompany({ ...company, companyName: e.target.value })}
                       placeholder="e.g. Syasyah Sahakari"
                       className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
@@ -1006,7 +1012,7 @@ export default function SetupWizard() {
                     <label className="text-xs font-medium text-slate-600">PAN / Tax ID</label>
                     <input
                       value={company.companyPan}
-                      disabled={isViewer}
+                      disabled={!isAdmin}
                       onChange={(e) => setCompany({ ...company, companyPan: e.target.value })}
                       placeholder="e.g. 612345678"
                       className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 font-mono text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
@@ -1016,7 +1022,7 @@ export default function SetupWizard() {
                     <label className="text-xs font-medium text-slate-600">Contact</label>
                     <input
                       value={company.companyContact}
-                      disabled={isViewer}
+                      disabled={!isAdmin}
                       onChange={(e) => setCompany({ ...company, companyContact: e.target.value })}
                       placeholder="Phone number"
                       className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
@@ -1027,7 +1033,7 @@ export default function SetupWizard() {
                     <input
                       type="email"
                       value={company.companyEmail}
-                      disabled={isViewer}
+                      disabled={!isAdmin}
                       onChange={(e) => setCompany({ ...company, companyEmail: e.target.value })}
                       placeholder="org@example.com"
                       className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
@@ -1037,7 +1043,7 @@ export default function SetupWizard() {
                     <label className="text-xs font-medium text-slate-600">Address</label>
                     <input
                       value={company.companyAddress}
-                      disabled={isViewer}
+                      disabled={!isAdmin}
                       onChange={(e) => setCompany({ ...company, companyAddress: e.target.value })}
                       placeholder="Registered address"
                       className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
@@ -1321,7 +1327,7 @@ export default function SetupWizard() {
 
           <div className="flex items-center gap-2">
             {/* AI helper shortcuts on specific steps */}
-            {!isViewer && step.key === 'company' && (
+            {isAdmin && step.key === 'company' && (
               <button
                 type="button"
                 onClick={() => {
@@ -1337,7 +1343,7 @@ export default function SetupWizard() {
 
             {/* Primary Action Button - ONE authoritative button */}
             {step.key === 'company' && (
-              isViewer ? (
+              !isAdmin ? (
                 <button
                   type="button"
                   onClick={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}

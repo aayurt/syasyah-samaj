@@ -153,6 +153,48 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
     expect(screen.getByText('ABC sub-company -1')).toBeInTheDocument()
   })
 
+  it('restricts company switching to super-admin while allowing admin to edit company profile', async () => {
+    const existingTenants = [
+      { id: '2', code: 'ABC', name: 'ABC Company', type: 'central' as const },
+    ]
+
+    useTenantMock.mockReturnValue({
+      tenantId: '2',
+      setTenantId,
+      tenants: existingTenants,
+      isCentral: true,
+      isIllaka: false,
+      isSuperAdmin: false,
+      isAdmin: true,
+      illakaCode: null,
+      multiCompanyEnabled: true,
+    })
+    listMock.mockResolvedValue({ docs: existingTenants, totalDocs: existingTenants.length })
+    apiMock.mockImplementation((endpoint: string) => {
+      if (endpoint === '/tenants') return Promise.resolve({ docs: existingTenants })
+      return Promise.resolve({ multiCompanyEnabled: true })
+    })
+
+    renderWizard()
+
+    await waitFor(() => {
+      expect(screen.getAllByText('ABC Company').length).toBeGreaterThan(0)
+    })
+
+    // Switch company is super-admin ONLY: "Switch / All Companies" must NOT be in the document
+    expect(screen.queryByText(/Switch \/ All Companies/i)).not.toBeInTheDocument()
+
+    // Company profile is admin-level: inputs are enabled and Save & continue is present
+    const orgInput = screen.getByPlaceholderText(/e.g. Syasyah Sahakari/i)
+    expect(orgInput).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: /Save & continue/i })).toBeInTheDocument()
+
+    // Children management shows permission warning for admin
+    expect(
+      screen.getByText(/Only Super-Admins have permission to toggle child branches and manage subsidiary structure./i),
+    ).toBeInTheDocument()
+  })
+
   it('allows Super-Admin to toggle Children Companies OFF and shows confirmation warning', async () => {
     const existingTenants = [
       { id: '2', code: 'ABC', name: 'ABC Company', type: 'central' as const },
@@ -248,6 +290,8 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
       tenants: existingTenants,
       isCentral: true,
       isIllaka: false,
+      isSuperAdmin: true,
+      isAdmin: true,
       illakaCode: null,
       multiCompanyEnabled: true,
     })
@@ -286,7 +330,7 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
     renderWizard()
 
     await waitFor(() => {
-      expect(screen.getByText('ABC Company')).toBeInTheDocument()
+      expect(screen.getAllByText('ABC Company').length).toBeGreaterThan(0)
     })
 
     const editBtn = screen.getByTitle('Edit ABC Company')

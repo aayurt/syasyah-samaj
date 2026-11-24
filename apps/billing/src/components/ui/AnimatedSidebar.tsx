@@ -65,7 +65,7 @@ export function AnimatedSidebar({
   className = '',
   isMobile = false,
 }: AnimatedSidebarProps) {
-  const { tenantId, setTenantId, tenants, isCentral } = useTenant()
+  const { tenantId, setTenantId, tenants, isCentral, isSuperAdmin } = useTenant()
 
   const [tenantDropdownOpen, setTenantDropdownOpen] = React.useState(false)
   const [userDropdownOpen, setUserDropdownOpen] = React.useState(false)
@@ -142,13 +142,13 @@ export function AnimatedSidebar({
         <div className="flex items-center justify-between gap-1">
           <button
             onClick={() => {
-              if (isCentral && !collapsed) {
+              if (isSuperAdmin && !collapsed) {
                 setTenantDropdownOpen((o) => !o)
               }
             }}
-            disabled={!isCentral || collapsed}
+            disabled={!isSuperAdmin || collapsed}
             className={`flex flex-1 items-center gap-2.5 rounded-lg p-1.5 text-left transition-colors ${
-              isCentral && !collapsed
+              isSuperAdmin && !collapsed
                 ? 'hover:bg-slate-100 cursor-pointer'
                 : 'cursor-default'
             }`}
@@ -193,7 +193,7 @@ export function AnimatedSidebar({
               </div>
             )}
 
-            {isCentral && !collapsed && (
+            {isSuperAdmin && !collapsed && (
               <ChevronsUpDown size={14} className="text-slate-400 shrink-0 ml-auto" />
             )}
           </button>

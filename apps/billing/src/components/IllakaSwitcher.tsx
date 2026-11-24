@@ -8,7 +8,7 @@ import { useT } from '../lib/i18n'
  * Allows switching the Parent Company first, and then choosing its Sub-companies / Branches.
  */
 export default function IllakaSwitcher() {
-  const { tenantId, setTenantId, tenants, isCentral, isIllaka, illakaCode, multiCompanyEnabled } =
+  const { tenantId, setTenantId, tenants, isCentral, isIllaka, isSuperAdmin, illakaCode, multiCompanyEnabled } =
     useTenant()
   const t = useT()
 
@@ -76,9 +76,12 @@ export default function IllakaSwitcher() {
         <select
           value={selectedParentId}
           onChange={handleCompanyChange}
+          disabled={!isSuperAdmin}
           aria-label={t('illaka.switchCompany', 'Select Company')}
-          className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-2.5 pr-7 text-xs font-semibold text-slate-800 hover:border-slate-300 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500 shadow-2xs max-w-[160px] truncate"
-          title={t('illaka.switchCompany', 'Select Company')}
+          className={`appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-2.5 pr-7 text-xs font-semibold text-slate-800 ${
+            !isSuperAdmin ? 'opacity-80 cursor-not-allowed bg-slate-50' : 'hover:border-slate-300'
+          } focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500 shadow-2xs max-w-[160px] truncate`}
+          title={!isSuperAdmin ? 'Only Super-Admins have permission to switch companies' : t('illaka.switchCompany', 'Select Company')}
         >
           <option value="">{t('illaka.all', 'All Companies (Consolidated)')}</option>
           {parents.map((p) => (

@@ -125,6 +125,10 @@ test.describe.serial('Role-Based Setup Wizard Access Controls', () => {
     const addChildBtn = page.getByRole('button', { name: /Add Child Company/i })
     await expect(addChildBtn).toBeVisible()
 
+    // Super-Admin can see Switch / All Companies button
+    const switchBtn = page.getByRole('button', { name: /Switch \/ All Companies/i })
+    await expect(switchBtn).toBeVisible()
+
     // Super-Admin does not see restriction banner
     await expect(
       page.getByText('Only Super-Admins have permission to toggle child branches'),
@@ -136,7 +140,7 @@ test.describe.serial('Role-Based Setup Wizard Access Controls', () => {
     await expect(saveBtn).toBeEnabled()
   })
 
-  test('Admin: central switcher available, but children company management is view-only', async ({ page }) => {
+  test('Admin: company profile is editable, children management locked, switch company is super-admin only', async ({ page }) => {
     await page.addInitScript(({ pId }) => {
       window.localStorage.setItem('__e2e_bypass__', '1')
       window.localStorage.setItem('__e2e_role__', 'admin')
@@ -152,16 +156,25 @@ test.describe.serial('Role-Based Setup Wizard Access Controls', () => {
     await page.waitForLoadState('domcontentloaded')
     await page.getByText('Syncing & loading setup facts…').waitFor({ state: 'hidden', timeout: 20000 }).catch(() => {})
 
-    // Central switcher "Switch / All Companies" IS available for central admin
-    const switchBtn = page.getByRole('button', { name: /Switch \/ All Companies/i })
-    await expect(switchBtn).toBeVisible({ timeout: 15000 })
+    // 1. Company Profile is admin level: inputs are ENABLED for admin
+    const orgInput = page.getByPlaceholder(/e.g. Syasyah Sahakari/i)
+    await expect(orgInput).toBeVisible({ timeout: 15000 })
+    await expect(orgInput).toBeEnabled()
 
-    // Step 0: Children company section shows permission warning for admin
+    // Save & continue button is ENABLED for admin
+    const saveBtn = page.getByRole('button', { name: /Save & continue/i })
+    await expect(saveBtn).toBeVisible()
+    await expect(saveBtn).toBeEnabled()
+
+    // 2. Switch company is super-admin ONLY: "Switch / All Companies" button is NOT visible for admin
+    await expect(page.getByRole('button', { name: /Switch \/ All Companies/i })).not.toBeVisible()
+
+    // 3. Children company section shows permission warning for admin
     await expect(
       page.getByText('Only Super-Admins have permission to toggle child branches and manage subsidiary structure.'),
     ).toBeVisible()
 
-    // Add Child Company button is HIDDEN for central admin
+    // Add Child Company button is HIDDEN for admin
     await expect(page.getByRole('button', { name: /Add Child Company/i })).not.toBeVisible()
 
     // Toggle checkbox is disabled
