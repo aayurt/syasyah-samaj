@@ -36,6 +36,8 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
   setAiOpen,
   setAiInitialModel,
   onSuccess,
+  isInherited,
+  inheritedFromParentName,
 }) => {
   const { isViewer } = useTenant()
   const [records, setRecords] = useState<any[]>([])
@@ -209,7 +211,7 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
           </div>
         </div>
 
-        {!isViewer && (
+        {!isViewer && !isInherited && (
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -226,8 +228,24 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
         )}
       </div>
 
+      {/* Inherited from Parent Banner */}
+      {isInherited && (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-4 text-xs text-indigo-900 flex items-start gap-3 shadow-2xs">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700 font-bold">
+            <Lock size={14} />
+          </div>
+          <div>
+            <h4 className="font-bold text-indigo-950">Common {title} (Inherited)</h4>
+            <p className="mt-0.5 text-indigo-800 leading-relaxed">
+              This branch automatically shares and inherits the common {title.toLowerCase()} from parent company{' '}
+              <strong>{inheritedFromParentName || 'Parent Company'}</strong>. Changes to these core accounts are managed centrally at the parent level.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Bulk actions bar */}
-      {!isViewer && selectedIds.size > 0 && (
+      {!isViewer && !isInherited && selectedIds.size > 0 && (
         <div className="flex items-center gap-2 bg-slate-100 p-2 rounded-lg">
           <span className="text-xs font-medium text-slate-700 ml-1">
             {selectedIds.size} selected
@@ -320,7 +338,7 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-slate-50 shadow-2xs z-10">
                 <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-                  {!isViewer && (
+                  {!isViewer && !isInherited && (
                     <th className="px-3 py-2.5 text-center w-10">
                       <input
                         type="checkbox"
@@ -351,7 +369,7 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
                   const editing = editRow === String(row.id)
                   return (
                     <tr key={row.id} className="hover:bg-slate-50/70 transition-colors">
-                      {!isViewer && (
+                      {!isViewer && !isInherited && (
                         <td className="px-3 py-2 text-center">
                           <input
                             type="checkbox"
@@ -430,9 +448,11 @@ export const SeedTableStep: React.FC<SeedTableProps> = ({
                         )
                       })}
                       <td className="px-3 py-2">
-                        {isViewer ? (
+                        {isViewer || isInherited ? (
                           <div className="flex items-center justify-end">
-                            <span className="text-xs text-slate-400 italic">View only</span>
+                            <span className="text-xs text-slate-400 italic">
+                              {isInherited ? 'Inherited' : 'View only'}
+                            </span>
                           </div>
                         ) : editing ? (
                           <div className="flex items-center justify-end gap-1">

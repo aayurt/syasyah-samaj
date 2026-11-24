@@ -15,6 +15,8 @@ interface SetupFlowChoiceModalProps {
   parentCompany: TenantOption | null
   parentName: string
   childCompanies: TenantOption[]
+  canOnboardChildren?: boolean
+  parentCoaMissingReason?: string
   onContinueParent: () => void
   onSelectChild: (child: TenantOption) => void
 }
@@ -25,6 +27,8 @@ export function SetupFlowChoiceModal({
   parentCompany,
   parentName,
   childCompanies,
+  canOnboardChildren = true,
+  parentCoaMissingReason,
   onContinueParent,
   onSelectChild,
 }: SetupFlowChoiceModalProps) {
@@ -116,43 +120,53 @@ export function SetupFlowChoiceModal({
               </span>
             </div>
 
-            <div className="max-h-56 overflow-y-auto space-y-2 pr-1 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
-              {childCompanies.map((child) => (
-                <div
-                  key={child.id}
-                  onClick={() => onSelectChild(child)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') onSelectChild(child)
-                  }}
-                  className="group flex items-center justify-between gap-3 rounded-lg border border-slate-200/80 bg-white p-3 hover:border-indigo-400 hover:bg-indigo-50/30 transition cursor-pointer shadow-2xs"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="flex size-7 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition">
-                      <GitBranch size={14} />
-                    </div>
-                    <div className="truncate">
-                      <div className="font-semibold text-xs text-slate-900 group-hover:text-indigo-900 transition truncate">
-                        {child.name}
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
-                        <span>Code: {child.code || '—'}</span>
-                        {child.pan && <span>• PAN: {child.pan}</span>}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-white px-2.5 py-1 text-xs font-semibold text-indigo-700 shadow-2xs group-hover:bg-indigo-600 group-hover:text-white transition shrink-0"
+            {!canOnboardChildren ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-800 space-y-1 shadow-2xs">
+                <p className="font-semibold text-amber-950">Parent Chart of Accounts Required</p>
+                <p className="text-amber-800 leading-relaxed">
+                  {parentCoaMissingReason ||
+                    'Please complete the parent company setup (Account Types & Chart of Accounts) first before onboarding child branches.'}
+                </p>
+              </div>
+            ) : (
+              <div className="max-h-56 overflow-y-auto space-y-2 pr-1 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
+                {childCompanies.map((child) => (
+                  <div
+                    key={child.id}
+                    onClick={() => onSelectChild(child)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') onSelectChild(child)
+                    }}
+                    className="group flex items-center justify-between gap-3 rounded-lg border border-slate-200/80 bg-white p-3 hover:border-indigo-400 hover:bg-indigo-50/30 transition cursor-pointer shadow-2xs"
                   >
-                    <span>Onboard</span>
-                    <ArrowRight size={12} />
-                  </button>
-                </div>
-              ))}
-            </div>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex size-7 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition">
+                        <GitBranch size={14} />
+                      </div>
+                      <div className="truncate">
+                        <div className="font-semibold text-xs text-slate-900 group-hover:text-indigo-900 transition truncate">
+                          {child.name}
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
+                          <span>Code: {child.code || '—'}</span>
+                          {child.pan && <span>• PAN: {child.pan}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-white px-2.5 py-1 text-xs font-semibold text-indigo-700 shadow-2xs group-hover:bg-indigo-600 group-hover:text-white transition shrink-0"
+                    >
+                      <span>Onboard</span>
+                      <ArrowRight size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

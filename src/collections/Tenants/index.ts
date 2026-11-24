@@ -64,6 +64,33 @@ export const Tenants: CollectionConfig = {
           if (conflict) {
             throw new Error(`A parent company with the name "${name}" already exists. Parent company names must be unique.`)
           }
+        } else if (parent && operation === 'create') {
+          // If creating a child company, ensure the parent company has Account Groups and Chart of Accounts configured
+          const parentId = typeof parent === 'object' ? (parent as any)?.id : parent
+          if (parentId) {
+            const [parentGroups, parentAccounts] = await Promise.all([
+              req.payload.find({
+                collection: 'account-groups',
+                where: { tenant: { equals: parentId } },
+                limit: 1,
+                depth: 0,
+                overrideAccess: true,
+              }),
+              req.payload.find({
+                collection: 'gl-accounts',
+                where: { tenant: { equals: parentId } },
+                limit: 1,
+                depth: 0,
+                overrideAccess: true,
+              }),
+            ])
+
+            if ((parentGroups.totalDocs ?? 0) === 0 || (parentAccounts.totalDocs ?? 0) === 0) {
+              throw new Error(
+                'Cannot register child companies before the parent company has configured its Account Types and Chart of Accounts. Please complete those setup steps on the parent company first.',
+              )
+            }
+          }
         }
         return data
       },

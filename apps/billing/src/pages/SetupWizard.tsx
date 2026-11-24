@@ -96,6 +96,8 @@ export default function SetupWizard() {
   const [memberCount, setMemberCount] = useState<number | null>(null)
   const [accountGroupsCount, setAccountGroupsCount] = useState<number | null>(null)
   const [taxTypesCount, setTaxTypesCount] = useState<number | null>(null)
+  const [parentChartCount, setParentChartCount] = useState<number | null>(null)
+  const [parentAccountGroupsCount, setParentAccountGroupsCount] = useState<number | null>(null)
 
   // Sub-companies state
   const [subCompanies, setSubCompanies] = useState<TenantOption[]>([])
@@ -214,13 +216,18 @@ export default function SetupWizard() {
   // Fact refresh loader
   const refreshFacts = useCallback(async () => {
     try {
-      const [s, chartRes, illakaRes, memberRes, agRes, ttRes] = await Promise.all([
+      const activeParentId = activeTenant && !isParentCompany(activeTenant) ? activeTenant.parentId : null
+      const parentQ = activeParentId ? { tenant: activeParentId } : null
+
+      const [s, chartRes, illakaRes, memberRes, agRes, ttRes, parentChartRes, parentAgRes] = await Promise.all([
         api<BillingSettings>('/globals/billing-settings', { query: { depth: 1 } }).catch(() => null),
         list<Account>('gl-accounts', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null),
         list<TenantOption>('tenants', { depth: 0, limit: 100 }).catch(() => null),
         tenantId ? list<{ id: number }>('members', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null) : Promise.resolve(null),
         tenantId ? list<{ id: number }>('account-groups', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null) : Promise.resolve(null),
         tenantId ? list<{ id: number }>('tax-types', { depth: 0, limit: 1, ...tenantQuery }).catch(() => null) : Promise.resolve(null),
+        parentQ ? list<Account>('gl-accounts', { depth: 0, limit: 1, ...parentQ }).catch(() => null) : Promise.resolve(null),
+        parentQ ? list<{ id: number }>('account-groups', { depth: 0, limit: 1, ...parentQ }).catch(() => null) : Promise.resolve(null),
       ])
 
       setSettings(s)
@@ -230,6 +237,8 @@ export default function SetupWizard() {
       setMemberCount(memberRes?.totalDocs ?? 0)
       setAccountGroupsCount(agRes?.totalDocs ?? 0)
       setTaxTypesCount(ttRes?.totalDocs ?? 0)
+      setParentChartCount(parentChartRes?.totalDocs ?? null)
+      setParentAccountGroupsCount(parentAgRes?.totalDocs ?? null)
 
       const rawTenants: any[] = illakaRes?.docs ?? []
       const mapped: TenantOption[] = rawTenants.map((t) => {
@@ -324,11 +333,15 @@ export default function SetupWizard() {
     ),
     fiscalYear: (years?.length ?? 0) > 0 || Boolean(settings?.activeFiscalYear),
     'seed-account-groups':
-      Boolean(seedDone['seed-account-groups'] || seedDone['accountGroups']) ||
-      (accountGroupsCount ?? 0) > 0,
+      isSubCompany
+        ? (parentAccountGroupsCount ?? 0) > 0 || (accountGroupsCount ?? 0) > 0
+        : Boolean(seedDone['seed-account-groups'] || seedDone['accountGroups']) ||
+          (accountGroupsCount ?? 0) > 0,
     'seed-accounts':
-      Boolean(seedDone['seed-accounts'] || seedDone['accounts']) ||
-      (chartCount ?? 0) > 0,
+      isSubCompany
+        ? (parentChartCount ?? 0) > 0 || (chartCount ?? 0) > 0
+        : Boolean(seedDone['seed-accounts'] || seedDone['accounts']) ||
+          (chartCount ?? 0) > 0,
     'seed-taxTypes':
       Boolean(seedDone['seed-taxTypes'] || seedDone['taxTypes']) ||
       (taxTypesCount ?? 0) > 0,
@@ -356,6 +369,26 @@ export default function SetupWizard() {
       (p) => (!currentCompanyId || String(p.id) !== String(currentCompanyId)) && p.name.trim().toLowerCase() === trimmed,
     )
   }, [isSubCompany, company.companyName, parentCompanies, tenantId, activeTenant])
+
+  // Check whether the parent company has Account Groups and Chart of Accounts configured
+  const parentHasCoa = useMemo(() => {
+    if (isSubCompany) return true
+    return (accountGroupsCount ?? 0) > 0 && (chartCount ?? 0) > 0
+  }, [isSubCompany, accountGroupsCount, chartCount])
+
+  const parentCoaMissingReason = useMemo(() => {
+    if (isSubCompany) return ''
+    if ((accountGroupsCount ?? 0) === 0 && (chartCount ?? 0) === 0) {
+      return 'Account Types & Groups and Chart of Accounts must be seeded first on this parent company.'
+    }
+    if ((accountGroupsCount ?? 0) === 0) {
+      return 'Account Types & Groups must be seeded first on this parent company.'
+    }
+    if ((chartCount ?? 0) === 0) {
+      return 'Chart of Accounts must be seeded first on this parent company.'
+    }
+    return ''
+  }, [isSubCompany, accountGroupsCount, chartCount])
 
   // Save company profile
   const saveCompany = async () => {
@@ -584,6 +617,13 @@ export default function SetupWizard() {
 
   // Sub-company CRUD
   const saveSubCompany = async () => {
+    if (!editingSubCompany && !parentHasCoa) {
+      setSubCompanyError(
+        'Cannot register child companies before the parent company has configured its Account Types and Chart of Accounts. Please complete those setup steps first.',
+      )
+      return
+    }
+
     const trimmedSubName = subCompanyForm.name.trim()
     const trimmedSubCode = subCompanyForm.code.trim().toUpperCase()
     if (!trimmedSubName || !trimmedSubCode) {
@@ -1149,6 +1189,8 @@ export default function SetupWizard() {
                   subCompanies={currentCompanySubCompanies}
                   isSuperAdmin={isSuperAdmin}
                   companyName={activeTenant?.name || company.companyName}
+                  canAddChild={parentHasCoa}
+                  parentCoaMissingReason={parentCoaMissingReason}
                   onAddClick={() => {
                     setSubCompanyForm({ name: '', code: '', type: 'illaka', active: true, slug: '', pan: '' })
                     setEditingSubCompany(null)
@@ -1202,7 +1244,11 @@ export default function SetupWizard() {
             <SeedTableStep
               collection="account-groups"
               title="Account Types & Groups"
-              subtitle="Parent groups — Asset, Liability, Equity, Income, Expense. Seed first, then accounts."
+              subtitle={
+                isSubCompany
+                  ? `Shared Account Types & Groups inherited from ${parentOfActiveTenant?.name || 'Parent Company'}.`
+                  : 'Parent groups — Asset, Liability, Equity, Income, Expense. Seed first, then accounts.'
+              }
               seedKey="accountGroups"
               stepKey={step.key}
               seedLabel="Seed types & groups"
@@ -1215,12 +1261,14 @@ export default function SetupWizard() {
                 { key: 'type', label: 'Type', type: 'select', options: ['asset', 'liability', 'equity', 'income', 'expense'] },
                 { key: 'description', label: 'Description', type: 'text' },
               ]}
-              tenantId={tenantId}
-              tenantQuery={tenantQuery}
+              tenantId={isSubCompany && parentOfActiveTenant ? parentOfActiveTenant.id : tenantId}
+              tenantQuery={isSubCompany && parentOfActiveTenant ? { tenant: parentOfActiveTenant.id } : tenantQuery}
               setSeedDone={setSeedDone}
               setAiOpen={setAiOpen}
               setAiInitialModel={setAiInitialModel}
               onSuccess={refreshFacts}
+              isInherited={isSubCompany}
+              inheritedFromParentName={parentOfActiveTenant?.name}
             />
           )}
 
@@ -1229,7 +1277,11 @@ export default function SetupWizard() {
             <SeedTableStep
               collection="gl-accounts"
               title="Chart of Accounts"
-              subtitle="Starter chart — seed then edit inline. Edits persist to the ledger."
+              subtitle={
+                isSubCompany
+                  ? `Shared Chart of Accounts inherited from ${parentOfActiveTenant?.name || 'Parent Company'}.`
+                  : 'Starter chart — seed then edit inline. Edits persist to the ledger.'
+              }
               seedKey="accounts"
               stepKey={step.key}
               seedLabel="Seed chart"
@@ -1244,12 +1296,14 @@ export default function SetupWizard() {
               aiModel="gl-accounts"
               aiLabel="Import Chart of Accounts with AI"
               depth={1}
-              tenantId={tenantId}
-              tenantQuery={tenantQuery}
+              tenantId={isSubCompany && parentOfActiveTenant ? parentOfActiveTenant.id : tenantId}
+              tenantQuery={isSubCompany && parentOfActiveTenant ? { tenant: parentOfActiveTenant.id } : tenantQuery}
               setSeedDone={setSeedDone}
               setAiOpen={setAiOpen}
               setAiInitialModel={setAiInitialModel}
               onSuccess={refreshFacts}
+              isInherited={isSubCompany}
+              inheritedFromParentName={parentOfActiveTenant?.name}
             />
           )}
 
@@ -1555,6 +1609,8 @@ export default function SetupWizard() {
         parentCompany={activeTenant}
         parentName={company.companyName}
         childCompanies={currentCompanySubCompanies}
+        canOnboardChildren={parentHasCoa}
+        parentCoaMissingReason={parentCoaMissingReason}
         onContinueParent={() => {
           setShowPostSaveChoiceModal(false)
           setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))

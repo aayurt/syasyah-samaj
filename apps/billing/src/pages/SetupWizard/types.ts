@@ -63,4 +63,6 @@ export interface SeedTableProps {
   setAiOpen: (open: boolean) => void
   setAiInitialModel: (model: AIModel | null) => void
   onSuccess?: () => void
+  isInherited?: boolean
+  inheritedFromParentName?: string
 }

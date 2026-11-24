@@ -16,6 +16,8 @@ interface ChildrenCompanySectionProps {
   subCompanies: TenantOption[]
   isSuperAdmin: boolean
   companyName: string
+  canAddChild: boolean
+  parentCoaMissingReason?: string
   onAddClick: () => void
   onEditClick: (subCompany: TenantOption) => void
   onDeleteClick: (id: string, name: string) => void
@@ -29,6 +31,8 @@ export function ChildrenCompanySection({
   subCompanies,
   isSuperAdmin,
   companyName,
+  canAddChild,
+  parentCoaMissingReason,
   onAddClick,
   onEditClick,
   onDeleteClick,
@@ -139,16 +143,39 @@ export function ChildrenCompanySection({
               </p>
             </div>
             {isSuperAdmin && (
-              <button
-                type="button"
-                onClick={onAddClick}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition shadow-2xs shrink-0"
-              >
-                <Plus size={14} />
-                <span>Add Child Company</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!canAddChild}
+                  onClick={onAddClick}
+                  title={!canAddChild ? parentCoaMissingReason : 'Register a child company or branch'}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-2xs shrink-0 transition ${
+                    canAddChild
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer'
+                      : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                  }`}
+                >
+                  <Plus size={14} />
+                  <span>Add Child Company</span>
+                </button>
+              </div>
             )}
           </div>
+
+          {!canAddChild && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-800 flex items-start gap-2.5 shadow-2xs">
+              <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-amber-950">
+                  Account Types and Chart of Accounts must be set up first
+                </p>
+                <p className="mt-0.5 text-amber-800 leading-relaxed">
+                  {parentCoaMissingReason ||
+                    'Please complete the "Account Types & Groups" and "Chart of Accounts" steps for this parent company before adding child companies, so that all branches can share and inherit a common chart.'}
+                </p>
+              </div>
+            </div>
+          )}
 
           {subCompanyError && (
             <div className="rounded-lg bg-crimson-50 border border-crimson-200 p-3 text-xs text-crimson-700 flex items-center justify-between">

@@ -391,4 +391,57 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
       }),
     )
   })
+
+  it('disables Add Child Company and warns when parent company lacks Account Types and Chart of Accounts', async () => {
+    useTenantMock.mockReturnValue({
+      tenantId: '1',
+      setTenantId,
+      tenants: [
+        { id: '1', code: 'ABC', name: 'ABC Company', type: 'central' as const },
+      ],
+      isCentral: true,
+      isIllaka: false,
+      isSuperAdmin: true,
+      isAdmin: true,
+      illakaCode: null,
+      multiCompanyEnabled: true,
+    })
+
+    // Return empty account-groups and gl-accounts for tenant 1
+    apiMock.mockImplementation((url: string, opts?: any) => {
+      if (url === '/globals/billing-settings') {
+        return Promise.resolve({ companyName: 'ABC Company' })
+      }
+      return Promise.resolve({ docs: [], totalDocs: 0 })
+    })
+
+    listMock.mockImplementation((col: string) => {
+      if (col === 'tenants') {
+        return Promise.resolve({
+          docs: [
+            { id: '1', name: 'ABC Company', code: 'ABC', type: 'central', active: true },
+          ],
+          totalDocs: 1,
+        })
+      }
+      return Promise.resolve({ docs: [], totalDocs: 0 })
+    })
+
+    renderWizard()
+
+    await waitFor(() => {
+      expect(screen.getByText('Children Companies')).toBeInTheDocument()
+    })
+
+    // Enable children toggle
+    const toggle = screen.getByLabelText(/Toggle Children Companies/i)
+    fireEvent.click(toggle)
+
+    // The Add Child Company button should be disabled because COA is missing
+    await waitFor(() => {
+      const addBtn = screen.getByRole('button', { name: /Add Child Company/i })
+      expect(addBtn).toBeDisabled()
+      expect(screen.getByText(/Account Types and Chart of Accounts must be set up first/i)).toBeInTheDocument()
+    })
+  })
 })
