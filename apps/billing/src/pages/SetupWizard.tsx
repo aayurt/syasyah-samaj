@@ -83,7 +83,7 @@ export default function SetupWizard() {
   const t = useT()
   const { tenantId, setTenantId, tenants, isIllaka, isCentral, isSuperAdmin, isAdmin: rawIsAdmin, isViewer } = useTenant()
   const isAdmin = rawIsAdmin ?? (isSuperAdmin || isCentral)
-  const { years, loading: yearsLoading, refresh: refreshYears } = useFiscalYear()
+  const { years, loading: yearsLoading, refresh: refreshYears, setActiveYearOptimistic } = useFiscalYear()
 
   const [stepIdx, setStepIdx] = useState(0)
   const [settings, setSettings] = useState<BillingSettings | null>(null)
@@ -875,6 +875,8 @@ export default function SetupWizard() {
 
   const fySetActive = async (id: string) => {
     try {
+      setActiveYearOptimistic(id)
+      setSettings((prev) => (prev ? { ...prev, activeFiscalYear: Number(id) } : prev))
       await api(`/fiscal-years/${id}`, {
         method: 'PATCH',
         immediate: true,
@@ -889,6 +891,7 @@ export default function SetupWizard() {
       await refreshYears()
       pushToast('success', 'Active working year updated')
     } catch (e) {
+      await refreshYears()
       pushToast('error', 'Failed to set working year', e instanceof Error ? e.message : String(e))
     }
   }

@@ -255,24 +255,36 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
             No fiscal years defined yet. Add your organization&apos;s first accounting period above.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-3 py-2.5">Working</th>
-                  <th className="px-3 py-2.5">Label</th>
-                  <th className="px-3 py-2.5">Start</th>
-                  <th className="px-3 py-2.5">End</th>
-                  <th className="px-3 py-2.5">Status</th>
-                  <th className="px-3 py-2.5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {years.map((y) => {
-                  const isActive = y.status === 'active' || Boolean(y.isActive) || String(y.id) === String(activeFiscalYearId)
-                  const isOpen = y.status === 'open' && !isActive
-                  const isClosed = y.status === 'closed'
-                  const isEditing = fyEditRow === String(y.id)
+          (() => {
+            // Guarantee exactly ONE active fiscal year:
+            // 1. First preference: the year matching activeFiscalYearId (if valid and found)
+            // 2. Next preference: year with y.status === 'active' or y.isActive === true
+            // 3. Fallback: first year if not closed
+            const singleActiveYear =
+              (activeFiscalYearId && years.find((y) => String(y.id) === String(activeFiscalYearId))) ||
+              years.find((y) => y.status === 'active' || Boolean(y.isActive)) ||
+              null
+            const activeId = singleActiveYear ? String(singleActiveYear.id) : null
+
+            return (
+              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                      <th className="px-3 py-2.5">Working</th>
+                      <th className="px-3 py-2.5">Label</th>
+                      <th className="px-3 py-2.5">Start</th>
+                      <th className="px-3 py-2.5">End</th>
+                      <th className="px-3 py-2.5">Status</th>
+                      <th className="px-3 py-2.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {years.map((y) => {
+                      const isActive = String(y.id) === activeId
+                      const isOpen = y.status !== 'closed' && !isActive
+                      const isClosed = y.status === 'closed'
+                      const isEditing = fyEditRow === String(y.id)
 
                   return (
                     <tr key={y.id} className="hover:bg-slate-50/70 transition-colors">
@@ -458,6 +470,8 @@ export const FiscalYearStep: React.FC<FiscalYearStepProps> = ({
               </tbody>
             </table>
           </div>
+            )
+          })()
         )}
       </div>
     </>

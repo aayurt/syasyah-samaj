@@ -23,6 +23,8 @@ type FiscalYearCtx = {
   activeYear: FiscalYear | null
   /** Select a year (no-op for closed years is handled by callers). */
   selectYear: (id: number | null) => void
+  /** Optimistically set which year is active, demoting all other active years in local state. */
+  setActiveYearOptimistic: (id: number | string) => void
   /** True while the years list is loading. */
   loading: boolean
   /** Reload years from the server. */
@@ -34,6 +36,7 @@ const FiscalYearContext = createContext<FiscalYearCtx>({
   selectedYear: null,
   activeYear: null,
   selectYear: () => {},
+  setActiveYearOptimistic: () => {},
   loading: true,
   refresh: async () => {},
 })
@@ -141,6 +144,25 @@ export function FiscalYearProvider({ children }: { children: React.ReactNode }) 
     [storageKey],
   )
 
+  const setActiveYearOptimistic = useCallback(
+    (id: number | string) => {
+      const numId = Number(id)
+      setYears((prev) =>
+        prev.map((y) => {
+          if (String(y.id) === String(id) || (numId && y.id === numId)) {
+            return { ...y, isActive: true, status: 'active' as const }
+          }
+          if (y.isActive || y.status === 'active') {
+            return { ...y, isActive: false, status: 'open' as const }
+          }
+          return y
+        }),
+      )
+      selectYear(numId || null)
+    },
+    [selectYear],
+  )
+
   const selectedYear = useMemo(
     () => years.find((y) => y.id === selectedId) || null,
     [years, selectedId],
@@ -152,7 +174,7 @@ export function FiscalYearProvider({ children }: { children: React.ReactNode }) 
 
   return (
     <FiscalYearContext.Provider
-      value={{ years, selectedYear, activeYear, selectYear, loading, refresh }}
+      value={{ years, selectedYear, activeYear, selectYear, setActiveYearOptimistic, loading, refresh }}
     >
       {children}
     </FiscalYearContext.Provider>

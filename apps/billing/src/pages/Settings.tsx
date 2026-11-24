@@ -409,6 +409,7 @@ export default function Settings() {
     selectedYear: selectedFiscalYear,
     activeYear: activeFiscalYear,
     selectYear: selectFiscalYear,
+    setActiveYearOptimistic,
     loading: fiscalLoading,
     refresh: refreshFiscalYears,
   } = useFiscalYear()
@@ -937,6 +938,7 @@ export default function Settings() {
   }
 
   const fyDoSetWorking = (year: FiscalYear) => {
+    setActiveYearOptimistic(year.id)
     api(`/fiscal-years/${year.id}`, {
       method: 'PATCH',
       immediate: true,
@@ -950,11 +952,13 @@ export default function Settings() {
           immediate: true,
           body: { activeFiscalYear: year.id },
         }).catch(() => { })
-        selectFiscalYear(year.id)
         pushToast('success', 'Working year set', `${year.label} is now the active fiscal year.`)
         void refreshFiscalYears()
       })
-      .catch((err) => pushToast('error', 'Failed to set working year', err instanceof Error ? err.message : String(err)))
+      .catch((err) => {
+        void refreshFiscalYears()
+        pushToast('error', 'Failed to set working year', err instanceof Error ? err.message : String(err))
+      })
   }
 
   const fyConfirmGo = async () => {
@@ -1875,10 +1879,17 @@ export default function Settings() {
                     </tr>
                   </thead>
                   <tbody>
-                    {fiscalYears.map((y) => {
-                      const isSelected = selectedFiscalYear?.id === y.id
-                      const isActiveFlag = y.isActive || (activeFiscalYear?.id === y.id && !isSelected)
-                      return (
+                    {(() => {
+                      const singleActive =
+                        activeFiscalYear ||
+                        fiscalYears.find((y) => y.status === 'active' || y.isActive) ||
+                        null
+                      const activeId = singleActive ? singleActive.id : null
+
+                      return fiscalYears.map((y) => {
+                        const isSelected = selectedFiscalYear?.id === y.id
+                        const isActiveFlag = y.id === activeId
+                        return (
                         <tr
                           key={y.id}
                           className={`border-b border-slate-100 last:border-0 ${isSelected ? 'bg-crimson-50/60' : ''}`}
@@ -2022,7 +2033,8 @@ export default function Settings() {
                           </td>
                         </tr>
                       )
-                    })}
+                    })
+                  })()}
                   </tbody>
                 </table>
               </div>
