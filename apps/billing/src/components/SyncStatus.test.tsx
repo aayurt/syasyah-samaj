@@ -75,12 +75,6 @@ describe('SyncStatus', () => {
     expect(screen.getByText('Syncing…')).toBeInTheDocument()
   })
 
-  it('shows a resync countdown when the next sync is scheduled', () => {
-    useSyncStateMock.mockReturnValue({ ...base, nextSyncAt: Date.now() + 15_000 })
-    renderStatus()
-    expect(screen.getByText(/Resync in \d+s/)).toBeInTheDocument()
-  })
-
   it('shows the review badge and opens the drawer when conflicts exist', async () => {
     useSyncStateMock.mockReturnValue({ ...base, conflicts: 4 })
     renderStatus()

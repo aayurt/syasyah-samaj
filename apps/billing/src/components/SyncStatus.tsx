@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState, memo } from 'react'
 import { Cloud, CloudOff, RefreshCw } from 'lucide-react'
 import { getEngine, useSyncState } from '../lib/api'
 import { useT } from '../lib/i18n'
@@ -12,20 +12,11 @@ import ConflictDrawer from './ConflictDrawer'
  * A conflicts badge (server-rejected writes) opens the quarantine review
  * drawer instead of interrupting the user with banners or alerts.
  */
-export default function SyncStatus() {
+function SyncStatus() {
   const t = useT()
   const state = useSyncState()
   const [syncing, setSyncing] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  // 1s tick so the "Resync in Xs" countdown stays smooth between the 2s
-  // state polls.
-  const [now, setNow] = useState(() => Date.now())
-
-  useEffect(() => {
-    if (!state.online || state.syncingCount > 0) return
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
-  }, [state.online, state.syncingCount])
 
   const syncNow = async () => {
     setSyncing(true)
@@ -40,12 +31,6 @@ export default function SyncStatus() {
 
   const offline = !state.online
   const hasConflicts = state.conflicts > 0
-  // Seconds until the next scheduled automatic sync (debounced flush,
-  // backoff retry, or the 60s periodic sync). Null when none is scheduled.
-  const nextIn =
-    state.nextSyncAt != null
-      ? Math.max(0, Math.ceil((state.nextSyncAt - now) / 1000))
-      : null
 
   let pill: React.ReactNode
   if (offline) {
@@ -95,17 +80,6 @@ export default function SyncStatus() {
           : t('sync.syncing', 'Syncing…')}
       </button>
     )
-  } else if (nextIn != null && nextIn > 0) {
-    // All synced now; the next automatic sync (or backoff retry) is scheduled.
-    pill = (
-      <span
-        className="flex items-center gap-1.5 rounded border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
-        title={t('sync.resyncScheduled', 'All changes synced — next automatic sync is scheduled')}
-      >
-        <RefreshCw size={13} />
-        {t('sync.resyncIn', 'Resync in {n}s').replace('{n}', String(nextIn))}
-      </span>
-    )
   } else {
     pill = (
       <span
@@ -153,3 +127,5 @@ export default function SyncStatus() {
     </span>
   )
 }
+
+export default memo(SyncStatus)
