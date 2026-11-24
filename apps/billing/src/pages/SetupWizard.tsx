@@ -345,10 +345,30 @@ export default function SetupWizard() {
     void refreshFacts()
   }
 
+  // Check duplicate parent company name
+  const isDuplicateParentName = useMemo(() => {
+    if (isSubCompany || !company.companyName.trim()) return false
+    const trimmed = company.companyName.trim().toLowerCase()
+    return parentCompanies.some(
+      (p) => String(p.id) !== String(tenantId) && p.name.trim().toLowerCase() === trimmed,
+    )
+  }, [isSubCompany, company.companyName, parentCompanies, tenantId])
+
   // Save company profile
   const saveCompany = async () => {
     if (!isAdmin) {
       pushToast('error', 'Admin permission required', 'Only administrators have permission to update the company profile.')
+      return
+    }
+    const targetName = company.companyName.trim()
+    if (!targetName) {
+      setError('Organization name is required.')
+      return
+    }
+    if (isDuplicateParentName) {
+      const msg = `A parent company with the name "${targetName}" already exists. Parent company names must be unique.`
+      setError(msg)
+      pushToast('error', 'Duplicate company name', msg)
       return
     }
     setBusy('company')
@@ -423,10 +443,31 @@ export default function SetupWizard() {
   // Parent Company CRUD
   const handleCreateParentCompany = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newCompany.name.trim() || !newCompany.code.trim()) {
+    const trimmedName = newCompany.name.trim()
+    const trimmedCode = newCompany.code.trim().toUpperCase()
+    if (!trimmedName || !trimmedCode) {
       setCompanyCreatorError('Company name and code are required.')
       return
     }
+
+    const isDuplicateName = parentCompanies.some(
+      (p) => (!editingCompany || String(p.id) !== String(editingCompany.id)) &&
+             p.name.trim().toLowerCase() === trimmedName.toLowerCase(),
+    )
+    if (isDuplicateName) {
+      setCompanyCreatorError(`A parent company with the name "${trimmedName}" already exists. Parent company names must be unique.`)
+      return
+    }
+
+    const isDuplicateCode = parentCompanies.some(
+      (p) => (!editingCompany || String(p.id) !== String(editingCompany.id)) &&
+             p.code.trim().toUpperCase() === trimmedCode,
+    )
+    if (isDuplicateCode) {
+      setCompanyCreatorError(`A company with the code "${trimmedCode}" already exists. Please choose a unique code.`)
+      return
+    }
+
     setCreatingCompany(true)
     setCompanyCreatorError('')
 
@@ -540,6 +581,36 @@ export default function SetupWizard() {
 
   // Sub-company CRUD
   const saveSubCompany = async () => {
+    const trimmedSubName = subCompanyForm.name.trim()
+    const trimmedSubCode = subCompanyForm.code.trim().toUpperCase()
+    if (!trimmedSubName || !trimmedSubCode) {
+      setSubCompanyError('Sub-company name and code are required.')
+      return
+    }
+
+    if (activeTenant && activeTenant.name.trim().toLowerCase() === trimmedSubName.toLowerCase()) {
+      setSubCompanyError(`A child branch cannot have the same name as the parent company ("${activeTenant.name}").`)
+      return
+    }
+
+    const isDuplicateChildName = currentCompanySubCompanies.some(
+      (sc) => (!editingSubCompany || String(sc.id) !== String(editingSubCompany.id)) &&
+             sc.name.trim().toLowerCase() === trimmedSubName.toLowerCase(),
+    )
+    if (isDuplicateChildName) {
+      setSubCompanyError(`A child branch with the name "${trimmedSubName}" already exists under this parent company.`)
+      return
+    }
+
+    const isDuplicateChildCode = allTenantsList.some(
+      (t) => (!editingSubCompany || String(t.id) !== String(editingSubCompany.id)) &&
+             t.code.trim().toUpperCase() === trimmedSubCode,
+    )
+    if (isDuplicateChildCode) {
+      setSubCompanyError(`A company / branch with the code "${trimmedSubCode}" already exists. Please choose a unique code.`)
+      return
+    }
+
     setSubCompanyBusy(editingSubCompany ? 'update' : 'create')
     setSubCompanyError('')
 
@@ -821,6 +892,7 @@ export default function SetupWizard() {
           setFormData={setNewCompany}
           creating={creatingCompany}
           error={companyCreatorError}
+          parentCompanies={parentCompanies}
           onClose={() => {
             setShowCompanyCreator(false)
             setEditingCompany(null)
@@ -1005,8 +1077,17 @@ export default function SetupWizard() {
                       disabled={!isAdmin}
                       onChange={(e) => setCompany({ ...company, companyName: e.target.value })}
                       placeholder="e.g. Syasyah Sahakari"
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-crimson-500 disabled:bg-slate-50 disabled:text-slate-500"
+                      className={`mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-1 disabled:bg-slate-50 disabled:text-slate-500 ${
+                        isDuplicateParentName
+                          ? 'border-red-400 focus:border-red-500 focus:ring-red-500 bg-red-50/30'
+                          : 'border-slate-300 focus:border-crimson-500 focus:ring-crimson-500'
+                      }`}
                     />
+                    {isDuplicateParentName && (
+                      <p className="mt-1 text-xs font-medium text-red-600">
+                        A parent company with this name already exists. Please choose a unique organization name.
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="text-xs font-medium text-slate-600">PAN / Tax ID</label>
@@ -1480,6 +1561,7 @@ export default function SetupWizard() {
         }}
         onSubmit={saveSubCompany}
         activeTenantName={activeTenant?.name}
+        existingSubCompanies={currentCompanySubCompanies}
       />
 
       {/* Parent Company Editor Modal */}
@@ -1491,6 +1573,7 @@ export default function SetupWizard() {
         setFormData={setNewCompany}
         creating={creatingCompany}
         error={companyCreatorError}
+        parentCompanies={parentCompanies}
         onClose={() => {
           setShowCompanyCreator(false)
           setEditingCompany(null)

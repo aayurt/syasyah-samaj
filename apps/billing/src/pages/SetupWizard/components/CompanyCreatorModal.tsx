@@ -13,6 +13,7 @@ interface CompanyCreatorModalProps {
   error: string
   onClose: () => void
   onSubmit: (e: React.FormEvent) => void
+  parentCompanies?: TenantOption[]
 }
 
 export const CompanyCreatorModal: React.FC<CompanyCreatorModalProps> = ({
@@ -25,8 +26,27 @@ export const CompanyCreatorModal: React.FC<CompanyCreatorModalProps> = ({
   error,
   onClose,
   onSubmit,
+  parentCompanies = [],
 }) => {
   if (!open) return null
+
+  const isDuplicateName = React.useMemo(() => {
+    if (!formData.name.trim()) return false
+    const trimmed = formData.name.trim().toLowerCase()
+    return parentCompanies.some(
+      (p) => (!editingCompany || String(p.id) !== String(editingCompany.id)) &&
+             p.name.trim().toLowerCase() === trimmed
+    )
+  }, [parentCompanies, formData.name, editingCompany])
+
+  const isDuplicateCode = React.useMemo(() => {
+    if (!formData.code.trim()) return false
+    const trimmed = formData.code.trim().toUpperCase()
+    return parentCompanies.some(
+      (p) => (!editingCompany || String(p.id) !== String(editingCompany.id)) &&
+             p.code.trim().toUpperCase() === trimmed
+    )
+  }, [parentCompanies, formData.code, editingCompany])
 
   return (
     <div className="w-full max-w-2xl mx-auto py-8">
@@ -89,9 +109,18 @@ export const CompanyCreatorModal: React.FC<CompanyCreatorModalProps> = ({
                   }))
                 }}
                 placeholder="e.g. ABC Company or Syasyah Samaj"
-                className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-crimson-500 focus:ring-1 focus:ring-crimson-500"
+                className={`mt-1 h-10 w-full rounded-lg border px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:ring-1 ${
+                  isDuplicateName
+                    ? 'border-red-400 focus:border-red-500 focus:ring-red-500 bg-red-50/30'
+                    : 'border-slate-300 focus:border-crimson-500 focus:ring-crimson-500'
+                }`}
                 required
               />
+              {isDuplicateName && (
+                <p className="mt-1 text-xs font-medium text-red-600">
+                  A parent company with this name already exists. Please choose a unique company name.
+                </p>
+              )}
             </div>
 
             <div>
@@ -102,9 +131,18 @@ export const CompanyCreatorModal: React.FC<CompanyCreatorModalProps> = ({
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                 placeholder="e.g. ABC or SYASYA"
-                className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-crimson-500 focus:ring-1 focus:ring-crimson-500 uppercase"
+                className={`mt-1 h-10 w-full rounded-lg border px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:ring-1 uppercase ${
+                  isDuplicateCode
+                    ? 'border-red-400 focus:border-red-500 focus:ring-red-500 bg-red-50/30'
+                    : 'border-slate-300 focus:border-crimson-500 focus:ring-crimson-500'
+                }`}
                 required
               />
+              {isDuplicateCode && (
+                <p className="mt-1 text-xs font-medium text-red-600">
+                  A company with this code already exists. Please choose a unique code.
+                </p>
+              )}
             </div>
 
             <div>
@@ -169,7 +207,7 @@ export const CompanyCreatorModal: React.FC<CompanyCreatorModalProps> = ({
             )}
             <button
               type="submit"
-              disabled={creating}
+              disabled={creating || isDuplicateName || isDuplicateCode}
               className="inline-flex items-center gap-2 rounded-lg bg-crimson-600 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-crimson-700 transition disabled:opacity-60"
             >
               {creating ? (

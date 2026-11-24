@@ -38,8 +38,8 @@ export type TenantOption = {
 }
 
 export function isParentCompany(tn: TenantOption): boolean {
-  if (tn.type === 'illaka' && tn.parentId) return false
-  return tn.type === 'central' || !tn.parentId
+  if (tn.type === 'illaka') return false
+  return tn.type === 'central' || (!tn.parentId && (tn.type as string) !== 'illaka')
 }
 
 export function getParentCompanies(tenants: TenantOption[]): TenantOption[] {

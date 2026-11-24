@@ -317,6 +317,20 @@ export default function Settings() {
       setTenantError('Name is required')
       return
     }
+
+    if (tenantType === 'central') {
+      const trimmed = tenantName.trim().toLowerCase()
+      const isDuplicate = tenants.some(
+        (t) => (t.type === 'central' || !t.parentId) &&
+               (!editingTenant || String(t.id) !== String(editingTenant.id)) &&
+               t.name.trim().toLowerCase() === trimmed,
+      )
+      if (isDuplicate) {
+        setTenantError(`A parent company with the name "${tenantName.trim()}" already exists. Parent company names must be unique.`)
+        return
+      }
+    }
+
     const computedSlug = (tenantSlug.trim() || tenantName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
     if (!computedSlug) {
       setTenantError('Slug is required')

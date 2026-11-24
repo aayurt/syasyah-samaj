@@ -340,4 +340,55 @@ describe('SetupWizard - Company Creator & Multi-Company Onboarding', () => {
     expect(screen.getByDisplayValue('ABC Company')).toBeInTheDocument()
     expect(screen.getByDisplayValue('ABC')).toBeInTheDocument()
   })
+
+  it('validates and blocks duplicate parent company names on step 0', async () => {
+    const existingTenants = [
+      { id: '1', code: 'ABC', name: 'ABC Company', type: 'central' as const, pan: '123456789' },
+      { id: '2', code: 'XYZ', name: 'XYZ Enterprises', type: 'central' as const, pan: '987654321' },
+    ]
+
+    useTenantMock.mockReturnValue({
+      tenantId: '2',
+      setTenantId,
+      tenants: existingTenants,
+      isCentral: true,
+      isIllaka: false,
+      illakaCode: null,
+      multiCompanyEnabled: true,
+      isSuperAdmin: true,
+      isAdmin: true,
+    })
+    listMock.mockResolvedValue({ docs: existingTenants, totalDocs: 2 })
+    apiMock.mockResolvedValue({ multiCompanyEnabled: true })
+
+    renderWizard()
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('XYZ Enterprises')).toBeInTheDocument()
+    })
+
+    const nameInput = screen.getByDisplayValue('XYZ Enterprises')
+    // Attempt to rename to existing parent company "ABC Company"
+    fireEvent.change(nameInput, { target: { value: 'ABC Company' } })
+
+    // Inline validation error should appear
+    await waitFor(() => {
+      expect(
+        screen.getByText(/A parent company with this name already exists\. Please choose a unique organization name\./i),
+      ).toBeInTheDocument()
+    })
+
+    // Clicking save should be blocked
+    const saveBtn = screen.getByRole('button', { name: /Save & continue/i })
+    fireEvent.click(saveBtn)
+
+    // Ensure api was not called to patch with duplicate name
+    expect(apiMock).not.toHaveBeenCalledWith(
+      '/tenants/2',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: expect.objectContaining({ name: 'ABC Company' }),
+      }),
+    )
+  })
 })

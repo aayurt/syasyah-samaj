@@ -27,6 +27,38 @@ export const Tenants: CollectionConfig = {
     },
   },
   hooks: {
+    beforeValidate: [
+      async ({ data, operation, originalDoc, req }) => {
+        if (!data?.name || !req?.payload) return data
+        const name = typeof data.name === 'string' ? data.name.trim() : (data.name as any)?.en?.trim() || ''
+        if (!name) return data
+
+        const type = data.type || originalDoc?.type || 'illaka'
+        const parent = data.parent !== undefined ? data.parent : originalDoc?.parent
+        const isParent = type === 'central' || (!parent && type !== 'illaka')
+
+        if (isParent) {
+          const existing = await req.payload.find({
+            collection: 'tenants',
+            where: {
+              type: { equals: 'central' },
+            },
+            limit: 100,
+            depth: 0,
+          })
+          const currentId = originalDoc?.id
+          const conflict = existing.docs.find((doc) => {
+            if (currentId && String(doc.id) === String(currentId)) return false
+            const docName = typeof doc.name === 'string' ? doc.name.trim() : (doc.name as any)?.en?.trim() || ''
+            return docName.toLowerCase() === name.toLowerCase()
+          })
+          if (conflict) {
+            throw new Error(`A parent company with the name "${name}" already exists. Parent company names must be unique.`)
+          }
+        }
+        return data
+      },
+    ],
     afterChange: [
       async ({ doc, operation, req }) => {
         if ((operation === 'create' || operation === 'update') && req?.payload) {

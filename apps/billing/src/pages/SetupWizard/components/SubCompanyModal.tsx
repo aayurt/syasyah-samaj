@@ -14,6 +14,7 @@ interface SubCompanyModalProps {
   onClose: () => void
   onSubmit: () => void
   activeTenantName?: string
+  existingSubCompanies?: TenantOption[]
 }
 
 export const SubCompanyModal: React.FC<SubCompanyModalProps> = ({
@@ -26,8 +27,23 @@ export const SubCompanyModal: React.FC<SubCompanyModalProps> = ({
   onClose,
   onSubmit,
   activeTenantName,
+  existingSubCompanies = [],
 }) => {
   const t = useT()
+
+  const isSameAsParent = React.useMemo(() => {
+    if (!activeTenantName || !subCompanyForm.name.trim()) return false
+    return subCompanyForm.name.trim().toLowerCase() === activeTenantName.trim().toLowerCase()
+  }, [activeTenantName, subCompanyForm.name])
+
+  const isDuplicateChildName = React.useMemo(() => {
+    if (!subCompanyForm.name.trim()) return false
+    const trimmed = subCompanyForm.name.trim().toLowerCase()
+    return existingSubCompanies.some(
+      (sc) => (!editingSubCompany || String(sc.id) !== String(editingSubCompany.id)) &&
+             sc.name.trim().toLowerCase() === trimmed
+    )
+  }, [existingSubCompanies, subCompanyForm.name, editingSubCompany])
 
   if (!open) return null
 
@@ -92,8 +108,22 @@ export const SubCompanyModal: React.FC<SubCompanyModalProps> = ({
                 }))
               }}
               placeholder="e.g. ABC sub-company -1"
-              className="mt-1 h-9 w-full rounded border border-slate-300 px-2.5 text-sm outline-none focus:border-crimson-500"
+              className={`mt-1 h-9 w-full rounded border px-2.5 text-sm outline-none focus:ring-1 ${
+                isSameAsParent || isDuplicateChildName
+                  ? 'border-red-400 focus:border-red-500 focus:ring-red-500 bg-red-50/30'
+                  : 'border-slate-300 focus:border-crimson-500 focus:ring-crimson-500'
+              }`}
             />
+            {isSameAsParent && (
+              <p className="mt-1 text-xs font-medium text-red-600">
+                Child branch cannot have the same name as the parent company.
+              </p>
+            )}
+            {isDuplicateChildName && (
+              <p className="mt-1 text-xs font-medium text-red-600">
+                A child branch with this name already exists under this company.
+              </p>
+            )}
           </div>
           <div>
             <label className="text-xs font-medium text-slate-600">
@@ -160,7 +190,7 @@ export const SubCompanyModal: React.FC<SubCompanyModalProps> = ({
           <button
             type="button"
             onClick={onSubmit}
-            disabled={subCompanyBusy !== '' || !subCompanyForm.name || !subCompanyForm.code}
+            disabled={subCompanyBusy !== '' || !subCompanyForm.name || !subCompanyForm.code || isSameAsParent || isDuplicateChildName}
             className="inline-flex items-center gap-1.5 rounded-lg bg-crimson-600 px-4 py-2 text-xs font-semibold text-white hover:bg-crimson-700 disabled:opacity-60 transition shadow-2xs"
           >
             {subCompanyBusy === (editingSubCompany ? 'update' : 'create') ? (
