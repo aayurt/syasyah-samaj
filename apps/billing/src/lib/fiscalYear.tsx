@@ -80,6 +80,7 @@ export function FiscalYearProvider({ children }: { children: React.ReactNode }) 
         return
       }
       const res = await api<{ docs: FiscalYear[] }>('/fiscal-years', {
+        immediate: true,
         query: {
           limit: 100,
           depth: 0,
