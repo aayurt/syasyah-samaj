@@ -23,6 +23,7 @@ import {
   Trash2,
   UserPlus,
   Users,
+  Wand2,
 } from 'lucide-react'
 import { api, list } from '../lib/api'
 import { useDataEpochWatcher } from '../lib/dataOps'
@@ -136,6 +137,16 @@ export default function SetupWizard() {
   // AI Workspace import modal
   const [aiOpen, setAiOpen] = useState(false)
   const [aiInitialModel, setAiInitialModel] = useState<AIModel | null>(null)
+
+  // Quick Starting Capital modal (Step 8: Opening Balances)
+  const [quickCapitalOpen, setQuickCapitalOpen] = useState(false)
+  const [quickCapitalForm, setQuickCapitalForm] = useState<{
+    cashOnHand: string
+    pettyCash: string
+    bank: string
+  }>({ cashOnHand: '', pettyCash: '', bank: '' })
+  const [quickCapitalBusy, setQuickCapitalBusy] = useState(false)
+  const [quickCapitalError, setQuickCapitalError] = useState('')
 
   // Company Profile form
   const [company, setCompany] = useState<CompanyFormData>({
@@ -973,6 +984,109 @@ export default function SetupWizard() {
 
   const finish = () => navigate('/app', { replace: true })
 
+  // Quick Starting Capital modal submit handler (Step 8: Opening Balances)
+  const handleQuickCapitalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setQuickCapitalError('')
+    setQuickCapitalBusy(true)
+
+    try {
+      // Validate at least one field has a value
+      const cashOnHand = Number(quickCapitalForm.cashOnHand) || 0
+      const pettyCash = Number(quickCapitalForm.pettyCash) || 0
+      const bank = Number(quickCapitalForm.bank) || 0
+
+      if (cashOnHand === 0 && pettyCash === 0 && bank === 0) {
+        setQuickCapitalError('Please enter at least one amount (Cash on Hand, Petty Cash, or Bank).')
+        return
+      }
+
+      // Get the active fiscal year
+      const activeFiscalYear = settings?.activeFiscalYear
+      const fiscalYearId = typeof activeFiscalYear === 'object' ? activeFiscalYear?.id : activeFiscalYear
+
+      if (!fiscalYearId) {
+        setQuickCapitalError('No active fiscal year found. Please set up a fiscal year first.')
+        return
+      }
+
+      // Fetch accounts to find the correct account IDs for the codes
+      // Cash on Hand: 1001, Petty Cash: 1002, Bank: 1101, Capital: 4000 (or 3001 for new chart)
+      const accountsRes = await list<Account>('gl-accounts', {
+        depth: 0,
+        limit: 200,
+        ...tenantQuery,
+      })
+
+      const accounts = accountsRes?.docs ?? []
+
+      // Find account IDs by code
+      const cashOnHandAccount = accounts.find((a) => a.code === '1001')
+      const pettyCashAccount = accounts.find((a) => a.code === '1002')
+      const bankAccount = accounts.find((a) => a.code === '1101')
+      // Try 4000 first (old chart), then 3001 (new chart), then any equity with capital/fund/reserve
+      let capitalAccount = accounts.find((a) => a.code === '4000')
+      if (!capitalAccount) capitalAccount = accounts.find((a) => a.code === '3001')
+      if (!capitalAccount) {
+        capitalAccount = accounts.find(
+          (a) =>
+            a.type === 'equity' &&
+            (a.name.toLowerCase().includes('capital') ||
+              a.name.toLowerCase().includes('fund') ||
+              a.name.toLowerCase().includes('reserve'))
+        )
+      }
+
+      const balances: Array<{ account: number; amount: number }> = []
+
+      if (cashOnHand > 0 && cashOnHandAccount) {
+        balances.push({ account: cashOnHandAccount.id, amount: cashOnHand })
+      }
+      if (pettyCash > 0 && pettyCashAccount) {
+        balances.push({ account: pettyCashAccount.id, amount: pettyCash })
+      }
+      if (bank > 0 && bankAccount) {
+        balances.push({ account: bankAccount.id, amount: bank })
+      }
+
+      // Auto-balance: calculate total assets and post difference to capital account
+      const totalAssets = cashOnHand + pettyCash + bank
+      if (totalAssets > 0 && capitalAccount) {
+        balances.push({ account: capitalAccount.id, amount: -totalAssets }) // Credit to equity
+      } else if (totalAssets > 0 && !capitalAccount) {
+        setQuickCapitalError('Could not find Capital/Equity account (code 4000 or 3001) to auto-balance. Please seed Chart of Accounts first.')
+        return
+      }
+
+      if (balances.length === 0) {
+        setQuickCapitalError('No valid accounts found for the entered amounts. Please seed Chart of Accounts first.')
+        return
+      }
+
+      // Save via wizard endpoint
+      await api('/opening-balances/save-wizard', {
+        method: 'POST',
+        body: {
+          fiscalYear: Number(fiscalYearId),
+          tenant: tenantId ? Number(tenantId) : undefined,
+          balances,
+        },
+      })
+
+      // Mark step as done and close modal
+      setSeedDone((p) => ({ ...p, openings: true }))
+      setQuickCapitalForm({ cashOnHand: '', pettyCash: '', bank: '' })
+      setQuickCapitalOpen(false)
+      pushToast('success', 'Opening balances saved with auto-balance to Capital')
+      bumpGlobals()
+    } catch (err: any) {
+      setQuickCapitalError(err?.message || 'Failed to save opening balances')
+      pushToast('error', 'Failed to save', err?.message)
+    } finally {
+      setQuickCapitalBusy(false)
+    }
+  }
+
   // 1. Initial sync and loading facts
   if (syncing && !settingsLoaded && tenants.length === 0) {
     return (
@@ -1501,33 +1615,95 @@ export default function SetupWizard() {
 
           {/* Step 8: Opening Balances */}
           {step.key === 'openings' && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">
-              <p className="text-sm text-slate-700">
-                Enter opening balances per account for the working year (cash, bank, receivables,
-                payables…) on the <span className="font-semibold">Opening Balances</span> page.
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="space-y-6">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  How would you like to set up opening balances?
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Choose a quick-starter pathway or open the full trial balance grid.
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                {/* Option 1: Start Fresh (0) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSeedDone((p) => ({ ...p, openings: true }))
+                    setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
+                  }}
+                  disabled={isViewer}
+                  className="group relative rounded-xl border border-slate-200 bg-white p-5 hover:border-crimson-300 hover:shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 group-hover:bg-crimson-50 transition">
+                    <Hourglass size={20} className="text-slate-500 group-hover:text-crimson-600 transition" />
+                  </div>
+                  <h4 className="mt-3 font-semibold text-slate-900">Start Fresh (0)</h4>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Skip opening balances for now. All accounts open at zero.
+                  </p>
+                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-crimson-600 group-hover:underline">
+                    Mark complete
+                    <ArrowRight size={12} />
+                  </span>
+                </button>
+
+                {/* Option 2: Quick Starting Capital */}
+                <button
+                  type="button"
+                  onClick={() => setQuickCapitalOpen(true)}
+                  disabled={isViewer}
+                  className="group relative rounded-xl border border-slate-200 bg-white p-5 hover:border-amber-300 hover:shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 group-hover:bg-amber-100 transition">
+                    <Wand2 size={20} className="text-amber-600" />
+                  </div>
+                  <h4 className="mt-3 font-semibold text-slate-900">Quick Starting Capital</h4>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Enter cash & bank; we auto-balance the difference to Capital.
+                  </p>
+                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-amber-600 group-hover:underline">
+                    Open modal
+                    <ArrowRight size={12} />
+                  </span>
+                </button>
+
+                {/* Option 3: Full Trial Balance / Import */}
                 <button
                   type="button"
                   onClick={() => navigate('/app/opening-balances')}
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 shadow-2xs"
+                  disabled={isViewer}
+                  className="group relative rounded-xl border border-slate-200 bg-white p-5 hover:border-emerald-300 hover:shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Open Opening Balances
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 group-hover:bg-emerald-100 transition">
+                    <Database size={20} className="text-emerald-600" />
+                  </div>
+                  <h4 className="mt-3 font-semibold text-slate-900">Full Trial Balance / Import</h4>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Open the full grid to enter any account, or import via AI.
+                  </p>
+                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 group-hover:underline">
+                    Open page
+                    <ArrowRight size={12} />
+                  </span>
                 </button>
-                {!isViewer && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAiInitialModel('opening-balances')
-                      setAiOpen(true)
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
-                  >
-                    <Sparkles size={14} className="text-amber-500" />
-                    <span>{t('ai.importOpenings', 'Import Opening Balances with AI')}</span>
-                  </button>
-                )}
               </div>
+
+              {/* AI Import shortcut (kept from original) */}
+              {!isViewer && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAiInitialModel('opening-balances')
+                    setAiOpen(true)
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
+                >
+                  <Sparkles size={14} className="text-amber-500" />
+                  <span>{t('ai.importOpenings', 'Import Opening Balances with AI')}</span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -1723,6 +1899,126 @@ export default function SetupWizard() {
           void refreshYears()
         }}
       />
+
+      {/* Quick Starting Capital Modal (Step 8: Opening Balances) */}
+      <div className="fixed inset-0 z-50" style={{ display: quickCapitalOpen ? 'flex' : 'none' }}>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setQuickCapitalOpen(false)} />
+        <div className="relative w-full max-w-md mx-auto mt-20 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 bg-slate-50">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                <Wand2 size={18} />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Quick Starting Capital</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setQuickCapitalOpen(false)}
+              disabled={quickCapitalBusy}
+              className="rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition disabled:opacity-50"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+
+          <form onSubmit={handleQuickCapitalSubmit} className="p-5 space-y-4">
+            {quickCapitalError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+                {quickCapitalError}
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="cashOnHand" className="block text-xs font-medium text-slate-700 mb-1.5">
+                Cash on Hand
+              </label>
+              <input
+                id="cashOnHand"
+                type="number"
+                step="0.01"
+                min="0"
+                value={quickCapitalForm.cashOnHand}
+                onChange={(e) => setQuickCapitalForm((p) => ({ ...p, cashOnHand: e.target.value }))}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500"
+                placeholder="0.00"
+                disabled={quickCapitalBusy}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="pettyCash" className="block text-xs font-medium text-slate-700 mb-1.5">
+                Petty Cash
+              </label>
+              <input
+                id="pettyCash"
+                type="number"
+                step="0.01"
+                min="0"
+                value={quickCapitalForm.pettyCash}
+                onChange={(e) => setQuickCapitalForm((p) => ({ ...p, pettyCash: e.target.value }))}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500"
+                placeholder="0.00"
+                disabled={quickCapitalBusy}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="bank" className="block text-xs font-medium text-slate-700 mb-1.5">
+                Bank Balance
+              </label>
+              <input
+                id="bank"
+                type="number"
+                step="0.01"
+                min="0"
+                value={quickCapitalForm.bank}
+                onChange={(e) => setQuickCapitalForm((p) => ({ ...p, bank: e.target.value }))}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-crimson-500 focus:outline-none focus:ring-1 focus:ring-crimson-500"
+                placeholder="0.00"
+                disabled={quickCapitalBusy}
+              />
+            </div>
+
+            <div className="rounded-lg bg-amber-50 border border-amber-100 p-3">
+              <p className="text-xs text-amber-900">
+                <span className="font-semibold">Auto-balance:</span> The difference between total assets (Cash + Petty Cash + Bank) and zero will be posted to <strong>Owner's Capital / Opening Accumulated Fund</strong> (account 4000 or 3001) as the equity balancing entry.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setQuickCapitalForm({ cashOnHand: '', pettyCash: '', bank: '' })
+                  setQuickCapitalError('')
+                  setQuickCapitalOpen(false)
+                }}
+                disabled={quickCapitalBusy}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={quickCapitalBusy}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 transition shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {quickCapitalBusy ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Saving…</span>
+                  </>
+                ) : (
+                  <>
+                    <Wand2 size={14} />
+                    <span>Save & Auto-Balance</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   )
 }

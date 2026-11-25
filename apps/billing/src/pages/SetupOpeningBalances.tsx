@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Save, Sparkles, Wand2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api, fmt, useSyncState } from '../lib/api'
 import { useCalendar } from '../lib/calendar'
@@ -141,6 +141,34 @@ export default function SetupOpeningBalances() {
   const totalDebit = Object.values(debits).reduce((sum, v) => sum + Number(v || 0), 0)
   const totalCredit = Object.values(credits).reduce((sum, v) => sum + Number(v || 0), 0)
   const balanceDiff = totalDebit - totalCredit
+
+  // Find preferred equity balancing account: 4000 (Owner's Capital / Opening Accumulated Fund) or first equity account
+  const balancingEquityAccount = useMemo(() => {
+    const acc4000 = accounts.find((a) => a.code === '4000' && a.type === 'equity')
+    if (acc4000) return acc4000
+    const capitalAcc = accounts.find((a) => a.type === 'equity' && (a.name.toLowerCase().includes('capital') || a.name.toLowerCase().includes('fund') || a.name.toLowerCase().includes('reserve')))
+    if (capitalAcc) return capitalAcc
+    return accounts.find((a) => a.type === 'equity') || null
+  }, [accounts])
+
+  const autoBalanceToEquity = () => {
+    if (!balancingEquityAccount || balanceDiff === 0) return
+    const targetId = balancingEquityAccount.id
+    if (balanceDiff > 0) {
+      // Debits exceed credits: add difference to credit side of equity account
+      const existingCredit = Number(credits[targetId] || 0)
+      const newCredit = (existingCredit + balanceDiff).toFixed(2)
+      setAmount(targetId, 'credit', newCredit)
+      pushToast('info', `Auto-balanced Rs. ${fmt(balanceDiff)} to ${balancingEquityAccount.name}`)
+    } else {
+      // Credits exceed debits: add difference to debit side of equity account
+      const diff = Math.abs(balanceDiff)
+      const existingDebit = Number(debits[targetId] || 0)
+      const newDebit = (existingDebit + diff).toFixed(2)
+      setAmount(targetId, 'debit', newDebit)
+      pushToast('info', `Auto-balanced Rs. ${fmt(diff)} to ${balancingEquityAccount.name}`)
+    }
+  }
 
   const save = async () => {
     if (!selectedYearId) return
@@ -378,9 +406,22 @@ export default function SetupOpeningBalances() {
       <div className="sticky bottom-4 mt-6 flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-100/80 py-3 backdrop-blur">
         <div className="flex flex-col items-start gap-1">
           <span className="text-xs text-slate-500">{enteredCount} entered</span>
-          <span className={`text-xs font-medium ${balanceDiff === 0 ? 'text-emerald-700' : 'text-red-600'}`}>
-            Debits {fmt(totalDebit)} · Credits {fmt(totalCredit)} · Diff {fmt(Math.abs(balanceDiff))}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-medium ${balanceDiff === 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+              Debits {fmt(totalDebit)} · Credits {fmt(totalCredit)} · Diff {fmt(Math.abs(balanceDiff))}
+            </span>
+            {balanceDiff !== 0 && balancingEquityAccount && (
+              <button
+                type="button"
+                onClick={autoBalanceToEquity}
+                className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 hover:bg-amber-200 transition shadow-2xs"
+                title={`Automatically put the ${fmt(Math.abs(balanceDiff))} difference into ${balancingEquityAccount.name} (${balancingEquityAccount.code || ''})`}
+              >
+                <Wand2 size={12} className="text-amber-700" />
+                <span>Auto-balance to {balancingEquityAccount.name}</span>
+              </button>
+            )}
+          </div>
         </div>
         <button
           onClick={save}
