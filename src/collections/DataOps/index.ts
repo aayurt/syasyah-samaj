@@ -463,19 +463,19 @@ async function ensureDefaults(payload: Payload): Promise<string[]> {
   const settings = await getBillingSettings(payload)
   const mapping: Record<string, string> = {
     receivableAccount: '1100',
-    payableAccount: '3000',
+    payableAccount: '2100',
     cashAccount: '1010',
     bankAccount: '1030',
-    taxAccount: '3100',
+    taxAccount: '2300',
     inventoryAccount: '1200',
     revenueAccount: '5000',
     expenseAccount: '6100',
-    cogsAccount: '6000',
-    returnsAccount: '3000',
-    membershipFeeAccount: '5100',
-    donationAccount: '5200',
-    depreciationAccount: '6200',
-    accumulatedDepreciationAccount: '2000',
+    cogsAccount: '6200',
+    returnsAccount: '5200',
+    membershipFeeAccount: '5000',
+    donationAccount: '5100',
+    depreciationAccount: '7900',
+    accumulatedDepreciationAccount: '2090',
   }
   const patch: Record<string, number> = {}
   for (const [field, code] of Object.entries(mapping)) {

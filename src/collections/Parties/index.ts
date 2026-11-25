@@ -141,7 +141,7 @@ export const Parties: CollectionConfig = {
                   collection: 'gl-accounts',
                   where: {
                     and: [
-                      { code: { equals: '1130' } },
+                      { code: { in: ['1100', '1130', '1200'] } },
                       ...(tenantId ? [{ tenant: { equals: tenantId } }] : []),
                     ],
                   },
@@ -169,7 +169,7 @@ export const Parties: CollectionConfig = {
                   collection: 'gl-accounts',
                   where: {
                     and: [
-                      { code: { equals: '2110' } },
+                      { code: { in: ['2100', '2110', '2001', '3000'] } },
                       ...(tenantId ? [{ tenant: { equals: tenantId } }] : []),
                     ],
                   },
