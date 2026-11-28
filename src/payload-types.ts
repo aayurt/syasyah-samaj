@@ -1611,7 +1611,10 @@ export interface FiscalYear {
    * The working year for new entries and voucher numbering. Only one year can be active per tenant.
    */
   isActive?: boolean | null;
-  tenant: number | Tenant;
+  /**
+   * Leave blank for global fiscal years not tied to a specific tenant.
+   */
+  tenant?: (number | null) | Tenant;
   updatedAt: string;
   createdAt: string;
 }

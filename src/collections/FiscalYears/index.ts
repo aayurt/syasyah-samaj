@@ -399,9 +399,10 @@ export const FiscalYears: CollectionConfig = {
       name: 'tenant',
       type: 'relationship',
       relationTo: 'tenants',
-      required: true,
+      required: false,
       admin: {
         position: 'sidebar',
+        description: 'Leave blank for global fiscal years not tied to a specific tenant.',
       },
     },
   ],
