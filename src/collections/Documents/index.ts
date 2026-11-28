@@ -2545,9 +2545,31 @@ export const Documents: CollectionConfig = {
       name: 'docType',
       type: 'select',
       required: true,
-      options: DOC_TYPES,
       admin: {
         position: 'sidebar',
+        condition: (_) => true,  // Always show, options will be filtered
+      },
+      options: async () => {
+        const toggles = await getBillingSettingsToggles(payload as any)
+        const filteredTypes = DOC_TYPE_OPTIONS.filter((option) => {
+          const value = option.value as keyof __TYPES__
+          const toggleMap: Record<string, keyof __TYPES__> = {
+            'receipt-voucher': 'receiptVoucherEnabled',
+            'payment-voucher': 'paymentVoucherEnabled',
+            'journal-voucher': 'journalVoucherEnabled',
+            'contra-voucher': 'contraVoucherEnabled',
+            'sales-invoice': 'salesInvoiceEnabled',
+            'purchase-invoice': 'purchaseInvoiceEnabled',
+            'credit-note': 'creditNoteEnabled',
+            'debit-note': 'debitNoteEnabled',
+            grn: 'grnEnabled',
+            'delivery-challan': 'deliveryChallanEnabled',
+          }
+          const toggleField = toggleMap[value]
+          if (!toggleField) return true
+          return toggles[toggleField] !== false
+        })
+        return filteredTypes
       },
     },
     {

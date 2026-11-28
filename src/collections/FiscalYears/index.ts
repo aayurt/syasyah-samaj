@@ -208,7 +208,7 @@ export const FiscalYears: CollectionConfig = {
         if (fy.status === 'closed') {
           return Response.json({ error: 'This fiscal year is already closed.' }, { status: 400 })
         }
-        const tenantId = typeof fy.tenant === 'object' ? fy.tenant.id : fy.tenant
+        const tenantId = fy.tenant != null ? (typeof fy.tenant === 'object' ? fy.tenant.id : fy.tenant) : undefined
 
         // The next period must exist to receive the carried balances.
         const dayAfter = new Date(new Date(fy.endDate).getTime() + 86_400_000)

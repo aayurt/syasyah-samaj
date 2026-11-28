@@ -181,6 +181,93 @@ export const BillingSettings: GlobalConfig = {
               'Enable Multi-Company / Sub-Companies mode. When enabled, users can switch between companies and manage sub-companies. Only configurable by super-admin.',
           },
         },
+        {
+          name: 'transactionTypeToggles',
+          type: 'group',
+          label: 'Transaction Type Toggles',
+          fields: [
+            {
+              name: 'receiptVoucherEnabled',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                description: 'Show/hide Receipt Voucher in new transaction form',
+              },
+            },
+            {
+              name: 'paymentVoucherEnabled',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                description: 'Show/hide Payment Voucher in new transaction form',
+              },
+            },
+            {
+              name: 'journalVoucherEnabled',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                description: 'Show/hide Journal Voucher in new transaction form',
+              },
+            },
+            {
+              name: 'contraVoucherEnabled',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                description: 'Show/hide Contra Voucher in new transaction form',
+              },
+            },
+            {
+              name: 'salesInvoiceEnabled',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                description: 'Show/hide Sales Invoice in new transaction form',
+              },
+            },
+            {
+              name: 'purchaseInvoiceEnabled',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                description: 'Show/hide Purchase Invoice in new transaction form',
+              },
+            },
+            {
+              name: 'creditNoteEnabled',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                description: 'Show/hide Credit Note in new transaction form',
+              },
+            },
+            {
+              name: 'debitNoteEnabled',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                description: 'Show/hide Debit Note in new transaction form',
+              },
+            },
+            {
+              name: 'grnEnabled',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                description: 'Show/hide Goods Received Note in new transaction form',
+              },
+            },
+            {
+              name: 'deliveryChallanEnabled',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                description: 'Show/hide Delivery Challan in new transaction form',
+              },
+            },
+          ],
+        },
       ],
     },
     {

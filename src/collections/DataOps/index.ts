@@ -197,9 +197,10 @@ const FOR_PROFIT_GROUPS = [
   { code: '3', name: 'Current Liabilities', type: 'liability' },
   { code: '4', name: 'Long-term Liabilities', type: 'liability' },
   { code: '5', name: 'Capital & Reserves', type: 'equity' },
-  { code: '6', name: 'Income', type: 'income' },
-  { code: '7', name: 'Direct Expenses', type: 'expense' },
-  { code: '8', name: 'Indirect Expenses', type: 'expense' },
+  { code: '6', name: 'Direct Income', type: 'income' },
+  { code: '7', name: 'Indirect Income', type: 'income' },
+  { code: '8', name: 'Direct Expenses', type: 'expense' },
+  { code: '9', name: 'Indirect Expenses', type: 'expense' },
 ] as const
 
 const NON_PROFIT_GROUPS = [
@@ -208,9 +209,10 @@ const NON_PROFIT_GROUPS = [
   { code: '3', name: 'Current Liabilities', type: 'liability' },
   { code: '4', name: 'Long-term Liabilities', type: 'liability' },
   { code: '5', name: 'Accumulated Funds & Reserves', type: 'equity' },
-  { code: '6', name: 'Income & Contributions', type: 'income' },
-  { code: '7', name: 'Programme Expenses', type: 'expense' },
-  { code: '8', name: 'Administrative Expenses', type: 'expense' },
+  { code: '6', name: 'Direct Income', type: 'income' },
+  { code: '7', name: 'Indirect Income', type: 'income' },
+  { code: '8', name: 'Direct Expenses', type: 'expense' },
+  { code: '9', name: 'Indirect Expenses', type: 'expense' },
 ] as const
 
 const FOR_PROFIT_ACCOUNTS = [
@@ -255,6 +257,8 @@ const FOR_PROFIT_ACCOUNTS = [
   { code: '7700', name: 'Marketing & Advertising', group: '8', type: 'expense', class: 'other' },
   { code: '7800', name: 'Audit & Professional Fees', group: '8', type: 'expense', class: 'other' },
   { code: '7900', name: 'Miscellaneous Expenses', group: '8', type: 'expense', class: 'other' },
+  { code: '8000', name: 'Sales Returns', group: '6', type: 'income', class: 'other' },
+  { code: '8010', name: 'Service Returns', group: '6', type: 'income', class: 'other' },
 ] as const
 
 const NON_PROFIT_ACCOUNTS = [
