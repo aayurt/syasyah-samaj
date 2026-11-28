@@ -42,40 +42,44 @@ export function useOfflineSession(): {
   session: CachedSession | null
   checking: boolean
 } {
-  // E2E test bypass: return a mock admin session immediately, no network round-trips.
-  if (
+  // E2E test bypass: provide a mock admin session without network round-trips.
+  // The bypass flag is read first, but hooks below always run in the same
+  // order — we override values instead of returning early, to avoid breaking
+  // the Rules of Hooks (conditional early return changes hook order).
+  const bypass =
     typeof window !== 'undefined' &&
     window.localStorage.getItem('__e2e_bypass__') === '1'
-  ) {
-    const role = window.localStorage.getItem('__e2e_role__') || 'super-admin'
-    return {
-      session: { user: { email: 'e2e@test.com', role } } as CachedSession,
-      checking: false,
-    }
-  }
+  const bypassRole =
+    bypass &&
+    (window.localStorage.getItem('__e2e_role__') || 'super-admin')
 
+  // Hooks are always called in this exact order, regardless of bypass mode.
   const { data: live, isPending } = authClient.useSession()
   const [cached, setCached] = useState<CachedSession | null>(null)
   const [checking, setChecking] = useState(false)
   const probedRef = useRef(false)
   const engine = getEngine()
 
+  // In bypass mode, override the resolved session with a mock admin session.
+  const session = bypass
+    ? ({ user: { email: 'e2e@test.com', role: bypassRole } } as CachedSession)
+    : live ? (live as unknown as CachedSession) : cached
+
   // Persist a live session for offline use, and drop the cached copy the
-  // moment the live session is (re)established.
+  // moment the live session is (re)established. Skipped in bypass mode.
   useEffect(() => {
-    if (live) {
-      setCached(null)
-      probedRef.current = false
-      engine.setKey(SESSION_CACHE_KEY, JSON.stringify(live)).catch(() => {})
-    }
-  }, [live, engine])
+    if (bypass || !live) return
+    setCached(null)
+    probedRef.current = false
+    engine.setKey(SESSION_CACHE_KEY, JSON.stringify(live)).catch(() => {})
+  }, [bypass, live, engine])
 
   // When the live check comes back empty, probe connectivity exactly once
   // (per live-session cycle). Only a thrown network error (offline) falls
   // back to the cached session; a reachable server saying "no session" means
-  // signed out and clears it.
+  // signed out and clears it. Skipped in bypass mode.
   useEffect(() => {
-    if (live || isPending || probedRef.current) return
+    if (bypass || live || isPending || probedRef.current) return
     probedRef.current = true
     setChecking(true)
     fetch(`${API_BASE}/api/auth/get-session`, { credentials: 'include' })
@@ -100,11 +104,11 @@ export function useOfflineSession(): {
         }
       })
       .finally(() => setChecking(false))
-  }, [live, isPending, engine])
+  }, [bypass, live, isPending, engine])
 
   return {
-    session: live ? (live as unknown as CachedSession) : cached,
-    checking: isPending || checking,
+    session,
+    checking: bypass ? false : isPending || checking,
   }
 }
 

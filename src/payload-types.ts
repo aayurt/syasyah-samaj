@@ -1221,169 +1221,27 @@ export interface JournalEntry {
  */
 export interface Document {
   id: number;
-  docType:
-    | 'sales-quote'
-    | 'sales-order'
-    | 'sales-invoice'
-    | 'purchase-order'
-    | 'purchase-invoice'
-    | 'payment-voucher'
-    | 'receipt-voucher'
-    | 'credit-note'
-    | 'debit-note'
-    | 'petty-cash-voucher'
-    | 'grn'
-    | 'delivery-challan'
-    | 'journal-voucher'
-    | 'contra'
-    | 'membership-receipt'
-    | 'donation-receipt';
-  /**
-   * Assigned automatically on posting (or on confirming an order).
-   */
-  number?: string | null;
-  date: string;
-  /**
-   * Customer / vendor. Not used for journal vouchers.
-   */
-  party?: (number | null) | Party;
-  /**
-   * Description of the transaction.
-   */
-  narration?: string | null;
-  status: 'draft' | 'posted' | 'void';
-  postedAt?: string | null;
-  /**
-   * Order lifecycle. Only the confirm/cancel endpoints change this.
-   */
-  orderStatus?: ('draft' | 'confirmed' | 'cancelled') | null;
-  confirmedAt?: string | null;
-  cancelledAt?: string | null;
-  /**
-   * Journal entry created when this document was posted.
-   */
-  journalEntry?: (number | null) | JournalEntry;
-  /**
-   * Original document this note/challan refers to.
-   */
-  referenceTo?: (number | null) | Document;
-  /**
-   * Doc type of the referenced document (used by aging report to classify credit notes).
-   */
-  referenceToDocType?: string | null;
-  /**
-   * Sales/Purchase invoice this receipt/payment settles. Links payment to a specific invoice for outstanding tracking.
-   */
-  linkedInvoice?: (number | null) | Document;
-  /**
-   * Sales quote this invoice was created from (traceability for quote → invoice conversion).
-   */
-  sourceQuote?: (number | null) | Document;
-  /**
-   * Items that have been voided via credit/debit note.
-   */
-  voidedItems?:
-    | {
-        /**
-         * 0-based index into the lines[] array
-         */
-        itemIndex: number;
-        /**
-         * Quantity voided (can be less than original qty for partial void)
-         */
-        quantity: number;
-        reason?: string | null;
-        /**
-         * The credit/debit note created for this voided item
-         */
-        creditNoteId?: (number | null) | Document;
-        /**
-         * The CN/DN document number (e.g. CN-2026-0001)
-         */
-        noteNumber?: string | null;
-        voidedAt?: string | null;
-        voidedBy?: string | null;
-        id?: string | null;
-      }[]
+  docType?:
+    | (
+        | 'sales-quote'
+        | 'sales-order'
+        | 'sales-invoice'
+        | 'purchase-order'
+        | 'purchase-invoice'
+        | 'receipt-voucher'
+        | 'payment-voucher'
+        | 'journal-voucher'
+        | 'contra'
+        | 'contra-voucher'
+        | 'credit-note'
+        | 'debit-note'
+        | 'petty-cash-voucher'
+        | 'grn'
+        | 'delivery-challan'
+        | 'membership-receipt'
+        | 'donation-receipt'
+      )
     | null;
-  /**
-   * Total voided amount. Subtracted from grossTotal for report net amounts.
-   */
-  voidedAmount?: number | null;
-  paymentMethod?: ('cash' | 'bank') | null;
-  /**
-   * Override the default bank account for this voucher.
-   */
-  bankAccount?: (number | null) | GlAccount;
-  /**
-   * Transfer from (credited). Must be a cash or bank account.
-   */
-  fromAccount?: (number | null) | GlAccount;
-  /**
-   * Transfer to (debited). Must be a cash or bank account.
-   */
-  toAccount?: (number | null) | GlAccount;
-  /**
-   * Donation classification (per the income/fundraising taxonomy).
-   */
-  donationPurpose?: ('individual' | 'corporate' | 'community' | 'other') | null;
-  lines?:
-    | {
-        /**
-         * Inventory item (optional). When set, posting creates stock movements; GRN receives, sales invoices & challans issue at weighted-average cost.
-         */
-        item?: (number | null) | Item;
-        description: string;
-        qty?: number | null;
-        rate?: number | null;
-        /**
-         * Line total. Computed as qty × rate if left empty.
-         */
-        amount?: number | null;
-        id?: string | null;
-      }[]
-    | null;
-  journalLines?:
-    | {
-        account: number | GlAccount;
-        debit?: number | null;
-        credit?: number | null;
-        memo?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * Legacy single tax rate in percent applied to the net total.
-   */
-  taxRate?: number | null;
-  /**
-   * Taxes on this voucher (additive VAT/GST, inclusive, or withholding TDS).
-   */
-  taxLines?:
-    | {
-        taxType: number | TaxType;
-        nature: 'additive' | 'inclusive' | 'withholding';
-        rate: number;
-        /**
-         * Taxable base (computed on save).
-         */
-        baseAmount?: number | null;
-        /**
-         * Computed tax amount.
-         */
-        amount?: number | null;
-        id?: string | null;
-      }[]
-    | null;
-  netTotal?: number | null;
-  taxTotal?: number | null;
-  grossTotal?: number | null;
-  createdBy?: (number | null) | User;
-  /**
-   * Attached bill, invoice scan, or receipt image
-   */
-  attachment?: (number | null) | Media;
-  tenant: number | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -1419,6 +1277,101 @@ export interface Party {
    */
   donor?: boolean | null;
   tenant: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Number series for documents. Assign a prefix and format per document type.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doc-sequences".
+ */
+export interface DocSequence {
+  id: number;
+  /**
+   * Display name for this series (auto-generated from type + prefix if empty).
+   */
+  name: string;
+  /**
+   * The document type this sequence applies to.
+   */
+  docType:
+    | 'sales-quote'
+    | 'sales-order'
+    | 'sales-invoice'
+    | 'purchase-order'
+    | 'purchase-invoice'
+    | 'receipt-voucher'
+    | 'payment-voucher'
+    | 'journal-voucher'
+    | 'contra'
+    | 'contra-voucher'
+    | 'credit-note'
+    | 'debit-note'
+    | 'petty-cash-voucher'
+    | 'grn'
+    | 'delivery-challan'
+    | 'membership-receipt'
+    | 'donation-receipt';
+  /**
+   * Prefix for document numbers, e.g. "SI-" for Sales Invoice, "PV-" for Payment Voucher.
+   */
+  prefix?: string | null;
+  /**
+   * Number format template. Variables: {prefix}, {year}, {number}. Example: {prefix}{year}-{number}
+   */
+  format?: string | null;
+  /**
+   * If set, this sequence resets each fiscal year. Leave empty for a global counter.
+   */
+  fiscalYear?: (number | null) | FiscalYear;
+  /**
+   * Internal key (auto-generated: docType:fiscalYear).
+   */
+  key: string;
+  /**
+   * Last used number. Cannot delete this series if > 0 (posted entries exist).
+   */
+  lastNumber: number;
+  /**
+   * Preview of the next document number (read-only, computed).
+   */
+  nextPreview?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Accounting periods. Active years are editable; closed years are read-only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "fiscal-years".
+ */
+export interface FiscalYear {
+  id: number;
+  /**
+   * Display label, e.g. "2083-84". Auto-generated from the start date if left empty.
+   */
+  label: string;
+  /**
+   * First day of the fiscal year (AD). Entered as BS in the SPA.
+   */
+  startDate: string;
+  /**
+   * Last day of the fiscal year (AD).
+   */
+  endDate: string;
+  /**
+   * Active = the single working year for new entries (only one per parent company). Open = a non-working period that can be reopened. Closed = read-only; the posting engine refuses new entries in this period.
+   */
+  status: 'active' | 'open' | 'closed';
+  /**
+   * The working year for new entries and voucher numbering. Only one year can be active per tenant.
+   */
+  isActive?: boolean | null;
+  /**
+   * Leave blank for global fiscal years not tied to a specific tenant.
+   */
+  tenant?: (number | null) | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -1520,101 +1473,6 @@ export interface TaxType {
   purchaseAccount?: (number | null) | GlAccount;
   active?: boolean | null;
   tenant: number | Tenant;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Number series for documents. Assign a prefix and format per document type.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "doc-sequences".
- */
-export interface DocSequence {
-  id: number;
-  /**
-   * Display name for this series (auto-generated from type + prefix if empty).
-   */
-  name: string;
-  /**
-   * The document type this sequence applies to.
-   */
-  docType:
-    | 'sales-quote'
-    | 'sales-order'
-    | 'sales-invoice'
-    | 'purchase-order'
-    | 'purchase-invoice'
-    | 'receipt-voucher'
-    | 'payment-voucher'
-    | 'journal-voucher'
-    | 'contra'
-    | 'contra-voucher'
-    | 'credit-note'
-    | 'debit-note'
-    | 'petty-cash-voucher'
-    | 'grn'
-    | 'delivery-challan'
-    | 'membership-receipt'
-    | 'donation-receipt';
-  /**
-   * Prefix for document numbers, e.g. "SI-" for Sales Invoice, "PV-" for Payment Voucher.
-   */
-  prefix?: string | null;
-  /**
-   * Number format template. Variables: {prefix}, {year}, {number}. Example: {prefix}{year}-{number}
-   */
-  format?: string | null;
-  /**
-   * If set, this sequence resets each fiscal year. Leave empty for a global counter.
-   */
-  fiscalYear?: (number | null) | FiscalYear;
-  /**
-   * Internal key (auto-generated: docType:fiscalYear).
-   */
-  key: string;
-  /**
-   * Last used number. Cannot delete this series if > 0 (posted entries exist).
-   */
-  lastNumber: number;
-  /**
-   * Preview of the next document number (read-only, computed).
-   */
-  nextPreview?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Accounting periods. Active years are editable; closed years are read-only.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "fiscal-years".
- */
-export interface FiscalYear {
-  id: number;
-  /**
-   * Display label, e.g. "2083-84". Auto-generated from the start date if left empty.
-   */
-  label: string;
-  /**
-   * First day of the fiscal year (AD). Entered as BS in the SPA.
-   */
-  startDate: string;
-  /**
-   * Last day of the fiscal year (AD).
-   */
-  endDate: string;
-  /**
-   * Active = the single working year for new entries (only one per parent company). Open = a non-working period that can be reopened. Closed = read-only; the posting engine refuses new entries in this period.
-   */
-  status: 'active' | 'open' | 'closed';
-  /**
-   * The working year for new entries and voucher numbering. Only one year can be active per tenant.
-   */
-  isActive?: boolean | null;
-  /**
-   * Leave blank for global fiscal years not tied to a specific tenant.
-   */
-  tenant?: (number | null) | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -4912,74 +4770,6 @@ export interface PartiesSelect<T extends boolean = true> {
  */
 export interface DocumentsSelect<T extends boolean = true> {
   docType?: T;
-  number?: T;
-  date?: T;
-  party?: T;
-  narration?: T;
-  status?: T;
-  postedAt?: T;
-  orderStatus?: T;
-  confirmedAt?: T;
-  cancelledAt?: T;
-  journalEntry?: T;
-  referenceTo?: T;
-  referenceToDocType?: T;
-  linkedInvoice?: T;
-  sourceQuote?: T;
-  voidedItems?:
-    | T
-    | {
-        itemIndex?: T;
-        quantity?: T;
-        reason?: T;
-        creditNoteId?: T;
-        noteNumber?: T;
-        voidedAt?: T;
-        voidedBy?: T;
-        id?: T;
-      };
-  voidedAmount?: T;
-  paymentMethod?: T;
-  bankAccount?: T;
-  fromAccount?: T;
-  toAccount?: T;
-  donationPurpose?: T;
-  lines?:
-    | T
-    | {
-        item?: T;
-        description?: T;
-        qty?: T;
-        rate?: T;
-        amount?: T;
-        id?: T;
-      };
-  journalLines?:
-    | T
-    | {
-        account?: T;
-        debit?: T;
-        credit?: T;
-        memo?: T;
-        id?: T;
-      };
-  taxRate?: T;
-  taxLines?:
-    | T
-    | {
-        taxType?: T;
-        nature?: T;
-        rate?: T;
-        baseAmount?: T;
-        amount?: T;
-        id?: T;
-      };
-  netTotal?: T;
-  taxTotal?: T;
-  grossTotal?: T;
-  createdBy?: T;
-  attachment?: T;
-  tenant?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -6564,6 +6354,48 @@ export interface BillingSetting {
    * Enable Multi-Company / Sub-Companies mode. When enabled, users can switch between companies and manage sub-companies. Only configurable by super-admin.
    */
   multiCompanyEnabled?: boolean | null;
+  transactionTypeToggles?: {
+    /**
+     * Show/hide Receipt Voucher in new transaction form
+     */
+    receiptVoucherEnabled?: boolean | null;
+    /**
+     * Show/hide Payment Voucher in new transaction form
+     */
+    paymentVoucherEnabled?: boolean | null;
+    /**
+     * Show/hide Journal Voucher in new transaction form
+     */
+    journalVoucherEnabled?: boolean | null;
+    /**
+     * Show/hide Contra Voucher in new transaction form
+     */
+    contraVoucherEnabled?: boolean | null;
+    /**
+     * Show/hide Sales Invoice in new transaction form
+     */
+    salesInvoiceEnabled?: boolean | null;
+    /**
+     * Show/hide Purchase Invoice in new transaction form
+     */
+    purchaseInvoiceEnabled?: boolean | null;
+    /**
+     * Show/hide Credit Note in new transaction form
+     */
+    creditNoteEnabled?: boolean | null;
+    /**
+     * Show/hide Debit Note in new transaction form
+     */
+    debitNoteEnabled?: boolean | null;
+    /**
+     * Show/hide Goods Received Note in new transaction form
+     */
+    grnEnabled?: boolean | null;
+    /**
+     * Show/hide Delivery Challan in new transaction form
+     */
+    deliveryChallanEnabled?: boolean | null;
+  };
   /**
    * Company or organization name shown on invoices and reports.
    */
@@ -6592,6 +6424,10 @@ export interface BillingSetting {
    * Whether the organisation is profit-making (VAT applies to sales/purchase invoices). When off, VAT is excluded from sales & purchase modules.
    */
   isProfitMaking?: boolean | null;
+  /**
+   * Show tax type fields on invoices (only for profit-making organisations).
+   */
+  taxTypeEnabled?: boolean | null;
   /**
    * Accounts Receivable (sales invoices, receipts).
    */
@@ -6913,6 +6749,20 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   nepaliDigitsEnabled?: T;
   nepaliWordsOnPrintEnabled?: T;
   multiCompanyEnabled?: T;
+  transactionTypeToggles?:
+    | T
+    | {
+        receiptVoucherEnabled?: T;
+        paymentVoucherEnabled?: T;
+        journalVoucherEnabled?: T;
+        contraVoucherEnabled?: T;
+        salesInvoiceEnabled?: T;
+        purchaseInvoiceEnabled?: T;
+        creditNoteEnabled?: T;
+        debitNoteEnabled?: T;
+        grnEnabled?: T;
+        deliveryChallanEnabled?: T;
+      };
   companyName?: T;
   companyPan?: T;
   companyContact?: T;
@@ -6920,6 +6770,7 @@ export interface BillingSettingsSelect<T extends boolean = true> {
   companyAddress?: T;
   companyLogo?: T;
   isProfitMaking?: T;
+  taxTypeEnabled?: T;
   receivableAccount?: T;
   payableAccount?: T;
   revenueAccount?: T;

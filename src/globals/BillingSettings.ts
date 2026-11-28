@@ -313,6 +313,22 @@ export const BillingSettings: GlobalConfig = {
               'Whether the organisation is profit-making (VAT applies to sales/purchase invoices). When off, VAT is excluded from sales & purchase modules.',
           },
         },
+        {
+          name: 'taxTypeEnabled',
+          type: 'checkbox',
+          defaultValue: true,
+          admin: {
+            condition: (data: any) => data?.isProfitMaking === true,
+            description:
+              'Show tax type fields on invoices (only for profit-making organisations).',
+          },
+          validate: (args: any) => {
+            if (args.data?.isProfitMaking === false) {
+              return { error: 'Tax type is not applicable for non-profit organisations' }
+            }
+            return true
+          },
+        },
       ],
     },
     {

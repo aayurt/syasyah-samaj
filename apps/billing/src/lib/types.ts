@@ -67,6 +67,7 @@ export interface AccountGroup {
   name: string
   type: AccountType
   parent?: number | AccountGroup | null
+  level?: number
   tenant?: number | null
 }
 

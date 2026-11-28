@@ -28,14 +28,6 @@ const TYPE_LABELS: Record<AccountType, string> = {
   expense: 'Expense',
 }
 
-const parentName = (a: Account, accounts: Account[]): string => {
-  const p = a.parent
-  if (p === null || p === undefined) return '—'
-  const id = typeof p === 'object' ? p.id : p
-  const parent = accounts.find((x) => x.id === id)
-  return parent ? parent.name : '—'
-}
-
 export default function AccountsTable({
   accounts,
   groups,
@@ -50,6 +42,7 @@ export default function AccountsTable({
   view = 'tree',
 }: AccountsTableProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set())
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<number>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const t = useT()
 
@@ -62,7 +55,24 @@ export default function AccountsTable({
     })
   }
 
+  const toggleAccountCollapse = (accountId: number) => {
+    setExpandedAccounts((prev) => {
+      const next = new Set(prev)
+      if (next.has(accountId)) next.delete(accountId)
+      else next.add(accountId)
+      return next
+    })
+  }
+
   const isGroupCollapsed = (groupId: number) => collapsedGroups.has(groupId)
+  const isAccountExpanded = (accountId: number) => expandedAccounts.has(accountId)
+
+  // Resolve parent id from an account (Payload may return object at depth:1 or raw id)
+  const parentIdOf = (a: Account): number | null => {
+    const p = a.parent
+    if (p === null || p === undefined) return null
+    return typeof p === 'object' ? p.id : p
+  }
 
   // Filter accounts
   const filteredAccounts = useMemo(() => {
@@ -75,6 +85,17 @@ export default function AccountsTable({
         (a.class || '').toLowerCase().includes(q),
     )
   }, [accounts, searchQuery])
+
+  // Build parent → children map from filtered accounts
+  const childrenByParent = useMemo(() => {
+    const map = new Map<number | null, Account[]>()
+    for (const a of filteredAccounts) {
+      const pid = parentIdOf(a)
+      if (!map.has(pid)) map.set(pid, [])
+      map.get(pid)!.push(a)
+    }
+    return map
+  }, [filteredAccounts])
 
   const { pageRows, state: pagState, actions: pagActions } = usePagination<Account>(filteredAccounts, {
     pageSize: 15,
@@ -224,221 +245,124 @@ export default function AccountsTable({
         </div>
       ) : (
         types.map((type) => {
-        const typeAccts = pageRows.filter((a) => a.type === type)
-        const typeGroups = Array.from(
-          new Map(groups.filter((g) => g.type === type).map((g) => [g.id, g])).values()
-        )
-        if (typeAccts.length === 0 && typeGroups.length === 0) return null
+          const typeAccts = filteredAccounts.filter((a) => a.type === type)
+          const typeGroups = Array.from(
+            new Map(groups.filter((g) => g.type === type).map((g) => [g.id, g])).values()
+          )
+          if (typeAccts.length === 0 && typeGroups.length === 0) return null
 
-        // Group accounts by group ID
-        const accountsByGroup = new Map<number | null, Account[]>()
-        for (const a of typeAccts) {
-          let gid: number | null = null
-          if (typeof a.group === 'object' && a.group !== null) {
-            gid = a.group.id
-          } else if (a.group) {
-            gid = Number(a.group)
-          }
-          if (!accountsByGroup.has(gid)) accountsByGroup.set(gid, [])
-          accountsByGroup.get(gid)!.push(a)
-        }
+          return (
+            <div key={type} className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              {/* Type Header */}
+              <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 text-sm font-semibold text-slate-800 flex justify-between items-center">
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-crimson-600" />
+                  {TYPE_LABELS[type]}
+                </span>
+                <span className="text-xs font-normal text-slate-400">
+                  {typeAccts.length} account{typeAccts.length === 1 ? '' : 's'}
+                </span>
+              </div>
 
-        const unassigned = accountsByGroup.get(null) || []
-
-        return (
-          <div key={type} className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            {/* Type Header */}
-            <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 text-sm font-semibold text-slate-800 flex justify-between items-center">
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-crimson-600" />
-                {TYPE_LABELS[type]}
-              </span>
-              <span className="text-xs font-normal text-slate-400">
-                {typeAccts.length} account{typeAccts.length === 1 ? '' : 's'}
-              </span>
-            </div>
-
-            <div className="overflow-x-auto overscroll-x-contain">
-              <table className="w-full text-left text-sm min-w-[850px]">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/40 text-xs uppercase tracking-wide text-slate-500 font-medium">
-                    <th className="w-24 px-4 py-2">Code</th>
-                    <th className="min-w-[220px] px-4 py-2">Account Heading / Subheading</th>
-                    <th className="w-28 px-4 py-2">Class</th>
-                    <th className="w-20 px-4 py-2">{t('accounts.currency', 'Currency')}</th>
-                    <th className="min-w-[160px] px-4 py-2">Description</th>
-                    <th className="w-28 px-4 py-2">Parent</th>
-                    <th className="w-36 px-4 py-2 text-right">Opening (FY)</th>
-                    <th className="w-14 px-4 py-2 text-right">Actions</th>
-                  </tr>
-                </thead>
-              <tbody>
-                {/* 1. Grouped Headings */}
-                {typeGroups.map((group) => {
-                  const children = accountsByGroup.get(group.id) || []
-                  const isCollapsed = isGroupCollapsed(group.id)
-                  const groupTotalOpening = children.reduce((sum, a) => sum + (openings[a.id] ?? a.openingBalance ?? 0), 0)
-
-                  return (
-                    <React.Fragment key={`group-${group.id}`}>
-                      {/* Heading Row */}
-                      <tr className="border-b border-slate-100 bg-slate-50/30 hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-2 font-mono text-xs font-semibold text-slate-600">
-                          {group.code || '—'}
-                        </td>
-                        <td className="px-4 py-2 font-medium text-slate-800">
-                          <button
-                            type="button"
-                            onClick={() => toggleGroupCollapse(group.id)}
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900"
-                          >
-                            {isCollapsed ? (
-                              <ChevronRight size={14} className="text-slate-400" />
-                            ) : (
-                              <ChevronDown size={14} className="text-slate-400" />
-                            )}
-                            <Folder size={14} className="text-amber-500 shrink-0" />
-                            <span>{group.name}</span>
-                            <span className="ml-1 text-[11px] font-normal text-slate-400">
-                              ({children.length})
-                            </span>
-                          </button>
-                        </td>
-                        <td className="px-4 py-2 text-xs text-slate-500 italic">
-                          Heading
-                        </td>
-                        <td className="px-4 py-2 text-xs text-slate-500">—</td>
-                        <td className="px-4 py-2 text-xs text-slate-500">—</td>
-                        <td className="px-4 py-2 text-xs text-slate-500">—</td>
-                        <td className="px-4 py-2 text-right font-mono text-xs font-medium text-slate-500">
-                          {children.length > 0
-                            ? groupTotalOpening.toLocaleString('en-US', { minimumFractionDigits: 2 })
-                            : '—'}
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <ActionMenu
-                            items={[
-                              {
-                                label: 'Edit',
-                                icon: <Pencil size={13} />,
-                                onClick: () => onEditGroup(group),
-                              },
-                              {
-                                label: 'Delete',
-                                icon: <Trash2 size={13} />,
-                                danger: true,
-                                onClick: () => onDelete(group.id, true),
-                              },
-                            ]}
-                          />
-                        </td>
-                      </tr>
-
-                      {/* Subheading (Accounts under group) */}
-                      {!isCollapsed &&
-                        children.map((a) => {
-                          const opening = openings[a.id] ?? a.openingBalance ?? 0
-                          return (
-                            <tr key={a.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
-                              <td className="px-4 py-2 pl-6 font-mono text-xs text-slate-500">
-                                {a.code || '—'}
-                              </td>
-                              <td className="px-4 py-2 pl-9 text-slate-700">
-                                <div className="flex items-center gap-2">
-                                  <FileText size={13} className="text-slate-300 shrink-0" />
-                                  <span className="font-medium text-slate-800">{a.name}</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-2 text-xs text-slate-500 capitalize">
-                                {a.class || 'other'}
-                              </td>
-                              <td className="px-4 py-2 text-xs text-slate-500">
-                                {a.currency || 'NPR'}
-                              </td>
-                              <td className="px-4 py-2 text-xs text-slate-500">
-                                {a.description || '—'}
-                              </td>
-                              <td className="px-4 py-2 text-xs text-slate-500">{parentName(a, accounts)}</td>
-                              <td className="px-4 py-2 text-right font-mono text-xs text-slate-700 font-medium">
-                                {opening.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                              </td>
-                              <td className="px-4 py-2 text-right">
-                                <ActionMenu
-                                  items={[
-                                    {
-                                      label: 'Edit',
-                                      icon: <Pencil size={13} />,
-                                      onClick: () => onEdit(a),
-                                    },
-                                    {
-                                      label: 'Delete',
-                                      icon: <Trash2 size={13} />,
-                                      danger: true,
-                                      onClick: () => onDelete(a.id),
-                                    },
-                                  ]}
-                                />
-                              </td>
-                            </tr>
-                          )
-                        })}
-                    </React.Fragment>
-                  )
-                })}
-
-                {/* 2. Unassigned Accounts (Without Group) */}
-                {unassigned.map((a) => {
-                  const opening = openings[a.id] ?? a.openingBalance ?? 0
-                  return (
-                    <tr key={a.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
-                      <td className="px-4 py-2 font-mono text-xs text-slate-500">
-                        {a.code || '—'}
-                      </td>
-                      <td className="px-4 py-2 pl-4 text-slate-700">
-                        <div className="flex items-center gap-2">
-                          <FileText size={13} className="text-slate-300 shrink-0" />
-                          <span className="font-medium text-slate-800">{a.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-2 text-xs text-slate-500 capitalize">
-                        {a.class || 'other'}
-                      </td>
-                      <td className="px-4 py-2 text-xs text-slate-500">
-                        {a.currency || 'NPR'}
-                      </td>
-                      <td className="px-4 py-2 text-xs text-slate-500">
-                        {a.description || '—'}
-                      </td>
-                      <td className="px-4 py-2 text-xs text-slate-500">{parentName(a, accounts)}</td>
-                      <td className="px-4 py-2 text-right font-mono text-xs text-slate-700 font-medium">
-                        {opening.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-4 py-2 text-right">
-                        <ActionMenu
-                          items={[
-                            {
-                              label: 'Edit',
-                              icon: <Pencil size={13} />,
-                              onClick: () => onEdit(a),
-                            },
-                            {
-                              label: 'Delete',
-                              icon: <Trash2 size={13} />,
-                              danger: true,
-                              onClick: () => onDelete(a.id),
-                            },
-                          ]}
-                        />
-                      </td>
+              <div className="overflow-x-auto overscroll-x-contain">
+                <table className="w-full text-left text-sm min-w-[850px]">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/40 text-xs uppercase tracking-wide text-slate-500 font-medium">
+                      <th className="w-24 px-4 py-2">Code</th>
+                      <th className="min-w-[260px] px-4 py-2">Account Heading / Subheading</th>
+                      <th className="w-28 px-4 py-2">Class</th>
+                      <th className="w-20 px-4 py-2">{t('accounts.currency', 'Currency')}</th>
+                      <th className="min-w-[160px] px-4 py-2">Description</th>
+                      <th className="w-36 px-4 py-2 text-right">Opening (FY)</th>
+                      <th className="w-14 px-4 py-2 text-right">Actions</th>
                     </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {/* 1. Group Headings */}
+                    {typeGroups.map((group) => {
+                      const groupAccts = typeAccts.filter((a) => {
+                        const gid = typeof a.group === 'object' && a.group !== null ? a.group.id : a.group ? Number(a.group) : null
+                        return gid === group.id
+                      })
+                      const groupRoots = groupAccts.filter((a) => !parentIdOf(a))
+                      const isCollapsed = isGroupCollapsed(group.id)
+                      const groupTotalOpening = groupAccts.reduce(
+                        (sum, a) => sum + (openings[a.id] ?? a.openingBalance ?? 0),
+                        0,
+                      )
+
+                      return (
+                        <React.Fragment key={`group-${group.id}`}>
+                          {/* Heading Row */}
+                          <tr className="border-b border-slate-100 bg-slate-50/30 hover:bg-slate-50 transition-colors">
+                            <td className="px-4 py-2 font-mono text-xs font-semibold text-slate-600">
+                              {group.code || '—'}
+                            </td>
+                            <td className="px-4 py-2 font-medium text-slate-800">
+                              <button
+                                type="button"
+                                onClick={() => toggleGroupCollapse(group.id)}
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900"
+                              >
+                                {isCollapsed ? (
+                                  <ChevronRight size={14} className="text-slate-400" />
+                                ) : (
+                                  <ChevronDown size={14} className="text-slate-400" />
+                                )}
+                                <Folder size={14} className="text-amber-500 shrink-0" />
+                                <span>{group.name}</span>
+                                <span className="ml-1 text-[11px] font-normal text-slate-400">
+                                  ({groupRoots.length})
+                                </span>
+                              </button>
+                            </td>
+                            <td className="px-4 py-2 text-xs text-slate-500 italic">Heading</td>
+                            <td className="px-4 py-2 text-xs text-slate-500">—</td>
+                            <td className="px-4 py-2 text-xs text-slate-500">—</td>
+                            <td className="px-4 py-2 text-xs text-slate-500">—</td>
+                            <td className="px-4 py-2 text-right font-mono text-xs font-medium text-slate-500">
+                              {groupRoots.length > 0 ? groupTotalOpening.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '—'}
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              <ActionMenu
+                                items={[
+                                  {
+                                    label: 'Edit',
+                                    icon: <Pencil size={13} />,
+                                    onClick: () => onEditGroup(group),
+                                  },
+                                  {
+                                    label: 'Delete',
+                                    icon: <Trash2 size={13} />,
+                                    danger: true,
+                                    onClick: () => onDelete(group.id, true),
+                                  },
+                                ]}
+                              />
+                            </td>
+                          </tr>
+
+                          {/* Subheading accounts (roots within group, rendered as collapsible trees) */}
+                          {!isCollapsed &&
+                            groupRoots.map((a) => renderTreeRow(a, 0, childrenByParent, openings, onEdit, onDelete, isAccountExpanded, toggleAccountCollapse))}
+                        </React.Fragment>
+                      )
+                    })}
+
+                    {/* 2. Unassigned Root Accounts (no group, no parent) */}
+                    {typeAccts
+                      .filter((a) => {
+                        const gid = typeof a.group === 'object' && a.group !== null ? a.group.id : a.group ? Number(a.group) : null
+                        return gid === null && !parentIdOf(a)
+                      })
+                      .map((a) => renderTreeRow(a, 0, childrenByParent, openings, onEdit, onDelete, isAccountExpanded, toggleAccountCollapse))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
-        ))
+          )
+        })
+      )
       }
       {pagState.total > 0 && (
         <div className="mt-4 flex items-center justify-between gap-2">
@@ -449,5 +373,92 @@ export default function AccountsTable({
         </div>
       )}
     </div>
+  )
+}
+
+/** Render an account row and its descendants recursively (tree view). */
+function renderTreeRow(
+  account: Account,
+  depth: number,
+  childrenByParent: Map<number | null, Account[]>,
+  openings: Record<number, number>,
+  onEdit: (account: Account) => void,
+  onDelete: (id: number) => void,
+  isExpanded: (id: number) => boolean,
+  toggleCollapse: (id: number) => void,
+): React.ReactElement | null {
+  const children = childrenByParent.get(account.id) || []
+  const expanded = isExpanded(account.id)
+  const hasChildren = children.length > 0
+
+  const opening = openings[account.id] ?? account.openingBalance ?? 0
+  const indent = depth * 18
+
+  return (
+    <React.Fragment key={`tree-acct-${account.id}`}>
+      <tr className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
+        <td className="px-4 py-2 font-mono text-xs text-slate-500">
+          {account.code || '—'}
+        </td>
+        <td className="px-4 py-2 text-slate-700">
+          <div className="flex items-center gap-2" style={{ paddingLeft: indent }}>
+            {hasChildren ? (
+              <button
+                type="button"
+                onClick={() => toggleCollapse(account.id)}
+                className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-900"
+              >
+                {expanded ? (
+                  <ChevronDown size={12} className="text-slate-600" />
+                ) : (
+                  <ChevronRight size={12} className="text-slate-600" />
+                )}
+              </button>
+            ) : (
+              <div className="w-5 h-5 shrink-0" />
+            )}
+            <FileText size={12} className="text-slate-300 shrink-0" />
+            <span className="font-medium text-slate-800">{account.name}</span>
+            {hasChildren && (
+              <span className="ml-1 text-[11px] font-normal text-slate-400">
+                ({children.length})
+              </span>
+            )}
+          </div>
+        </td>
+        <td className="px-4 py-2 text-xs text-slate-500 capitalize">
+          {account.class || 'other'}
+        </td>
+        <td className="px-4 py-2 text-xs text-slate-500">
+          {account.currency || 'NPR'}
+        </td>
+        <td className="px-4 py-2 text-xs text-slate-500">
+          {account.description || '—'}
+        </td>
+        <td className="px-4 py-2 text-right font-mono text-xs text-slate-700 font-medium">
+          {opening.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+        </td>
+        <td className="px-4 py-2 text-right">
+          <ActionMenu
+            items={[
+              {
+                label: 'Edit',
+                icon: <Pencil size={13} />,
+                onClick: () => onEdit(account),
+              },
+              {
+                label: 'Delete',
+                icon: <Trash2 size={13} />,
+                danger: true,
+                onClick: () => onDelete(account.id),
+              },
+            ]}
+          />
+        </td>
+      </tr>
+      {expanded &&
+        hasChildren &&
+        children.map((child) => renderTreeRow(child, depth + 1, childrenByParent, openings, onEdit, onDelete, isExpanded, toggleCollapse))}
+    </React.Fragment>
   )
 }

@@ -19,7 +19,7 @@ import { useFiscalYear } from '../lib/fiscalYear'
 import { Account, AccountGroup, AccountType, Currency, CURRENCIES, OpeningBalance } from '../lib/types'
 
 const TYPES: AccountType[] = ['asset', 'liability', 'equity', 'income', 'expense']
-const TYPE_LABELS: Record<string, string> = {
+const TYPE_I18N_KEYS: Record<AccountType, string> = {
   asset: 'trialBalance.typeAssets',
   liability: 'trialBalance.typeLiabilities',
   equity: 'trialBalance.typeEquity',
@@ -58,6 +58,79 @@ export default function Accounts() {
   const [showCoaSetup, setShowCoaSetup] = useState(false)
   const [seedingCoa, setSeedingCoa] = useState(false)
   const [view, setView] = useState<'tree' | 'table'>('tree')
+
+// Hierarchy selection state for New / Edit Account form
+const [formClass, setFormClass] = useState<AccountType>('asset')
+const [formCategory, setFormCategory] = useState<string>('')
+const [formGroup, setFormGroup] = useState<string>('')
+const [formSubgroup, setFormSubgroup] = useState<string>('')
+const [showAddGroup, setShowAddGroup] = useState(false)
+const [showAddSubgroup, setShowAddSubgroup] = useState(false)
+const [newGroupName, setNewGroupName] = useState('')
+const [newSubgroupName, setNewSubgroupName] = useState('')
+
+// Translated label for each account type, with count of groups under that type
+const typeLabels = useMemo(() => {
+  const labels: Record<AccountType, string> = {} as Record<AccountType, string>
+  for (const type of TYPES) {
+    const label = t(TYPE_I18N_KEYS[type])
+    const count = groups.filter((g) => g.type === type).length
+    labels[type] = `${label} (${count})`
+  }
+  return labels
+}, [groups, t])
+
+// Derived hierarchy options from loaded account groups
+const accountCategories = useMemo(
+  () => groups.filter((g) => (g.level ?? 0) === 0 && g.type === formClass),
+  [groups, formClass],
+)
+// Resolve parent id from a group (Payload may return object at depth:1 or raw id)
+const groupParentId = (g: AccountGroup): number | null => {
+  const p = g.parent
+  if (p === null || p === undefined) return null
+  return typeof p === 'object' ? p.id : p
+}
+
+// Count of level-1 groups under each category (for badge display)
+const categoryChildCounts = useMemo(
+  () =>
+    Object.fromEntries(
+      accountCategories.map((cat) => [
+        String(cat.id),
+        groups.filter(
+          (g) => (g.level ?? 0) === 1 && g.type === formClass && groupParentId(g) === cat.id,
+        ).length,
+      ]),
+    ),
+  [accountCategories, groups, formClass],
+)
+const accountGroups = useMemo(
+  () =>
+    groups.filter(
+      (g) =>
+        (g.level ?? 0) === 1 &&
+        g.type === formClass &&
+        groupParentId(g) === (formCategory ? Number(formCategory) : null),
+    ),
+  [groups, formClass, formCategory],
+)
+const accountSubgroups = useMemo(
+  () =>
+    groups.filter(
+      (g) =>
+        (g.level ?? 0) >= 2 &&
+        g.type === formClass &&
+        groupParentId(g) === (formGroup ? Number(formGroup) : null),
+    ),
+  [groups, formClass, formGroup],
+)
+
+// Most specific group selected (subgroup > group > category)
+const selectedGroupId = useMemo(
+  () => (formSubgroup ? Number(formSubgroup) : formGroup ? Number(formGroup) : formCategory ? Number(formCategory) : undefined),
+  [formSubgroup, formGroup, formCategory],
+)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { selectedYear } = useFiscalYear()
 
@@ -117,21 +190,72 @@ export default function Accounts() {
   const openNew = () => {
     setForm(emptyForm)
     setEditing(null)
+    setFormClass('asset')
+    setFormCategory('')
+    setFormGroup('')
+    setFormSubgroup('')
+    setShowAddGroup(false)
+    setShowAddSubgroup(false)
+    setNewGroupName('')
+    setNewSubgroupName('')
     setShowForm((s) => !s)
   }
 
   const startEdit = (a: Account) => {
     const p = a.parent && typeof a.parent !== 'number' ? (a.parent as Account).id : a.parent
+    const groupId = a.group ? (typeof a.group === 'object' ? (a.group as AccountGroup).id : a.group) : undefined
+    const selectedGroup = groupId ? groups.find((g) => g.id === groupId) : undefined
+
+    // Walk up the group hierarchy to find category (level 0), group (level 1), subgroup (level 2+)
+    let categoryId: string = ''
+    let groupHierarchyId: string = ''
+    let subgroupId: string = ''
+
+    if (selectedGroup) {
+      const selLevel = selectedGroup.level ?? 0
+      if (selLevel >= 2) {
+        subgroupId = String(selectedGroup.id)
+        const parentId =
+          typeof selectedGroup.parent === 'number'
+            ? selectedGroup.parent
+            : selectedGroup.parent?.id
+        const parentGroup = parentId ? groups.find((g) => g.id === parentId) : undefined
+        if (parentGroup) {
+          groupHierarchyId = String(parentGroup.id)
+          const catId =
+            typeof parentGroup.parent === 'number'
+              ? parentGroup.parent
+              : parentGroup.parent?.id
+          const category = catId ? groups.find((g) => g.id === catId) : undefined
+          if (category) categoryId = String(category.id)
+        }
+      } else if (selLevel === 1) {
+        groupHierarchyId = String(selectedGroup.id)
+        const catId =
+          typeof selectedGroup.parent === 'number'
+            ? selectedGroup.parent
+            : selectedGroup.parent?.id
+        const category = catId ? groups.find((g) => g.id === catId) : undefined
+        if (category) categoryId = String(category.id)
+      } else if (selLevel === 0) {
+        categoryId = String(selectedGroup.id)
+      }
+    }
+
     setForm({
       name: a.name,
       code: a.code || '',
       type: a.type,
       class: a.class || 'other',
-      group: a.group ? String(typeof a.group === 'object' ? (a.group as AccountGroup).id : a.group) : '',
+      group: groupId ? String(groupId) : '',
       description: a.description || '',
       parent: p ? String(p) : '',
       currency: a.currency || 'NPR',
     })
+    setFormClass(a.type)
+    setFormCategory(categoryId)
+    setFormGroup(groupHierarchyId)
+    setFormSubgroup(subgroupId)
     setEditing(a.id)
     setShowForm(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -150,9 +274,9 @@ export default function Accounts() {
       const body = {
         name: form.name,
         code: form.code || undefined,
-        type: form.type,
+        type: formClass,
         class: form.class,
-        group: form.group ? Number(form.group) : undefined,
+        group: selectedGroupId,
         currency: form.currency || undefined,
         ...(form.parent ? { parent: Number(form.parent) } : {}),
         ...(tenantId ? { tenant: tenantId } : {}),
@@ -216,17 +340,32 @@ export default function Accounts() {
     return g ? `${g.name}${g.code ? ` (${g.code})` : ''}` : '—'
   }
 
-  // Only groups that belong to the chosen account type (Assets → asset
-  // groups, etc.). When the type changes and the picked group no longer
-  // matches, the group selection is cleared.
-  const groupsOfType = groups.filter((g) => g.type === form.type)
-
   // Resolve parent id from an account (Payload may return object at depth:1 or raw id)
   const parentIdOf = (a: Account): number | null => {
     const p = a.parent
     if (p === null || p === undefined) return null
     return typeof p === 'object' ? p.id : p
   }
+
+  // Compute depth (level) of an account by walking up the parent chain.
+  // Depth 0 = root, Depth 1 = child, Depth 2 = grandchild, etc.
+  const accountDepth = useMemo(() => {
+    const cache = new Map<number, number>()
+    const getDepth = (id: number): number => {
+      if (cache.has(id)) return cache.get(id)!
+      const a = accounts.find((x) => x.id === id)
+      if (!a) return 0
+      const p = parentIdOf(a)
+      const d = p === null ? 0 : getDepth(p) + 1
+      cache.set(id, d)
+      return d
+    }
+    const depths = new Map<number, number>()
+    for (const a of accounts) {
+      depths.set(a.id, getDepth(a.id))
+    }
+    return depths
+  }, [accounts])
 
   // All descendant ids of the account being edited — excluded from parent options to prevent cycles
   const descendantIds = useMemo(() => {
@@ -253,16 +392,98 @@ export default function Accounts() {
     if (editing === null) return accounts
     return accounts.filter((a) => a.id !== editing && !descendantIds.has(a.id))
   }, [accounts, editing, descendantIds])
-  const changeType = (type: AccountType) =>
-    setForm((f) => ({
-      ...f,
-      type,
-      group:
-        f.group &&
-        groups.find((g) => g.id === Number(f.group))?.type === type
-          ? f.group
-          : '',
-    }))
+  const handleClassChange = (type: AccountType) => {
+    setFormClass(type)
+    setForm((f) => ({ ...f, type }))
+    setFormCategory('')
+    setFormGroup('')
+    setFormSubgroup('')
+  }
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFormCategory(e.target.value)
+    setFormSubgroup('')
+    // Auto-fill the account group with the first group under the chosen category
+    const catId = Number(e.target.value)
+    const firstGroup = groups.find(
+      (g) => (g.level ?? 0) === 1 && g.type === formClass && groupParentId(g) === catId,
+    )
+    if (firstGroup) {
+      setFormGroup(String(firstGroup.id))
+    } else {
+      setFormGroup('')
+    }
+  }
+
+  const handleGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFormGroup(e.target.value)
+    setFormSubgroup('')
+    // Auto-fill the account subgroup with the first subgroup under the chosen group
+    const grpId = e.target.value ? Number(e.target.value) : null
+    const firstSubgroup = grpId
+      ? groups.find(
+          (g) =>
+            (g.level ?? 0) >= 2 && g.type === formClass && groupParentId(g) === grpId,
+        )
+      : undefined
+    if (firstSubgroup) {
+      setFormSubgroup(String(firstSubgroup.id))
+    }
+  }
+
+  const handleSubgroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFormSubgroup(e.target.value)
+  }
+
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim() || !formCategory) return
+    try {
+      const created = await api('/account-groups', {
+        method: 'POST',
+        body: {
+          name: newGroupName.trim(),
+          type: formClass,
+          parent: Number(formCategory),
+          level: 1,
+          ...(tenantId ? { tenant: tenantId } : {}),
+        },
+      })
+      setNewGroupName('')
+      setShowAddGroup(false)
+      await load()
+      // Select the newly created group
+      if (created && typeof created === 'object' && 'id' in created) {
+        setFormGroup(String((created as any).id))
+      }
+    } catch (err) {
+      pushToast('error', 'Failed to create group', err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  const handleCreateSubgroup = async () => {
+    if (!newSubgroupName.trim() || !formGroup) return
+    try {
+      const parentGroup = groups.find((g) => g.id === Number(formGroup))
+      const created = await api('/account-groups', {
+        method: 'POST',
+        body: {
+          name: newSubgroupName.trim(),
+          type: formClass,
+          parent: Number(formGroup),
+          level: (parentGroup?.level ?? 0) + 1,
+          ...(tenantId ? { tenant: tenantId } : {}),
+        },
+      })
+      setNewSubgroupName('')
+      setShowAddSubgroup(false)
+      await load()
+      if (created && typeof created === 'object' && 'id' in created) {
+        setFormSubgroup(String((created as any).id))
+      }
+    } catch (err) {
+      pushToast('error', 'Failed to create subgroup', err instanceof Error ? err.message : String(err))
+    }
+  }
 
   const [searchParams, setSearchParams] = useSearchParams()
   const urlSortKey = searchParams.get('sort') || 'name'
@@ -419,99 +640,207 @@ export default function Accounts() {
       {showForm && (
         <form
           onSubmit={save}
-          className="mt-4 rounded-lg border border-slate-200 bg-white p-5"
+          className="mt-4 rounded-lg border border-slate-200 bg-white p-5 space-y-6"
         >
           <h3 className="mb-3 text-sm font-semibold text-slate-700">
             {editing ? 'Edit Account' : 'New Account'}
           </h3>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            <label className="text-sm text-slate-700">
-              Name *
-              <input
-                required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              />
-            </label>
-            <label className="text-sm text-slate-700">
-              Code
-              <input
-                value={form.code}
-                onChange={(e) => setForm({ ...form, code: e.target.value })}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              />
-            </label>
-            <label className="text-sm text-slate-700">
-              Type
-              <select
-                value={form.type}
-                onChange={(e) => changeType(e.target.value as AccountType)}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              >
-                {TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {TYPE_LABELS[t]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="text-sm text-slate-700">
-              Class
-              <select
-                value={form.class}
-                onChange={(e) => setForm({ ...form, class: e.target.value })}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              >
-                <option value="other">{t('accounts.classOther', 'Other')}</option>
-                <option value="cash">{t('accounts.classCash', 'Cash')}</option>
-                <option value="bank">{t('accounts.classBank', 'Bank')}</option>
-              </select>
-            </label>
-            <label className="text-sm text-slate-700">
-              {t('accounts.currency', 'Currency')}
-              <select
-                value={form.currency}
-                onChange={(e) => setForm({ ...form, currency: e.target.value as Currency })}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="text-sm text-slate-700">
-              Description
-              <textarea
-                value={form.description || ''}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                rows={2}
-              />
-            </label>
-            <label className="text-sm text-slate-700">
-              Group
-              <select
-                value={form.group}
-                onChange={(e) => setForm({ ...form, group: e.target.value })}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              >
-                <option value="">— none —</option>
-                {groupsOfType.length === 0 ? (
-                  <option value="__no-groups__" disabled>
-                    No {TYPE_LABELS[form.type].toLowerCase()} groups yet
-                  </option>
-                ) : (
-                  groupsOfType.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
+
+          {/* Section 1: Account Classification */}
+          <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-4">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              1. Account Classification
+            </h4>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Account Class */}
+              <label className="text-sm text-slate-700">
+                Account Class *
+                <select
+                  value={formClass}
+                  onChange={(e) => handleClassChange(e.target.value as AccountType)}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                >
+                  {TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {typeLabels[t]}
                     </option>
-                  ))
-                )}
-              </select>
-            </label>
+                  ))}
+                </select>
+              </label>
+
+              {/* Account Category (level 0) */}
+              <label className="text-sm text-slate-700">
+                Account Category *
+                <select
+                  value={formCategory}
+                  onChange={handleCategoryChange}
+                  disabled={!formClass}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-100 disabled:text-slate-500"
+                >
+                  <option value="">— select category —</option>
+                  {accountCategories.length === 0 ? (
+                    <option value="__no-categories__" disabled>
+                      No {typeLabels[formClass].toLowerCase()} categories yet
+                    </option>
+                  ) : (
+                    accountCategories.map((cat) => {
+                      const childCount = categoryChildCounts[String(cat.id)] ?? 0
+                      return (
+                        <option key={cat.id} value={String(cat.id)}>
+                          {cat.name} ({childCount})
+                        </option>
+                      )
+                    })
+                  )}
+                </select>
+              </label>
+
+              {/* Account Group (level 1) */}
+              <label className="text-sm text-slate-700">
+                Account Group
+                <div className="flex flex-col sm:flex-row items-end gap-2">
+                  <select
+                    value={formGroup}
+                    onChange={handleGroupChange}
+                    disabled={!formCategory}
+                    className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-100 disabled:text-slate-500"
+                  >
+                    <option value="">— select category first —</option>
+                    {accountGroups.length === 0 ? (
+                      <option value="__no-groups__" disabled>
+                        No groups under this category
+                      </option>
+                    ) : (
+                      accountGroups.map((grp) => (
+                        <option key={grp.id} value={String(grp.id)}>
+                          {grp.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  {formCategory && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddGroup(true)
+                        setNewGroupName('')
+                      }}
+                      disabled={saving || !formCategory}
+                      className="px-2.5 py-1.5 rounded border border-slate-300 bg-white text-slate-600 text-xs font-medium hover:bg-slate-50 hover:border-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      + Add
+                    </button>
+                  )}
+                </div>
+              </label>
+
+              {/* Account Subgroup (level 2+) */}
+              <label className="text-sm text-slate-700">
+                Account Subgroup
+                <div className="flex flex-col sm:flex-row items-end gap-2">
+                  <select
+                    value={formSubgroup}
+                    onChange={handleSubgroupChange}
+                    disabled={!formGroup}
+                    className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-100 disabled:text-slate-500"
+                  >
+                    <option value="">— select group first —</option>
+                    {accountSubgroups.length === 0 ? (
+                      <option value="__no-subgroups__" disabled>
+                        No subgroups under this group
+                      </option>
+                    ) : (
+                      accountSubgroups.map((sub) => (
+                        <option key={sub.id} value={String(sub.id)}>
+                          {sub.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  {formGroup && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddSubgroup(true)
+                        setNewSubgroupName('')
+                      }}
+                      disabled={saving || !formGroup}
+                      className="px-2.5 py-1.5 rounded border border-slate-300 bg-white text-slate-600 text-xs font-medium hover:bg-slate-50 hover:border-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      + Add
+                    </button>
+                  )}
+                </div>
+              </label>
+            </div>
+          </section>
+
+          {/* Section 2: Ledger Account Details */}
+          <section className="space-y-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              2. Ledger Account Details
+            </h4>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="text-sm text-slate-700">
+                Name *
+                <input
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                />
+              </label>
+              <label className="text-sm text-slate-700">
+                Code
+                <input
+                  value={form.code}
+                  onChange={(e) => setForm({ ...form, code: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                />
+              </label>
+              <label className="text-sm text-slate-700">
+                Class
+                <select
+                  value={form.class}
+                  onChange={(e) => setForm({ ...form, class: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                >
+                  <option value="other">{t('accounts.classOther', 'Other')}</option>
+                  <option value="cash">{t('accounts.classCash', 'Cash')}</option>
+                  <option value="bank">{t('accounts.classBank', 'Bank')}</option>
+                </select>
+              </label>
+              <label className="text-sm text-slate-700">
+                {t('accounts.currency', 'Currency')}
+                <select
+                  value={form.currency}
+                  onChange={(e) => setForm({ ...form, currency: e.target.value as Currency })}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-sm text-slate-700">
+                Description
+                <textarea
+                  value={form.description || ''}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                  rows={2}
+                />
+              </label>
+            </div>
+          </section>
+
+          {/* Section 3: Parent Account (optional) */}
+          <section className="space-y-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              3. Parent Account (optional)
+            </h4>
             <label className="text-sm text-slate-700">
               Parent
               <select
@@ -523,15 +852,104 @@ export default function Accounts() {
                 {parentOptions.length === 0 ? (
                   <option value="__no-parents__" disabled>No parent accounts available</option>
                 ) : (
-                  parentOptions.map((a) => (
-                    <option key={a.id} value={String(a.id)}>
-                      {a.code ? `[${a.code}] ` : ''}{a.name}
-                    </option>
-                  ))
+                  parentOptions.map((a) => {
+                    const depth = accountDepth.get(a.id) ?? 0
+                    return (
+                      <option key={a.id} value={String(a.id)}>
+                        {depth > 0 ? '  '.repeat(depth) + '└─ ' : ''}
+                        {a.code ? `[${a.code}] ` : ''}{a.name}
+                      </option>
+                    )
+                  })
                 )}
               </select>
             </label>
-          </div>
+          </section>
+
+          {/* Inline Add Group form */}
+          {showAddGroup && (
+            <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Add Account Group
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-xs text-slate-600">Group Name <span className="text-crimson-600 font-bold ml-0.5">*</span></label>
+                  <input
+                    required
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    placeholder="e.g. Current Assets"
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                  />
+                </div>
+                <div className="col-span-2 text-xs text-slate-500">
+                  Will be created under the selected category as a level-1 group.
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddGroup(false)}
+                  disabled={saving}
+                  className="px-3 py-1.5 rounded border border-slate-300 text-slate-600 text-sm hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateGroup}
+                  disabled={saving || !newGroupName.trim() || !formCategory}
+                  className="px-3 py-1.5 rounded bg-slate-900 text-white text-sm hover:bg-slate-800 disabled:opacity-50"
+                >
+                  Create Group
+                </button>
+              </div>
+            </section>
+          )}
+
+          {/* Inline Add Subgroup form */}
+          {showAddSubgroup && (
+            <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Add Account Subgroup
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-xs text-slate-600">Subgroup Name <span className="text-crimson-600 font-bold ml-0.5">*</span></label>
+                  <input
+                    required
+                    value={newSubgroupName}
+                    onChange={(e) => setNewSubgroupName(e.target.value)}
+                    placeholder="e.g. Bank Accounts"
+                    className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                  />
+                </div>
+                <div className="col-span-2 text-xs text-slate-500">
+                  Will be created under the selected group.
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddSubgroup(false)}
+                  disabled={saving}
+                  className="px-3 py-1.5 rounded border border-slate-300 text-slate-600 text-sm hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateSubgroup}
+                  disabled={saving || !newSubgroupName.trim() || !formGroup}
+                  className="px-3 py-1.5 rounded bg-slate-900 text-white text-sm hover:bg-slate-800 disabled:opacity-50"
+                >
+                  Create Subgroup
+                </button>
+              </div>
+            </section>
+          )}
+
           <div className="mt-4 flex gap-2">
             <LiquidButton
               type="submit"

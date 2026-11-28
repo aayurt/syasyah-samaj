@@ -103,7 +103,8 @@ function recomputeTotals(d: any, settings?: any) {
 
   // Non-profit-making organisations do not charge VAT on sales or purchases —
   // skip all tax computation so gross == net and no tax ledger legs post.
-  if (settings && settings.isProfitMaking === false) {
+  // Also skip if tax types are disabled for profit-making organisations.
+  if (settings && (settings.isProfitMaking === false || settings.taxTypeEnabled === false)) {
     d.taxLines = []
     d.taxRate = 0
     d.taxTotal = 0
@@ -1216,7 +1217,7 @@ export async function postDocument(
 export const Documents: CollectionConfig = {
   slug: 'documents',
   admin: {
-    useAsTitle: 'number',
+    useAsTitle: 'docType',
     group: 'Billing',
     defaultColumns: ['number', 'docType', 'date', 'party', 'status', 'grossTotal', 'updatedAt'],
   },
